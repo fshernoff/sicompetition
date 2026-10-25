@@ -1,0 +1,107 @@
+{
+  "name": "default",
+  "days": 5,
+  "blocksPerDay": 4,
+  "requests": {
+    "day1": 20,
+    "base": 20,
+    "max": 30,
+    "reputationSlope": 0.05,
+    "rateEffect": {
+      "low": 3,
+      "standard": 0,
+      "premium": -1
+    },
+    "noise": 0
+  },
+  "rates": {
+    "low": 28,
+    "standard": 40,
+    "premium": 52
+  },
+  "addOnPerDogPerPlayBlock": 10,
+  "wagePerStaffDay": 300,
+  "bookings": {
+    "legalRatio": 15,
+    "safeRatio": 10
+  },
+  "incident": {
+    "baseBelowSafe": 0.02,
+    "slopeSafeToLegal": 0.03,
+    "slopeAboveLegal": 0.08,
+    "cap": 0.9,
+    "energyFactorBase": 0.5,
+    "refund": 15,
+    "vetChance": 0.1,
+    "vetCost": 150,
+    "reputationHit": 2
+  },
+  "activityIncidentMultiplier": {
+    "freePlay": 1,
+    "structuredPlay": 0.6,
+    "nap": 0.1,
+    "walk": 1,
+    "clean": 0.1
+  },
+  "energy": {
+    "dayStart": 40,
+    "min": 0,
+    "max": 100,
+    "delta": {
+      "freePlay": 20,
+      "structuredPlay": 5,
+      "nap": -30,
+      "walk": -10,
+      "clean": 0
+    }
+  },
+  "cleanliness": {
+    "weekStart": 80,
+    "min": 0,
+    "max": 100,
+    "perDogPlayBlock": -0.5,
+    "perDogNapBlock": -0.1,
+    "cleanBlock": 50,
+    "overnight": 10,
+    "suppliesCost": 250
+  },
+  "illness": {
+    "threshold": 40,
+    "maxRate": 0.1,
+    "reputationHit": 1,
+    "requestHit": 1
+  },
+  "inspector": {
+    "chancePerOverBlock": 0.05,
+    "fine": 250,
+    "reputationHit": 5
+  },
+  "fatigue": {
+    "weekStart": 20,
+    "min": 0,
+    "max": 100,
+    "perBlockBase": 2,
+    "perBlockPerDogOverFloor": 0.5,
+    "ratioFloor": 6,
+    "overnightRecovery": 15,
+    "kpiThreshold": 70
+  },
+  "callOut": {
+    "soloDaysBeforeCallOut": 3,
+    "closureReputationHit": 10
+  },
+  "walk": {
+    "groupSize": 6,
+    "reputationGain": 3,
+    "minStaff": 2
+  },
+  "structuredPlayMaxRatio": 10,
+  "reputation": {
+    "weekStart": 50,
+    "min": 0,
+    "max": 100
+  },
+  "cash": {
+    "weekStart": 2000
+  }
+}

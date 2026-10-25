@@ -13,7 +13,22 @@ and lesson material in this repository was created for the Challenge after Augus
 
 ## Run
 
-(Filled in with the simulator in G1.)
+Install with `npm install` (Node 24 or newer). Then:
+
+- `npm run dev` serves the page locally; `npm run build` writes the static site to `dist/`.
+- `npm test` runs the rule tests, `npm run lint` runs ESLint and the type check, `npm run e2e` runs one browser smoke test against the built page.
+
+The headless simulator runs on Node's native TypeScript, so it needs no extra tools:
+
+```
+npm run sim -- --episodes 200 --seed 1 --reward round1 --policy random
+npm run sim -- --episodes 500 --seed 7 --reward balanced --policy careful
+node src/sim/cli.ts --reward my-plan.json --policy reckless
+```
+
+To pipe the JSON into a file, call node directly or add `--silent` (`npm run sim --silent -- ...`), because npm prints its own banner first. `npm run calibrate` prints the ranking of 385 fixed policies under the Round 1 plan, with the profit margin between the reckless week and each one-decision alternative (a nap block, a clean block, a cheaper day, fewer bookings, more staff).
+
+It prints one JSON document: the full world config, the bonus plan it used, the seed, the episode count and the policy name, a summary across all episodes (the mean of every weekly total, and the spread of profit, incidents and reward), and the weekly P&L and operations report of the last episode, day by day. The same seed always gives the same output. `--help` lists every option.
 
 ## Disclosure of SI use
 

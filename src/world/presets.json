@@ -1,0 +1,138 @@
+{
+  "round1": {
+    "name": "round1",
+    "label": "Round 1: profit only",
+    "spec": {
+      "version": 1,
+      "kpis": {
+        "profit": {
+          "on": true,
+          "weight": 10
+        },
+        "dogsServed": {
+          "on": false,
+          "weight": 5
+        },
+        "incidents": {
+          "on": false,
+          "weight": -5
+        },
+        "reputation": {
+          "on": false,
+          "weight": 5
+        },
+        "fatigue": {
+          "on": false,
+          "weight": -5
+        },
+        "overRatio": {
+          "on": false,
+          "weight": -5
+        }
+      }
+    },
+    "maxActive": 1
+  },
+  "round2": {
+    "name": "round2",
+    "label": "Round 2: up to three measures",
+    "spec": {
+      "version": 1,
+      "kpis": {
+        "profit": {
+          "on": true,
+          "weight": 10
+        },
+        "dogsServed": {
+          "on": false,
+          "weight": 5
+        },
+        "incidents": {
+          "on": false,
+          "weight": -5
+        },
+        "reputation": {
+          "on": false,
+          "weight": 5
+        },
+        "fatigue": {
+          "on": false,
+          "weight": -5
+        },
+        "overRatio": {
+          "on": false,
+          "weight": -5
+        }
+      }
+    },
+    "maxActive": 3
+  },
+  "round3": {
+    "name": "round3",
+    "label": "Round 3: all six measures",
+    "spec": {
+      "version": 1,
+      "kpis": {
+        "profit": {
+          "on": true,
+          "weight": 10
+        },
+        "dogsServed": {
+          "on": false,
+          "weight": 5
+        },
+        "incidents": {
+          "on": false,
+          "weight": -5
+        },
+        "reputation": {
+          "on": false,
+          "weight": 5
+        },
+        "fatigue": {
+          "on": false,
+          "weight": -5
+        },
+        "overRatio": {
+          "on": false,
+          "weight": -5
+        }
+      }
+    },
+    "maxActive": 6
+  },
+  "balanced": {
+    "name": "balanced",
+    "label": "Balanced: profit, fewer incidents, safe ratios",
+    "spec": {
+      "version": 1,
+      "kpis": {
+        "profit": {
+          "on": true,
+          "weight": 10
+        },
+        "dogsServed": {
+          "on": false,
+          "weight": 5
+        },
+        "incidents": {
+          "on": true,
+          "weight": -5
+        },
+        "reputation": {
+          "on": false,
+          "weight": 5
+        },
+        "fatigue": {
+          "on": false,
+          "weight": -5
+        },
+        "overRatio": {
+          "on": true,
+          "weight": -5
+        }
+      }
+    },
+    "maxActive": 6
+  }
+}

@@ -90,7 +90,7 @@ min(requestsToday, 10 × staff). `staff` is the scheduled count and, on an open 
 | Item | Amount | When |
 |---|---|---|
 | day rate per dog | low $28, standard $40, premium $52 | revenue at drop-off, for every dog accepted |
-| activity add-on | $5 per dog per play block (freePlay, structuredPlay, walk) in blocks 1..3 | revenue in that block |
+| activity add-on | $10 per dog per play block (freePlay, structuredPlay, walk) in blocks 1..3 | revenue in that block |
 | wages | $300 per staffer scheduled per day, fully loaded | cost at drop-off |
 | incident refund | $15 per incident | cost in that block |
 | vet bill | 10% chance per incident, $150 | cost in that block |
@@ -108,7 +108,7 @@ numbers are the defaults in `config.default.json`; the names in parentheses are 
 
 **H1. Incident risk climbs steeply above 10 dogs per staffer.** Floor ratio r = dogsOnFloor ÷ floorStaff (for a
 walk block, the floor's dogs and staff after the walking group leaves). Base probability per block:
-r ≤ 10: 0.02; 10 < r ≤ 15: 0.02 + 0.03 × (r − 10); r > 15: 0.17 + 0.05 × (r − 15); capped at 0.90
+r ≤ 10: 0.02; 10 < r ≤ 15: 0.02 + 0.03 × (r − 10); r > 15: 0.17 + 0.08 × (r − 15); capped at 0.90
 (`incident.baseBelowSafe`, `slopeSafeToLegal`, `slopeAboveLegal`, `cap`). With no dogs on the floor the
 probability is 0.
 
@@ -130,8 +130,9 @@ reputation KPI delta is the clamped change: 99 + 3 (walk) − 2 (incident) ends 
 
 **H5. Reviews set tomorrow's requests.** At pickup (and as a projection after every block):
 requestsTomorrow = clamp(round(20 + 0.05 × (reputation − 50)) + rateEffect − illnessCasesToday, 0, 30), where round
-is half-up (19.5 → 20, as JS Math.round), with
-rateEffect low +4, standard 0, premium −2 (`requests.base`, `reputationSlope`, `rateEffect`, `max`). Monday's
+is half-up (19.5 → 20, as JS Math.round) and the pivot 50 is `reputation.weekStart`, with
+rateEffect low +3, standard 0, premium −1 (`requests.base`, `reputationSlope`, `rateEffect`, `max`). The effect is
+small on purpose: with +4/−2 a cheaper Thursday bought enough Friday dogs to pay for itself (D25). Monday's
 requests are 20. On a closed day rateEffect is 0 and illness is 0. A hard-mode config adds an integer drawn
 uniformly from −`requests.noise`..+`requests.noise` (default 0: no draw); the in-day projection ignores noise.
 
@@ -145,7 +146,8 @@ Each case: reputation −1 and one request cancelled tomorrow (the illness term 
 with exactly one staffer. At drop-off, if soloStreak ≥ 3 and the plan schedules 1 staffer, that staffer calls out and
 the daycare is closed for the day: every request is turned away, no revenue, no wages, reputation −10, all four
 blocks pass with nothing on the floor: no draws, no fatigue gain, no energy or cleanliness change from activities,
-every KPI delta 0; overnight recovery (cleanliness +10, fatigue −15) still applies at pickup. If the plan schedules
+every KPI delta 0 except the −10 reputation at drop-off; overnight recovery (cleanliness +10, fatigue −15) still
+applies at pickup. If the plan schedules
 2 or 3, everyone comes in (help is what the staffer wanted) and the day runs normally. The streak is updated at
 pickup: +1 if floorStaff was exactly 1 today, else 0 (a closed day and a day with help both reset it). Fatigue plays
 no part in the call-out and the call-out none in fatigue (H11): two rules, two discoveries.
@@ -163,7 +165,8 @@ energy +20, multiplier 1.0, event `structuredFellBack`. Add-on earned either way
 
 **H10. Only play earns the add-on, and cleaning costs supplies.** Nap and clean blocks earn no activity add-on
 (section 5), and a clean block costs $250 in supplies (`cleanliness.suppliesCost`) on any open day, even with no
-dogs. This is why a profit-paid GM never naps and never cleans inside one week.
+dogs. This is why a profit-paid GM never naps and never cleans inside one week: a nap block forgoes $160 to $200 of
+add-ons and the calibration measures the week about $110 poorer for it after the incidents it prevents.
 
 **H11. Fatigue.** Per block worked (any block the daycare is open): fatigue += 2 + 0.5 × max(0, r − 6), where r is
 the floor ratio for that block; overnight −15; clamped 0..100. KPI 5 counts a block when fatigue is above 70 at
@@ -184,8 +187,9 @@ Order of resolution inside one step (so RNG draws are reproducible):
 4. Add-on revenue and supplies (H10), reputation changes summed and clamped once (walk, incident, fine), energy and
    cleanliness changes (H3, H6).
 5. Fatigue gain (H11) and the KPI counts for the block (fatigueOver70, overRatio, incidents).
-6. Pickup only: the pickup snapshot (reputation, cleanliness, fatigue, energy as they stand, for the readout), illness
-   (H6, reputation summed into the same clamp as step 4), tomorrow's requests (H5) promoted to requestsToday,
+6. Pickup only: illness (H6, its reputation hit summed into the same clamp as step 4), then the pickup snapshot for
+   the readout (reputation as the day ends, sick dogs included; cleanliness, fatigue and energy after the block's
+   changes and before the night), tomorrow's requests (H5) promoted to requestsToday,
    overnight recovery (cleanliness +10, fatigue −15), streak update (H7), energy reset to 40, plan cleared, advance
    the day. After Friday the state is terminal (day 5, block 0, done).
 7. Recompute the requestsTomorrow projection (no draws; rate null before drop-off); advance the block.
@@ -241,6 +245,10 @@ check; the brief's one-line caricatures are the teacher's talking points, not te
 | Round | KPIs students may turn on | Preset weights | Locked |
 |---|---|---|---|
 | 1 | profit only | profit +10 | the other five are locked off; students only predict |
+
+Every preset stores the suggested weight of section 7 for each KPI that is off (dogsServed +5, incidents −5,
+reputation +5, fatigue −5, overRatio −5), so turning a KPI on in the editor starts from a meaningful number; an off
+KPI contributes nothing whatever its weight.
 | 2 | any 3 of the 6 | starts as Round 1 | the editor refuses a fourth toggle |
 | 3 | all 6 | starts as Round 1 | nothing; the teacher reveals the rules at the end |
 
@@ -264,8 +272,8 @@ Per day: requests, accepted, rate, scheduled and floor staff, called out, closed
 and as resolved after fallbacks (counts of nap, clean and walk blocks use the resolved ones), incidents,
 illness cases, fines, revenue (day rates and add-ons), wages, refunds, vet bills, profit, reputation and
 cleanliness and fatigue at pickup. Week totals: days accepted all, days the floor ran with one staffer, nap blocks,
-clean blocks, walk blocks, average dogs per staffer (the arithmetic mean of the floor ratio over open blocks with
-dogs), incidents, illness cases, fines, supplies,
+clean blocks, walk blocks, average dogs per staffer (the arithmetic mean of the floor ratio over open blocks that
+have dogs on the floor after any walking group has left), incidents, illness cases, fines, supplies,
 blocks over the legal ratio, blocks with fatigue over 70, dogs served, revenue, wages, profit, reputation change,
 the six KPI totals and the total reward under the plan. "Accepted every booking" counts days with requests > 0 where
 accepted = requests (a closed day never counts). Pickup values are as they stood at pickup, before overnight recovery.
@@ -281,7 +289,11 @@ the readout, the training curve, the seed. No names, no team names unless the te
 
 ## 12. Headless sim
 
-`npm run sim -- --episodes N --seed S --reward round1|round2|round3|balanced|<file.json> [--policy random|reckless|careful]`
+`npm run sim -- --episodes N --seed S --reward round1|round2|round3|balanced|<file.json> [--policy random|reckless|recklessCovered|careful]`
+(and `npm run calibrate -- --episodes N --seed S`, which prints the Round 1 calibration ranking behind the test of
+plan acceptance 3: 135 stationary policies, 150 one-day staffing variants built from the best plan of every pattern
+and staff level, 20 one-day pattern deviations, then around the best of those, 20 one-day plan deviations and 60
+single-block activity deviations, 385 candidates)
 runs N episodes and prints one JSON document: the full config and reward spec used, the seed, the policy name, the
 mean of every week total, the spread (sample standard deviation and the 5th and 95th percentiles) of profit,
 incidents and reward, and the full readout of the last episode. It is how the owner and Astra check the numbers

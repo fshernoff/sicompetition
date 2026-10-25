@@ -14,14 +14,17 @@ under a reward spec, and runs N episodes under a policy from the command line. N
    times it (target under 5 s wall clock including npm startup) and records the number in the result section.
 3. The Round 1 calibration test (`tests/rules/round1-optimum.test.ts`): a restricted-policy calibration, not a proof
    of optimality (G2's learner is that). Candidates: the 135 stationary policies (bookings × rate × staff × five
-   floor patterns); for the best stationary policy of each pattern, the ten variants with one day's staff set to 2
-   or 3 (50); for the best of those 185, the twenty variants where one day uses another pattern (one-day
-   deviations, which is where a learner would defect). 205 candidates, each on the same 100 seeds. The best mean
-   reward belongs to a policy that accepts all, charges premium, runs one staffer on at least four days and has no
-   nap or clean anywhere; every candidate that naps or cleans on any day trails it by at least $100 of mean weekly
-   profit, and so does two staffers every day; the margin against the best nap-or-clean candidate holds on a second
-   seed batch. If this fails: first rule out an implementation error with the H-tests and a hand-checked week, then
-   the numbers in the bible move (owner informed in HANDOFF), then the config, then the test's thresholds last.
+   floor patterns); for the best stationary plan of each pattern and each staff level, the ten variants with one
+   day's staff changed (150, so "one staffer with one day of help" is always generated); for the best so far, the
+   twenty one-day pattern deviations; for the best so far, the twenty one-day plan deviations (other bookings, other
+   rates) and the sixty single-block activity deviations: the one-decision defections a learner would try. 385
+   candidates, each on the same 100 seeds. The best mean reward belongs to a policy whose readouts show the Round 1
+   outcome class (all, premium, exactly four solo days, no closure, every booking accepted, no nap or clean block);
+   every candidate with a nap or clean anywhere trails it by at least $100 of mean weekly profit, a cheaper rate on
+   any one day by at least $50, fewer bookings on any one day never wins, two staffers every day trails by at least
+   $100; the nap-or-clean and cheaper-rate margins hold on a second seed batch. If this fails: first rule out an
+   implementation error with the H-tests and a hand-checked week, then the numbers in the bible move (owner informed
+   in HANDOFF), then the config, then the test's thresholds last.
 4. `npm run lint` clean; `npm run build` clean (the page still only draws the placeholder).
 5. README has a Run section a judge can follow.
 
@@ -82,7 +85,49 @@ state and the RNG are pinned, WP3's validation and presets are specified).
 `npm test` green with ~17 files; `npm run sim` printing a week report whose numbers match the plan's result
 section; README's Run section. No page change.
 
-## Result
+## Result (2026-10-25, session 1; every number below is from this session's runs on the owner's Mac)
 
-(Filled in at the end of G1: the test count, the sim numbers for Round 1 over 200 random episodes, the optimum test
-margin, what Astra found and what changed.)
+**Tests.** `npm test`: 19 files, 123 tests, all passing. 105 were seen failing on the stubs before the packages
+started; the rest were added while folding the two Astra reviews and seen failing or red before their fix. `npm run
+lint` clean; `npm run build` clean; `npm run e2e` 1 passed.
+
+**Sim.** `node src/sim/cli.ts --episodes 200 --seed 1 --reward round1 --policy <p>`: 0.09 s wall clock through
+node, 0.19 s through `npm run sim --silent` (`/usr/bin/time -p`).
+
+| Policy | Mean profit | std | p5 / p95 | Incidents | Sick dogs | Solo days | Closed | Naps | Cleans | Avg dogs/staffer | Blocks over 15 | Fatigue > 70 | Reputation |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| random | 1505.7 | 766 | 260 / 2640 | 1.70 | 0.63 | 1.67 | 0.04 | 3.05 | 3.07 | 10.9 | 2.5 | 0.4 | 50 → 51.0 |
+| reckless | 4394.3 | 323 | 3806 / 4830 | 8.86 | 4.88 | 4.00 | 1.00 | 0.00 | 0.00 | 18.6 | 16.0 | 7.1 | 50 → 12.7 |
+| recklessCovered | 4965.1 | 314 | 4360 / 5393 | 8.10 | 6.29 | 4.00 | 0.00 | 0.00 | 0.00 | 16.0 | 15.9 | 12.0 | 50 → 22.8 |
+| careful | 746.6 | 17 | 735 / 750 | 0.13 | 0.00 | 0.00 | 0.00 | 5.00 | 5.00 | 10.0 | 0.0 | 0.0 | 50 → 49.8 |
+
+**Calibration** (`npm run calibrate`: 385 candidates × 100 episodes, seed 1, 0.9 s). Best: (all, premium) every day,
+staff 1-2-1-1-1 (help on Tuesday, the day with the most dogs after Monday), walks on the help day, free play
+otherwise; mean profit 5169.0 ± 290, 8.10 incidents, 4 solo days, 0 closed, every booking accepted, 0 nap or clean
+blocks. Margins below it (mean weekly profit): best single nap block $106, best one-day nap $117, best single clean
+block $170, best one-day clean $178, best cheaper rate on one day $134 (standard on Thursday), fewer bookings on one
+day $0 (a no-op: legal on the help day accepts everyone anyway) and ≥ $100 on Monday, two staffers every day $485,
+three staffers $1,908, legal every day $485, standard every day $1,374. Out of sample (seed 2): best 5171.5,
+nap-or-clean margin $118, cheaper-rate margin $129.
+
+**What moved during G1, in order.** (1) First calibration (add-on $5, slope above the legal line 0.05): a one-day nap
+trailed by only $46 to $68 and the week had 5.8 incidents → add-on $10 (D23), slope 0.08 (D24), incident floor 7 → 6.
+(2) Astra's diff review: with rate effects +4/−2 the search's own winner charged low on Thursday → +3/−1 (D25), and
+stages D and E added so the one-decision defections are measured. (3) That change exposed the search's blind spot:
+staffing variants came only from each pattern's best stationary plan, which was now two staffers, so "one staffer
+with help" was never generated → stage B builds from every pattern and staff level (150 variants). Other folds from
+the review: validator tightened, presets carry the suggested off weights (D26), average ratio excludes an empty
+floor, the test judges the winner on its readouts, the pickup reputation is the end-of-day value (D27). One test of
+the main thread's was wrong (it compared whole reports, which carry the policy seed). No package code was changed
+during review except two comments, the average-ratio filter and the search's candidate generation.
+
+**Packages.** WP1 (Opus): rules.ts, step.ts, reward.ts; hand-traced a no-incident reckless week against the rules and
+matched every number. WP2 (Opus): rng.ts, episode.ts, policies.ts, search.ts. WP3 (Sonnet): config.ts, presets.json,
+cli.ts, README Run section. The main thread added src/sim/calibrate.ts and the stage D/E search.
+
+**Astra.** `.claude/docs/reviews/g1-astra-triage.md`: 8 findings, 7 accepted, 1 resolved by correcting the bible.
+
+**For G2.** The reward is dense (profit moves every step) and the Round 1 optimum is a fixed-shape week a tabular
+learner can represent (day in the key). The hardest part of the policy to learn is the help day: five drop-off
+states differ only by day and streak, and the payoff of "2 staffers today" arrives on Thursday as a closure avoided.
+The streak bin in the observation (3.1) is what makes it learnable.

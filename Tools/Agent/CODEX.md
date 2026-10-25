@@ -40,6 +40,8 @@ verified:
 - **After a limit reset the CLI may need a fresh login:** `codex login status` still says logged in but every request
   fails with `401 Unauthorized`. The script exits 5 with `CODEX LOGIN STALE`; the owner runs
   `codex logout && codex login`.
+- **Astra cannot run vitest.** The read-only sandbox blocks Vite's temporary config write, so `npm test` fails for
+  it; `npm run lint`, `node src/sim/cli.ts ...` and `npm run calibrate` work. Tell it which to run.
 - **Harmless noise:** rmcp errors about `http://127.0.0.1:8080/mcp` (an MCP server in the owner's Codex config that
   isn't running). Ignore them.
 - **Data leaves the machine.** Prompts and every file Astra reads go to OpenAI. The owner approved this for project

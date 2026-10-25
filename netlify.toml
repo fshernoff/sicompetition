@@ -1,0 +1,6 @@
+[build]
+command = "npm run build"
+publish = "dist"
+
+# A static page: no functions, no redirects, no headers that call out. Assets are relative (vite.config.ts base './')
+# so the same build works at the site root, on a deploy preview and when opened from a folder.

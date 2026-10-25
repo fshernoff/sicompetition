@@ -60,17 +60,20 @@ The tabular learner keys its table on a coarse observation. Bins:
 |---|---|---|
 | day | 0..4 | 0..4 |
 | block | 0 | 1..3 |
-| load | requestsToday bin: ≤10, 11–15, 16–20, >20 | floor ratio bin: ≤10, (10,15], (15,20], >20 |
+| load | requestsToday bin: ≤10, 11–15, 16–20, >20 | floor ratio (dogsOnFloor ÷ floorStaff) bin: ≤10, (10,15], (15,20], >20 |
 | crew | soloStreak bin: 0, 1, 2, ≥3 | floorStaff: 1, 2, 3 |
-| energy | (fixed 40, one bin) | <35, 35–70, >70 |
-| cleanliness | ≥40, <40 | ≥40, <40 |
-| fatigue | ≤70, >70 | ≤70, >70 |
+| energy | (not in the key) | <35, 35–70, >70 |
+| cleanliness | (not in the key) | ≥40, <40 |
 
-Cartesian capacity: 320 at drop-off + 2,160 at floor blocks ≈ 2,500; G2 measures how many are reached. Reputation,
-cash and requestsTomorrow are shown to students but are not in the key: inside the week reputation only sets requests,
-which the GM sees at the next drop-off; G2 may add a requests-projection bin if the learner needs it. A closed day's
-floor blocks are not decisions: the runner still asks the policy (the action has no effect) and the learner skips
-their updates.
+Cartesian capacity: 80 at drop-off + 1,080 at floor blocks + 1 for a closed day's floor blocks = 1,161. What is left
+out, and why: fatigue changes nothing the GM can act on inside a block (it only counts for KPI 5, and the day index
+predicts it under any fixed policy); cleanliness is a floor concern (cleaning is a floor action); reputation, cash and
+requestsTomorrow only set requests, which the GM sees at the next drop-off. A smaller key is what lets the rare state
+that matters most (Thursday drop-off with a streak of 3) be visited often enough to learn its 27 actions in the
+budget (D28). A closed day's floor blocks are one shared "closed" observation and are not decisions: the runner still
+asks the policy (the action has no effect) and the learner folds them into the preceding drop-off transition. G2
+tried carrying the streak bins through the floor states and it made the learner worse (1 seed in 20): the limit was
+not aliasing but noise in the values, fixed by the step size (D32). This key stands.
 
 ## 4. Actions
 
@@ -229,7 +232,12 @@ Schema (`RewardSpec`, exported in every run's JSON):
 ```
 
 What each KPI buys when it is the only one on. These are outcome classes the readout can show and G2's tests
-check; the brief's one-line caricatures are the teacher's talking points, not test targets.
+check; the brief's one-line caricatures are the teacher's talking points, not test targets. An outcome class is read
+off a readout as: days every booking was accepted, days with one, two and three staffers on the floor, days closed,
+nap blocks, clean blocks, walk blocks bucketed few (under 8) / most (8+), and how many open days were charged at each
+rate (which days is not in the class; how many is).
+The Round 1 class is: 5 accepting days, exactly 4 solo days and 1 two-staffer day, 0 closed, 0 nap, 0 clean, premium
+on every open day (walks are free either way: with one staffer they fall back to free play).
 
 | Only KPI on | Outcome class on the readout |
 |---|---|
@@ -307,8 +315,23 @@ then clean.
 ## 13. The learner's objective (G2 builds it; the bible fixes what it optimises)
 
 The return is the displayed weekly total of the bonus plan: discount γ = 1, terminal value 0, the sum of the 20 step
-rewards of section 7. Evaluation is greedy (ε = 0) on the world stream of a fixed seed. A policy is **stable** when
-the greedy readout's outcome class (section 7) has not changed over the last 5 evaluations. The pilot definition of
-done is measured as: 20 training seeds, each trained within the time budget on the target Chromebook, each evaluated
-greedily; all 20 show the Round 1 outcome class. Learning rate, exploration schedule, episode budget, table
-initialisation and tie-breaking are G2's plan, reported with the numbers that met this.
+rewards of section 7. A closed day's three floor blocks are not decisions: their rewards are folded into the
+preceding drop-off transition, whose target is the folded reward plus the value of the next decision state.
+
+**Evaluation** is greedy (ε = 0) on one fixed week: both streams of `episodeSeeds(seed, 1 000 000)`, reset for every
+evaluation, so two evaluations of an unchanged table are identical. Extra checks use `episodeSeeds(seed, 1 000 000 +
+k)` for k = 1..5 (and k up to 100 for held-out measurement). Training episode i uses `episodeSeeds(seed, i)`.
+
+**Stable** means: exploration has reached its floor and the outcome key (section 7) of the last 5 evaluations, all
+taken at the floor, is identical. Stable is what the page shows; it says the GM has stopped changing its mind, not
+that it is right.
+
+**Step size.** The n-th update of a table cell uses max(α_min, 1/n): a sample average while the cell is new, then a
+small constant weight on the latest week (D32). On the board: "the GM averages what it has seen for each choice,
+and keeps paying a little attention to the latest week".
+
+**Target met** means: stable, and the greedy week is in the plan's target class (Round 1: the class above) on the
+fixed week and on weeks 1..5. The pilot definition of done is measured as: 20 training seeds (1..20), each trained
+within the time budget on the target Chromebook (60 s from the Train click, rendering included), each target met.
+Learning rate, exploration schedule, episode budget, table initialisation and tie-breaking are G2's plan, reported
+with the numbers that met this.

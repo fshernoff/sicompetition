@@ -34,7 +34,8 @@ npm run build      # tsc --noEmit && vite build  -> dist/ (relative asset paths)
 npm test           # vitest run (tests/**/*.test.ts)
 npm run lint       # eslint . && tsc --noEmit
 npm run sim -- --episodes 200 --seed 1 --reward round1 --policy random   # headless week report as JSON
-npm run calibrate -- --episodes 100 --seed 1   # the Round 1 calibration ranking and margins (plan acceptance 3)
+npm run calibrate -- --episodes 100 --seed 1   # the Round 1 calibration ranking and margins (G1 acceptance 3)
+npm run pilot -- --seeds 20 --budget 60000     # the 20-seed learner check (G2 acceptance 2); ?pilot=20 on the page is the Chromebook version
 npm run e2e        # the one Playwright smoke against the built page
 ```
 

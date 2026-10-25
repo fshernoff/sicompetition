@@ -28,6 +28,8 @@ node src/sim/cli.ts --reward my-plan.json --policy reckless
 
 To pipe the JSON into a file, call node directly or add `--silent` (`npm run sim --silent -- ...`), because npm prints its own banner first. `npm run calibrate` prints the ranking of 385 fixed policies under the Round 1 plan, with the profit margin between the reckless week and each one-decision alternative (a nap block, a clean block, a cheaper day, fewer bookings, more staff).
 
+To see the learner, run `npm run dev`, open the page, type a seed (any whole number) and press Train. This is Round 1: the GM is paid on profit only. The curve shows the GM's weekly reward as it trains, and the sentence under it describes the week it settled on (how many days it took every booking, how often it ran one staffer, how often it chose nap, dogs per staffer, incidents). The same seed gives the same result. To time it on a school Chromebook, open the page with `?pilot=20` (on the dev server or the built page): it trains seeds 1 to 20 in turn and prints a table. The same check runs without a browser with `npm run pilot -- --seeds 20 --budget 60000`.
+
 It prints one JSON document: the full world config, the bonus plan it used, the seed, the episode count and the policy name, a summary across all episodes (the mean of every weekly total, and the spread of profit, incidents and reward), and the weekly P&L and operations report of the last episode, day by day. The same seed always gives the same output. `--help` lists every option.
 
 ## Disclosure of SI use

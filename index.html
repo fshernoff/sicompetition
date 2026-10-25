@@ -4,13 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reward the Pack</title>
-    <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
     <main id="app">
       <h1>Reward the Pack</h1>
       <p>Good Dog Daycare. You own it. The GM runs it. You write the bonus plan.</p>
-      <canvas id="yard" width="960" height="540" aria-label="The daycare yard"></canvas>
+      <p class="round">
+        <strong>Round 1.</strong> The GM is paid 10 points per $100 of profit, and nothing else. Watch it learn a week
+        of running the daycare, then read what it chose to do. (Writing your own bonus plan comes in a later round.)
+      </p>
+
+      <div class="controls">
+        <label for="seed">Seed</label>
+        <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
+        <button id="train" type="button">Train the GM</button>
+        <label class="fast"><input id="fast" type="checkbox" /> Fast (no pacing)</label>
+      </div>
+      <p id="status">Press Train the GM to start.</p>
+
+      <canvas id="curve" width="1100" height="619" aria-label="The training curve: bonus points per week as the GM trains"></canvas>
+
+      <p class="readout-label">The GM's test week</p>
+      <p id="readout"></p>
+
+      <section id="pilot"></section>
     </main>
     <script type="module" src="./src/main.ts"></script>
   </body>

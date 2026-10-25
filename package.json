@@ -17,7 +17,8 @@
     "lint": "eslint . && tsc --noEmit",
     "sim": "node src/sim/cli.ts",
     "e2e": "playwright test",
-    "calibrate": "node src/sim/calibrate.ts"
+    "calibrate": "node src/sim/calibrate.ts",
+    "pilot": "node src/learn/pilot.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

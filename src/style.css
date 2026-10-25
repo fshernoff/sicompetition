@@ -1,12 +1,61 @@
 :root {
   color-scheme: light;
   --ink: #1f2a1f;
+  --muted: #55604f;
   --paper: #fbf8f1;
   --grass: #cfe8b9;
+  --accent: #1d5fbf;
+  /* The training curve. Dark ink on a pale chart, one blue for the average, one orange for the test weeks. */
+  --chart-paper: #ffffff;
+  --chart-grid: rgba(31, 42, 31, 0.14);
+  --chart-week: rgba(31, 42, 31, 0.22);
+  --chart-average: #1d5fbf;
+  --chart-test: #d9480f;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 18px;
+  line-height: 1.45;
   color: var(--ink);
   background: var(--paper);
 }
 body { margin: 0; }
 #app { max-width: 1100px; margin: 0 auto; padding: 16px; }
-#yard { width: 100%; height: auto; background: var(--grass); border-radius: 8px; display: block; }
+h1 { margin: 0.2em 0 0.3em; }
+.round { color: var(--muted); max-width: 60em; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0 8px; }
+.controls label { font-weight: 600; }
+.controls label.fast { font-weight: 400; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+#fast { width: 1.1em; height: 1.1em; margin: 0; }
+#seed { font: inherit; width: 9em; padding: 6px 8px; border: 1px solid var(--muted); border-radius: 6px; }
+#train {
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 18px;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#train:disabled { opacity: 0.55; cursor: progress; }
+#status { min-height: 1.45em; margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
+
+#curve {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: var(--chart-paper);
+  border: 1px solid var(--chart-grid);
+  border-radius: 8px;
+}
+
+.readout-label { margin: 16px 0 4px; font-size: 0.85em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+#readout { margin: 0; min-height: 2.9em; font-size: 1.15em; font-weight: 600; }
+
+#pilot:empty { display: none; }
+#pilot h2 { font-size: 1.1em; margin: 24px 0 8px; }
+#pilot table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+#pilot th, #pilot td { padding: 4px 14px; border-bottom: 1px solid var(--chart-grid); text-align: right; }
+#pilot th { font-weight: 600; }
+.pilot-summary { font-weight: 600; }

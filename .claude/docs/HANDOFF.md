@@ -4,47 +4,44 @@ Status only. Updated at the end of every thread; read first by the next one.
 
 ## Where things stand (2026-10-25, end of session 1)
 
-- `main`: scaffold (`ce78079`) and G0 (`6740b05`). Branch `g1-simulator`: G1, one commit, not pushed, not merged.
-- G1 is built and green: `npm test` 19 files / 123 tests, `npm run lint`, `npm run build`, `npm run e2e` all pass
-  in this session. The numbers are in `.claude/docs/plans/g1-simulator.md` (Result) and the Astra triage in
-  `.claude/docs/reviews/g1-astra-triage.md`.
-- Astra tooling works: `Tools/Agent/astra.sh -e low "reply with the word pong"` → `pong` in 6.7 s; a `-e high`
-  review takes 5 to 10 minutes, run it in the background.
+- `main`: scaffold (`ce78079`) and G0 (`6740b05`). Branch `g1-simulator`: G1 (`c4f255c`). Branch `g2-learner`,
+  built on `g1-simulator`: G2, one commit. Nothing pushed, nothing merged.
+- G1 and G2 are green: `npm test` 24 files / 168 tests, `npm run lint`, `npm run build`, `npm run e2e` (2 tests,
+  23 s), `npm run pilot` 20 of 20. The numbers are in the plans' Result sections and the Astra triages in
+  `.claude/docs/reviews/`.
+- Astra tooling works (`Tools/Agent/astra.sh`); a `-e high` review takes 5 to 15 minutes, run it in the background.
+  Astra cannot run vitest in its sandbox (CODEX.md).
 
-## The owner gate for G1 (Fred)
+## The owner gate for G1 and G2 (Fred)
 
 ```
-git checkout g1-simulator
+git checkout g2-learner        # contains G1's commit
 npm install
 npm test
-npm run sim -- --episodes 200 --seed 1 --reward round1 --policy recklessCovered
-npm run calibrate
+npm run pilot -- --seeds 20 --budget 60000
+npm run dev                    # press Train (about 25 s paced), try two more seeds, tick Fast and train again
 ```
 
-Compare with the plan's Result table. Then merge `g1-simulator` into `main` if satisfied.
+Then, on a Chromebook, open the built page (or the dev server) with `?pilot=20` and read the table: every seed
+should say stable yes, target yes, under 60 s. That is the pilot's definition of done measured (BRIEF section 13).
+Merge `g2-learner` into `main` if satisfied (it brings G1 with it).
 
-## Decisions the owner should look at before G2 (all in docs/DECISIONS.md)
+## Decisions the owner should look at (all in docs/DECISIONS.md)
 
-- **D8** KPI 1 is "Profit today", not the brief's "Revenue today": a revenue-only GM is indifferent to staffing, so
-  the one-staffer behaviour cannot come from it. The plain-words plan reads "10 points per $100 of profit".
-- **D9** The drop-off action is the day plan (27 choices); the drop-off block's activity is fixed to free play.
-- **D15, D17, D18, D19, D23, D24, D25** Numbers that moved after Astra's reviews and the calibration: wages $300,
-  a $250 supplies cost per clean, reputation slope 0.05, add-on $10, incident slope 0.08 above the legal line, rate
-  effects +3/−1, and the call-out rule (after three solo days, scheduling the staffer alone closes the day;
-  scheduling help brings everyone in). Each has a one-line reason.
-- **D26, D27** Presets carry the suggested weights for KPIs that are off; the pickup reputation on the readout is
-  the end-of-day value, sick dogs included.
-- The reckless week has about 8 incidents, not the brief's illustrative 11: by Friday the sick dogs have shrunk the
-  roster toward the legal line. The readout will show that shrinkage, which is its own lesson.
-- The best fixed policy puts the help day on Tuesday, not Thursday, and walks on the help day; either way it is
-  "one staffer on four days, no nap, no clean".
+- **D8, D9** (G0): Profit, not Revenue, as KPI 1; the drop-off action is the day plan.
+- **D15 to D27** (G1): the economics that moved after Astra's reviews and the calibration.
+- **D28 to D33** (G2): the smaller observation key; stable versus target met; the fixed evaluation week; the
+  browser pilot mode; the visit-count step size (the one that made 20 of 20 possible); pacing at 1,200 weeks a
+  second with a Fast checkbox.
+- Seeds beyond the pilot's twenty miss about one in thirty by adding a second help day (G2 Result). If that bothers
+  the lesson, the lever is more training (`maxEpisodes`) or a longer stability window, both in `DEFAULT_LEARNER`.
 
-## Next thread does first (G2: the learner and the training curve)
+## Next thread does first (G3: the bonus plan editor)
 
-1. Read `.claude/docs/ROADMAP.md`, `docs/BRIEF.md` sections 3.1, 7 and 13, and the G1 plan's Result.
-2. Write `.claude/docs/plans/g2-learner.md`: observation coarsening (3.1), tabular Q-learning with γ = 1 (section 13),
-   a training loop with a wall-clock budget, the training curve on canvas, and the pilot measurement (20 seeds ×
-   greedy evaluation, all in the Round 1 outcome class, under 60 s on the target Chromebook). Astra reviews it.
-3. Seams: `src/learn/` types and failing tests, including one that asserts the greedy policy after training on seed
-   1 lands in the Round 1 outcome class.
-4. The learner must never import a world rule: it sees `State`, `legalActions`, `step` and `rewardFor` only.
+1. Read `.claude/docs/ROADMAP.md`, `docs/BRIEF.md` sections 7 and 8, and the G2 plan's Result.
+2. Write `.claude/docs/plans/g3-editor.md`: six KPIs with toggles and sliders −10..+10, the plan in words (the
+   template in section 7), the prediction box, the Round 2 and Round 3 limits (maxActive), and how the page passes
+   the spec to the Trainer; the Round 1 preset stays the default. Astra reviews it.
+3. Seams and failing tests first: the plain-words renderer is a pure function over a RewardSpec; the editor's
+   state is a RewardSpec; the Trainer already takes any spec.
+4. Keep the words: GM, bonus plan, readout; the KPI names and units are in section 7.

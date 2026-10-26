@@ -1,6 +1,6 @@
 // The bonus plan on the page: the catalogue of measures (BRIEF section 7), the plan in plain words (section 7's
-// template), and the editor's rules (the round limit of section 8, the clamping of weights). Pure functions over a
-// RewardSpec: nothing here touches the DOM, and nothing mutates its input. WP1 (Sonnet).
+// template, in dollars since D45), and the editor's rules (the round limit of section 8, the clamping of weights).
+// Pure functions over a RewardSpec: nothing here touches the DOM, and nothing mutates its input. WP1 (Sonnet).
 import type { RewardPreset } from './config.ts';
 import { KPI_KEYS, KPI_UNITS } from './types.ts';
 import type { KpiKey, RewardSpec, WorldConfig } from './types.ts';
@@ -35,7 +35,7 @@ export function kpiInfo(world: WorldConfig): readonly KpiInfo[] {
   return KPI_KEYS.map((key) => ({ key, name: names[key], per: PER[key] }));
 }
 
-/** What follows "earns N points" or "loses N points" for each measure. */
+/** What follows "earns $N" or "loses $N" for each measure. */
 function tail(key: KpiKey, world: WorldConfig): string {
   switch (key) {
     case 'profit':
@@ -56,14 +56,15 @@ function tail(key: KpiKey, world: WorldConfig): string {
 /**
  * The plan in plain words. The measures that are on, in section 7 order, one clause each, after "Each day, the GM ":
  * one clause ends with a period; two are joined with " and "; three or more with ", " and ", and " before the last.
- * A positive weight reads "earns N points", a negative one "loses N points" (the absolute value); "1 point" for one;
- * a weight of 0 while on reads "earns 0 points". Off measures are never mentioned, whatever their weight.
+ * The weight is dollars of bonus per unit (D45): a positive weight reads "earns $N", a negative one "loses $N" (the
+ * absolute value), so "earns $1" for one and "earns $0 per incident" for a weight of 0 while on. Off measures are never
+ * mentioned, whatever their weight.
  */
 export function describeBonusPlan(spec: RewardSpec, world: WorldConfig): string {
   const clauses = KPI_KEYS.filter((k) => spec.kpis[k].on).map((k) => {
     const w = spec.kpis[k].weight;
     const n = Math.abs(w);
-    return `${w < 0 ? 'loses' : 'earns'} ${n} ${n === 1 ? 'point' : 'points'} ${tail(k, world)}`;
+    return `${w < 0 ? 'loses' : 'earns'} $${n} ${tail(k, world)}`;
   });
   if (clauses.length === 0) return 'The GM is paid nothing: no measure is on.';
   const last = clauses[clauses.length - 1] as string;
@@ -89,6 +90,13 @@ export function signedNote(spec: RewardSpec): string | null {
   if (profit) return `Profit counts both ways: a ${unit} loss counts the opposite of a ${unit} gain.`;
   if (rep) return 'Reputation counts both ways: a one-point drop counts the opposite of a one-point rise.';
   return null;
+}
+
+/** The weight as the page shows it, in dollars (D45): "+$10", "−$5" (the typographic minus, U+2212), "$0". */
+export function signedDollars(weight: number): string {
+  if (weight > 0) return `+$${weight}`;
+  if (weight < 0) return `−$${-weight}`;
+  return '$0';
 }
 
 /** How many measures are on. */

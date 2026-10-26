@@ -44,7 +44,7 @@ test('the page loads offline-clean', async ({ page }) => {
   await expect(page.locator('canvas#curve')).toBeVisible();
   await expect(page.locator('canvas#replay')).toBeVisible();
   await expect(page.locator('#replay')).toHaveAttribute('data-week', 'none');
-  await expect(page.locator('#curve-caption')).toContainText('Watch the GM get better at earning its bonus.');
+  await expect(page.locator('#curve-caption')).toContainText("You wrote the bonus plan. Watch the GM's bonus climb as it learns how to earn it.");
   await expect(page.locator('#report')).toBeHidden();
   await expect(page.locator('#report-table tr')).toHaveCount(0);
   await expect(page.locator('#replay-again')).toBeHidden();
@@ -107,10 +107,10 @@ test('Round 1 trains to the reckless week', async ({ page }) => {
   await expect(page.locator('#status')).toContainText('has settled', { timeout: 120_000 });
   const samples = await statusLog(page);
   expect(samples.length).toBeGreaterThan(50); // about ten writes a second for 20 s
-  expect(samples[0]).toBe('Write your prediction, then press Train the GM.'); // before the click
+  expect(samples[0]).toBe('Write your prediction, then put the GM to work.'); // before the click
   for (const text of samples.slice(1)) {
-    expect(text).toMatch(/^The GM (has practised [\d,]+ weeks? so far and is still changing its mind|practised [\d,]+ weeks and has settled on how it runs the week)\.$/);
-    for (const word of ['ε', 'evaluation', 'target met', 'Episodes', 'stable', 'paced', 'seed']) expect(text).not.toContain(word);
+    expect(text).toMatch(/^(The GM is [\d,]+ weeks? into the job and still changing how it runs the place|After [\d,]+ weeks on the job, the GM has settled into its routine)\.$/);
+    for (const word of ['ε', 'evaluation', 'target met', 'Episodes', 'stable', 'paced', 'seed', 'practis', 'point', 'train']) expect(text).not.toContain(word);
   }
   const ms = Date.now() - started;
   await expect(page.locator('#train')).toBeEnabled();
@@ -123,8 +123,8 @@ test('Round 1 trains to the reckless week', async ({ page }) => {
   expect(readout).toMatch(/chose nap 0 times/);
   // The status line in the student's words (D38): weeks practised and settled, nothing of the learner's.
   const status = (await page.locator('#status').textContent()) ?? '';
-  expect(status).toMatch(/^The GM practised [\d,]+ weeks and has settled on how it runs the week\.$/);
-  for (const word of ['ε', 'evaluation', 'target met', 'Episodes', 'stable', 'paced']) expect(status).not.toContain(word);
+  expect(status).toMatch(/^After [\d,]+ weeks on the job, the GM has settled into its routine\.$/);
+  for (const word of ['ε', 'evaluation', 'target met', 'Episodes', 'stable', 'paced', 'practis', 'point']) expect(status).not.toContain(word);
   // The finished layout: the status, the curve and the replay are still inside the viewport, the table below them.
   const after = await geometry();
   console.log(`[e2e] after the run: ${JSON.stringify(after)}`);
@@ -160,7 +160,7 @@ async function setSlider(page: Page, selector: string, value: string): Promise<v
   }, value);
 }
 
-const ROUND1_WORDS = 'Each day, the GM earns 10 points per $100 of profit.';
+const ROUND1_WORDS = 'Each day, the GM earns $10 per $100 of profit.';
 
 test('Round 1 locks the plan; Round 2 unlocks it and reloads the preset', async ({ page }) => {
   await page.goto('/');
@@ -170,11 +170,11 @@ test('Round 1 locks the plan; Round 2 unlocks it and reloads the preset', async 
   await expect(page.locator('#kpi-profit-on')).toBeChecked();
   await expect(page.locator('#kpi-profit-on')).toBeDisabled();
   await expect(page.locator('#kpi-profit-weight')).toBeDisabled();
-  await expect(page.locator('#kpi-profit-value')).toHaveText('+10');
+  await expect(page.locator('#kpi-profit-value')).toHaveText('+$10');
   await expect(page.locator('#kpi-incidents-on')).not.toBeChecked();
   await expect(page.locator('#kpi-incidents-on')).toBeDisabled();
   await expect(page.locator('#kpi-incidents-weight')).toBeDisabled();
-  await expect(page.locator('#kpi-incidents-value')).toHaveText('−5');
+  await expect(page.locator('#kpi-incidents-value')).toHaveText('−$5');
   await page.selectOption('#round', 'round2');
   await expect(page.locator('#limit')).toContainText('1 of 3 measures on.');
   await expect(page.locator('#kpi-profit-on')).toBeEnabled();
@@ -182,8 +182,8 @@ test('Round 1 locks the plan; Round 2 unlocks it and reloads the preset', async 
   await expect(page.locator('#kpi-incidents-on')).toBeEnabled();
   await expect(page.locator('#kpi-incidents-weight')).toBeDisabled(); // off: its slider waits for the toggle
   await setSlider(page, '#kpi-profit-weight', '3');
-  await expect(page.locator('#kpi-profit-value')).toHaveText('+3');
-  await expect(page.locator('#plan-words')).toHaveText('Each day, the GM earns 3 points per $100 of profit.');
+  await expect(page.locator('#kpi-profit-value')).toHaveText('+$3');
+  await expect(page.locator('#plan-words')).toHaveText('Each day, the GM earns $3 per $100 of profit.');
   await page.selectOption('#round', 'round1');
   await expect(page.locator('#plan-words')).toHaveText(ROUND1_WORDS); // the preset reloads
   await expect(page.locator('#kpi-profit-weight')).toBeDisabled();
@@ -201,7 +201,7 @@ test('Round 2 refuses a fourth measure', async ({ page }) => {
   await expect(page.locator('#kpi-dogsServed-on')).toBeDisabled();
   await expect(page.locator('#kpi-reputation-on')).toBeEnabled(); // what is on can always go off
   await expect(page.locator('#plan-words')).toHaveText(
-    'Each day, the GM earns 10 points per $100 of profit, loses 5 points per incident, and earns 5 points per point of reputation gained.',
+    'Each day, the GM earns $10 per $100 of profit, loses $5 per incident, and earns $5 per point of reputation gained.',
   );
   await expect(page.locator('#plan-note')).toHaveText(
     'Profit and reputation count both ways: a $100 loss or a one-point drop counts the opposite of a $100 gain or a one-point rise.',
@@ -210,7 +210,7 @@ test('Round 2 refuses a fourth measure', async ({ page }) => {
   await expect(page.locator('#limit')).toHaveText('2 of 3 measures on.');
   await expect(page.locator('#kpi-fatigue-on')).toBeEnabled();
   await expect(page.locator('#plan-words')).toHaveText(
-    'Each day, the GM earns 10 points per $100 of profit and earns 5 points per point of reputation gained.',
+    'Each day, the GM earns $10 per $100 of profit and earns $5 per point of reputation gained.',
   );
 });
 
@@ -224,8 +224,8 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await page.check('#kpi-incidents-on');
   await expect(page.locator('#kpi-incidents-weight')).toBeEnabled();
   await setSlider(page, '#kpi-incidents-weight', '-7');
-  await expect(page.locator('#kpi-incidents-value')).toHaveText('−7');
-  const words = 'Each day, the GM earns 10 points per $100 of profit and loses 7 points per incident.';
+  await expect(page.locator('#kpi-incidents-value')).toHaveText('−$7');
+  const words = 'Each day, the GM earns $10 per $100 of profit and loses $7 per incident.';
   await expect(page.locator('#plan-words')).toHaveText(words);
   await expect(page.locator('#plan-note')).toHaveText('Profit counts both ways: a $100 loss counts the opposite of a $100 gain.');
   const prediction = 'Fewer dogs, fewer incidents, less profit.';
@@ -233,12 +233,12 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await page.check('#fast');
   await page.fill('#seed', '1');
   await page.click('#train');
-  await expect(page.locator('#train')).toHaveText('Train again', { timeout: 60_000 });
+  await expect(page.locator('#train')).toHaveText('Put the GM to work again', { timeout: 60_000 });
   await expect(page.locator('#train')).toBeEnabled();
   const status = (await page.locator('#status').textContent()) ?? '';
   expect(status).not.toContain('target met');
-  expect(status).toMatch(/has settled|still changing its mind/);
-  for (const word of ['ε', 'evaluation', 'Episodes', 'stable', 'paced']) expect(status).not.toContain(word);
+  expect(status).toMatch(/has settled into its routine|still changing how it runs the place/);
+  for (const word of ['ε', 'evaluation', 'Episodes', 'stable', 'paced', 'practis', 'point', 'train']) expect(status).not.toContain(word);
   await expect(page.locator('#prediction')).toBeEnabled();
   await expect(page.locator('#prediction')).toBeVisible();
   await expect(page.locator('#prediction')).toHaveValue(prediction);
@@ -259,7 +259,7 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await expect(page.locator('#readout')).toHaveText(expected);
   await expect(page.locator('#report')).toBeVisible();
   await expect(page.locator('#replay-again')).toBeVisible();
-  expect(status).toContain(`practised ${twinEnd.episodes.toLocaleString('en-US')} weeks`);
+  expect(status).toContain(`After ${twinEnd.episodes.toLocaleString('en-US')} weeks on the job`);
   console.log(`[e2e] edited plan: ${status} · ${expected}`);
   // A slider edit after a run clears that run's results, even while the final week is playing (D37; Astra, diff
   // review: the clear must cancel a live producer, not only an idle one).
@@ -282,10 +282,10 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await expect(page.locator('#replay-again')).toBeHidden();
   await expect(page.locator('#replay')).toHaveAttribute('data-week', 'none');
   expect(await drawnFraction(page, '#replay')).toBeLessThan(0.02); // the placeholder: one line of text, no yard
-  await expect(page.locator('#plan-words')).toHaveText('Each day, the GM earns 5 points per $100 of profit and loses 7 points per incident.');
+  await expect(page.locator('#plan-words')).toHaveText('Each day, the GM earns $5 per $100 of profit and loses $7 per incident.');
   // A second run, then a round change clears it and reloads the preset.
   await page.click('#train');
-  await expect(page.locator('#train')).toHaveText('Train again', { timeout: 60_000 });
+  await expect(page.locator('#train')).toHaveText('Put the GM to work again', { timeout: 60_000 });
   await expect(page.locator('#train')).toBeEnabled();
   await expect(page.locator('#readout')).toContainText(/The GM accepted every booking on \d of 5 days/);
   await page.selectOption('#round', 'round2');
@@ -301,16 +301,16 @@ test('a plan that does not settle ends at the episode limit, still changing its 
   await page.goto('/?round=3');
   await page.uncheck('#kpi-profit-on');
   await page.check('#kpi-incidents-on');
-  await expect(page.locator('#plan-words')).toHaveText('Each day, the GM loses 5 points per incident.');
+  await expect(page.locator('#plan-words')).toHaveText('Each day, the GM loses $5 per incident.');
   await expect(page.locator('#plan-note')).toHaveText('');
   await page.check('#fast');
   await page.fill('#seed', '1');
   await page.click('#train');
-  await expect(page.locator('#train')).toHaveText('Train again', { timeout: 60_000 });
+  await expect(page.locator('#train')).toHaveText('Put the GM to work again', { timeout: 60_000 });
   const status = (await page.locator('#status').textContent()) ?? '';
-  expect(status).toBe('The GM practised 150,000 weeks and is still changing its mind.');
+  expect(status).toBe('After 150,000 weeks on the job, the GM is still changing how it runs the place.');
   expect(status).not.toContain('settled');
-  await expect(page.locator('#readout-label')).toHaveText("The GM's test week (still changing its mind)");
+  await expect(page.locator('#readout-label')).toHaveText("A week the GM's way (not settled yet)");
   // Deterministic to the cap: the same plan and seed in node give the same sentence.
   const world = loadDefaultConfig();
   const incidentsOnly = toggleKpi(toggleKpi(loadPreset('round3').spec, 'profit', 6) as NonNullable<ReturnType<typeof toggleKpi>>, 'incidents', 6) as NonNullable<ReturnType<typeof toggleKpi>>;
@@ -319,7 +319,7 @@ test('a plan that does not settle ends at the episode limit, still changing its 
   expect(end.stable).toBe(false);
   expect(end.episodes).toBe(twin.config.maxEpisodes);
   await expect(page.locator('#readout')).toHaveText(describeWeek(twin.evaluate()));
-  expect(status).toContain(`practised ${end.episodes.toLocaleString('en-US')} weeks`);
+  expect(status).toContain(`After ${end.episodes.toLocaleString('en-US')} weeks on the job`);
   console.log(`[e2e] unsettled plan: ${status}`);
 });
 

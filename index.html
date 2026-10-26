@@ -26,7 +26,7 @@
 
       <div class="compare">
         <div class="compare-side">
-          <label class="compare-label" for="prediction">Your team's prediction (write it before you train)</label>
+          <label class="compare-label" for="prediction">Your team's prediction (write it before you put the GM to work)</label>
           <textarea
             id="prediction"
             rows="2"
@@ -34,7 +34,7 @@
           ></textarea>
         </div>
         <div class="compare-side">
-          <p class="compare-label readout-label" id="readout-label">The GM's test week</p>
+          <p class="compare-label readout-label" id="readout-label">A week the GM's way</p>
           <p id="readout" aria-live="polite"></p>
         </div>
       </div>
@@ -42,23 +42,23 @@
       <div class="controls">
         <label for="seed">Seed</label>
         <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
-        <button id="train" type="button">Train the GM</button>
+        <button id="train" type="button">Put the GM to work</button>
         <label class="fast"><input id="fast" type="checkbox" /> Fast (no pacing)</label>
       </div>
 
-      <section id="watch" aria-label="Watch the GM train">
-        <p id="status">Write your prediction, then press Train the GM.</p>
+      <section id="watch" aria-label="Watch the GM at work">
+        <p id="status">Write your prediction, then put the GM to work.</p>
         <div class="watch-row">
           <figure class="curve-figure">
-            <canvas id="curve" width="1100" height="619" aria-label="The training curve: bonus points per week as the GM practises"></canvas>
+            <canvas id="curve" width="1100" height="619" aria-label="The GM's weekly bonus as it learns the job"></canvas>
             <figcaption id="curve-caption">
-              Watch the GM get better at earning its bonus. The dots are its test weeks: how it would run the week right
-              now without trying anything new.
+              You wrote the bonus plan. Watch the GM's bonus climb as it learns how to earn it.
+              Each dot is a week run its current way, nothing new tried.
             </figcaption>
           </figure>
           <figure class="replay-figure">
-            <canvas id="replay" width="640" height="540" data-week="none" aria-label="The GM's test week, played block by block"></canvas>
-            <figcaption id="replay-caption">The GM's test week</figcaption>
+            <canvas id="replay" width="640" height="540" data-week="none" aria-label="A week the GM's way, played block by block"></canvas>
+            <figcaption id="replay-caption">A week the GM's way</figcaption>
             <button id="replay-again" type="button" hidden>Watch the week again</button>
           </figure>
         </div>

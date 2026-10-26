@@ -1,4 +1,5 @@
-// The training curve: one point per training week (episode), the moving average on top, the test weeks as marks.
+// The bonus curve: the GM's bonus for each week on the job (one point per training episode), the moving average on
+// top, and the weeks run its current way (the learner's greedy evaluations, nothing new tried) as marks.
 // A pure drawing function: it reads the curve by index, keeps nothing, and draws at most two points (the lowest and
 // the highest) per horizontal pixel, so a redraw costs the same at 40,000 episodes as at 4,000.
 import type { CurvePoint, EvalPoint } from '../learn/train.ts';
@@ -7,9 +8,9 @@ export interface CurveColors {
   background: string;
   ink: string; // axes, tick labels, legend text
   grid: string;
-  raw: string; // each training week, faint
+  raw: string; // each week on the job, faint
   average: string; // the moving average, bold
-  evaluation: string; // the test weeks
+  evaluation: string; // the weeks run the current way (the evaluations)
 }
 
 export interface CurveOptions {
@@ -24,19 +25,19 @@ const FONT_FAMILY = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 export interface CurveWords {
   xAxis: string;
   yAxis: string;
-  /** The legend's three lines: each practice week, the average, the test weeks. */
+  /** The legend's three lines: each week on the job, the average, the weeks run the current way. */
   legend: string[];
 }
 
 /**
- * The words on the chart, in the student's (D38): weeks of practice and test weeks, never episodes or exploring.
- * drawCurve uses them for the axis titles and the legend.
+ * The words on the chart, in the owner's (D38, D45): weeks on the job and the GM's bonus in dollars, never episodes,
+ * exploring, practice or points. drawCurve uses them for the axis titles and the legend.
  */
 export function curveWords(averageWindow: number): CurveWords {
   return {
-    xAxis: 'Weeks of practice',
-    yAxis: 'Bonus points per week',
-    legend: ['Each practice week', `Average of the last ${averageWindow} weeks`, 'Test week'],
+    xAxis: 'Weeks on the job',
+    yAxis: "The GM's bonus for the week ($)",
+    legend: ['Each week on the job', `Average of the last ${averageWindow} weeks`, 'A week run its current way'],
   };
 }
 
@@ -53,8 +54,25 @@ export function niceStep(span: number, ticks: number): number {
 const formatNumber = (v: number): string => Math.round(v).toLocaleString('en-US');
 
 /**
+ * A y tick in dollars (D45; the GM's bonus is money): whole dollars with en-US commas and a typographic minus
+ * ("$600", "$1,500", "−$200", "$0"); cents when the step itself has cents ("$0.20", "−$0.40", "$2.50"), which
+ * happens on a flat curve at zero (an all-off plan). The x ticks stay plain counts (formatNumber).
+ * The tick values are multiples of the step, so whole dollars are exact whenever the step is a whole number of
+ * dollars; any other step (0.2, 0.5, and the 2.5 niceStep gives a span of 10 to 12.5) labels every tick in cents, so
+ * "$2.50" never reads "$3".
+ */
+export function yTickLabel(value: number, step: number): string {
+  const cents = !Number.isInteger(step);
+  const r = cents ? Math.round(value * 100) / 100 : Math.round(value);
+  if (r === 0) return '$0';
+  const abs = Math.abs(r);
+  const body = cents ? abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : abs.toLocaleString('en-US');
+  return r < 0 ? `−$${body}` : `$${body}`;
+}
+
+/**
  * Draws the whole chart into `ctx`, whose canvas is `width` × `height` CSS pixels at `options.pixelRatio`.
- * x = episode (1-based), y = the week's total under the bonus plan.
+ * x = the week on the job (the episode, 1-based), y = the GM's bonus for that week under the plan, in dollars.
  */
 export function drawCurve(
   ctx: CanvasRenderingContext2D,
@@ -82,13 +100,13 @@ export function drawCurve(
   const plotW = Math.max(1, Math.floor(width - left - right));
   const plotH = Math.max(1, Math.floor(height - top - bottom));
 
-  // x range: 0 to a round number at or above the episodes trained.
+  // x range: 0 to a round number at or above the weeks on the job so far.
   const lastEpisode = n > 0 ? (curve[n - 1] as CurvePoint).episode : 0;
   const xSpan = Math.max(lastEpisode, options.minEpisodes);
   const xStep = niceStep(xSpan, 5);
   const xMax = Math.ceil(xSpan / xStep) * xStep;
 
-  // y range: every week and every test week fits, padded to round numbers.
+  // y range: every week and every week run the current way fits, padded to round numbers.
   let lo = Infinity;
   let hi = -Infinity;
   for (let i = 0; i < n; i++) {
@@ -105,7 +123,7 @@ export function drawCurve(
     lo = 0;
     hi = 600;
   }
-  if (lo > 0) lo = 0; // the zero line is always on the chart: below it the GM lost money
+  if (lo > 0) lo = 0; // the zero line is always on the chart: below it the GM's bonus was negative
   if (hi - lo < 1) hi = lo + 1;
   const yStep = niceStep(hi - lo, 5);
   const yMin = Math.floor(lo / yStep) * yStep;
@@ -125,7 +143,7 @@ export function drawCurve(
     const y = Math.round(yOf(v)) + 0.5;
     ctx.moveTo(left, y);
     ctx.lineTo(left + plotW, y);
-    ctx.fillText(formatNumber(v), left - fontPx * 0.5, y);
+    ctx.fillText(yTickLabel(v, yStep), left - fontPx * 0.5, y);
   }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -168,7 +186,7 @@ export function drawCurve(
     ctx.fillStyle = colors.ink;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('The curve appears here when the GM trains.', left + plotW / 2, top + plotH / 2);
+    ctx.fillText('The curve appears here once the GM is on the job.', left + plotW / 2, top + plotH / 2);
     return;
   }
 
@@ -178,7 +196,7 @@ export function drawCurve(
   ctx.rect(left, top, plotW, plotH);
   ctx.clip();
 
-  // Each training week, faint: one bar per pixel column from that column's lowest week to its highest.
+  // Each week on the job, faint: one bar per pixel column from that column's lowest week to its highest.
   ctx.fillStyle = colors.raw;
   let column = -1;
   let colMin = 0;
@@ -251,7 +269,7 @@ export function drawCurve(
   flushAverage();
   ctx.stroke();
 
-  // The test weeks: one mark per evaluation.
+  // The weeks run the current way: one mark per evaluation.
   const radius = Math.max(4, fontPx * 0.32);
   ctx.fillStyle = colors.evaluation;
   ctx.strokeStyle = colors.background;

@@ -48,11 +48,12 @@ npm run e2e        # the Playwright smoke against the built page (7 tests, about
 - The numbers in code come from `src/world/config.default.json`, which matches `docs/BRIEF.md` section 6. Change
   the bible first, then the JSON, then the test.
 - Words: GM, bonus plan, weekly P&L and operations report (readout), incident (an icon and a counter), crew, Good
-  Dog Daycare. Never "injury", never "reward function" on the page.
+  Dog Daycare. The GM's bonus is dollars, never points; the GM is put to work and is weeks into the job, never
+  trained or practising; a run shows a week the GM's way (D45). Never "injury", never "reward function" on the page.
 - No network at runtime, no analytics, no fonts or scripts from a CDN. `tests/scaffold.test.ts` and the Playwright
   smoke pin this.
 - Exports carry no student identifiers.
 - The student's screen carries business words only. ε, evaluation counts, "target met", the seed and the speed are
-  the teacher's (BRIEF sections 1 and 11, D38, D39); the status line says weeks practised and whether the GM has
-  settled or is still changing its mind.
+  the teacher's (BRIEF sections 1 and 11, D38, D39); the status line says weeks on the job and whether the GM has
+  settled into its routine or is still changing how it runs the place.
 - Numbers reported in HANDOFF or a plan result are from this session's runs, with the command that produced them.

@@ -2,10 +2,9 @@
 // the formats). `reportTable` is a pure function from a WeekReport, the plan and the config to rows; `renderReport`
 // puts the rows into a <table>. No DOM access at module top level: reportTable is tested under node.
 // Seam written by the main thread; WP2 (Sonnet) builds it.
-import { kpiInfo } from '../world/bonusPlan.ts';
+import { kpiInfo, signedDollars } from '../world/bonusPlan.ts';
 import { KPI_UNITS, RATES } from '../world/types.ts';
 import type { DayReport, FloorActivity, KpiKey, RewardSpec, WeekReport, WorldConfig } from '../world/types.ts';
-import { signedWeight } from './editor.ts';
 
 export interface ReportRow {
   label: string;
@@ -18,7 +17,7 @@ export interface ReportRow {
 }
 
 export interface ReportGroup {
-  title: string; // 'Operations' | 'Money ($)' | "The GM's bonus"
+  title: string; // 'Operations' | 'Money ($)' | "The GM's pay under your plan (the profit above is before this pay)"
   rows: ReportRow[];
 }
 
@@ -37,14 +36,17 @@ export function formatMoney(dollars: number): string {
 }
 
 /**
- * Bonus points: rounded to two decimals (Math.round(x × 100) ÷ 100; profit is whole dollars ÷ 100 × an integer
- * weight, so two decimals are exact), trailing zeros dropped, the sign always shown for a non-zero value, a
- * typographic minus: "+123.5", "+9.78", "+113", "−35", "0" (and "0" for anything that rounds to zero).
+ * The GM's bonus in dollars (D45): rounded to cents (Math.round(x × 100) ÷ 100; profit is whole dollars ÷ 100 × an
+ * integer weight, so cents are exact), the sign always shown for a non-zero value with a typographic minus, en-US
+ * commas, and cents only when there are cents: "+$123.50", "+$9.78", "+$113", "−$35", "+$1,234.50", "$0" (and "$0"
+ * for anything that rounds to zero).
  */
-export function formatPoints(points: number): string {
-  const r = Math.round(points * 100) / 100;
-  if (r === 0) return '0';
-  return r > 0 ? `+${r}` : `−${-r}`;
+export function formatBonus(dollars: number): string {
+  const r = Math.round(dollars * 100) / 100;
+  if (r === 0) return '$0';
+  const abs = Math.abs(r);
+  const body = Number.isInteger(abs) ? abs.toLocaleString('en-US') : abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return r > 0 ? `+$${body}` : `−$${body}`;
 }
 
 const ACTIVITY_WORDS: Record<FloorActivity, string> = {
@@ -118,17 +120,18 @@ function dayDelta(key: KpiKey, d: DayReport, i: number, report: WeekReport): num
  * Cleaning supplies; Profit (bold); Cash at close (cash.weekStart plus the profit so far, carried unchanged over a
  * closed day; week: the Friday figure, totals.cashEnd). All through formatMoney.
  *
- * The GM's bonus: one row per measure that is on, in KPI_KEYS order, labelled "<name>, <signed weight> <per>" with
- * the name and the per-hint of kpiInfo(world) and the weight signed as the editor shows it ("+10", "−5", "0"):
- * "Profit today ($), +10 per $100", "Incidents, −5 per incident", "Blocks over the legal ratio, −5 per block". The
- * day cells are the points that measure earned that day: weight × (the day's delta ÷ KPI_UNITS[key]), where the
+ * The GM's pay under your plan (the profit above is before this pay; the P&L does not deduct it): one row per
+ * measure that is on, in KPI_KEYS order, labelled "<name>, <dollar amount> <per>" with the name and the per-hint of
+ * kpiInfo(world) and the weight in dollars as the editor shows it (signedDollars: "+$10", "−$5", "$0"):
+ * "Profit today ($), +$10 per $100", "Incidents, −$5 per incident", "Blocks over the legal ratio, −$5 per block". The
+ * day cells are the dollars that measure earned that day: weight × (the day's delta ÷ KPI_UNITS[key]), where the
  * day's deltas are DayReport.profit, accepted, incidents, blocksFatigueOver70, blocksOverRatio, and for reputation
  * the change since the previous pickup (reputationAtPickup[d] − reputationAtPickup[d − 1], Monday against
  * totals.reputationStart; a closed day's delta is its closure hit). The week cell is weight × totals.kpi[key] ÷
- * unit. Last, "Bonus points this week" (bold): the day cells sum the measures' day cells; the week cell is
+ * unit. Last, "Bonus this week ($)" (bold): the day cells sum the measures' day cells; the week cell is
  * totals.reward (authoritative; it equals the sum when `spec` is the plan the week was run under). A plan with
- * nothing on has the one row "No measure is on: the GM is paid nothing." with "0" in every cell. All through
- * formatPoints.
+ * nothing on has the one row "No measure is on: the GM is paid nothing." with "$0" in every cell. All through
+ * formatBonus ("+$113", "+$97.80", "−$35", "$0").
  *
  * The 15, the 70, the rates' prices and the $2,000 are world.bookings.legalRatio, world.fatigue.kpiThreshold,
  * world.rates and world.cash.weekStart. The rate words are low, standard, premium; the activity words free play,
@@ -220,31 +223,31 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
     { label: 'Cash at close', days: cashCells, week: formatMoney(t.cashEnd) },
   ];
 
-  // The bonus: one row per measure that is on, each day's points, then the total.
+  // The GM's pay: one row per measure that is on, each day's dollars, then the total.
   const bonusRows: ReportRow[] = [];
   const dayTotals = days.map(() => 0);
   for (const info of kpiInfo(world)) {
     const setting = spec.kpis[info.key];
     if (!setting.on) continue;
     const unit = KPI_UNITS[info.key];
-    const points = days.map((d, i) => (setting.weight * dayDelta(info.key, d, i, report)) / unit);
-    points.forEach((p, i) => {
+    const dollars = days.map((d, i) => (setting.weight * dayDelta(info.key, d, i, report)) / unit);
+    dollars.forEach((p, i) => {
       dayTotals[i] = (dayTotals[i] ?? 0) + p;
     });
     bonusRows.push({
-      label: `${info.name}, ${signedWeight(setting.weight)} ${info.per}`,
-      days: points.map(formatPoints),
-      week: formatPoints((setting.weight * t.kpi[info.key]) / unit),
+      label: `${info.name}, ${signedDollars(setting.weight)} ${info.per}`,
+      days: dollars.map(formatBonus),
+      week: formatBonus((setting.weight * t.kpi[info.key]) / unit),
     });
   }
   if (bonusRows.length === 0) {
     bonusRows.push({
       label: 'No measure is on: the GM is paid nothing.',
-      days: days.map(() => '0'),
-      week: '0',
+      days: days.map(() => formatBonus(0)),
+      week: formatBonus(0),
     });
   } else {
-    bonusRows.push({ label: 'Bonus points this week', days: dayTotals.map(formatPoints), week: formatPoints(t.reward), emphasis: true });
+    bonusRows.push({ label: 'Bonus this week ($)', days: dayTotals.map(formatBonus), week: formatBonus(t.reward), emphasis: true });
   }
 
   return {
@@ -252,7 +255,7 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
     groups: [
       { title: 'Operations', rows: operations },
       { title: 'Money ($)', rows: moneyRows },
-      { title: "The GM's bonus", rows: bonusRows },
+      { title: "The GM's pay under your plan (the profit above is before this pay)", rows: bonusRows },
     ],
   };
 }

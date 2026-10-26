@@ -5,7 +5,7 @@
   --paper: #fbf8f1;
   --grass: #cfe8b9;
   --accent: #1d5fbf;
-  /* The training curve. Dark ink on a pale chart, one blue for the average, one orange for the test weeks. */
+  /* The bonus curve. Dark ink on a pale chart, one blue for the average, one orange for the weeks run the current way. */
   --chart-paper: #ffffff;
   --chart-grid: rgba(31, 42, 31, 0.14);
   --chart-week: rgba(31, 42, 31, 0.22);
@@ -29,7 +29,7 @@
 }
 body { margin: 0; }
 #app { max-width: 1100px; margin: 0 auto; padding: 12px 16px 16px; }
-/* Tight above the controls: on a 1366 × 768 Chromebook Train is on screen without scrolling (D42). */
+/* Tight above the controls: on a 1366 × 768 Chromebook the Put the GM to work button is on screen without scrolling (D42). */
 h1 { margin: 0 0 2px; line-height: 1.15; }
 .tagline { margin: 0 0 8px; }
 *, *::before, *::after { box-sizing: border-box; }
@@ -193,7 +193,7 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 }
 
 #readout { margin: 0; min-height: 2.9em; font-size: 1.15em; font-weight: 600; line-height: 1.35; }
-#readout:empty::before { content: 'The readout appears here after training.'; color: var(--muted); font-weight: 400; font-size: 0.87em; }
+#readout:empty::before { content: 'The readout appears here once the GM is on the job.'; color: var(--muted); font-weight: 400; font-size: 0.87em; }
 
 #pilot:empty { display: none; }
 #pilot h2 { font-size: 1.1em; margin: 24px 0 8px; }

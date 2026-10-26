@@ -1,10 +1,11 @@
 // The pilot mode, ?pilot=N: the Chromebook measurement of BRIEF section 13. Seeds 1..N train in turn with the same
-// frame loop and rendering as the Train button, each with its own 60 s budget, and each adds a row to a table.
+// frame loop and rendering as the Put the GM to work button, each with its own 60 s budget, and each adds a row to a
+// table.
 // The pilot is never paced: it measures the machine. It always trains the Round 1 plan, whatever ?round= says: it
 // loads Round 1 into the selector, the editor and the training spec, and keeps every control off for the whole run.
 // The replay plays during its runs like any other: the pilot measures the page as the class sees it.
 import { loadPreset, validateRewardSpec } from '../world/config.ts';
-import { BUDGET_MS, clearRun, runTraining, setControls, showError, showRound } from './app.ts';
+import { AGAIN, BUDGET_MS, clearRun, runTraining, setControls, showError, showRound } from './app.ts';
 import type { Page } from './app.ts';
 
 const MAX_PILOT_SEEDS = 200;
@@ -32,7 +33,7 @@ export async function runPilot(page: Page, n: number): Promise<void> {
     await pilotSeeds(page, n);
   } finally {
     setControls(page, true);
-    page.train.textContent = 'Train again';
+    page.train.textContent = AGAIN;
   }
 }
 

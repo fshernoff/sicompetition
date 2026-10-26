@@ -1,4 +1,4 @@
-// The bonus plan editor on the page: six rows (a toggle, the name, a slider −10..+10 step 1, the signed weight, the
+// The bonus plan editor on the page: six rows (a toggle, the name, a slider −10..+10 step 1, the dollar amount, the
 // unit hint), the limit line (#limit), the plan in words (#plan-words) and the signed-delta hint (#plan-note),
 // re-rendered on every input. DOM only: the rules are the pure functions of src/world/bonusPlan.ts. No DOM access at
 // module top level: roundFromSearch is tested under node. WP2 (Opus).
@@ -6,7 +6,7 @@
 // How it works: the rows are built once; the plan (a RewardSpec) is the editor's only state besides the preset and
 // the enabled flag. Every input goes through a pure rule (toggleKpi, setWeight), replaces the plan, and render()
 // rewrites every row, the limit line, the words and the note from the plan, so the page never drifts from it.
-import { activeCount, describeBonusPlan, kpiInfo, planLocked, setWeight, signedNote, toggleKpi } from '../world/bonusPlan.ts';
+import { activeCount, describeBonusPlan, kpiInfo, planLocked, setWeight, signedDollars, signedNote, toggleKpi } from '../world/bonusPlan.ts';
 import type { PresetName, RewardPreset } from '../world/config.ts';
 import type { KpiKey, RewardSpec, WorldConfig } from '../world/types.ts';
 
@@ -18,7 +18,7 @@ export interface Editor {
   /** Resets the rows to the preset (Round 2 and 3 start as Round 1, section 8). Fires onChange. */
   load(preset: RewardPreset): void;
   /**
-   * False while training and for the whole pilot: every toggle and slider disabled. True restores the round's own
+   * False during a run and for the whole pilot: every toggle and slider disabled. True restores the round's own
    * locks (planLocked, the limit, off measures' sliders).
    */
   setEnabled(enabled: boolean): void;
@@ -39,13 +39,6 @@ const ROUNDS: Readonly<Record<string, PresetName>> = {
 export function roundFromSearch(search: string): PresetName {
   const value = new URLSearchParams(search).get('round');
   return (value !== null && Object.hasOwn(ROUNDS, value) ? ROUNDS[value] : undefined) ?? 'round1';
-}
-
-/** The weight as the page shows it: "+10", "−5" (the typographic minus, U+2212), "0". */
-export function signedWeight(weight: number): string {
-  if (weight > 0) return `+${weight}`;
-  if (weight < 0) return `−${-weight}`;
-  return '0';
 }
 
 interface Row {
@@ -71,10 +64,10 @@ function roundName(preset: RewardPreset): string {
 
 /**
  * Builds the editor inside `container` (#editor) for `preset` and returns its handle. Ids: #kpi-<key>-on (checkbox),
- * #kpi-<key>-weight (range −10..10 step 1), #kpi-<key>-value (the signed weight: "+10", "−5", "0"), #limit,
+ * #kpi-<key>-weight (range −10..10 step 1), #kpi-<key>-value (the dollar amount: "+$10", "−$5", "$0"), #limit,
  * #plan-words, #plan-note. An off measure's slider is disabled and its row dimmed; a locked toggle is disabled; a
  * locked plan (Round 1) has every toggle and slider disabled and #limit reads "Round 1: the plan is set. Predict
- * what the GM will do, then train."; otherwise #limit reads "N of M measures on." with " Turn one off to turn
+ * what the GM will do, then put it to work."; otherwise #limit reads "N of M measures on." with " Turn one off to turn
  * another on." appended when the limit is reached and a measure is still off.
  */
 export function mountEditor(container: HTMLElement, world: WorldConfig, preset: RewardPreset): Editor {
@@ -98,7 +91,7 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
     slider.min = '-10';
     slider.max = '10';
     slider.step = '1';
-    slider.setAttribute('aria-label', `Weight for ${info.name}`);
+    slider.setAttribute('aria-label', `Bonus amount for ${info.name}`);
     const value = el('span', 'kpi-value');
     value.id = `kpi-${info.key}-value`;
     value.setAttribute('aria-hidden', 'true'); // the slider's own value is what a screen reader announces
@@ -135,12 +128,12 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
       r.toggle.disabled = !enabled || locked || (!setting.on && full);
       r.slider.value = String(setting.weight);
       r.slider.disabled = !enabled || locked || !setting.on;
-      r.value.textContent = signedWeight(setting.weight);
-      r.slider.setAttribute('aria-valuetext', signedWeight(setting.weight));
+      r.value.textContent = signedDollars(setting.weight);
+      r.slider.setAttribute('aria-valuetext', signedDollars(setting.weight));
       r.row.classList.toggle('off', !setting.on);
     }
     if (locked) {
-      limit.textContent = `${roundName(current)}: the plan is set. Predict what the GM will do, then train.`;
+      limit.textContent = `${roundName(current)}: the plan is set. Predict what the GM will do, then put it to work.`;
     } else {
       const stillOff = on < rows.length;
       limit.textContent = `${on} of ${current.maxActive} measures on.${full && stillOff ? ' Turn one off to turn another on.' : ''}`;

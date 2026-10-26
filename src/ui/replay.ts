@@ -271,7 +271,7 @@ export interface ReplayOptions {
 // classroom can read it, and shrinks when the HUD would not fit. Nothing is kept between calls.
 
 const FONT_FAMILY = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-const PLACEHOLDER = "The GM's week plays here while it trains.";
+const PLACEHOLDER = "The GM's week plays here once it is on the job.";
 /** The widest plan line, measured once per layout so the header does not jump from frame to frame. */
 const PLAN_TEMPLATE = '30 asked · 30 accepted, capped at the legal ratio · standard rate · crew 3 scheduled, 3 in';
 /** The widest HUD lines, for the same reason. */
@@ -436,7 +436,7 @@ function fitLayout(ctx: CanvasRenderingContext2D, width: number, height: number)
 
 /**
  * Draws one frame into `ctx` (a canvas of `width` × `height` CSS pixels at options.pixelRatio). With a null frame
- * it draws the placeholder "The GM's week plays here while it trains." Pure: reads the frame, keeps nothing. The
+ * it draws the placeholder "The GM's week plays here once it is on the job." Pure: reads the frame, keeps nothing. The
  * picture is the G4 plan's "The replay's picture": the header with the day, the block and the activity, the plan
  * line ("20 asked · 20 accepted · premium rate · crew 1 scheduled, 1 in"), the yard with floorDogs and floorStaff
  * inside the fence and the walking group on a path outside it, the HUD (dogs and crew, the gauge with its one mark

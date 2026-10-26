@@ -30,46 +30,46 @@ describe('kpiInfo', () => {
 
 describe('describeBonusPlan', () => {
   it('renders the Round 1 preset', () => {
-    expect(describeBonusPlan(loadPreset('round1').spec, config)).toBe('Each day, the GM earns 10 points per $100 of profit.');
+    expect(describeBonusPlan(loadPreset('round1').spec, config)).toBe('Each day, the GM earns $10 per $100 of profit.');
   });
 
   it('renders the template sentence of section 7 character for character', () => {
     expect(describeBonusPlan(spec({ profit: 10, incidents: -5, overRatio: -5 }), config)).toBe(
-      'Each day, the GM earns 10 points per $100 of profit, loses 5 points per incident, and loses 5 points for every block the floor runs over 15 dogs per staffer.',
+      'Each day, the GM earns $10 per $100 of profit, loses $5 per incident, and loses $5 for every block the floor runs over 15 dogs per staffer.',
     );
   });
 
   it('joins two clauses with "and"', () => {
     expect(describeBonusPlan(spec({ profit: 10, incidents: -7 }), config)).toBe(
-      'Each day, the GM earns 10 points per $100 of profit and loses 7 points per incident.',
+      'Each day, the GM earns $10 per $100 of profit and loses $7 per incident.',
     );
   });
 
   it('reads "loses" for a negative weight and "earns" for a positive one, in every measure', () => {
-    expect(describeBonusPlan(spec({ profit: -10 }), config)).toBe('Each day, the GM loses 10 points per $100 of profit.');
-    expect(describeBonusPlan(spec({ dogsServed: -5 }), config)).toBe('Each day, the GM loses 5 points per dog served.');
-    expect(describeBonusPlan(spec({ incidents: 5 }), config)).toBe('Each day, the GM earns 5 points per incident.');
-    expect(describeBonusPlan(spec({ reputation: 5 }), config)).toBe('Each day, the GM earns 5 points per point of reputation gained.');
-    expect(describeBonusPlan(spec({ fatigue: -5 }), config)).toBe("Each day, the GM loses 5 points for every block the crew's fatigue is above 70%.");
-    expect(describeBonusPlan(spec({ overRatio: 2 }), config)).toBe('Each day, the GM earns 2 points for every block the floor runs over 15 dogs per staffer.');
+    expect(describeBonusPlan(spec({ profit: -10 }), config)).toBe('Each day, the GM loses $10 per $100 of profit.');
+    expect(describeBonusPlan(spec({ dogsServed: -5 }), config)).toBe('Each day, the GM loses $5 per dog served.');
+    expect(describeBonusPlan(spec({ incidents: 5 }), config)).toBe('Each day, the GM earns $5 per incident.');
+    expect(describeBonusPlan(spec({ reputation: 5 }), config)).toBe('Each day, the GM earns $5 per point of reputation gained.');
+    expect(describeBonusPlan(spec({ fatigue: -5 }), config)).toBe("Each day, the GM loses $5 for every block the crew's fatigue is above 70%.");
+    expect(describeBonusPlan(spec({ overRatio: 2 }), config)).toBe('Each day, the GM earns $2 for every block the floor runs over 15 dogs per staffer.');
   });
 
   it('uses the singular for one point', () => {
     expect(describeBonusPlan(spec({ profit: 1, incidents: -1 }), config)).toBe(
-      'Each day, the GM earns 1 point per $100 of profit and loses 1 point per incident.',
+      'Each day, the GM earns $1 per $100 of profit and loses $1 per incident.',
     );
   });
 
   it('says so when a measure that is on counts for nothing', () => {
     expect(describeBonusPlan(spec({ profit: 10, incidents: 0 }), config)).toBe(
-      'Each day, the GM earns 10 points per $100 of profit and earns 0 points per incident.',
+      'Each day, the GM earns $10 per $100 of profit and earns $0 per incident.',
     );
   });
 
   it('renders every measure at +10 honestly, in section 7 order', () => {
     const all = spec({ profit: 10, dogsServed: 10, incidents: 10, reputation: 10, fatigue: 10, overRatio: 10 });
     expect(describeBonusPlan(all, config)).toBe(
-      "Each day, the GM earns 10 points per $100 of profit, earns 10 points per dog served, earns 10 points per incident, earns 10 points per point of reputation gained, earns 10 points for every block the crew's fatigue is above 70%, and earns 10 points for every block the floor runs over 15 dogs per staffer.",
+      "Each day, the GM earns $10 per $100 of profit, earns $10 per dog served, earns $10 per incident, earns $10 per point of reputation gained, earns $10 for every block the crew's fatigue is above 70%, and earns $10 for every block the floor runs over 15 dogs per staffer.",
     );
   });
 
@@ -78,7 +78,7 @@ describe('describeBonusPlan', () => {
     expect(describeBonusPlan(loadPreset('round1').spec, config)).not.toMatch(/incident|dog served|reputation|fatigue|staffer/);
     const weighted = spec({ profit: 10 });
     weighted.kpis.incidents = { on: false, weight: -10 };
-    expect(describeBonusPlan(weighted, config)).toBe('Each day, the GM earns 10 points per $100 of profit.');
+    expect(describeBonusPlan(weighted, config)).toBe('Each day, the GM earns $10 per $100 of profit.');
   });
 
   it('says the GM is paid nothing when no measure is on', () => {
@@ -91,7 +91,7 @@ describe('describeBonusPlan', () => {
       w.fatigue.kpiThreshold = 60;
     });
     expect(describeBonusPlan(spec({ overRatio: -4, fatigue: -3 }), c)).toBe(
-      "Each day, the GM loses 3 points for every block the crew's fatigue is above 60% and loses 4 points for every block the floor runs over 12 dogs per staffer.",
+      "Each day, the GM loses $3 for every block the crew's fatigue is above 60% and loses $4 for every block the floor runs over 12 dogs per staffer.",
     );
   });
 

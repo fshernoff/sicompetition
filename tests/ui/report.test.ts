@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, dayPlanPolicy, recklessCoveredPolicy, recklessPolicy, stationaryPolicy } from '../../src/sim/policies.ts';
-import { formatMoney, formatPoints, reportTable } from '../../src/ui/report.ts';
+import { formatBonus, formatMoney, reportTable } from '../../src/ui/report.ts';
 import type { ReportRow, ReportTable } from '../../src/ui/report.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { DayPlan } from '../../src/world/types.ts';
@@ -40,18 +40,20 @@ describe('formatMoney and formatPoints', () => {
     expect(formatMoney(-0.2)).toBe('$0');
   });
 
-  it('writes points with a sign and at most two decimals', () => {
-    expect(formatPoints(123.45)).toBe('+123.45');
-    expect(formatPoints(123.456)).toBe('+123.46');
-    expect(formatPoints(113)).toBe('+113');
-    expect(formatPoints(97.80000000000001)).toBe('+97.8');
-    expect(formatPoints(9.78)).toBe('+9.78');
-    expect(formatPoints(10.6)).toBe('+10.6');
-    expect(formatPoints(-35)).toBe('−35');
-    expect(formatPoints(0)).toBe('0');
-    expect(formatPoints(0.004)).toBe('0');
-    expect(formatPoints(-0.004)).toBe('0');
-    expect(formatPoints(4881 / 10)).toBe('+488.1');
+  it('writes the bonus as signed dollars, with cents only when there are cents (D45)', () => {
+    expect(formatBonus(123.45)).toBe('+$123.45');
+    expect(formatBonus(123.456)).toBe('+$123.46');
+    expect(formatBonus(113)).toBe('+$113');
+    expect(formatBonus(97.80000000000001)).toBe('+$97.80');
+    expect(formatBonus(9.78)).toBe('+$9.78');
+    expect(formatBonus(10.6)).toBe('+$10.60');
+    expect(formatBonus(-35)).toBe('−$35');
+    expect(formatBonus(0)).toBe('$0');
+    expect(formatBonus(0.004)).toBe('$0');
+    expect(formatBonus(-0.004)).toBe('$0');
+    expect(formatBonus(4881 / 10)).toBe('+$488.10');
+    expect(formatBonus(1234.5)).toBe('+$1,234.50');
+    expect(formatBonus(-1234)).toBe('−$1,234');
   });
 });
 
@@ -60,7 +62,7 @@ describe('reportTable: shape', () => {
 
   it('has a column per day and the week, and three groups with every line of section 10', () => {
     expect(table.columns).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Week']);
-    expect(table.groups.map((g) => g.title)).toEqual(['Operations', 'Money ($)', "The GM's bonus"]);
+    expect(table.groups.map((g) => g.title)).toEqual(['Operations', 'Money ($)', "The GM's pay under your plan (the profit above is before this pay)"]);
     expect(table.groups[0]?.rows.map((r) => r.label)).toEqual([
       'Requests',
       'Dogs accepted',
@@ -91,9 +93,9 @@ describe('reportTable: shape', () => {
       'Profit',
       'Cash at close',
     ]);
-    expect(table.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +10 per $100', 'Bonus points this week']);
+    expect(table.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$10 per $100', 'Bonus this week ($)']);
     for (const r of rows(table)) expect(r.days, r.label).toHaveLength(5);
-    expect(rows(table).filter((r) => r.emphasis === true).map((r) => r.label)).toEqual(['Revenue', 'Profit', 'Bonus points this week']);
+    expect(rows(table).filter((r) => r.emphasis === true).map((r) => r.label)).toEqual(['Revenue', 'Profit', 'Bonus this week ($)']);
   });
 
   it('takes the 15, the 70 and the $2,000 from the config', () => {
@@ -146,10 +148,10 @@ describe('reportTable: the covered reckless week on seed 1', () => {
     expect(row(table, 'Cash at close').week).toBe(formatMoney(covered.totals.cashEnd));
   });
 
-  it('pays the Round 1 bonus per day and sums to the total reward', () => {
-    expect(cells(table, 'Profit today ($), +10 per $100')).toEqual(['+113', '+97.8', '+106.4', '+71.2', '+99.7', '+488.1']);
-    expect(cells(table, 'Bonus points this week')).toEqual(['+113', '+97.8', '+106.4', '+71.2', '+99.7', '+488.1']);
-    expect(row(table, 'Bonus points this week').week).toBe(formatPoints(covered.totals.reward));
+  it('pays the Round 1 bonus per day, in dollars, and sums to the total reward', () => {
+    expect(cells(table, 'Profit today ($), +$10 per $100')).toEqual(['+$113', '+$97.80', '+$106.40', '+$71.20', '+$99.70', '+$488.10']);
+    expect(cells(table, 'Bonus this week ($)')).toEqual(['+$113', '+$97.80', '+$106.40', '+$71.20', '+$99.70', '+$488.10']);
+    expect(row(table, 'Bonus this week ($)').week).toBe(formatBonus(covered.totals.reward));
   });
 });
 
@@ -175,7 +177,7 @@ describe('reportTable: other weeks', () => {
       expect(cells(t, label)[3], label).toBe('$0');
     }
     expect(cells(t, 'Cash at close')[3]).toBe(cells(t, 'Cash at close')[2]);
-    expect(cells(t, 'Profit today ($), +10 per $100')[3]).toBe('0');
+    expect(cells(t, 'Profit today ($), +$10 per $100')[3]).toBe('$0');
   });
 
   it('pays a reputation measure on a closed day: the closure is a reputation change', () => {
@@ -183,8 +185,8 @@ describe('reportTable: other weeks', () => {
     const report = runEpisode(config, plan, recklessPolicy, episodeSeeds(1, 0)).report;
     const t = reportTable(report, plan, config);
     expect(cells(t, 'Reputation at pickup')).toEqual(['42', '32', '26', '16', '11', '50 → 11 (−39)']);
-    expect(cells(t, 'Reputation change, +5 per point')).toEqual(['−40', '−50', '−30', '−50', '−25', '−195']);
-    expect(row(t, 'Bonus points this week').week).toBe(formatPoints(report.totals.reward));
+    expect(cells(t, 'Reputation change, +$5 per point')).toEqual(['−$40', '−$50', '−$30', '−$50', '−$25', '−$195']);
+    expect(row(t, 'Bonus this week ($)').week).toBe(formatBonus(report.totals.reward));
   });
 
   it('shows a fallback as what was asked and what the floor ran', () => {
@@ -204,7 +206,7 @@ describe('reportTable: other weeks', () => {
     expect(cells(t, ACTIVITIES)).toEqual([day, day, day, day, day, 'nap 5, clean 5, walk 0']);
     expect(cells(t, 'Cleaning supplies')).toEqual(['$250', '$250', '$250', '$250', '$250', '$1,250']);
     expect(cells(t, 'Dogs per staffer')).toEqual(['10.0', '10.0', '10.0', '10.0', '10.0', '10.0']);
-    expect(cells(t, 'Bonus points this week')[5]).toBe('+73.5');
+    expect(cells(t, 'Bonus this week ($)')[5]).toBe('+$73.50');
   });
 
   it('shows mixed rates as counts in the week column, and a day that turned bookings away', () => {
@@ -231,15 +233,15 @@ describe('reportTable: the bonus group follows the plan', () => {
     const report = runEpisode(config, balanced, recklessCoveredPolicy, episodeSeeds(1, 0)).report;
     const t = reportTable(report, balanced, config);
     expect(t.groups[2]?.rows.map((r) => r.label)).toEqual([
-      'Profit today ($), +10 per $100',
-      'Incidents, −5 per incident',
-      'Blocks over the legal ratio, −5 per block',
-      'Bonus points this week',
+      'Profit today ($), +$10 per $100',
+      'Incidents, −$5 per incident',
+      'Blocks over the legal ratio, −$5 per block',
+      'Bonus this week ($)',
     ]);
-    expect(cells(t, 'Incidents, −5 per incident')).toEqual(['−20', '−10', '−10', '0', '−5', '−45']);
-    expect(cells(t, 'Blocks over the legal ratio, −5 per block')).toEqual(['−20', '−20', '−20', '0', '−20', '−80']);
-    expect(cells(t, 'Bonus points this week')).toEqual(['+73', '+67.8', '+76.4', '+71.2', '+74.7', '+363.1']);
-    expect(row(t, 'Bonus points this week').week).toBe(formatPoints(report.totals.reward));
+    expect(cells(t, 'Incidents, −$5 per incident')).toEqual(['−$20', '−$10', '−$10', '$0', '−$5', '−$45']);
+    expect(cells(t, 'Blocks over the legal ratio, −$5 per block')).toEqual(['−$20', '−$20', '−$20', '$0', '−$20', '−$80']);
+    expect(cells(t, 'Bonus this week ($)')).toEqual(['+$73', '+$67.80', '+$76.40', '+$71.20', '+$74.70', '+$363.10']);
+    expect(row(t, 'Bonus this week ($)').week).toBe(formatBonus(report.totals.reward));
   });
 
   it('pays reputation on the change since the previous pickup, and dogs served, fatigue blocks', () => {
@@ -247,23 +249,23 @@ describe('reportTable: the bonus group follows the plan', () => {
     const report = runEpisode(config, plan, recklessCoveredPolicy, episodeSeeds(1, 0)).report;
     const t = reportTable(report, plan, config);
     expect(t.groups[2]?.rows.map((r) => r.label)).toEqual([
-      'Dogs served, +1 per dog',
-      'Reputation change, +5 per point',
-      'Staff fatigue above 70%, −2 per block',
-      'Bonus points this week',
+      'Dogs served, +$1 per dog',
+      'Reputation change, +$5 per point',
+      'Staff fatigue above 70%, −$2 per block',
+      'Bonus this week ($)',
     ]);
-    expect(cells(t, 'Reputation change, +5 per point')).toEqual(['−40', '−50', '−30', '−10', '−15', '−145']);
-    expect(cells(t, 'Dogs served, +1 per dog')).toEqual(['+20', '+19', '+17', '+16', '+16', '+88']);
-    expect(cells(t, 'Staff fatigue above 70%, −2 per block')).toEqual(['0', '−2', '−6', '−8', '−8', '−24']);
-    expect(row(t, 'Bonus points this week').week).toBe(formatPoints(report.totals.reward));
-    expect(row(t, 'Bonus points this week').week).toBe('−81');
+    expect(cells(t, 'Reputation change, +$5 per point')).toEqual(['−$40', '−$50', '−$30', '−$10', '−$15', '−$145']);
+    expect(cells(t, 'Dogs served, +$1 per dog')).toEqual(['+$20', '+$19', '+$17', '+$16', '+$16', '+$88']);
+    expect(cells(t, 'Staff fatigue above 70%, −$2 per block')).toEqual(['$0', '−$2', '−$6', '−$8', '−$8', '−$24']);
+    expect(row(t, 'Bonus this week ($)').week).toBe(formatBonus(report.totals.reward));
+    expect(row(t, 'Bonus this week ($)').week).toBe('−$81');
   });
 
   it('says so when no measure is on', () => {
     const none = spec({});
     const t = reportTable(runEpisode(config, none, recklessCoveredPolicy, episodeSeeds(1, 0)).report, none, config);
     expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['No measure is on: the GM is paid nothing.']);
-    expect(cells(t, 'No measure is on: the GM is paid nothing.')).toEqual(['0', '0', '0', '0', '0', '0']);
+    expect(cells(t, 'No measure is on: the GM is paid nothing.')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
   });
 
   it('ignores a measure that is off whatever its weight, names a weight of 1 or 0 as the editor does, and keeps two decimals', () => {
@@ -271,17 +273,17 @@ describe('reportTable: the bonus group follows the plan', () => {
     plan.kpis.dogsServed = { on: false, weight: 7 };
     const report = runEpisode(config, plan, recklessCoveredPolicy, episodeSeeds(1, 0)).report;
     const t = reportTable(report, plan, config);
-    expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +1 per $100', 'Incidents, 0 per incident', 'Bonus points this week']);
-    expect(cells(t, 'Incidents, 0 per incident')).toEqual(['0', '0', '0', '0', '0', '0']);
-    expect(cells(t, 'Profit today ($), +1 per $100')).toEqual(['+11.3', '+9.78', '+10.64', '+7.12', '+9.97', '+48.81']);
-    expect(cells(t, 'Bonus points this week')).toEqual(['+11.3', '+9.78', '+10.64', '+7.12', '+9.97', '+48.81']);
-    expect(row(t, 'Bonus points this week').week).toBe(formatPoints(report.totals.reward));
+    expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$1 per $100', 'Incidents, $0 per incident', 'Bonus this week ($)']);
+    expect(cells(t, 'Incidents, $0 per incident')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
+    expect(cells(t, 'Profit today ($), +$1 per $100')).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);
+    expect(cells(t, 'Bonus this week ($)')).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);
+    expect(row(t, 'Bonus this week ($)').week).toBe(formatBonus(report.totals.reward));
   });
 });
 
 describe('reportTable: words', () => {
   it("never says injury, reward, episode or the learner's words", () => {
     const text = JSON.stringify(reportTable(soloWalk, spec({ profit: 10, incidents: -5, reputation: 5, fatigue: -5, overRatio: -5, dogsServed: 5 }), config));
-    expect(text).not.toMatch(/injur|reward|episode|epsilon|ε|evaluation|target met|stable/i);
+    expect(text).not.toMatch(/injur|reward|episode|epsilon|ε|evaluation|target met|stable|\bpoints\b|practi|train/i);
   });
 });

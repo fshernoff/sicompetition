@@ -1,15 +1,15 @@
-// The page controller: the round selector, the bonus plan editor, the prediction, the seed field, the Train button,
-// and under them the watching area (the status line, the training curve, the week replay) and the weekly P&L and
-// operations report.
+// The page controller: the round selector, the bonus plan editor, the prediction, the seed field, the Put the GM to
+// work button (#train), and under them the watching area (the status line, the bonus curve, the week replay) and the
+// weekly P&L and operations report. The page puts the GM to work; underneath, the learner trains (D45).
 // Training runs in requestAnimationFrame: each frame trains (paced, or for 10 ms) and draws the replay's current
 // block; the curve and the status line are redrawn at most 10 times a second, and the canvases are measured only then
 // and on resize. A run stops when the trainer is done or 60 s after the click, whichever comes first (BRIEF section
 // 13: rendering counts against the budget).
 // One greedy week, three views (D40): the sentence beside the prediction, the replay and the table all come from one
-// EpisodeTrace the page holds. While the GM trains, the replay plays its current test week and takes a fresh one
-// each time a week has played, and the sentence is rewritten from that same week. When the run ends, the final
-// week's sentence, table, first frame and the status are written inside the run's clock; then the final week plays
-// once more and holds on Friday, outside it.
+// EpisodeTrace the page holds. While the GM works, the replay plays a week the GM's way (the greedy week as the table
+// stands) and takes a fresh one each time a week has played, and the sentence is rewritten from that same week. When
+// the run ends, the final week's sentence, table, first frame and the status are written inside the run's clock; then
+// the final week plays once more and holds on Friday, outside it.
 // A run belongs to the plan it was trained on (D37): the click snapshots the editor's plan into page.spec, and any
 // change to the plan after a run calls clearRun, which also cancels the replay through the run token.
 import { DEFAULT_LEARNER, Trainer } from '../learn/train.ts';
@@ -45,15 +45,18 @@ const MAX_BACKING_HEIGHT = 1080;
 export const ROUNDS: readonly PresetName[] = ['round1', 'round2', 'round3'];
 /** The one line under the selector, per round. */
 const ROUND_NOTES: Readonly<Partial<Record<PresetName, string>>> = {
-  round1: 'The GM is paid on profit and nothing else. Read the plan, predict what the GM will do, then train it.',
-  round2: 'Turn on up to three measures and set their weights. Write your prediction, then train the GM.',
-  round3: 'All six measures are yours. Write your prediction, then train the GM.',
+  round1: 'The GM is paid on profit and nothing else. Read the plan, predict what the GM will do, then put it to work.',
+  round2: 'Turn on up to three measures and set their dollar amounts. Write your prediction, then put the GM to work.',
+  round3: 'All six measures are yours. Write your prediction, then put the GM to work.',
 };
-const READOUT_LABEL = "The GM's test week";
-const READOUT_LABEL_UNSETTLED = "The GM's test week (still changing its mind)";
-const REPLAY_CAPTION = "The GM's test week";
-const REPLAY_CAPTION_TRAINING = "The GM's test week, as it would run it right now";
-const PLAN_CHANGED = 'The plan changed. Train the GM to see what it does with this one.';
+const READOUT_LABEL = "A week the GM's way";
+const READOUT_LABEL_UNSETTLED = "A week the GM's way (not settled yet)";
+const REPLAY_CAPTION = "A week the GM's way";
+const REPLAY_CAPTION_TRAINING = "A week the GM's way, right now";
+const PLAN_CHANGED = 'The plan changed. Put the GM to work to see what it does with this one.';
+/** The button's words after a run (and after the pilot). */
+export const AGAIN = 'Put the GM to work again';
+const ERROR_LINE = 'The GM stopped because of a problem. Ask your teacher for help.';
 
 interface CanvasSize {
   width: number; // CSS pixels
@@ -71,7 +74,7 @@ export interface Page {
   fast: HTMLInputElement; // checked: no pacing, train as fast as the machine allows
   watch: HTMLElement; // the status line, the curve and the replay: scrolled into view at the click
   status: HTMLElement;
-  canvas: HTMLCanvasElement; // the training curve
+  canvas: HTMLCanvasElement; // the bonus curve
   ctx: CanvasRenderingContext2D;
   replay: HTMLCanvasElement; // the week replay; data-week is "none", "training" or "final"
   replayCtx: CanvasRenderingContext2D;
@@ -258,7 +261,7 @@ function playFinal(page: Page): void {
  * Trains one seed with the frame loop, from `startedAt` (performance.now() at the click). `label` goes in front of
  * the status line (the pilot names the seed). Paced: each frame trains PACE episodes per second of the time since the
  * previous frame; unpaced: each frame trains for 10 ms. Every frame paints the replay; when the week on it has played,
- * the GM's current test week replaces it and the sentence follows. Resolves when the trainer is done or the budget
+ * a fresh week the GM's way replaces it and the sentence follows. Resolves when the trainer is done or the budget
  * has run out, after the final week is on the page; rejects with RunCancelled if clearRun ran meanwhile.
  */
 export function runTraining(
@@ -274,7 +277,7 @@ export function runTraining(
     try {
       trainer = new Trainer(page.world, page.spec, seed);
       page.trainer = trainer;
-      // The replay opens on the untrained GM's test week, and the sentence describes that week.
+      // The replay opens on the new GM's week its way (the untrained table), and the sentence describes that week.
       showWeek(page, trainer.evaluateTrace(), performance.now());
       page.replay.dataset.week = 'training';
       page.replayCaption.textContent = REPLAY_CAPTION_TRAINING;
@@ -331,7 +334,7 @@ export function runTraining(
           playFinal(page); // the final week once more, holding on Friday: outside the clock
           return;
         }
-        // The week on the replay has played and held: play the GM's current test week, and the sentence follows.
+        // The week on the replay has played and held: play a fresh week the GM's way, and the sentence follows.
         if (replayClock(now - page.replayStartedAt).done) showWeek(page, trainer.evaluateTrace(), now);
         if (now - lastDraw >= REDRAW_MS) {
           lastDraw = now;
@@ -349,14 +352,15 @@ export function runTraining(
   });
 }
 
+/** The page's line for a failed run (D45): no exception on the student's screen; the error goes to the console. */
 export function showError(page: Page, err: unknown): void {
-  const message = err instanceof Error ? err.message : String(err);
-  page.status.textContent = `Training stopped with an error: ${message}`;
+  console.error(err);
+  page.status.textContent = ERROR_LINE;
 }
 
 /**
- * Everything the team can touch: the editor, the round selector, the prediction, the seed, Fast and Train. Off for a
- * run and for the whole pilot; on restores the editor to its round's own locks.
+ * Everything the team can touch: the editor, the round selector, the prediction, the seed, Fast and the button. Off
+ * for a run and for the whole pilot; on restores the editor to its round's own locks.
  */
 export function setControls(page: Page, enabled: boolean): void {
   page.editor.setEnabled(enabled);
@@ -377,7 +381,7 @@ export function showRound(page: Page, name: PresetName): void {
  * Clears the last run's results, the one lifecycle operation (D37): moves the token on (any scheduled replay or
  * training frame of the old run then does nothing), drops the trace and its clock, and resets the replay, its caption
  * and button, the table, the sentence and its label, and the curve. After a run the status says the plan changed.
- * Called by an edit, a round change, the Train click before a run, and the pilot before each seed.
+ * Called by an edit, a round change, the button's click before a run, and the pilot before each seed.
  */
 export function clearRun(page: Page): void {
   const hadRun = page.trainer !== null;
@@ -475,7 +479,7 @@ export function mountApp(): Page {
       })
       .finally(() => {
         setControls(page, true);
-        page.train.textContent = 'Train again';
+        page.train.textContent = AGAIN;
       });
   });
 

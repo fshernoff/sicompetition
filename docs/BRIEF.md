@@ -8,8 +8,8 @@
 
 A team owns Good Dog Daycare. They hire a GM (the agent) and write its bonus plan (the reward). The GM runs one
 five-day week, Monday to Friday, in 20 steps: four blocks a day (drop-off, late morning, afternoon, pickup). The
-team watches the GM train, then reads the weekly P&L and operations report (the readout) and compares it to the
-prediction they typed in before training.
+team puts the GM to work, watches its weekly bonus climb as it learns the job, then reads the weekly P&L and
+operations report (the readout) and compares it to the prediction they typed in beforehand.
 
 Words that are fixed everywhere (page, docs, code comments): the agent is the **GM**; the reward is its **bonus
 plan**; a run's result is the **weekly P&L and operations report** (short: the readout); an **incident** is an icon
@@ -18,21 +18,25 @@ and a counter, never an injury; the daycare is **Good Dog Daycare**; the staff a
 The page is an incentive-design lesson, not a lesson in training a model. The GM is the employee the owners cannot
 supervise, and the only thing a student has to know about it is that it tries things, keeps what pays, and cares
 about nothing but its bonus plan. So the student's screen carries business words only: the round, the bonus plan and
-its sentence, the prediction, Train, the training curve, and the readout. The curve is the hook of the lesson (the
-class watches the GM get better at earning its bonus) and is captioned that way, not as a chart to interpret. The
-status line says how many weeks the GM has practised and whether it has settled or is still changing its mind, and
-nothing else. The learner's instruments (ε, evaluation counts, "target met"), the seed, the speed and the round
+its sentence, the prediction, the Put the GM to work button, the bonus curve, and the readout. The curve is the hook
+of the lesson (the class watches the GM's weekly bonus climb as it learns how to earn it) and is
+captioned that way, not as a chart to interpret. The status line says how many weeks the GM has been on the job and
+whether it has settled into its routine or is still changing how it runs the place, and nothing else. The GM's bonus
+is money, in dollars, never points, and the page speaks of the job, never of training or practice (D45). The learner's instruments (ε, evaluation counts, "target met"), the seed, the speed and the round
 selector are the teacher's (section 11) and leave the student's screen in G4 and G5 (D38, D39).
 
-The status line's three sentences (G4, D41): while the GM trains, "The GM has practised 12,000 weeks so far and is
-still changing its mind."; when it is stable (section 13), "The GM practised 24,000 weeks and has settled on how it
-runs the week."; when a run ends without settling, "The GM practised 150,000 weeks and is still changing its mind.",
-prefixed "Time is up: the GM practised …" when the 60 s budget ran out first. The curve's caption: "Watch the GM get
-better at earning its bonus. The dots are its test weeks: how it would run the week right now without trying anything
-new."; its axes read "Weeks of practice" and "Bonus points per week", its legend "Each practice week", "Average of
-the last 100 weeks", "Test week". The readout is three views of the same test week: the sentence beside the
-prediction, the replay and the table (section 10); while the GM trains, the sentence describes the week the replay
-is playing, and when the run ends all three show the final week.
+The status line's three sentences (G4, D41; the words of D45): while the GM works, "The GM is 12,000 weeks into the
+job and still changing how it runs the place."; when it is stable (section 13), "After 24,000 weeks on the job, the GM
+has settled into its routine."; when a run ends without settling, "After 150,000 weeks on the job, the GM is still
+changing how it runs the place.", prefixed "Time is up: after …" when the 60 s budget ran out first. The button reads
+"Put the GM to work" ("Put the GM to work again" after a run); the first status "Write your prediction, then put the
+GM to work." The curve's caption: "You wrote the bonus plan. Watch the GM's bonus climb as it learns how to earn it. Each
+dot is a week run its current way, nothing new tried."; its axes read "Weeks on the
+job" and "The GM's bonus for the week ($)" with dollar signs on the ticks, its legend "Each week on the job", "Average
+of the last 100 weeks", "A week run its current way". The readout is three views of the same week, labelled "A week
+the GM's way" ("A week the GM's way (not settled yet)" after a run that did not settle): the sentence beside the
+prediction, the replay and the table (section 10); while the GM works, the sentence describes the week the replay is
+playing, and when the run ends all three show the final week.
 
 ## 2. The week
 
@@ -218,8 +222,8 @@ Order of resolution inside one step (so RNG draws are reproducible):
 
 ## 7. The bonus plan (reward spec)
 
-Six KPIs. Each has a toggle and a weight from −10 to +10 (integer). The reward for a step is the sum over the KPIs
-that are on of weight × (the KPI's delta in that step ÷ its unit). The plan in words sums the same thing per day.
+Six KPIs. Each has a toggle and a weight from −10 to +10 (integer). The reward for a step is the sum over the KPIs that are on of weight × (the KPI's delta in that step ÷ its unit). The weight is dollars of bonus per unit:
+the GM's pay is money, never points (D45). The plan in words sums the same thing per day.
 
 | Key | Name on the page | Unit | Delta per step | Round 1 default | Suggested weight when toggled on |
 |---|---|---|---|---|---|
@@ -230,16 +234,16 @@ that are on of weight × (the KPI's delta in that step ÷ its unit). The plan in
 | fatigue | Staff fatigue above 70% | 1 block | 1 if fatigue > 70 at the end of the block | off | −5 |
 | overRatio | Blocks over the legal ratio | 1 block | 1 if the floor ratio was > 15 this block | off | −5 |
 
-Plain-words template (G3): "Each day, the GM earns 10 points per $100 of profit, loses 5 points per incident, and
-loses 5 points for every block the floor runs over 15 dogs per staffer." A negative weight reads "loses", a positive
+Plain-words template (G3, dollars since D45): "Each day, the GM earns $10 per $100 of profit, loses $5 per incident,
+and loses $5 for every block the floor runs over 15 dogs per staffer." A negative weight reads "loses", a positive
 one "earns". KPIs that are off are not mentioned.
 
 The sentence is built from the KPIs that are on, in the order of the table, one clause each after "Each day, the
 GM ": one clause ends with a period, two are joined with " and ", three or more with ", " and ", and " before the
-last. "1 point" for a weight of 1; a KPI on at weight 0 reads "earns 0 points …" (it counts for nothing). The
-clauses, at +5: "earns 5 points per $100 of profit", "earns 5 points per dog served", "earns 5 points per incident",
-"earns 5 points per point of reputation gained", "earns 5 points for every block the crew's fatigue is above 70%",
-"earns 5 points for every block the floor runs over 15 dogs per staffer"; the $100, the 70 and the 15 are
+last. "$1" for a weight of 1; a KPI on at weight 0 reads "earns $0 per incident" (it counts for nothing). The
+clauses, at +5: "earns $5 per $100 of profit", "earns $5 per dog served", "earns $5 per incident", "earns $5 per
+point of reputation gained", "earns $5 for every block the crew's fatigue is above 70%", "earns $5 for every block
+the floor runs over 15 dogs per staffer"; the slider shows the weight as "+$5", "−$5", "$0"; the $100, the 70 and the 15 are
 `KPI_UNITS.profit`, `fatigue.kpiThreshold` and `bookings.legalRatio`. Nothing on: "The GM is paid nothing: no
 measure is on." Profit and reputation deltas are signed, so under the sentence the page shows a hint whenever either
 is on with a non-zero weight: "Profit and reputation count both ways: a $100 loss or a one-point drop counts the
@@ -296,7 +300,7 @@ teacher's demo of a plan that trades money for welfare; it is not a round.
 
 In the editor (G3): a preset that already uses its whole allowance (as many KPIs on as its limit: Round 1 is 1 of
 1) is locked entirely, no toggle and no slider moves, and the line under the measures reads "Round 1: the plan is
-set. Predict what the GM will do, then train." (D35). Otherwise a measure can be turned on while fewer than the
+set. Predict what the GM will do, then put it to work." (D35). Otherwise a measure can be turned on while fewer than the
 limit are on, turned off always, and its slider moves only while it is on; the line reads "N of M measures on." and
 adds "Turn one off to turn another on." when the limit is reached with a measure still off. Changing the round
 loads its preset. Any edit after a run clears that run's readout, status and curve (D37).
@@ -341,21 +345,22 @@ Reputation at pickup (week: "50 → 21 (−29)"); Cleanliness at pickup; Crew fa
 start → Friday's pickup with the change). A closed day keeps its requests, its scheduled crew and its pickup values.
 **Money ($):** Day rates; Activity add-ons; Revenue (bold); Wages; Refunds; Vet bills; Fines; Cleaning supplies;
 Profit (bold); Cash at close (from $2,000, running, carried over a closed day; week: Friday's). Whole dollars with
-commas, a typographic minus for a loss ("−$120"). **The GM's bonus:** one row per measure that is on, in section 7
-order, labelled with its name and weight ("Profit today ($), +10 per $100"), the points it earned each day (weight ×
-the day's delta ÷ the unit; reputation's day delta is the change since the previous pickup, Monday against the
-week's start, so a closed day's closure hit is paid) and in the week; then "Bonus points this week" (bold), whose
-week cell is the plan's total reward. Points carry a sign and at most two decimals ("+123.5", "+9.78", "−35", "0";
-profit is whole dollars ÷ 100 × an integer weight, so two decimals are exact and the days sum to the week). Nothing
-on: one row, "No measure is on: the GM is paid nothing." The six KPI totals are readable unweighted whatever the
+commas, a typographic minus for a loss ("−$120"). **The
+GM's pay under your plan (the profit above is before this pay):** the P&L above does not deduct the GM's pay, the
+heading says so and the arithmetic is unchanged; one row per measure that is on, in section 7 order, labelled with
+its name and dollar amount ("Profit today ($), +$10 per $100"), the dollars it earned each day (weight × the day's delta ÷ the unit;
+reputation's day delta is the change since the previous pickup, Monday against the week's start, so a closed day's
+closure hit is paid) and in the week; then "Bonus this week ($)" (bold), whose week cell is the plan's total reward.
+Bonus cells carry a sign and a dollar sign, and cents only when there are cents ("+$123.50", "+$9.78", "+$113",
+"−$35", "$0"; profit is whole dollars ÷ 100 × an integer weight, so cents are exact and the days sum to the week).
+Nothing on: one row, "No measure is on: the GM is paid nothing." The six KPI totals are readable unweighted whatever the
 plan: Dogs accepted, Incidents, Blocks over 15, Blocks with crew fatigue above 70%, Reputation at pickup's week
 cell, Profit. The table appears when a run ends, never during it, and clears with the run (D37). The 15, the 70, the
 prices and the $2,000 are `bookings.legalRatio`, `fatigue.kpiThreshold`, `rates` and `cash.weekStart`.
 
 ### 10.2 The replay (G4)
 
-The greedy test week played block by block on a canvas, 300 ms a block and a 1.5 s hold on Friday's pickup. While
-the GM trains, the replay plays its current test week and takes a fresh one each time a week finishes, and the
+The greedy week (a week the GM's way) played block by block on a canvas, 300 ms a block and a 1.5 s hold on Friday's pickup. While the GM works, the replay plays its current week and takes a fresh one each time a week finishes, and the
 sentence follows it (the class watches the untrained GM's muddle turn into the packed yard); when the run ends it
 plays the final week, the one the sentence and the table describe, once more and holds; a button replays it. A
 frame for step t shows the floor during block t. The day as resolved at drop-off (dogs, crew, scheduled crew, closed,
@@ -375,8 +380,8 @@ energy, cleanliness and crew fatigue; "Tomorrow: 19 asking" and "Days the crew r
 visible, the rules are not); small counters for dogs sent home sick and inspector visits when above 0. Captions
 under the yard name the block's events as events, never as rules (D44): "Incident", "Vet bill $150", "Inspector:
 $250 fine", "2 dogs sent home sick", "The staffer called out: closed today", "Walk photo posted"; a fallback is in
-the header and gets no caption, and the walk's reputation gain is not named. Never "injury". Before a run: "The GM's
-week plays here while it trains."
+the header and gets no caption, and the walk's reputation gain is not named. Never "injury". Before a run:
+"The GM's week plays here once it is on the job."
 
 ## 11. What the teacher sees (G5)
 
@@ -386,7 +391,7 @@ that prints section 6 in plain words; the learner's check line (weeks trained, �
 the instruments of section 13 and D6, read by the owner and the teacher, never part of the lesson); and an export
 button that downloads one JSON file per run: the config name, the reward spec, the prediction text, the readout, the
 training curve, the seed. No names, no team names unless the team types one into the prediction. The student's
-controls are the bonus plan, the prediction and Train (D39).
+controls are the bonus plan, the prediction and Put the GM to work (D39, D45).
 
 Until G5 builds the panel, the pilot mode (`?pilot=N`, D31) is where "target met" is read on the page (`?pilot=1`
 checks one seed) and `npm run pilot` is the harness; after G4 the student's status line no longer shows it (D38).
@@ -419,8 +424,8 @@ evaluation, so two evaluations of an unchanged table are identical. Extra checks
 k)` for k = 1..5 (and k up to 100 for held-out measurement). Training episode i uses `episodeSeeds(seed, i)`.
 
 **Stable** means: exploration has reached its floor and the outcome key (section 7) of the last 5 evaluations, all
-taken at the floor, is identical. Stable is what the page shows; it says the GM has stopped changing its mind, not
-that it is right.
+taken at the floor, is identical. Stable is what the page shows (as "settled into its routine"); it says the GM has
+stopped changing how it runs the place, not that it is right.
 
 **Step size.** The n-th update of a table cell uses max(α_min, 1/n): a sample average while the cell is new, then a
 small constant weight on the latest week (D32). On the board: "the GM averages what it has seen for each choice,
@@ -430,6 +435,7 @@ and keeps paying a little attention to the latest week".
 fixed week and on weeks 1..5. A plan has a target class only when it is the Round 1 plan: Profit on with a positive
 weight and every other KPI off or at weight 0 (D36); every other plan is reported stable or not and never target
 met. A positive scale of the Round 1 weight keeps the objective and the class, not the exact training trajectory. The pilot definition of done is measured as: 20 training seeds (1..20), each trained
-within the time budget on the target Chromebook (60 s from the Train click, rendering included), each target met.
+within the time budget on the target Chromebook (60 s from the click on Put the GM to work, rendering included), each
+target met.
 Learning rate, exploration schedule, episode budget, table initialisation and tie-breaking are G2's plan, reported
 with the numbers that met this.

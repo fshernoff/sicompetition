@@ -9,8 +9,8 @@ owner gate before it is merged.
 | G1 | The simulator: world rules, step function, seeded RNG, episode runner, default config, headless sim CLI, one test per hidden rule | Fred runs `npm test` and `npm run sim` and reads HANDOFF | Oct 26 to 29 (built Oct 25 on `g1-simulator`, awaiting the gate) |
 | G2 | The learner: observation coarsening, tabular Q-learning with epsilon-greedy, training loop with a time budget, training curve on canvas; proof that Round 1 trains to the reckless policy in under 60 s on a Chromebook | Fred watches Round 1 train on the smartboard; `?pilot=20` on a Chromebook | Oct 30 to Nov 1 (built Oct 25 on `g2-learner`, awaiting the gate) |
 | G3 | The bonus plan editor: six KPIs, sliders and toggles, the plan in words, the prediction box | Fred edits a plan without reading any instructions | Nov 2 to 3 (built Oct 26 on `g3-editor`, awaiting the gate) |
-| G4 | The week replay on canvas (yard, dogs, crew, ratio gauge, incident counter, reputation meter, cash counter), the weekly P&L and operations report, prediction side by side | Fred reads a report cold and can say what the GM did | Nov 4 to 6 |
-| G5 | Round presets, JSON export, teacher panel (seed, speed, reveal hidden rules), Netlify deploy, 30-second screen capture | Pilot class, Nov 9 | Nov 7 to 8 |
+| G4 | The week replay on canvas (yard, dogs, crew, ratio gauge, incident counter, reputation meter, cash counter), the weekly P&L and operations report, prediction side by side, the status line in the student's words (D38), the layout under the controls (the Chromebook fold) | Fred reads a report cold and can say what the GM did | Nov 4 to 6 |
+| G5 | Teacher panel (round presets, seed, speed, reveal hidden rules, the learner's check line; D38, D39: the student page keeps the plan, the prediction and Train), JSON export, Netlify deploy, 30-second screen capture | Pilot class, Nov 9 | Nov 7 to 8 |
 | G6 | Fixes from the pilot's three confusions | Full unit, Nov 16 | Nov 10 to 13 |
 | G7 | Lesson materials: teacher guide, round briefs, role cards, concept check, memo template (Sonnet packages; Astra reviews for clarity) | Fred teaches period 1 | Nov 2 to 13 |
 

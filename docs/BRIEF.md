@@ -15,6 +15,15 @@ Words that are fixed everywhere (page, docs, code comments): the agent is the **
 plan**; a run's result is the **weekly P&L and operations report** (short: the readout); an **incident** is an icon
 and a counter, never an injury; the daycare is **Good Dog Daycare**; the staff are the **crew**.
 
+The page is an incentive-design lesson, not a lesson in training a model. The GM is the employee the owners cannot
+supervise, and the only thing a student has to know about it is that it tries things, keeps what pays, and cares
+about nothing but its bonus plan. So the student's screen carries business words only: the round, the bonus plan and
+its sentence, the prediction, Train, the training curve, and the readout. The curve is the hook of the lesson (the
+class watches the GM get better at earning its bonus) and is captioned that way, not as a chart to interpret. The
+status line says how many weeks the GM has practised and whether it has settled or is still changing its mind, and
+nothing else. The learner's instruments (ε, evaluation counts, "target met"), the seed, the speed and the round
+selector are the teacher's (section 11) and leave the student's screen in G4 and G5 (D38, D39).
+
 ## 2. The week
 
 | Symbol | Meaning | Values |
@@ -310,9 +319,16 @@ nap 0 times, averaged 18 dogs per staffer, and had 11 incidents."
 
 ## 11. What the teacher sees (G5)
 
-Round preset buttons; a seed field; a speed slider; a "reveal hidden rules" button that prints section 6 in plain
-words; an export button that downloads one JSON file per run: the config name, the reward spec, the prediction text,
-the readout, the training curve, the seed. No names, no team names unless the team types one into the prediction.
+A teacher panel, closed by default, holding everything that is not the lesson: round preset buttons (the selector of
+D34 moves here); a seed field; a speed control (the Fast checkbox of D33 becomes it); a "reveal hidden rules" button
+that prints section 6 in plain words; the learner's check line (weeks trained, ε, evaluations, stable, target met:
+the instruments of section 13 and D6, read by the owner and the teacher, never part of the lesson); and an export
+button that downloads one JSON file per run: the config name, the reward spec, the prediction text, the readout, the
+training curve, the seed. No names, no team names unless the team types one into the prediction. The student's
+controls are the bonus plan, the prediction and Train (D39).
+
+Until G5 builds the panel, the pilot mode (`?pilot=N`, D31) is where "target met" is read on the page (`?pilot=1`
+checks one seed) and `npm run pilot` is the harness; after G4 the student's status line no longer shows it (D38).
 
 ## 12. Headless sim
 

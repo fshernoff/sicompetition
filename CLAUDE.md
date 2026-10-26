@@ -24,6 +24,7 @@ Every other repo under `/Users/fred/Programming` is read-only to a thread here. 
 | `.claude/docs/HANDOFF.md` | Status only: where the last thread stopped, what the next one does first. |
 | `.claude/docs/ROADMAP.md` | The groups G1 to G5 and their dates. |
 | `.claude/docs/plans/<group>.md` | One plan per group: goal, acceptance, packages, tests, what the owner sees, result. |
+| `docs/capture.md` | The shot list for the 30-second screen capture. |
 | `Tools/Agent/CODEX.md` | How to call Astra and what it is for. |
 
 ## Commands
@@ -37,7 +38,8 @@ npm run sim -- --episodes 200 --seed 1 --reward round1 --policy random   # headl
 npm run calibrate -- --episodes 100 --seed 1   # the Round 1 calibration ranking and margins (G1 acceptance 3)
 npm run pilot -- --seeds 20 --budget 60000     # the 20-seed learner check (G2 acceptance 2); ?pilot=20 on the page is the Chromebook version
 npm run pilot -- --seeds 5 --reward balanced   # any plan headless (a preset or a .json file): episodes to stable, stable, the outcome key
-npm run e2e        # the Playwright smoke against the built page (7 tests, about 30 s)
+npm run e2e        # the Playwright smoke against the built page (7 tests, about 35 s)
+npm run capture    # after a build: a 30-second recording of one Round 1 run in headless Chromium, to Temp/capture/
 ```
 
 `npm run sim` runs on Node 24's native TypeScript: erasable syntax only, relative imports end in `.ts`.

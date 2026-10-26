@@ -17,6 +17,7 @@
     "lint": "eslint . && tsc --noEmit",
     "sim": "node src/sim/cli.ts",
     "e2e": "playwright test",
+    "capture": "node e2e/capture.ts",
     "calibrate": "node src/sim/calibrate.ts",
     "pilot": "node src/learn/pilot.ts"
   },

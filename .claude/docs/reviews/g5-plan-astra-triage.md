@@ -1,0 +1,26 @@
+# G5: Astra's review of the plan, triaged
+
+`Tools/Agent/astra.sh -e high` over `.claude/docs/plans/g5-teacher.md` (first draft), the bible, the decisions, the
+HANDOFF and the G4b code, 2026-10-26, before any package started. Astra ran lint (clean) and the Round 1 pilot (20 of
+20, G2's twenty episode counts). Nine findings: six accepted, two accepted in part, one resolved by the time it was
+read (the hidden rules' sentences were written into the test while Astra was reading the tree). The plan, the seams,
+the tests and the e2e carry the result.
+
+| # | Finding (short) | Verdict | What changed |
+|---|---|---|---|
+| 1 | Medium: a blank or bad seed, left by the teacher with the tray closed, writes "The seed must be a whole number…" into the student's status at the click | **Accepted** | The click validates the seed in the tray: an invalid seed opens the tray, writes the message to the check line, focuses the seed and does not run; the student's status is untouched. The e2e does it with the tray closed. |
+| 2 | Medium: the twelve exact sentences were not in the tree to review; copying section 6 would carry H11's "the cost of a tired crew is the call-out" (H7 says fatigue plays no part) and H10's empirical dollars | **Resolved, and accepted on the two traps** | `tests/world/hidden-rules.test.ts` pins the sentences. H11 now says fatigue is not what makes the staffer call out (that is the solo streak) and its only cost is what the bonus plan says; H10 names no empirical figure. The config test patches one field at a time. |
+| 3 | Medium: the inherited geometry poll accepts canvas bottoms up to 768 while an open tray starts around 648; "626 px" and "about 120 px" are claims, not measurements | **Accepted** | The e2e samples the tray's top in the same settled-scroll sample and asserts the curve's and the replay's bottoms and the captions against it; after the run it scrolls the report's last row and the revealed rules to the bottom and asserts they clear the tray; the padding is derived from the tray's measured height. The numbers go in the Result from the e2e's own log. |
+| 4 | Medium: mapping Normal to 1,200 does not protect D33's per-frame arithmetic (the fractional carry, the 100 ms cap, the floor of at least 1); the ordering test allows 599 or 2,399 | **Accepted** | Exact values pinned: 600, 1,200, 2,400, null. The paced slice arithmetic is a pure seam, `paceSlice(owed, elapsedMs, pace)` in `src/ui/speed.ts`, pinned with irregular frame times (16.7 ms, a 500 ms hang, 0.3 ms, a fractional carry); `runTraining` must call it, which the diff review checks. |
+| 5 | Medium: the export's enabled state and the rules' survival across clears and runs have no browser coverage | **Accepted** | The e2e asserts the export disabled before and during a run, on after, off after a slider edit and after a round change (and still off a frame later), on again after another run; a prediction edit after a run keeps the result; a seed or speed change after a run does not relabel it (the file carries the click's seed and speed); the rules stay revealed through a clear and another run. |
+| 6 | Medium: the exported `speed` is ambiguous for the pilot (the select says Normal, the run was unpaced); the one-seed pilot test cannot catch seed 1's setup carried to seed 2 | **Accepted** | `speed` in the file is the pacing applied to the run (the pilot's seeds say `full`). The pilot e2e runs `?pilot=2` and exports the last run: seed 2, `full`, the report of a node-side twin on seed 2. |
+| 7 | Medium: report equality cannot detect a re-evaluation at the export, since an unchanged table evaluates to the same week | **Accepted in part** | The export handler builds its input from `page.trace` and `page.result` through a function the diff review reads; a source test pins that `src/ui/teacher.ts` calls no `evaluate` method. The prediction-before-and-after-edit assertion stays as the discriminating one. No runtime instrumentation: the bundle's module scope is not reachable from the e2e. |
+| 8 | Medium: the export does not close the replay's "same week" gap; `data-week="final"` and non-blank pixels pass on a stale yard | **Accepted in part** | `showWeek` sets `data-key` on `#replay` to the outcome key of the trace it hands the renderer, and the e2e compares it with the twin's; the pixels remain unproven (no oracle for the drawing), which the plan and HANDOFF say. |
+| 9 | Low: "Round 1 still settles at Slow" overstates: 600 × 60 is nominal; under the 100 ms frame cap a slow frame rate trains fewer; rendering counts | **Accepted** | The plan and the tray's hint say about 52 s for the largest of G2's counts, nominal, and that a Slow run may hit the 60 s limit; the Chromebook measurement decides. |
+
+Astra also asked for a serialised-size check of the export at the 150,000-episode cap (added: a synthetic curve of
+150,000 points, the JSON under 6 MB, the measured size in the Result) and that the Teacher tab, the one teacher's
+control left on the student's screen, be named in section 11 and a decision (D46).
+
+Not reviewed by Astra: the built page, the Chromebook, the download, the capture, Netlify; it did not run vitest,
+Playwright or the build and edited no files.

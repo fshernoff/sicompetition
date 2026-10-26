@@ -1,6 +1,7 @@
-// The words on the student's screen (BRIEF section 1, D38): business words only. The page's HTML carries none of the
-// learner's instruments and none of the forbidden words; the curve's text is the GM getting better at earning its
-// bonus, not a chart about episodes.
+// The words on the student's screen (BRIEF section 1, D38, D39, D45): business words only. The page's HTML outside
+// the teacher panel carries none of the learner's instruments and none of the forbidden words, and no teacher's
+// control (the seed, the speed, the round presets live inside #teacher, which is hidden by default); the curve's
+// text is the GM getting better at earning its bonus, not a chart about episodes.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { curveWords, yTickLabel } from '../../src/ui/curve.ts';
@@ -8,18 +9,25 @@ import { curveWords, yTickLabel } from '../../src/ui/curve.ts';
 const html = readFileSync('index.html', 'utf8');
 const css = readFileSync('src/style.css', 'utf8');
 
+/** The teacher panel's HTML (the one <aside id="teacher"> block) and the rest of the body: the student's page. */
+function split(): { teacher: string; student: string } {
+  const body = html.replace(/<title>.*?<\/title>/s, '').replace(/<h1>.*?<\/h1>/s, '');
+  const asides = body.match(/<aside id="teacher"[\s\S]*?<\/aside>/g) ?? [];
+  expect(asides, 'one <aside id="teacher"> block').toHaveLength(1);
+  const teacher = asides[0] as string;
+  return { teacher, student: body.replace(teacher, ' ') };
+}
+
 describe('index.html', () => {
   it('has the elements the page and the e2e use', () => {
     for (const id of [
-      'round',
+      'round-label',
       'round-note',
       'editor',
       'prediction',
       'readout',
       'readout-label',
-      'seed',
       'train',
-      'fast',
       'status',
       'watch',
       'curve',
@@ -29,23 +37,53 @@ describe('index.html', () => {
       'replay-again',
       'report',
       'report-table',
+      'rules',
+      'rules-title',
+      'rules-list',
       'pilot',
+      'teacher-open',
+      'teacher',
+      'round',
+      'round-round1',
+      'round-round2',
+      'round-round3',
+      'seed',
+      'speed',
+      'reveal',
+      'export',
+      'teacher-close',
+      'check',
     ]) {
       expect(html, `#${id}`).toMatch(new RegExp(`id="${id}"`));
     }
   });
 
-  it("carries none of the learner's words and none of the forbidden ones, in the visible text and the labels", () => {
-    const body = html.replace(/<title>.*?<\/title>/s, '').replace(/<h1>.*?<\/h1>/s, '');
+  it("carries none of the learner's words and none of the forbidden ones on the student's page, in the visible text and the labels", () => {
+    const { student } = split();
     // What a student reads: the text between the tags, and what a screen reader says: aria-label, placeholder, title.
-    const visible = body.replace(/<[^>]+>/g, ' ');
-    const labels = Array.from(body.matchAll(/\b(?:aria-label|placeholder|title|alt)="([^"]*)"/g), (m) => m[1] ?? '').join(' ');
+    const visible = student.replace(/<[^>]+>/g, ' ');
+    const labels = Array.from(student.matchAll(/\b(?:aria-label|placeholder|title|alt)="([^"]*)"/g), (m) => m[1] ?? '').join(' ');
     const text = `${visible} ${labels}`;
-    for (const word of [/episode/i, /ε/, /epsilon/i, /target met/i, /\bstable\b/i, /injur/i, /reward/i, /evaluation/i, /\bQ-?learn/i, /\bpoints?\b/i, /practi/i, /test week/i, /\btrain/i, /weights?\b/i]) {
+    for (const word of [/episode/i, /ε/, /epsilon/i, /target met/i, /\bstable\b/i, /injur/i, /reward/i, /evaluation/i, /\bQ-?learn/i, /\bpoints?\b/i, /practi/i, /test week/i, /\btrain/i, /weights?\b/i, /\bseed\b/i, /\bspeed\b/i, /\bfast\b/i, /pacing/i]) {
       expect(text, String(word)).not.toMatch(word);
     }
     // The ids and classes may keep their names (#train, .kpi-weight): a student never reads them.
-    expect(body).toMatch(/id="train"/);
+    expect(student).toMatch(/id="train"/);
+  });
+
+  it("keeps the teacher's controls inside the panel, which is closed by default (D39)", () => {
+    const { teacher, student } = split();
+    expect(teacher).toMatch(/<aside id="teacher"[^>]*\bhidden\b/);
+    for (const id of ['round', 'round-round1', 'round-round2', 'round-round3', 'seed', 'speed', 'reveal', 'export', 'teacher-close', 'check']) {
+      expect(teacher, `#${id} in the panel`).toMatch(new RegExp(`id="${id}"`));
+      expect(student, `#${id} not on the student's page`).not.toMatch(new RegExp(`id="${id}"`));
+    }
+    expect(teacher).toMatch(/id="export"[^>]*\bdisabled\b/); // nothing to export before a run
+    expect(student).not.toMatch(/<select/); // the round selector is gone from the student's page (D34)
+    expect(student).not.toMatch(/type="checkbox"[^>]*id="fast"|id="fast"/); // the Fast checkbox became the speed control (D33)
+    expect(student).toMatch(/id="teacher-open"[^>]*>Teacher</); // the one tab that opens the panel
+    expect(html).toMatch(/<section id="rules"[^>]*\bhidden\b/); // the hidden rules print only when the teacher reveals them
+    expect(student).not.toMatch(/10 dogs per staffer/); // the safe ratio is H1's number (D43)
   });
 
   it("keeps the stylesheet's own text (the empty readout's line) in the owner's words too", () => {
@@ -59,15 +97,16 @@ describe('index.html', () => {
   it('captions the curve as the owner who wrote the plan (D45)', () => {
     expect(html).toMatch(/id="curve-caption"[^>]*>\s*You wrote the bonus plan\. Watch the GM's bonus climb as it learns how to earn it\./);
     expect(html).toMatch(/Each dot is a week run its current way, nothing new tried\./);
-    expect(html).not.toMatch(/weights?\b/i); // the sliders set dollar amounts, not weights (Astra, plan review)
+    expect(split().student).not.toMatch(/weights?\b/i); // the sliders set dollar amounts, not weights (Astra, plan review)
   });
 
-  it('puts the GM to work and names a week the GM\'s way', () => {
+  it("puts the GM to work and names a week the GM's way", () => {
     expect(html).toMatch(/id="train"[^>]*>Put the GM to work</);
     expect(html).toMatch(/id="status">Write your prediction, then put the GM to work\.</);
     expect(html).toMatch(/id="readout-label">A week the GM's way</);
     expect(html).toMatch(/id="replay-caption">A week the GM's way</);
     expect(html).toMatch(/write it before you put the GM to work/);
+    expect(html).toMatch(/id="round-label">Round 1: profit only</); // the round is a line on the student's page, not a control
   });
 });
 

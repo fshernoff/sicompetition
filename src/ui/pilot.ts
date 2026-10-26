@@ -2,7 +2,7 @@
 // frame loop and rendering as the Put the GM to work button, each with its own 60 s budget, and each adds a row to a
 // table.
 // The pilot is never paced: it measures the machine. It always trains the Round 1 plan, whatever ?round= says: it
-// loads Round 1 into the selector, the editor and the training spec, and keeps every control off for the whole run.
+// loads Round 1 into the round radios, the editor and the training spec, and keeps every control off for the whole run.
 // The replay plays during its runs like any other: the pilot measures the page as the class sees it.
 import { loadPreset, validateRewardSpec } from '../world/config.ts';
 import { AGAIN, BUDGET_MS, clearRun, runTraining, setControls, showError, showRound } from './app.ts';
@@ -50,9 +50,10 @@ async function pilotSeeds(page: Page, n: number): Promise<void> {
   for (let seed = 1; seed <= n; seed++) {
     page.seed.value = String(seed);
     clearRun(page); // each seed starts clean: the replay, the sentence, the table and the curve (D37)
+    page.setup = { seed, round: 'round1', speed: 'full', prediction: '' }; // never paced: it measures the machine
     let result;
     try {
-      result = await runTraining(page, seed, performance.now(), `Pilot seed ${seed} of ${n} · `, false);
+      result = await runTraining(page, seed, performance.now(), `Pilot seed ${seed} of ${n} · `, null);
     } catch (err) {
       showError(page, err);
       break;

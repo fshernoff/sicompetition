@@ -1,6 +1,8 @@
-// The page controller: the round selector, the bonus plan editor, the prediction, the seed field, the Put the GM to
-// work button (#train), and under them the watching area (the status line, the bonus curve, the week replay) and the
-// weekly P&L and operations report. The page puts the GM to work; underneath, the learner trains (D45).
+// The page controller: the round line, the bonus plan editor, the prediction, the Put the GM to work button (#train),
+// and under them the watching area (the status line, the bonus curve, the week replay) and the weekly P&L and
+// operations report. The teacher's controls (the round, the seed, the speed, the hidden rules, the export, the check
+// line) live in the tray that teacher.ts mounts (BRIEF section 11, D39). The page puts the GM to work; underneath,
+// the learner trains (D45).
 // Training runs in requestAnimationFrame: each frame trains (paced, or for 10 ms) and draws the replay's current
 // block; the curve and the status line are redrawn at most 10 times a second, and the canvases are measured only then
 // and on resize. A run stops when the trainer is done or 60 s after the click, whichever comes first (BRIEF section
@@ -14,10 +16,11 @@
 // change to the plan after a run calls clearRun, which also cancels the replay through the run token.
 import { DEFAULT_LEARNER, Trainer } from '../learn/train.ts';
 import type { TrainingSnapshot } from '../learn/train.ts';
-import { describeWeek } from '../sim/readout.ts';
+import { describeWeek, outcomeKey } from '../sim/readout.ts';
 import { loadDefaultConfig, loadPreset, validateRewardSpec } from '../world/config.ts';
 import type { PresetName } from '../world/config.ts';
 import type { EpisodeTrace, RewardSpec, WorldConfig } from '../world/types.ts';
+import { checkLine } from './check.ts';
 import { drawCurve } from './curve.ts';
 import type { CurveColors } from './curve.ts';
 import { mountEditor, roundFromSearch } from './editor.ts';
@@ -25,25 +28,21 @@ import type { Editor } from './editor.ts';
 import { drawReplay, replayClock, replayFrame } from './replay.ts';
 import type { ReplayColors } from './replay.ts';
 import { renderReport, reportTable } from './report.ts';
+import { DEFAULT_SPEED, SPEEDS, paceFor, paceSlice, speedName } from './speed.ts';
+import type { SpeedName } from './speed.ts';
 import { studentStatus } from './status.ts';
+import { mountTeacher, rejectSeed } from './teacher.ts';
 
 export const BUDGET_MS = 60_000; // from the click (or a pilot seed's start), rendering included
-const SLICE_MS = 10; // training time per animation frame when not paced (Fast, and the pilot)
-/**
- * Episodes per second when paced. The hook of the lesson is that the class watches the GM learn: unpaced, Round 1
- * is stable in a fraction of a second; at this pace the curve climbs for about 20 to 40 s (stable needs 22,000 to
- * 46,000 episodes). G5's speed slider replaces it.
- */
-export const PACE = 1200;
-const MAX_FRAME_SECONDS = 0.1; // a slow or skipped frame never makes up more than a tenth of a second of training
+const SLICE_MS = 10; // training time per animation frame when not paced (Full speed, and the pilot)
 const REDRAW_MS = 100; // at most 10 curve redraws (and canvas measurements) a second
 const MAX_SEED = 4_294_967_295;
 const MAX_BACKING_WIDTH = 1920;
 const MAX_BACKING_HEIGHT = 1080;
 
-/** The rounds the selector offers (BRIEF section 8), in order; their labels come from the presets. */
+/** The rounds the teacher's radios offer (BRIEF section 8), in order; their labels come from the presets. */
 export const ROUNDS: readonly PresetName[] = ['round1', 'round2', 'round3'];
-/** The one line under the selector, per round. */
+/** The one line beside the round's label, per round. */
 const ROUND_NOTES: Readonly<Partial<Record<PresetName, string>>> = {
   round1: 'The GM is paid on profit and nothing else. Read the plan, predict what the GM will do, then put it to work.',
   round2: 'Turn on up to three measures and set their dollar amounts. Write your prediction, then put the GM to work.',
@@ -57,6 +56,8 @@ const PLAN_CHANGED = 'The plan changed. Put the GM to work to see what it does w
 /** The button's words after a run (and after the pilot). */
 export const AGAIN = 'Put the GM to work again';
 const ERROR_LINE = 'The GM stopped because of a problem. Ask your teacher for help.';
+const NO_RUN = 'No run yet.';
+const SEED_MESSAGE = `The seed must be a whole number from 0 to ${MAX_SEED}.`;
 
 interface CanvasSize {
   width: number; // CSS pixels
@@ -64,14 +65,31 @@ interface CanvasSize {
   ratio: number; // backing-store pixels per CSS pixel
 }
 
+/** What a run was started with, snapshotted at the click (D47); the pilot's own for each seed. */
+export interface RunSetup {
+  seed: number;
+  round: PresetName;
+  speed: SpeedName; // the pacing applied to the run (the pilot's is always 'full')
+  prediction: string; // the team's prediction as it stood at the click: read there and nowhere else (D2, D47)
+}
+
 export interface Page {
-  round: HTMLSelectElement; // the round selector (G5 moves it into the teacher panel)
+  roundLabel: HTMLElement; // the round as a line of text on the student's page (D34)
   roundNote: HTMLElement;
+  rounds: HTMLInputElement[]; // the teacher's three round radios, in ROUNDS order
   editor: Editor;
-  prediction: HTMLTextAreaElement; // the team's prediction: never read, never stored (D2)
+  prediction: HTMLTextAreaElement; // the team's prediction: read only at the click, for the export (D2, D47)
   seed: HTMLInputElement;
+  speed: HTMLSelectElement; // filled from SPEEDS
   train: HTMLButtonElement;
-  fast: HTMLInputElement; // checked: no pacing, train as fast as the machine allows
+  teacher: HTMLElement; // the tray
+  teacherOpen: HTMLButtonElement; // the tab in the corner
+  teacherClose: HTMLButtonElement;
+  reveal: HTMLButtonElement;
+  rules: HTMLElement; // the hidden rules section, under the report
+  rulesList: HTMLOListElement;
+  exportButton: HTMLButtonElement;
+  check: HTMLElement; // the learner's check line in the tray (D6, section 13)
   watch: HTMLElement; // the status line, the curve and the replay: scrolled into view at the click
   status: HTMLElement;
   canvas: HTMLCanvasElement; // the bonus curve
@@ -100,6 +118,10 @@ export interface Page {
   playing: boolean;
   /** The replay canvas's size, measured at the 10 Hz redraw and on resize, never every frame. */
   replaySize: CanvasSize | null;
+  /** The current or last run's setup, from the click; null before a run and after a clear. */
+  setup: RunSetup | null;
+  /** The last run's result, set when it resolves; null before a run, during one and after a clear. */
+  result: RunResult | null;
 }
 
 export interface RunResult {
@@ -228,6 +250,7 @@ function showWeek(page: Page, trace: EpisodeTrace, now: number): void {
   page.trace = trace;
   page.replayStartedAt = now;
   page.readout.textContent = describeWeek(trace.report);
+  page.replay.dataset.key = outcomeKey(trace.report);
 }
 
 /**
@@ -259,8 +282,8 @@ function playFinal(page: Page): void {
 
 /**
  * Trains one seed with the frame loop, from `startedAt` (performance.now() at the click). `label` goes in front of
- * the status line (the pilot names the seed). Paced: each frame trains PACE episodes per second of the time since the
- * previous frame; unpaced: each frame trains for 10 ms. Every frame paints the replay; when the week on it has played,
+ * the status line (the pilot names the seed). Paced (`pace` weeks a second): each frame trains the slice paceSlice
+ * gives for the time since the previous frame; unpaced (null): each frame trains for 10 ms. Every frame paints the replay; when the week on it has played,
  * a fresh week the GM's way replaces it and the sentence follows. Resolves when the trainer is done or the budget
  * has run out, after the final week is on the page; rejects with RunCancelled if clearRun ran meanwhile.
  */
@@ -269,7 +292,7 @@ export function runTraining(
   seed: number,
   startedAt: number,
   label: string,
-  paced: boolean,
+  pace: number | null,
 ): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     const token = ++page.token; // this run's frames; clearRun moves it on to cancel them
@@ -281,7 +304,9 @@ export function runTraining(
       showWeek(page, trainer.evaluateTrace(), performance.now());
       page.replay.dataset.week = 'training';
       page.replayCaption.textContent = REPLAY_CAPTION_TRAINING;
-      page.status.textContent = label + studentStatus(trainer.snapshot(), false);
+      const first = trainer.snapshot();
+      page.status.textContent = label + studentStatus(first, false);
+      page.check.textContent = checkLine(first, performance.now() - startedAt, false);
       redraw(page);
     } catch (err) {
       reject(err);
@@ -302,13 +327,11 @@ export function runTraining(
         if (start - startedAt >= BUDGET_MS) {
           // The deadline is checked before a slice, so no training is started past it.
           snapshot = trainer.snapshot();
-        } else if (paced) {
-          const seconds = Math.min(MAX_FRAME_SECONDS, (start - lastFrame) / 1000);
+        } else if (pace !== null) {
+          const slice = paceSlice(owed, start - lastFrame, pace);
           lastFrame = start;
-          owed += PACE * seconds;
-          const k = Math.max(1, Math.floor(owed));
-          owed -= k;
-          snapshot = trainer.runEpisodes(k); // the training slice
+          owed = slice.owed;
+          snapshot = trainer.runEpisodes(slice.episodes); // the training slice
         } else {
           snapshot = trainer.runFor(SLICE_MS); // the training slice: no DOM, no drawing
         }
@@ -330,7 +353,10 @@ export function runTraining(
           page.status.textContent = label + studentStatus(snapshot, timeUp);
           // The clock stops after that work, so a run that finishes its last slice near the deadline is counted late.
           const ms = performance.now() - startedAt;
-          resolve({ snapshot, ms, outOfBudget: ms >= BUDGET_MS });
+          const result: RunResult = { snapshot, ms, outOfBudget: ms >= BUDGET_MS };
+          page.check.textContent = checkLine(snapshot, ms, result.outOfBudget);
+          page.result = result; // before resolving, so the click's finally enables the export
+          resolve(result);
           playFinal(page); // the final week once more, holding on Friday: outside the clock
           return;
         }
@@ -339,6 +365,7 @@ export function runTraining(
         if (now - lastDraw >= REDRAW_MS) {
           lastDraw = now;
           page.status.textContent = label + studentStatus(snapshot, false);
+          page.check.textContent = checkLine(snapshot, now - startedAt, false);
           redraw(page, now);
         } else {
           paintReplay(page, now);
@@ -359,28 +386,33 @@ export function showError(page: Page, err: unknown): void {
 }
 
 /**
- * Everything the team can touch: the editor, the round selector, the prediction, the seed, Fast and the button. Off
- * for a run and for the whole pilot; on restores the editor to its round's own locks.
+ * Everything a run locks: the editor, the prediction, the button, and the teacher's round radios, seed, speed and
+ * export. Off for a run and for the whole pilot; on restores the editor to its round's own locks, and the export
+ * only when there is a run to export. The reveal, the tab and the tray's close button are never locked.
  */
 export function setControls(page: Page, enabled: boolean): void {
   page.editor.setEnabled(enabled);
-  page.round.disabled = !enabled;
   page.prediction.disabled = !enabled;
+  for (const radio of page.rounds) radio.disabled = !enabled;
   page.seed.disabled = !enabled;
-  page.fast.disabled = !enabled;
+  page.speed.disabled = !enabled;
   page.train.disabled = !enabled;
+  page.exportButton.disabled = !(enabled && page.result !== null && page.trace !== null);
 }
 
-/** Shows `name` in the selector and its line under it. Does not touch the editor. */
+/** Checks `name`'s radio and writes the round line (its label and note). Does not touch the editor. */
 export function showRound(page: Page, name: PresetName): void {
-  page.round.value = name;
+  for (const radio of page.rounds) radio.checked = radio.value === name;
+  page.roundLabel.textContent = loadPreset(name).label;
   page.roundNote.textContent = ROUND_NOTES[name] ?? '';
 }
 
 /**
  * Clears the last run's results, the one lifecycle operation (D37): moves the token on (any scheduled replay or
- * training frame of the old run then does nothing), drops the trace and its clock, and resets the replay, its caption
- * and button, the table, the sentence and its label, and the curve. After a run the status says the plan changed.
+ * training frame of the old run then does nothing), drops the trace and its clock, the run's setup and result, and
+ * resets the replay, its caption and button, the table, the sentence and its label, the curve, the check line and the
+ * export button. The hidden rules are the config's, not the run's: they stay. After a run the status says the plan
+ * changed.
  * Called by an edit, a round change, the button's click before a run, and the pilot before each seed.
  */
 export function clearRun(page: Page): void {
@@ -388,15 +420,20 @@ export function clearRun(page: Page): void {
   page.token++;
   page.trainer = null;
   page.trace = null;
+  page.setup = null;
+  page.result = null;
   page.replayStartedAt = 0;
   page.playing = false;
   page.replay.dataset.week = 'none';
+  delete page.replay.dataset.key;
   page.replayCaption.textContent = REPLAY_CAPTION;
   page.replayAgain.hidden = true;
   page.reportTable.replaceChildren();
   page.report.hidden = true;
   page.readout.textContent = '';
   page.readoutLabel.textContent = READOUT_LABEL;
+  page.check.textContent = NO_RUN;
+  page.exportButton.disabled = true;
   redraw(page); // the empty curve and the replay's placeholder
   if (hadRun) page.status.textContent = PLAN_CHANGED;
 }
@@ -406,21 +443,34 @@ export function mountApp(): Page {
   const canvas = byId('curve', HTMLCanvasElement);
   const replay = byId('replay', HTMLCanvasElement);
   const world = loadDefaultConfig();
-  const round = byId('round', HTMLSelectElement);
-  for (const option of Array.from(round.options)) {
-    if ((ROUNDS as readonly string[]).includes(option.value)) option.textContent = loadPreset(option.value as PresetName).label;
+  const speed = byId('speed', HTMLSelectElement);
+  for (const s of SPEEDS) {
+    const option = document.createElement('option');
+    option.value = s.name;
+    option.textContent = s.label;
+    speed.appendChild(option);
   }
+  speed.value = DEFAULT_SPEED;
   const first = roundFromSearch(window.location.search);
   const editor = mountEditor(byId('editor', HTMLElement), world, loadPreset(first));
   const css = cssVars();
   const page: Page = {
-    round,
+    roundLabel: byId('round-label', HTMLElement),
     roundNote: byId('round-note', HTMLElement),
+    rounds: ROUNDS.map((name) => byId(`round-${name}`, HTMLInputElement)),
     editor,
     prediction: byId('prediction', HTMLTextAreaElement),
     seed: byId('seed', HTMLInputElement),
+    speed,
     train: byId('train', HTMLButtonElement),
-    fast: byId('fast', HTMLInputElement),
+    teacher: byId('teacher', HTMLElement),
+    teacherOpen: byId('teacher-open', HTMLButtonElement),
+    teacherClose: byId('teacher-close', HTMLButtonElement),
+    reveal: byId('reveal', HTMLButtonElement),
+    rules: byId('rules', HTMLElement),
+    rulesList: byId('rules-list', HTMLOListElement),
+    exportButton: byId('export', HTMLButtonElement),
+    check: byId('check', HTMLElement),
     watch: byId('watch', HTMLElement),
     status: byId('status', HTMLElement),
     canvas,
@@ -444,21 +494,26 @@ export function mountApp(): Page {
     token: 0,
     playing: false,
     replaySize: null,
+    setup: null,
+    result: null,
   };
   showRound(page, first);
 
   editor.onChange = () => clearRun(page);
-  page.round.addEventListener('change', () => {
-    const name = (ROUNDS as readonly string[]).includes(page.round.value) ? (page.round.value as PresetName) : 'round1';
-    showRound(page, name);
-    editor.load(loadPreset(name));
-  });
+  for (const radio of page.rounds) {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      const name = (ROUNDS as readonly string[]).includes(radio.value) ? (radio.value as PresetName) : 'round1';
+      showRound(page, name);
+      editor.load(loadPreset(name));
+    });
+  }
 
   page.train.addEventListener('click', () => {
     const clickedAt = performance.now();
     const seed = readSeed(page.seed);
     if (seed === null) {
-      page.status.textContent = `The seed must be a whole number from 0 to ${MAX_SEED}.`;
+      rejectSeed(page, SEED_MESSAGE); // into the tray, never the student's status (Astra, plan review)
       return;
     }
     try {
@@ -469,7 +524,13 @@ export function mountApp(): Page {
     }
     setControls(page, false);
     clearRun(page);
-    const run = runTraining(page, seed, clickedAt, '', !page.fast.checked);
+    page.setup = {
+      seed,
+      round: page.editor.preset().name,
+      speed: speedName(page.speed.value),
+      prediction: page.prediction.value, // read here and nowhere else (D2, D47)
+    };
+    const run = runTraining(page, seed, clickedAt, '', paceFor(page.speed.value));
     // The class watches the status, the curve and the replay without touching anything (D42). The scroll comes after
     // the run's first sentence is written, since that sentence makes the panel above taller.
     page.watch.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -496,6 +557,8 @@ export function mountApp(): Page {
       redraw(page);
     });
   });
+
+  mountTeacher(page);
 
   page.replay.dataset.week = 'none';
   redraw(page);

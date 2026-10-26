@@ -385,16 +385,41 @@ the header and gets no caption, and the walk's reputation gain is not named. Nev
 
 ## 11. What the teacher sees (G5)
 
-A teacher panel, closed by default, holding everything that is not the lesson: round preset buttons (the selector of
-D34 moves here); a seed field; a speed control (the Fast checkbox of D33 becomes it); a "reveal hidden rules" button
-that prints section 6 in plain words; the learner's check line (weeks trained, ε, evaluations, stable, target met:
-the instruments of section 13 and D6, read by the owner and the teacher, never part of the lesson); and an export
-button that downloads one JSON file per run: the config name, the reward spec, the prediction text, the readout, the
-training curve, the seed. No names, no team names unless the team types one into the prediction. The student's
-controls are the bonus plan, the prediction and Put the GM to work (D39, D45).
+A teacher panel, closed by default, holds everything that is not the lesson. It is a tray at the bottom of the
+window, opened by a small "Teacher" tab in the bottom-right corner (the one teacher's control that stays on the
+student's screen, D46) and closed by its Close button; closed, it adds no height to the page, so the fold of D42
+holds; open, it overlays the bottom of the window and the page gets that much bottom padding, so the report and the
+rules can always scroll clear of it. In it:
 
-Until G5 builds the panel, the pilot mode (`?pilot=N`, D31) is where "target met" is read on the page (`?pilot=1`
-checks one seed) and `npm run pilot` is the harness; after G4 the student's status line no longer shows it (D38).
+- **The round presets** as three radio buttons, Round 1, 2 and 3 (the selector of D34). Choosing one loads the
+  preset into the editor, rewrites the round line above the plan ("Round 1: profit only" and its note) and clears
+  any run (D37). `?round=2|3` on the address still preloads a round.
+- **The seed** (0..4294967295). A bad seed at the click opens the tray, puts the message on the check line and
+  focuses the field; the student's status line never carries it.
+- **The speed** (D48): Slow (600 weeks a second), Normal (1,200, the constant of D33 and the default), Fast (2,400)
+  and Full speed (no pacing; the Fast checkbox of D33). The paced arithmetic is the one the button had: the time
+  since the previous frame, capped at 0.1 s, times the pace, carried as a fraction, at least one week a frame. The
+  pilot mode is never paced, whatever the control says.
+- **Reveal the hidden rules** prints section 6 in plain words, H1 to H12, one line each with every number from the
+  config, into a section under the report, and scrolls to it; a second press hides it. The rules are the config's,
+  not the run's: they stay through runs and clears.
+- **The check line**, the learner's instruments (section 13, D6), rewritten with the status: "Weeks trained 24,000
+  · ε 0.10 · evaluations 49 · stable · target met · 20.6 s"; while a run is on "… · not stable yet · 10.0 s";
+  "not stable" when a run ends unsettled; "target not met", or "no target for this plan" (D36), in place of
+  "target met"; ", over budget" after the seconds when the 60 s ran out; "No run yet." before a run.
+- **Export this run**, on from the end of a run until the next clear, downloads one JSON file,
+  `reward-the-pack-<round>-seed<seed>-<yyyymmdd>-<hhmm>.json`, from what the page holds, never running the GM's
+  week again: `version` 1, `app`, `exportedAt`, `config` (the config name), `round`, `seed`, `speed` (the pacing
+  applied: a pilot seed says `full`), `plan` (the RewardSpec of section 7), `planWords`, `prediction` (as it stood
+  when the GM was put to work, D47), `readout` (`sentence` and `report`, the run's final week, the same trace the
+  sentence, the replay and the table show), `curve` (`weeks`, `bonus`, `average`: three arrays of the run's length,
+  in cents), `evaluations` (`week`, `bonus`, `key`) and `learner` (`weeksTrained`, `epsilon`, `evaluations`,
+  `stable`, `hasTarget`, `targetMet`, `seconds`, `outOfBudget`). No names, no team names unless the team types one
+  into the prediction. A Blob download, never a request.
+
+The student's controls are the bonus plan, the prediction and Put the GM to work (D39, D45). The pilot mode
+(`?pilot=N`, D31) is the harness's page twin, not a lesson page: it keeps its table, prefixes the status line with
+"Pilot seed 2 of 20 · " and is never paced; its "target met" is also on the check line.
 
 ## 12. Headless sim
 

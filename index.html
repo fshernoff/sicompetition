@@ -10,15 +10,7 @@
       <h1>Reward the Pack</h1>
       <p class="tagline">Good Dog Daycare. You own it. The GM runs it. You write the bonus plan.</p>
 
-      <div class="round-bar">
-        <label for="round">Round</label>
-        <select id="round">
-          <option value="round1">Round 1: profit only</option>
-          <option value="round2">Round 2: up to three measures</option>
-          <option value="round3">Round 3: all six measures</option>
-        </select>
-        <p id="round-note" class="round-note"></p>
-      </div>
+      <p class="round-line"><span id="round-label">Round 1: profit only</span> <span id="round-note" class="round-note"></span></p>
 
       <section id="editor" aria-labelledby="editor-title">
         <h2 id="editor-title">The GM's bonus plan</h2>
@@ -40,10 +32,7 @@
       </div>
 
       <div class="controls">
-        <label for="seed">Seed</label>
-        <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
         <button id="train" type="button">Put the GM to work</button>
-        <label class="fast"><input id="fast" type="checkbox" /> Fast (no pacing)</label>
       </div>
 
       <section id="watch" aria-label="Watch the GM at work">
@@ -69,8 +58,40 @@
         <table id="report-table"></table>
       </section>
 
+      <section id="rules" aria-labelledby="rules-title" hidden>
+        <h2 id="rules-title">The hidden rules of Good Dog Daycare</h2>
+        <ol id="rules-list"></ol>
+      </section>
+
       <section id="pilot"></section>
     </main>
+
+    <button id="teacher-open" type="button" class="teacher-tab" aria-controls="teacher" aria-expanded="false">Teacher</button>
+    <aside id="teacher" class="teacher" hidden aria-label="Teacher panel">
+      <div class="teacher-inner">
+        <div class="teacher-row">
+          <fieldset id="round" class="rounds">
+            <legend>Round</legend>
+            <label><input type="radio" name="round" id="round-round1" value="round1" checked /> Round 1</label>
+            <label><input type="radio" name="round" id="round-round2" value="round2" /> Round 2</label>
+            <label><input type="radio" name="round" id="round-round3" value="round3" /> Round 3</label>
+          </fieldset>
+          <span class="teacher-field">
+            <label for="seed">Seed</label>
+            <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
+          </span>
+          <span class="teacher-field">
+            <label for="speed">Speed</label>
+            <select id="speed"></select>
+          </span>
+          <button id="reveal" type="button">Reveal the hidden rules</button>
+          <button id="export" type="button" disabled>Export this run</button>
+          <button id="teacher-close" type="button">Close</button>
+        </div>
+        <p id="check" class="check">No run yet.</p>
+        <p class="teacher-hint">Slow takes about twice as long and a run may hit the 60 s limit. The export carries the prediction as it stood when the GM was put to work.</p>
+      </div>
+    </aside>
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

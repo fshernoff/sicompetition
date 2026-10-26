@@ -36,12 +36,10 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 [hidden] { display: none !important; }
 :disabled { cursor: not-allowed; }
 
-/* The round selector and its one line. */
-.round-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; margin: 0 0 8px; }
-.round-bar label { font-weight: 600; }
-#round { font: inherit; padding: 4px 8px; border: 1px solid var(--muted); border-radius: 6px; background: #fff; color: var(--ink); max-width: 100%; }
-#round:disabled { opacity: 0.55; }
-.round-note { flex: 1 1 20em; margin: 0; color: var(--muted); }
+/* The round as a line of text (the teacher picks it in the panel, D34): the label bold, its note muted. */
+.round-line { margin: 0 0 8px; }
+#round-label { font-weight: 600; margin-right: 6px; }
+.round-note { color: var(--muted); }
 
 /* The bonus plan editor: checkbox and name | slider | signed weight | unit. */
 #editor {
@@ -109,10 +107,6 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 }
 
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 10px 0 8px; }
-.controls label { font-weight: 600; }
-.controls label.fast { font-weight: 400; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-#fast { width: 1.1em; height: 1.1em; margin: 0; }
-#seed { font: inherit; width: 9em; padding: 6px 8px; border: 1px solid var(--muted); border-radius: 6px; }
 #train {
   font: inherit;
   font-weight: 600;
@@ -124,7 +118,6 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
   cursor: pointer;
 }
 #train:disabled { opacity: 0.55; cursor: progress; }
-#seed:disabled, .controls label.fast:has(input:disabled) { opacity: 0.55; }
 /* The watching area: the status line, then the curve (about 60 %) beside the replay (about 40 %) at the same
    height, stacked below 900 px. The click scrolls it to the top; min-height gives that scroll room while the table
    below is still hidden (D42). */
@@ -194,6 +187,69 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 
 #readout { margin: 0; min-height: 2.9em; font-size: 1.15em; font-weight: 600; line-height: 1.35; }
 #readout:empty::before { content: 'The readout appears here once the GM is on the job.'; color: var(--muted); font-weight: 400; font-size: 0.87em; }
+
+/* The hidden rules, printed under the report when the teacher reveals them (BRIEF section 11). */
+#rules { margin: 20px 0 0; }
+#rules h2 { font-size: 1.15em; margin: 0 0 6px; }
+#rules-list { margin: 0; padding-left: 1.6em; line-height: 1.55; }
+#rules-list li { margin: 0 0 6px; }
+
+/* The teacher's tab: small, in the bottom-right corner, over the page; it takes no room in the layout (D46). */
+.teacher-tab {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  font: inherit;
+  font-size: 0.85em;
+  padding: 4px 12px;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--chart-grid);
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.teacher-tab:hover, .teacher-tab:focus-visible { opacity: 1; color: var(--ink); }
+
+/* The teacher's tray: fixed to the bottom of the window, over the page. Open, the page gets its measured height as
+   bottom padding (--tray-height, set by teacher.ts), so the last rows can scroll above it. */
+.teacher {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  font-size: 0.8em;
+  padding: 10px 16px;
+  background: var(--paper);
+  border-top: 1px solid var(--muted);
+  box-shadow: 0 -4px 14px rgba(31, 42, 31, 0.16);
+}
+.teacher-inner { max-width: 1100px; margin: 0 auto; }
+.teacher-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.teacher label { font-weight: 600; }
+.teacher-field { display: inline-flex; align-items: center; gap: 4px; }
+.rounds { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.rounds legend { float: left; padding: 0; margin: 0 2px 0 0; font-weight: 600; }
+.rounds label { display: inline-flex; align-items: center; gap: 4px; font-weight: 400; cursor: pointer; }
+.rounds input { margin: 0; }
+.rounds label:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+.teacher input[type='number'], .teacher select, .teacher button {
+  font: inherit;
+  padding: 3px 7px;
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+}
+#seed { width: 7em; }
+.teacher button { cursor: pointer; }
+.teacher input:disabled, .teacher select:disabled, .teacher button:disabled { opacity: 0.55; cursor: not-allowed; }
+.check { margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+.teacher-hint { margin: 2px 0 0; font-size: 0.85em; color: var(--muted); }
+html.teacher-open #app { padding-bottom: calc(var(--tray-height, 160px) + 16px); }
+html.teacher-open { scroll-padding-bottom: var(--tray-height, 160px); }
 
 #pilot:empty { display: none; }
 #pilot h2 { font-size: 1.1em; margin: 24px 0 8px; }

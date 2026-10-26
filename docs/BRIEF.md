@@ -24,6 +24,16 @@ status line says how many weeks the GM has practised and whether it has settled 
 nothing else. The learner's instruments (ε, evaluation counts, "target met"), the seed, the speed and the round
 selector are the teacher's (section 11) and leave the student's screen in G4 and G5 (D38, D39).
 
+The status line's three sentences (G4, D41): while the GM trains, "The GM has practised 12,000 weeks so far and is
+still changing its mind."; when it is stable (section 13), "The GM practised 24,000 weeks and has settled on how it
+runs the week."; when a run ends without settling, "The GM practised 150,000 weeks and is still changing its mind.",
+prefixed "Time is up: the GM practised …" when the 60 s budget ran out first. The curve's caption: "Watch the GM get
+better at earning its bonus. The dots are its test weeks: how it would run the week right now without trying anything
+new."; its axes read "Weeks of practice" and "Bonus points per week", its legend "Each practice week", "Average of
+the last 100 weeks", "Test week". The readout is three views of the same test week: the sentence beside the
+prediction, the replay and the table (section 10); while the GM trains, the sentence describes the week the replay
+is playing, and when the run ends all three show the final week.
+
 ## 2. The week
 
 | Symbol | Meaning | Values |
@@ -316,6 +326,57 @@ accepted = requests (a closed day never counts). Pickup values are as they stood
 
 The sentence form (G4): "The GM accepted every booking on 5 of 5 days, ran the floor with 1 staffer on 4 days, chose
 nap 0 times, averaged 18 dogs per staffer, and had 11 incidents."
+
+### 10.1 The table (G4)
+
+A column per day, Mon to Fri, and a Week column; three groups, each under a heading row. **Operations:** Requests;
+Dogs accepted; Accepted every booking ("yes", "no", "closed"; week: "5 of 5 days"); Day rate ("premium $52";
+"closed" on a closed day; week: "premium × 5", or "low × 1, premium × 4", closed days left out); Crew scheduled
+(week: "6 staff-days"); Crew on the floor ("0, called out" on a closed day; week: "1 staffer on 4 days"); Activities
+(drop-off · late morning · afternoon · pickup), the four blocks as resolved, the drop-off written "arrivals" (always
+free play, not a choice, section 2), a fallback written as what was asked and what ran ("walk → free play"),
+"closed" on a closed day (week: "nap 0, clean 0, walk 0"); Dogs per staffer (one decimal; "—" with no dogs); Blocks
+over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits; Blocks with crew fatigue above 70%;
+Reputation at pickup (week: "50 → 21 (−29)"); Cleanliness at pickup; Crew fatigue at pickup (both rounded; week:
+start → Friday's pickup with the change). A closed day keeps its requests, its scheduled crew and its pickup values.
+**Money ($):** Day rates; Activity add-ons; Revenue (bold); Wages; Refunds; Vet bills; Fines; Cleaning supplies;
+Profit (bold); Cash at close (from $2,000, running, carried over a closed day; week: Friday's). Whole dollars with
+commas, a typographic minus for a loss ("−$120"). **The GM's bonus:** one row per measure that is on, in section 7
+order, labelled with its name and weight ("Profit today ($), +10 per $100"), the points it earned each day (weight ×
+the day's delta ÷ the unit; reputation's day delta is the change since the previous pickup, Monday against the
+week's start, so a closed day's closure hit is paid) and in the week; then "Bonus points this week" (bold), whose
+week cell is the plan's total reward. Points carry a sign and at most two decimals ("+123.5", "+9.78", "−35", "0";
+profit is whole dollars ÷ 100 × an integer weight, so two decimals are exact and the days sum to the week). Nothing
+on: one row, "No measure is on: the GM is paid nothing." The six KPI totals are readable unweighted whatever the
+plan: Dogs accepted, Incidents, Blocks over 15, Blocks with crew fatigue above 70%, Reputation at pickup's week
+cell, Profit. The table appears when a run ends, never during it, and clears with the run (D37). The 15, the 70, the
+prices and the $2,000 are `bookings.legalRatio`, `fatigue.kpiThreshold`, `rates` and `cash.weekStart`.
+
+### 10.2 The replay (G4)
+
+The greedy test week played block by block on a canvas, 300 ms a block and a 1.5 s hold on Friday's pickup. While
+the GM trains, the replay plays its current test week and takes a fresh one each time a week finishes, and the
+sentence follows it (the class watches the untrained GM's muddle turn into the packed yard); when the run ends it
+plays the final week, the one the sentence and the table describe, once more and holds; a button replays it. A
+frame for step t shows the floor during block t. The day as resolved at drop-off (dogs, crew, scheduled crew, closed,
+the rate and the bookings) is read from the state after the drop-off step and from the state before the action in
+the other three blocks (the state after pickup is already the next morning's); the day, the block, today's requests
+and the solo streak from the state before the step; nothing is on the floor on a closed day. During a walk the
+walking group (up to 6 dogs and one staffer) is outside the fence and the floor inside holds the rest; the gauge
+reads the floor after the group has left. Energy, cleanliness and fatigue are read after the block, at pickup from
+the pickup snapshot; reputation and cash after the step; tomorrow's requests are the projection after the block
+and, at pickup, the final figure; counters run over the week so far. On screen: a header "Monday · late morning ·
+free play" (a fallback as "walk → free play", "closed" on a closed day) and the day's plan ("20 asked · 20 accepted, every booking · premium rate · crew 1 scheduled, 1 in" (the booking choice in
+words: every booking, capped at the legal ratio, capped at a safe ratio; never the number behind it, D44)); the yard with the dogs and the crew drawn for the activity (dogs crated
+during a clean; a "Closed" sign); the dogs-per-staffer gauge from 0 to 30 with one mark at 15 and the band above it
+tinted (10 is H1's number and stays hidden; 15 is public through the measure's name, D43); the incident counter with
+its icon, pulsing in a block with an incident; the reputation meter 0 to 100; the cash counter; small meters for
+energy, cleanliness and crew fatigue; "Tomorrow: 19 asking" and "Days the crew ran solo: 3" (section 3: the state is
+visible, the rules are not); small counters for dogs sent home sick and inspector visits when above 0. Captions
+under the yard name the block's events as events, never as rules (D44): "Incident", "Vet bill $150", "Inspector:
+$250 fine", "2 dogs sent home sick", "The staffer called out: closed today", "Walk photo posted"; a fallback is in
+the header and gets no caption, and the walk's reputation gain is not named. Never "injury". Before a run: "The GM's
+week plays here while it trains."
 
 ## 11. What the teacher sees (G5)
 

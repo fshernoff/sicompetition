@@ -29,7 +29,7 @@
           <label class="compare-label" for="prediction">Your team's prediction (write it before you train)</label>
           <textarea
             id="prediction"
-            rows="3"
+            rows="2"
             placeholder="What will the GM do with this bonus plan? How many dogs, how many staff on the floor, how many incidents?"
           ></textarea>
         </div>
@@ -45,9 +45,29 @@
         <button id="train" type="button">Train the GM</button>
         <label class="fast"><input id="fast" type="checkbox" /> Fast (no pacing)</label>
       </div>
-      <p id="status">Write your prediction, then press Train the GM.</p>
 
-      <canvas id="curve" width="1100" height="619" aria-label="The training curve: bonus points per week as the GM trains"></canvas>
+      <section id="watch" aria-label="Watch the GM train">
+        <p id="status">Write your prediction, then press Train the GM.</p>
+        <div class="watch-row">
+          <figure class="curve-figure">
+            <canvas id="curve" width="1100" height="619" aria-label="The training curve: bonus points per week as the GM practises"></canvas>
+            <figcaption id="curve-caption">
+              Watch the GM get better at earning its bonus. The dots are its test weeks: how it would run the week right
+              now without trying anything new.
+            </figcaption>
+          </figure>
+          <figure class="replay-figure">
+            <canvas id="replay" width="640" height="540" data-week="none" aria-label="The GM's test week, played block by block"></canvas>
+            <figcaption id="replay-caption">The GM's test week</figcaption>
+            <button id="replay-again" type="button" hidden>Watch the week again</button>
+          </figure>
+        </div>
+      </section>
+
+      <section id="report" aria-labelledby="report-title" hidden>
+        <h2 id="report-title">The weekly P&amp;L and operations report</h2>
+        <table id="report-table"></table>
+      </section>
 
       <section id="pilot"></section>
     </main>

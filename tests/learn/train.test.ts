@@ -4,7 +4,7 @@ import { CLOSED_OBSERVATION, OBSERVATION_COUNT } from '../../src/learn/observe.t
 import { MAX_ACTIONS, QTable } from '../../src/learn/qlearn.ts';
 import { DEFAULT_LEARNER, EVAL_BASE_INDEX, MovingAverage, Trainer, epsilonAt, trainEpisode } from '../../src/learn/train.ts';
 import type { Chooser } from '../../src/learn/train.ts';
-import { runEpisode } from '../../src/sim/episode.ts';
+import { buildReport, runEpisode } from '../../src/sim/episode.ts';
 import { recklessPolicy } from '../../src/sim/policies.ts';
 import { isRound1Outcome, outcomeKey } from '../../src/sim/readout.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
@@ -279,5 +279,40 @@ describe('Trainer target', () => {
     expect(empty.lastReward).toBe(0);
     expect(empty.movingAverage).toBe(0);
     expect(empty.lastEval?.reward).toBe(0);
+  }, 60_000);
+});
+
+describe('Trainer.evaluateTrace', () => {
+  it('returns the 20 steps of the greedy week and the report evaluate() returns', () => {
+    const t = new Trainer(config, round1, 2);
+    t.runEpisodes(3000);
+    const trace = t.evaluateTrace();
+    expect(trace.steps).toHaveLength(20);
+    expect(trace.seeds).toEqual(episodeSeeds(2, EVAL_BASE_INDEX));
+    expect(trace.report).toEqual(t.evaluate());
+    expect(buildReport(trace.steps, trace.seeds)).toEqual(trace.report);
+    expect(t.evaluateTrace().report).toEqual(trace.report); // both streams reset: the same week twice
+    expect(t.evaluateTrace(3).report).toEqual(t.evaluateOn(3));
+    expect(t.evaluateTrace(3).seeds).toEqual(episodeSeeds(2, EVAL_BASE_INDEX + 3));
+    expect(t.evaluateTrace(3).report).not.toEqual(trace.report);
+  });
+});
+
+describe('Trainer.evaluateTrace between slices', () => {
+  it('never changes the run: a trainer evaluated between every slice ends as one that never was (Astra, G4 plan review)', () => {
+    const quiet = new Trainer(config, round1, 3);
+    const watched = new Trainer(config, round1, 3);
+    const end = quiet.runEpisodes(quiet.config.maxEpisodes);
+    let s = watched.snapshot();
+    while (!s.done) {
+      watched.evaluateTrace();
+      watched.evaluateTrace(2);
+      s = watched.runEpisodes(700); // slices that do not line up with the evaluation schedule
+    }
+    expect(s.episodes).toBe(end.episodes);
+    expect({ ...s, elapsedMs: 0 }).toEqual({ ...end, elapsedMs: 0 });
+    expect(watched.curve()).toEqual(quiet.curve());
+    expect(watched.evals().map((e) => [e.episode, e.key, e.reward])).toEqual(quiet.evals().map((e) => [e.episode, e.key, e.reward]));
+    expect(watched.evaluateTrace()).toEqual(quiet.evaluateTrace());
   }, 60_000);
 });

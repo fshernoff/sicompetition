@@ -21,6 +21,25 @@ export interface CurveOptions {
 
 const FONT_FAMILY = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 
+export interface CurveWords {
+  xAxis: string;
+  yAxis: string;
+  /** The legend's three lines: each practice week, the average, the test weeks. */
+  legend: string[];
+}
+
+/**
+ * The words on the chart, in the student's (D38): weeks of practice and test weeks, never episodes or exploring.
+ * drawCurve uses them for the axis titles and the legend.
+ */
+export function curveWords(averageWindow: number): CurveWords {
+  return {
+    xAxis: 'Weeks of practice',
+    yAxis: 'Bonus points per week',
+    legend: ['Each practice week', `Average of the last ${averageWindow} weeks`, 'Test week'],
+  };
+}
+
 /** A round step (1, 2, 2.5 or 5 times a power of ten) that cuts `span` into about `ticks` pieces. */
 export function niceStep(span: number, ticks: number): number {
   if (!(span > 0)) return 1;
@@ -132,16 +151,17 @@ export function drawCurve(
   }
   ctx.stroke();
 
-  // Axis titles.
+  // Axis titles, in the student's words (curveWords).
+  const words = curveWords(options.averageWindow);
   ctx.fillStyle = colors.ink;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  ctx.fillText('Training weeks (episodes)', left + plotW / 2, height - fontPx * 0.2);
+  ctx.fillText(words.xAxis, left + plotW / 2, height - fontPx * 0.2);
   ctx.save();
   ctx.translate(fontPx * 0.2, top + plotH / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textBaseline = 'top';
-  ctx.fillText('Bonus points per week', 0, 0);
+  ctx.fillText(words.yAxis, 0, 0);
   ctx.restore();
 
   if (n === 0) {
@@ -259,7 +279,7 @@ function drawLegend(
   options: CurveOptions,
 ): void {
   const { colors } = options;
-  const labels = ['Each training week', `Average of the last ${options.averageWindow} weeks`, 'Test week (no exploring)'];
+  const labels = curveWords(options.averageWindow).legend;
   const swatch = fontPx * 1.8;
   const row = fontPx * 1.5;
   let textWidth = 0;

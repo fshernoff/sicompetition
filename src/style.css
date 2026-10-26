@@ -11,6 +11,16 @@
   --chart-week: rgba(31, 42, 31, 0.22);
   --chart-average: #1d5fbf;
   --chart-test: #d9480f;
+  /* The week replay: the yard is --grass on the chart paper; three coats, the crew, and the HUD's colours. */
+  --replay-fence: #8a6a46;
+  --replay-dog-1: #c0702f;
+  --replay-dog-2: #3d3027;
+  --replay-dog-3: #8a96a0;
+  --replay-crew: #1d5fbf;
+  --replay-incident: #d03a1b;
+  --replay-reputation: #b8860b;
+  --replay-cash: #2b8a3e;
+  --replay-gauge-over: rgba(208, 58, 27, 0.2);
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 18px;
   line-height: 1.45;
@@ -18,14 +28,16 @@
   background: var(--paper);
 }
 body { margin: 0; }
-#app { max-width: 1100px; margin: 0 auto; padding: 16px; }
-h1 { margin: 0.2em 0 0.3em; }
-.tagline { margin: 0 0 12px; }
+#app { max-width: 1100px; margin: 0 auto; padding: 12px 16px 16px; }
+/* Tight above the controls: on a 1366 × 768 Chromebook Train is on screen without scrolling (D42). */
+h1 { margin: 0 0 2px; line-height: 1.15; }
+.tagline { margin: 0 0 8px; }
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 :disabled { cursor: not-allowed; }
 
 /* The round selector and its one line. */
-.round-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 12px; }
+.round-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; margin: 0 0 8px; }
 .round-bar label { font-weight: 600; }
 #round { font: inherit; padding: 4px 8px; border: 1px solid var(--muted); border-radius: 6px; background: #fff; color: var(--ink); max-width: 100%; }
 #round:disabled { opacity: 0.55; }
@@ -33,20 +45,20 @@ h1 { margin: 0.2em 0 0.3em; }
 
 /* The bonus plan editor: checkbox and name | slider | signed weight | unit. */
 #editor {
-  margin: 0 0 16px;
-  padding: 12px 16px;
+  margin: 0 0 10px;
+  padding: 8px 14px;
   background: #fff;
   border: 1px solid var(--chart-grid);
   border-radius: 8px;
 }
-#editor h2 { font-size: 1.05em; margin: 0 0 6px; }
-.kpi-rows { display: grid; gap: 2px 0; }
+#editor h2 { font-size: 1.05em; margin: 0 0 2px; }
+.kpi-rows { display: grid; gap: 0; }
 .kpi-row {
   display: grid;
   grid-template-columns: minmax(12em, 15em) minmax(8em, 1fr) 3.2em 6.5em;
   align-items: center;
   gap: 4px 14px;
-  padding: 2px 6px;
+  padding: 1px 6px;
   border-radius: 6px;
 }
 .kpi-row.off { color: var(--muted); }
@@ -59,8 +71,8 @@ h1 { margin: 0.2em 0 0.3em; }
 .kpi-weight:disabled { filter: grayscale(1); }
 .kpi-value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .kpi-per { color: var(--muted); font-size: 0.9em; }
-.plan-limit { margin: 8px 0 4px; color: var(--muted); font-size: 0.95em; }
-.plan-words { margin: 4px 0 0; font-weight: 700; font-size: 1.05em; }
+.plan-limit { margin: 4px 0 2px; color: var(--muted); font-size: 0.95em; }
+.plan-words { margin: 2px 0 0; font-weight: 700; font-size: 1.05em; }
 .plan-note { margin: 2px 0 0; color: var(--muted); font-size: 0.9em; }
 .plan-note:empty { display: none; }
 
@@ -71,7 +83,7 @@ h1 { margin: 0.2em 0 0.3em; }
 #prediction {
   flex: 1;
   width: 100%;
-  min-height: 4.5em;
+  min-height: 3.7em;
   font: inherit;
   padding: 6px 8px;
   border: 1px solid var(--muted);
@@ -84,6 +96,7 @@ h1 { margin: 0.2em 0 0.3em; }
 
 @media (max-width: 700px) {
   .compare { grid-template-columns: 1fr; }
+  #prediction { min-height: 4.5em; } /* the placeholder needs three lines in one column */
   .kpi-row {
     grid-template-columns: 1fr 3.2em 6em;
     grid-template-areas: 'name name name' 'slider value per';
@@ -95,7 +108,7 @@ h1 { margin: 0.2em 0 0.3em; }
   .kpi-per { grid-area: per; }
 }
 
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0 8px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 10px 0 8px; }
 .controls label { font-weight: 600; }
 .controls label.fast { font-weight: 400; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 #fast { width: 1.1em; height: 1.1em; margin: 0; }
@@ -112,19 +125,74 @@ h1 { margin: 0.2em 0 0.3em; }
 }
 #train:disabled { opacity: 0.55; cursor: progress; }
 #seed:disabled, .controls label.fast:has(input:disabled) { opacity: 0.55; }
-#status { min-height: 1.45em; margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
+/* The watching area: the status line, then the curve (about 60 %) beside the replay (about 40 %) at the same
+   height, stacked below 900 px. The click scrolls it to the top; min-height gives that scroll room while the table
+   below is still hidden (D42). */
+#watch { min-height: 100vh; scroll-margin-top: 8px; }
+#status { min-height: 1.45em; margin: 8px 0 10px; font-variant-numeric: tabular-nums; }
+.watch-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.watch-row figure { margin: 0; min-width: 0; }
+.watch-row figcaption { margin: 6px 2px 0; }
+#replay-caption { font-weight: 600; }
 
-#curve {
+#curve, #replay {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 16 / 9;
   background: var(--chart-paper);
   border: 1px solid var(--chart-grid);
   border-radius: 8px;
 }
+#curve { aspect-ratio: 16 / 9; }
+/* 3 : 2 of the width at 16 : 9 and 32 : 27 keeps the two canvases the same height at any width. */
+#replay { aspect-ratio: 32 / 27; }
+#replay-again {
+  font: inherit;
+  margin: 8px 0 0;
+  padding: 6px 14px;
+  color: var(--accent);
+  background: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
 
-#readout { margin: 0; min-height: 2.9em; font-size: 1.15em; font-weight: 600; }
+@media (max-width: 900px) {
+  .watch-row { grid-template-columns: minmax(0, 1fr); }
+  #replay { aspect-ratio: 4 / 3; max-width: 640px; }
+}
+
+/* The weekly P&L and operations report: a column per day and the week. A narrow screen scrolls the table inside
+   its section, never the page; the line names stay put while it scrolls. */
+#report { margin: 20px 0 0; overflow-x: auto; }
+#report h2 { font-size: 1.15em; margin: 0 0 6px; }
+#report-table { border-collapse: collapse; width: 100%; min-width: 860px; background: #fff; font-variant-numeric: tabular-nums; }
+#report-table caption { caption-side: top; text-align: left; color: var(--muted); padding: 0 0 6px; }
+#report-table th, #report-table td { padding: 4px 10px; border-bottom: 1px solid var(--chart-grid); vertical-align: top; }
+#report-table td { text-align: right; }
+#report-table thead th { text-align: right; font-weight: 600; border-bottom: 2px solid var(--ink); }
+#report-table th[scope='row'], #report-table thead th:first-child {
+  position: sticky;
+  left: 0;
+  min-width: 15em;
+  text-align: left;
+  font-weight: 400;
+  background: #fff;
+}
+#report-table th[scope='colgroup'] {
+  text-align: left;
+  font-weight: 700;
+  padding-top: 14px;
+  background: var(--paper);
+  border-bottom: 2px solid var(--ink);
+}
+#report-table tr.emphasis th, #report-table tr.emphasis td { font-weight: 700; }
+#report-table td:last-child, #report-table thead th:last-child { border-left: 1px solid var(--chart-grid); }
+@media (max-width: 700px) {
+  #report-table th[scope='row'], #report-table thead th:first-child { min-width: 9em; }
+}
+
+#readout { margin: 0; min-height: 2.9em; font-size: 1.15em; font-weight: 600; line-height: 1.35; }
 #readout:empty::before { content: 'The readout appears here after training.'; color: var(--muted); font-weight: 400; font-size: 0.87em; }
 
 #pilot:empty { display: none; }

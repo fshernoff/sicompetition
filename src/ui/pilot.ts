@@ -2,8 +2,9 @@
 // frame loop and rendering as the Train button, each with its own 60 s budget, and each adds a row to a table.
 // The pilot is never paced: it measures the machine. It always trains the Round 1 plan, whatever ?round= says: it
 // loads Round 1 into the selector, the editor and the training spec, and keeps every control off for the whole run.
+// The replay plays during its runs like any other: the pilot measures the page as the class sees it.
 import { loadPreset, validateRewardSpec } from '../world/config.ts';
-import { BUDGET_MS, runTraining, setControls, showError, showRound } from './app.ts';
+import { BUDGET_MS, clearRun, runTraining, setControls, showError, showRound } from './app.ts';
 import type { Page } from './app.ts';
 
 const MAX_PILOT_SEEDS = 200;
@@ -47,7 +48,7 @@ async function pilotSeeds(page: Page, n: number): Promise<void> {
   let metInTime = 0;
   for (let seed = 1; seed <= n; seed++) {
     page.seed.value = String(seed);
-    page.readout.textContent = '';
+    clearRun(page); // each seed starts clean: the replay, the sentence, the table and the curve (D37)
     let result;
     try {
       result = await runTraining(page, seed, performance.now(), `Pilot seed ${seed} of ${n} · `, false);

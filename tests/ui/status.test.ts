@@ -1,8 +1,9 @@
-// The status line's words (G3 plan: a run that ends without stable says the GM is still changing its mind). The e2e
-// waits for "stable", so nothing here may say it before the trainer does.
+// The status line in the student's words (BRIEF section 1, D38): how many weeks the GM has practised and whether it
+// has settled or is still changing its mind, nothing else. The e2e waits for "has settled", so no sentence may say
+// "settled" before the trainer is stable.
 import { describe, expect, it } from 'vitest';
 import type { TrainingSnapshot } from '../../src/learn/train.ts';
-import { BUDGET_MS, statusText } from '../../src/ui/app.ts';
+import { studentStatus } from '../../src/ui/status.ts';
 
 function snap(over: Partial<TrainingSnapshot>): TrainingSnapshot {
   return {
@@ -22,29 +23,51 @@ function snap(over: Partial<TrainingSnapshot>): TrainingSnapshot {
   };
 }
 
-describe('statusText', () => {
-  it('counts while training and never says stable early', () => {
-    const s = statusText(snap({}), 10_000, false, true);
-    expect(s).toMatch(/^paced · Episodes 12,000 · ε 0\.46 · 10\.0 s · 25 evaluations$/);
-    expect(s).not.toMatch(/stable|target|changing/);
+/** The learner's instruments and the words the student's screen never carries (D38, section 1). */
+const LEARNERS_WORDS = ['ε', 'epsilon', 'evaluation', 'target', 'Episode', 'episode', 'stable', 'paced', 'limit', ' s ', 'ms'];
+
+describe('studentStatus', () => {
+  it('counts the weeks practised while the GM trains', () => {
+    expect(studentStatus(snap({}), false)).toBe('The GM has practised 12,000 weeks so far and is still changing its mind.');
+    expect(studentStatus(snap({ episodes: 1 }), false)).toBe('The GM has practised 1 week so far and is still changing its mind.');
+    expect(studentStatus(snap({ episodes: 0 }), false)).toBe('The GM has practised 0 weeks so far and is still changing its mind.');
   });
 
-  it('says stable, and target met only when the plan has a target that was met', () => {
-    expect(statusText(snap({ stable: true, done: true, hasTarget: true, targetMet: true }), 20_500, false, true)).toMatch(/stable · target met$/);
-    expect(statusText(snap({ stable: true, done: true, hasTarget: false }), 20_500, false, true)).toMatch(/· stable$/);
-    expect(statusText(snap({ stable: true, done: true, hasTarget: true, targetMet: false }), 20_500, false, false)).toMatch(/· stable$/);
+  it('says settled when the trainer is stable, late or not, target or not', () => {
+    const settled = 'The GM practised 24,000 weeks and has settled on how it runs the week.';
+    expect(studentStatus(snap({ stable: true, done: true, episodes: 24_000, epsilon: 0.1 }), false)).toBe(settled);
+    expect(studentStatus(snap({ stable: true, done: true, episodes: 24_000, epsilon: 0.1, hasTarget: true, targetMet: true }), false)).toBe(settled);
+    expect(studentStatus(snap({ stable: true, done: true, episodes: 24_000, epsilon: 0.1, hasTarget: true, targetMet: false }), false)).toBe(settled);
+    expect(studentStatus(snap({ stable: true, done: true, episodes: 24_000, epsilon: 0.1 }), true)).toBe(settled);
   });
 
-  it('says the GM is still changing its mind when a run ends without stable', () => {
-    const capped = statusText(snap({ done: true, episodes: 150_000, epsilon: 0.1 }), 2_000, false, false);
-    expect(capped).toMatch(/stopped at the episode limit, the GM is still changing its mind$/);
-    expect(capped).not.toMatch(/stable/);
-    const late = statusText(snap({ episodes: 72_000, epsilon: 0.1 }), BUDGET_MS, true, true);
-    expect(late).toMatch(/60 s is up, the GM is still changing its mind$/);
-    expect(late).not.toMatch(/stable/);
+  it('says the GM is still changing its mind when a run ends without settling', () => {
+    expect(studentStatus(snap({ done: true, episodes: 150_000, epsilon: 0.1 }), false)).toBe(
+      'The GM practised 150,000 weeks and is still changing its mind.',
+    );
+    expect(studentStatus(snap({ episodes: 72_000, epsilon: 0.1 }), true)).toBe(
+      'Time is up: the GM practised 72,000 weeks and is still changing its mind.',
+    );
   });
 
-  it('keeps the over-the-limit note for a run that was stable but late', () => {
-    expect(statusText(snap({ stable: true, done: true }), BUDGET_MS + 10, true, true)).toMatch(/stable · over the 60 s limit$/);
+  it('never says settled before the trainer is stable', () => {
+    expect(studentStatus(snap({}), false)).not.toContain('settled');
+    expect(studentStatus(snap({ done: true, episodes: 150_000 }), false)).not.toContain('settled');
+    expect(studentStatus(snap({ episodes: 72_000 }), true)).not.toContain('settled');
+  });
+
+  it("carries none of the learner's words", () => {
+    const sentences = [
+      studentStatus(snap({}), false),
+      studentStatus(snap({ stable: true, done: true, hasTarget: true, targetMet: true }), false),
+      studentStatus(snap({ stable: true, done: true }), true),
+      studentStatus(snap({ done: true, episodes: 150_000 }), false),
+      studentStatus(snap({ episodes: 72_000 }), true),
+    ];
+    for (const s of sentences) {
+      for (const word of LEARNERS_WORDS) expect(s, `"${s}" carries "${word}"`).not.toContain(word);
+      expect(s).toMatch(/^(The GM|Time is up: the GM) /);
+      expect(s).toMatch(/\.$/);
+    }
   });
 });

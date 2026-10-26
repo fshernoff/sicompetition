@@ -1,5 +1,5 @@
 // The trainer: tabular Q-learning over the week, with a wall-clock budget. G2 plan, settings table; BRIEF section 13.
-import type { Action, EpisodeSeeds, Policy, RewardSpec, Rng, State, WeekReport, WorldConfig } from '../world/types.ts';
+import type { Action, EpisodeSeeds, EpisodeTrace, Policy, RewardSpec, Rng, State, WeekReport, WorldConfig } from '../world/types.ts';
 import type { OutcomeClass, TargetPredicate } from '../sim/readout.ts';
 import { outcomeClass, outcomeKey, targetOutcome } from '../sim/readout.ts';
 import { runEpisode } from '../sim/episode.ts';
@@ -283,7 +283,15 @@ export class Trainer {
 
   /** The greedy GM on evaluation week k (index EVAL_BASE_INDEX + k). */
   evaluateOn(k: number): WeekReport {
-    return runEpisode(this.world, this.spec, this.greedyPolicy(), episodeSeeds(this.seed, EVAL_BASE_INDEX + k)).report;
+    return this.evaluateTrace(k).report;
+  }
+
+  /**
+   * The greedy GM's week k with its 20 StepRecords (the replay reads them) and the report evaluateOn(k) returns.
+   * Both streams reset, so two calls on an unchanged table give the same week (D30). Never touches the table.
+   */
+  evaluateTrace(k = 0): EpisodeTrace {
+    return runEpisode(this.world, this.spec, this.greedyPolicy(), episodeSeeds(this.seed, EVAL_BASE_INDEX + k));
   }
 
   private lastEval(): EvalPoint {

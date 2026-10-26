@@ -2,12 +2,31 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { Trainer } from '../src/learn/train.ts';
 import { describeWeek } from '../src/sim/readout.ts';
+import { formatMoney } from '../src/ui/report.ts';
 import { setWeight, toggleKpi } from '../src/world/bonusPlan.ts';
 import { loadDefaultConfig, loadPreset } from '../src/world/config.ts';
 
 // The one Playwright smoke, in two parts: the built page loads clean and makes no request beyond its own origin, and
 // Round 1 trains to the reckless week in headless Chromium (G2 plan, acceptance 3).
 const ORIGIN = 'http://127.0.0.1:4173';
+
+/** The share of a canvas's pixels that differ from its first pixel: about 0 for the placeholder, well above 0.05 for the yard. */
+async function drawnFraction(page: Page, selector: string): Promise<number> {
+  return page.locator(selector).evaluate((el) => {
+    const c = el as HTMLCanvasElement;
+    const ctx = c.getContext('2d');
+    if (!ctx) return 0;
+    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+    let differ = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] !== d[0] || d[i + 1] !== d[1] || d[i + 2] !== d[2]) differ++;
+    return differ / (d.length / 4);
+  });
+}
+
+/** The status texts the page has written so far, recorded by the observer installed before the click. */
+async function statusLog(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as { __statusLog?: string[] }).__statusLog ?? []);
+}
 
 /** Collects every request whose origin is not the page's own. */
 function watchRequests(page: Page): string[] {
@@ -23,6 +42,12 @@ test('the page loads offline-clean', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('Reward the Pack');
   await expect(page.locator('canvas#curve')).toBeVisible();
+  await expect(page.locator('canvas#replay')).toBeVisible();
+  await expect(page.locator('#replay')).toHaveAttribute('data-week', 'none');
+  await expect(page.locator('#curve-caption')).toContainText('Watch the GM get better at earning its bonus.');
+  await expect(page.locator('#report')).toBeHidden();
+  await expect(page.locator('#report-table tr')).toHaveCount(0);
+  await expect(page.locator('#replay-again')).toBeHidden();
   await expect(page.locator('#train')).toBeVisible();
   await expect(page.locator('#seed')).toHaveValue('1');
   expect(foreign).toEqual([]);
@@ -31,15 +56,62 @@ test('the page loads offline-clean', async ({ page }) => {
 test('Round 1 trains to the reckless week', async ({ page }) => {
   test.setTimeout(150_000);
   const foreign = watchRequests(page);
+  await page.setViewportSize({ width: 1366, height: 768 }); // the Chromebook (G4 plan, the fold)
   await page.goto('/');
   await page.fill('#seed', '1');
+  // Train is within reach on the Chromebook without scrolling (G4 plan, the fold; the target is 680, the gate 700).
+  const trainBox = await page.locator('#train').boundingBox();
+  expect(trainBox).not.toBeNull();
+  console.log(`[e2e] Train's bottom on load at 1366 wide: ${Math.round((trainBox?.y ?? 0) + (trainBox?.height ?? 0))} px`);
+  expect((trainBox?.y ?? 0) + (trainBox?.height ?? 0)).toBeLessThanOrEqual(700);
+  // Every status text from the click is in the student's form (D38, D41): an observer records each write, so a
+  // click-time sentence that is overwritten 100 ms later is still seen (Astra, diff review).
+  await page.evaluate(() => {
+    const el = document.querySelector('#status');
+    const log: string[] = [];
+    (window as unknown as { __statusLog?: string[] }).__statusLog = log;
+    if (!el) return;
+    log.push(el.textContent ?? '');
+    new MutationObserver(() => log.push(el.textContent ?? '')).observe(el, { childList: true, characterData: true, subtree: true });
+  });
   const started = Date.now();
   await page.click('#train');
   // Paced, the run lasts about 20 s: long enough to see every control off, and on again after (G3).
   for (const id of ['#prediction', '#round', '#kpi-profit-on', '#kpi-profit-weight', '#seed', '#fast', '#train']) {
     await expect(page.locator(id)).toBeDisabled();
   }
-  await expect(page.locator('#status')).toContainText('stable', { timeout: 120_000 });
+  // The fold, during the run while the table is still hidden: the page scrolled the watching area into view.
+  const geometry = () =>
+    page.evaluate(() => {
+      const box = (id: string) => document.querySelector(id)?.getBoundingClientRect() ?? new DOMRect(-1, -1, 0, 0);
+      return {
+        statusTop: Math.round(box('#status').top),
+        curveBottom: Math.round(box('#curve').bottom),
+        replayBottom: Math.round(box('#replay').bottom),
+        scrollWidth: document.documentElement.scrollWidth,
+        reportHidden: (document.querySelector('#report') as HTMLElement | null)?.hidden ?? false,
+        week: document.querySelector('#replay')?.getAttribute('data-week') ?? '',
+      };
+    });
+  await expect
+    .poll(async () => {
+      const g = await geometry();
+      // One sample proves it all: the run is on (the replay in its training week, the table still hidden) and the
+      // smooth scroll has landed with the status line at the top (scroll-margin-top 8 px) and both canvases in view.
+      return (
+        g.reportHidden && g.week === 'training' && g.statusTop >= 0 && g.statusTop <= 16 && g.curveBottom <= 768 && g.replayBottom <= 768 && g.scrollWidth <= 1366
+      );
+    }, { timeout: 5_000, message: 'the run on, the table hidden, the status at the top and the curve and the replay inside 1366 × 768' })
+    .toBe(true);
+  console.log(`[e2e] during the run: ${JSON.stringify(await geometry())}`);
+  await expect(page.locator('#status')).toContainText('has settled', { timeout: 120_000 });
+  const samples = await statusLog(page);
+  expect(samples.length).toBeGreaterThan(50); // about ten writes a second for 20 s
+  expect(samples[0]).toBe('Write your prediction, then press Train the GM.'); // before the click
+  for (const text of samples.slice(1)) {
+    expect(text).toMatch(/^The GM (has practised [\d,]+ weeks? so far and is still changing its mind|practised [\d,]+ weeks and has settled on how it runs the week)\.$/);
+    for (const word of ['ε', 'evaluation', 'target met', 'Episodes', 'stable', 'paced', 'seed']) expect(text).not.toContain(word);
+  }
   const ms = Date.now() - started;
   await expect(page.locator('#train')).toBeEnabled();
   for (const id of ['#prediction', '#round', '#seed', '#fast']) await expect(page.locator(id)).toBeEnabled();
@@ -49,7 +121,31 @@ test('Round 1 trains to the reckless week', async ({ page }) => {
   expect(readout).toMatch(/accepted every booking on 5 of 5 days/);
   expect(readout).toMatch(/ran the floor with 1 staffer on 4 days/);
   expect(readout).toMatch(/chose nap 0 times/);
-  console.log(`[e2e] Round 1 stable in ${ms} ms: ${readout}`);
+  // The status line in the student's words (D38): weeks practised and settled, nothing of the learner's.
+  const status = (await page.locator('#status').textContent()) ?? '';
+  expect(status).toMatch(/^The GM practised [\d,]+ weeks and has settled on how it runs the week\.$/);
+  for (const word of ['ε', 'evaluation', 'target met', 'Episodes', 'stable', 'paced']) expect(status).not.toContain(word);
+  // The finished layout: the status, the curve and the replay are still inside the viewport, the table below them.
+  const after = await geometry();
+  console.log(`[e2e] after the run: ${JSON.stringify(after)}`);
+  expect(after.statusTop).toBeGreaterThanOrEqual(0);
+  expect(after.curveBottom).toBeLessThanOrEqual(768);
+  expect(after.replayBottom).toBeLessThanOrEqual(768);
+  expect(after.scrollWidth).toBeLessThanOrEqual(1366);
+  // The sentence, the table and the replay describe one week: the node-side Trainer's on the same seed.
+  const twin = new Trainer(loadDefaultConfig(), loadPreset('round1').spec, 1);
+  twin.runEpisodes(twin.config.maxEpisodes);
+  const week = twin.evaluate();
+  expect(readout).toBe(describeWeek(week));
+  await expect(page.locator('#report')).toBeVisible();
+  const line = (label: RegExp) => page.locator('#report-table tr').filter({ has: page.locator('th', { hasText: label }) });
+  await expect(line(/^Profit$/).locator('td').last()).toHaveText(formatMoney(week.totals.profit));
+  await expect(line(/^Incidents$/).locator('td').last()).toHaveText(String(week.totals.incidents));
+  await expect(line(/^Dogs accepted$/).locator('td').last()).toHaveText(String(week.totals.dogsServed));
+  await expect(page.locator('#replay-again')).toBeVisible();
+  await expect(page.locator('#replay')).toHaveAttribute('data-week', 'final');
+  expect(await drawnFraction(page, '#replay')).toBeGreaterThan(0.05); // the yard is drawn, not the placeholder
+  console.log(`[e2e] Round 1 settled in ${ms} ms: ${readout} · ${status}`);
   expect(ms).toBeLessThan(60_000);
   expect(foreign).toEqual([]);
 });
@@ -141,7 +237,8 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await expect(page.locator('#train')).toBeEnabled();
   const status = (await page.locator('#status').textContent()) ?? '';
   expect(status).not.toContain('target met');
-  expect(status).toMatch(/stable|still changing its mind/);
+  expect(status).toMatch(/has settled|still changing its mind/);
+  for (const word of ['ε', 'evaluation', 'Episodes', 'stable', 'paced']) expect(status).not.toContain(word);
   await expect(page.locator('#prediction')).toBeEnabled();
   await expect(page.locator('#prediction')).toBeVisible();
   await expect(page.locator('#prediction')).toHaveValue(prediction);
@@ -160,12 +257,31 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   round1.runEpisodes(round1.config.maxEpisodes);
   expect(expected).not.toBe(describeWeek(round1.evaluate()));
   await expect(page.locator('#readout')).toHaveText(expected);
-  expect(status).toContain(`Episodes ${twinEnd.episodes.toLocaleString('en-US')}`);
+  await expect(page.locator('#report')).toBeVisible();
+  await expect(page.locator('#replay-again')).toBeVisible();
+  expect(status).toContain(`practised ${twinEnd.episodes.toLocaleString('en-US')} weeks`);
   console.log(`[e2e] edited plan: ${status} · ${expected}`);
-  // A slider edit after a run clears that run's results.
+  // A slider edit after a run clears that run's results, even while the final week is playing (D37; Astra, diff
+  // review: the clear must cancel a live producer, not only an idle one).
+  await page.click('#replay-again');
+  await page.waitForTimeout(150);
+  expect(await drawnFraction(page, '#replay')).toBeGreaterThan(0.05);
   await setSlider(page, '#kpi-profit-weight', '5');
   await expect(page.locator('#readout')).toHaveText('');
   await expect(page.locator('#status')).toContainText('The plan changed.');
+  await expect(page.locator('#report')).toBeHidden(); // the table and the replay are results too (D37)
+  await expect(page.locator('#report-table tr')).toHaveCount(0);
+  await expect(page.locator('#replay-again')).toBeHidden();
+  await expect(page.locator('#replay')).toHaveAttribute('data-week', 'none');
+  // The clear cancels the replay's producer: nothing redraws the old week on a later frame or a resize (Astra).
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await page.setViewportSize({ width: 1200, height: 800 });
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect(page.locator('#readout')).toHaveText('');
+  await expect(page.locator('#report-table tr')).toHaveCount(0);
+  await expect(page.locator('#replay-again')).toBeHidden();
+  await expect(page.locator('#replay')).toHaveAttribute('data-week', 'none');
+  expect(await drawnFraction(page, '#replay')).toBeLessThan(0.02); // the placeholder: one line of text, no yard
   await expect(page.locator('#plan-words')).toHaveText('Each day, the GM earns 5 points per $100 of profit and loses 7 points per incident.');
   // A second run, then a round change clears it and reloads the preset.
   await page.click('#train');
@@ -192,8 +308,8 @@ test('a plan that does not settle ends at the episode limit, still changing its 
   await page.click('#train');
   await expect(page.locator('#train')).toHaveText('Train again', { timeout: 60_000 });
   const status = (await page.locator('#status').textContent()) ?? '';
-  expect(status).toMatch(/stopped at the episode limit, the GM is still changing its mind$/);
-  expect(status).not.toContain('stable');
+  expect(status).toBe('The GM practised 150,000 weeks and is still changing its mind.');
+  expect(status).not.toContain('settled');
   await expect(page.locator('#readout-label')).toHaveText("The GM's test week (still changing its mind)");
   // Deterministic to the cap: the same plan and seed in node give the same sentence.
   const world = loadDefaultConfig();
@@ -203,7 +319,7 @@ test('a plan that does not settle ends at the episode limit, still changing its 
   expect(end.stable).toBe(false);
   expect(end.episodes).toBe(twin.config.maxEpisodes);
   await expect(page.locator('#readout')).toHaveText(describeWeek(twin.evaluate()));
-  expect(status).toContain(`Episodes ${end.episodes.toLocaleString('en-US')}`);
+  expect(status).toContain(`practised ${end.episodes.toLocaleString('en-US')} weeks`);
   console.log(`[e2e] unsettled plan: ${status}`);
 });
 

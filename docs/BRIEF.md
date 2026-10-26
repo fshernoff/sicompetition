@@ -215,6 +215,18 @@ Plain-words template (G3): "Each day, the GM earns 10 points per $100 of profit,
 loses 5 points for every block the floor runs over 15 dogs per staffer." A negative weight reads "loses", a positive
 one "earns". KPIs that are off are not mentioned.
 
+The sentence is built from the KPIs that are on, in the order of the table, one clause each after "Each day, the
+GM ": one clause ends with a period, two are joined with " and ", three or more with ", " and ", and " before the
+last. "1 point" for a weight of 1; a KPI on at weight 0 reads "earns 0 points …" (it counts for nothing). The
+clauses, at +5: "earns 5 points per $100 of profit", "earns 5 points per dog served", "earns 5 points per incident",
+"earns 5 points per point of reputation gained", "earns 5 points for every block the crew's fatigue is above 70%",
+"earns 5 points for every block the floor runs over 15 dogs per staffer"; the $100, the 70 and the 15 are
+`KPI_UNITS.profit`, `fatigue.kpiThreshold` and `bookings.legalRatio`. Nothing on: "The GM is paid nothing: no
+measure is on." Profit and reputation deltas are signed, so under the sentence the page shows a hint whenever either
+is on with a non-zero weight: "Profit and reputation count both ways: a $100 loss or a one-point drop counts the
+opposite of a $100 gain or a one-point rise." (or the profit-only or reputation-only form). On the page a KPI is
+called a measure.
+
 Schema (`RewardSpec`, exported in every run's JSON):
 
 ```json
@@ -262,6 +274,13 @@ KPI contributes nothing whatever its weight.
 
 A fourth preset, `balanced` (profit +10, incidents −5, overRatio −5, the others off), is for the headless sim and the
 teacher's demo of a plan that trades money for welfare; it is not a round.
+
+In the editor (G3): a preset that already uses its whole allowance (as many KPIs on as its limit: Round 1 is 1 of
+1) is locked entirely, no toggle and no slider moves, and the line under the measures reads "Round 1: the plan is
+set. Predict what the GM will do, then train." (D35). Otherwise a measure can be turned on while fewer than the
+limit are on, turned off always, and its slider moves only while it is on; the line reads "N of M measures on." and
+adds "Turn one off to turn another on." when the limit is reached with a measure still off. Changing the round
+loads its preset. Any edit after a run clears that run's readout, status and curve (D37).
 
 Differentiation: hard mode is a config with `requests.noise` = 4; the two-signal preset for Round 3 is Round 2 with
 a limit of 2.
@@ -331,7 +350,9 @@ small constant weight on the latest week (D32). On the board: "the GM averages w
 and keeps paying a little attention to the latest week".
 
 **Target met** means: stable, and the greedy week is in the plan's target class (Round 1: the class above) on the
-fixed week and on weeks 1..5. The pilot definition of done is measured as: 20 training seeds (1..20), each trained
+fixed week and on weeks 1..5. A plan has a target class only when it is the Round 1 plan: Profit on with a positive
+weight and every other KPI off or at weight 0 (D36); every other plan is reported stable or not and never target
+met. A positive scale of the Round 1 weight keeps the objective and the class, not the exact training trajectory. The pilot definition of done is measured as: 20 training seeds (1..20), each trained
 within the time budget on the target Chromebook (60 s from the Train click, rendering included), each target met.
 Learning rate, exploration schedule, episode budget, table initialisation and tie-breaking are G2's plan, reported
 with the numbers that met this.

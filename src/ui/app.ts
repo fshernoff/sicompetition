@@ -1,14 +1,20 @@
-// The page controller: the seed field, the Train button, the status line, the training curve and the readout.
+// The page controller: the round selector, the bonus plan editor, the prediction, the seed field, the Train button,
+// the status line, the training curve and the readout.
 // Training runs in requestAnimationFrame: each frame trains for 10 ms (Trainer.runFor) and nothing else; the curve,
 // the status line and the readout are redrawn at most 10 times a second. A run stops when the trainer is done or
 // 60 s after the click, whichever comes first (BRIEF section 13: rendering counts against the budget).
+// A run belongs to the plan it was trained on: the click snapshots the editor's plan into page.spec, and any change
+// to the plan after a run clears that run's readout, status and curve (G3 plan, design calls).
 import { DEFAULT_LEARNER, Trainer } from '../learn/train.ts';
 import type { TrainingSnapshot } from '../learn/train.ts';
 import { describeWeek } from '../sim/readout.ts';
-import { loadDefaultConfig, loadPreset } from '../world/config.ts';
+import { loadDefaultConfig, loadPreset, validateRewardSpec } from '../world/config.ts';
+import type { PresetName } from '../world/config.ts';
 import type { RewardSpec, WorldConfig } from '../world/types.ts';
 import { drawCurve } from './curve.ts';
 import type { CurveColors } from './curve.ts';
+import { mountEditor, roundFromSearch } from './editor.ts';
+import type { Editor } from './editor.ts';
 
 export const BUDGET_MS = 60_000; // from the click (or a pilot seed's start), rendering included
 const SLICE_MS = 10; // training time per animation frame when not paced (Fast, and the pilot)
@@ -24,7 +30,23 @@ const MAX_SEED = 4_294_967_295;
 const MAX_BACKING_WIDTH = 1920;
 const MAX_BACKING_HEIGHT = 1080;
 
+/** The rounds the selector offers (BRIEF section 8), in order; their labels come from the presets. */
+export const ROUNDS: readonly PresetName[] = ['round1', 'round2', 'round3'];
+/** The one line under the selector, per round. */
+const ROUND_NOTES: Readonly<Partial<Record<PresetName, string>>> = {
+  round1: 'The GM is paid on profit and nothing else. Read the plan, predict what the GM will do, then train it.',
+  round2: 'Turn on up to three measures and set their weights. Write your prediction, then train the GM.',
+  round3: 'All six measures are yours. Write your prediction, then train the GM.',
+};
+const READOUT_LABEL = "The GM's test week";
+const READOUT_LABEL_UNSETTLED = "The GM's test week (still changing its mind)";
+const PLAN_CHANGED = 'The plan changed. Train the GM to see what it does with this one.';
+
 export interface Page {
+  round: HTMLSelectElement; // the round selector (G5 moves it into the teacher panel)
+  roundNote: HTMLElement;
+  editor: Editor;
+  prediction: HTMLTextAreaElement; // the team's prediction: never read, never stored (D2)
   seed: HTMLInputElement;
   train: HTMLButtonElement;
   fast: HTMLInputElement; // checked: no pacing, train as fast as the machine allows
@@ -32,10 +54,11 @@ export interface Page {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   readout: HTMLElement;
+  readoutLabel: HTMLElement;
   pilot: HTMLElement;
   colors: CurveColors;
   world: WorldConfig;
-  spec: RewardSpec; // Round 1: profit only, +10 per $100
+  spec: RewardSpec; // the plan of the current or last run, snapshotted and validated at the click
   trainer: Trainer | null; // the last run, kept so a window resize can redraw its curve
 }
 
@@ -110,9 +133,12 @@ export function statusText(s: TrainingSnapshot, ms: number, outOfBudget: boolean
     `${s.evaluations} ${s.evaluations === 1 ? 'evaluation' : 'evaluations'}`,
   ];
   if (s.stable) parts.push('stable');
-  if (s.targetMet) parts.push('target met');
-  if (outOfBudget) parts.push(`over the ${BUDGET_MS / 1000} s limit`);
-  else if (s.done && !s.stable) parts.push('stopped at the episode limit');
+  if (s.stable && s.targetMet) parts.push('target met');
+  if (outOfBudget) {
+    parts.push(s.stable ? `over the ${BUDGET_MS / 1000} s limit` : `${BUDGET_MS / 1000} s is up, the GM is still changing its mind`);
+  } else if (s.done && !s.stable) {
+    parts.push('stopped at the episode limit, the GM is still changing its mind');
+  }
   return parts.join(' · ');
 }
 
@@ -165,6 +191,7 @@ export function runTraining(
           // The readout first, so that by the time the status line says "stable" the sentence is final; the clock
           // stops after that work, so a run that finishes its last slice past the deadline is counted as late.
           page.readout.textContent = describeWeek(trainer.evaluate());
+          page.readoutLabel.textContent = snapshot.stable ? READOUT_LABEL : READOUT_LABEL_UNSETTLED;
           redraw(page);
           const ms = performance.now() - startedAt;
           const outOfBudget = ms >= BUDGET_MS;
@@ -196,12 +223,52 @@ export function showError(page: Page, err: unknown): void {
   page.status.textContent = `Training stopped with an error: ${message}`;
 }
 
-/** Finds the page's elements, draws the empty chart and wires the Train button. */
+/**
+ * Everything the team can touch: the editor, the round selector, the prediction, the seed, Fast and Train. Off for a
+ * run and for the whole pilot; on restores the editor to its round's own locks.
+ */
+export function setControls(page: Page, enabled: boolean): void {
+  page.editor.setEnabled(enabled);
+  page.round.disabled = !enabled;
+  page.prediction.disabled = !enabled;
+  page.seed.disabled = !enabled;
+  page.fast.disabled = !enabled;
+  page.train.disabled = !enabled;
+}
+
+/** Shows `name` in the selector and its line under it. Does not touch the editor. */
+export function showRound(page: Page, name: PresetName): void {
+  page.round.value = name;
+  page.roundNote.textContent = ROUND_NOTES[name] ?? '';
+}
+
+/** Clears the last run's results: the curve, the readout, its label, and (after a run) the status line. */
+function clearRun(page: Page): void {
+  const hadRun = page.trainer !== null;
+  page.trainer = null;
+  redraw(page);
+  page.readout.textContent = '';
+  page.readoutLabel.textContent = READOUT_LABEL;
+  if (hadRun) page.status.textContent = PLAN_CHANGED;
+}
+
+/** Finds the page's elements, mounts the editor for the round on the address, draws the empty chart, wires it all. */
 export function mountApp(): Page {
   const canvas = byId('curve', HTMLCanvasElement);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('page: this browser has no 2D canvas');
+  const world = loadDefaultConfig();
+  const round = byId('round', HTMLSelectElement);
+  for (const option of Array.from(round.options)) {
+    if ((ROUNDS as readonly string[]).includes(option.value)) option.textContent = loadPreset(option.value as PresetName).label;
+  }
+  const first = roundFromSearch(window.location.search);
+  const editor = mountEditor(byId('editor', HTMLElement), world, loadPreset(first));
   const page: Page = {
+    round,
+    roundNote: byId('round-note', HTMLElement),
+    editor,
+    prediction: byId('prediction', HTMLTextAreaElement),
     seed: byId('seed', HTMLInputElement),
     train: byId('train', HTMLButtonElement),
     fast: byId('fast', HTMLInputElement),
@@ -209,12 +276,21 @@ export function mountApp(): Page {
     canvas,
     ctx,
     readout: byId('readout', HTMLElement),
+    readoutLabel: byId('readout-label', HTMLElement),
     pilot: byId('pilot', HTMLElement),
     colors: readColors(),
-    world: loadDefaultConfig(),
-    spec: loadPreset('round1').spec,
+    world,
+    spec: editor.spec(),
     trainer: null,
   };
+  showRound(page, first);
+
+  editor.onChange = () => clearRun(page);
+  page.round.addEventListener('change', () => {
+    const name = (ROUNDS as readonly string[]).includes(page.round.value) ? (page.round.value as PresetName) : 'round1';
+    showRound(page, name);
+    editor.load(loadPreset(name));
+  });
 
   page.train.addEventListener('click', () => {
     const clickedAt = performance.now();
@@ -223,17 +299,20 @@ export function mountApp(): Page {
       page.status.textContent = `The seed must be a whole number from 0 to ${MAX_SEED}.`;
       return;
     }
-    page.train.disabled = true;
-    page.seed.disabled = true;
-    page.fast.disabled = true;
+    try {
+      page.spec = validateRewardSpec(page.editor.spec());
+    } catch (err) {
+      showError(page, err);
+      return;
+    }
+    setControls(page, false);
     page.readout.textContent = '';
+    page.readoutLabel.textContent = READOUT_LABEL;
     page.status.textContent = `Training the GM on seed ${seed}…`;
     runTraining(page, seed, clickedAt, '', !page.fast.checked)
       .catch((err: unknown) => showError(page, err))
       .finally(() => {
-        page.train.disabled = false;
-        page.seed.disabled = false;
-        page.fast.disabled = false;
+        setControls(page, true);
         page.train.textContent = 'Train again';
       });
   });

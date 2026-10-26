@@ -1,7 +1,9 @@
 // The pilot mode, ?pilot=N: the Chromebook measurement of BRIEF section 13. Seeds 1..N train in turn with the same
 // frame loop and rendering as the Train button, each with its own 60 s budget, and each adds a row to a table.
-// The pilot is never paced: it measures the machine.
-import { BUDGET_MS, runTraining, showError } from './app.ts';
+// The pilot is never paced: it measures the machine. It always trains the Round 1 plan, whatever ?round= says: it
+// loads Round 1 into the selector, the editor and the training spec, and keeps every control off for the whole run.
+import { loadPreset, validateRewardSpec } from '../world/config.ts';
+import { BUDGET_MS, runTraining, setControls, showError, showRound } from './app.ts';
 import type { Page } from './app.ts';
 
 const MAX_PILOT_SEEDS = 200;
@@ -21,12 +23,21 @@ function cell(row: HTMLTableRowElement, text: string, tag: 'td' | 'th' = 'td'): 
 }
 
 export async function runPilot(page: Page, n: number): Promise<void> {
-  page.train.disabled = true;
-  page.seed.disabled = true;
-  page.fast.disabled = true;
+  showRound(page, 'round1');
+  page.editor.load(loadPreset('round1'));
+  page.spec = validateRewardSpec(page.editor.spec());
+  setControls(page, false);
+  try {
+    await pilotSeeds(page, n);
+  } finally {
+    setControls(page, true);
+    page.train.textContent = 'Train again';
+  }
+}
 
+async function pilotSeeds(page: Page, n: number): Promise<void> {
   const heading = document.createElement('h2');
-  heading.textContent = `Pilot: seeds 1 to ${n}, ${BUDGET_MS / 1000} s each`;
+  heading.textContent = `Pilot: seeds 1 to ${n}, ${BUDGET_MS / 1000} s each, the Round 1 plan`;
   const table = document.createElement('table');
   const head = table.createTHead().insertRow();
   for (const title of ['Seed', 'Episodes', 'Seconds', 'Stable', 'Target met']) cell(head, title, 'th');
@@ -60,9 +71,4 @@ export async function runPilot(page: Page, n: number): Promise<void> {
   summary.className = 'pilot-summary';
   summary.textContent = `${metInTime} of ${n} seeds target met in under ${BUDGET_MS / 1000} s`;
   page.pilot.appendChild(summary);
-
-  page.train.disabled = false;
-  page.seed.disabled = false;
-  page.fast.disabled = false;
-  page.train.textContent = 'Train again';
 }

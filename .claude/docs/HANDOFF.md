@@ -2,46 +2,72 @@
 
 Status only. Updated at the end of every thread; read first by the next one.
 
-## Where things stand (2026-10-25, end of session 1)
+## Where things stand (2026-10-26, end of session 2)
 
-- `main`: scaffold (`ce78079`) and G0 (`6740b05`). Branch `g1-simulator`: G1 (`c4f255c`). Branch `g2-learner`,
-  built on `g1-simulator`: G2, one commit. Nothing pushed, nothing merged.
-- G1 and G2 are green: `npm test` 24 files / 168 tests, `npm run lint`, `npm run build`, `npm run e2e` (2 tests,
-  23 s), `npm run pilot` 20 of 20. The numbers are in the plans' Result sections and the Astra triages in
-  `.claude/docs/reviews/`.
-- Astra tooling works (`Tools/Agent/astra.sh`); a `-e high` review takes 5 to 15 minutes, run it in the background.
-  Astra cannot run vitest in its sandbox (CODEX.md).
+- `main`: scaffold (`ce78079`) and G0 (`6740b05`). Branch `g1-simulator`: G1 (`c4f255c`). Branch `g2-learner`:
+  G2 (`d16903e`) on top of it. Branch `g3-editor`: G3, one commit on top of `g2-learner`. Nothing pushed, nothing
+  merged: the owner has not yet run the G1/G2 gate, so G3 was branched from `g2-learner`.
+- G3 is green: `npm test` 27 files / 209 tests, `npm run lint`, `npm run build`, `npm run e2e` (7 tests, 29.3 s),
+  `npm run pilot -- --seeds 20 --budget 60000` 20 of 20 with G2's episode counts. The numbers and the commands are in
+  the Result of `.claude/docs/plans/g3-editor.md`; the Astra triages are `g3-plan-astra-triage.md` and
+  `g3-astra-triage.md` in `.claude/docs/reviews/`.
+- Astra tooling works (`Tools/Agent/astra.sh -e high`, 5 to 15 minutes, run in the background). It cannot run
+  vitest or Playwright in its sandbox; it can run node, `npm run lint`, `npm run build`, `npm run pilot` (CODEX.md).
+- Gotcha from this session: the auto-mode classifier can drop a verdict mid-turn and refuse a batch of Bash calls;
+  nothing ran, so check `git status` and redo them.
 
-## The owner gate for G1 and G2 (Fred)
+## The owner gate for G3 (Fred)
 
 ```
-git checkout g2-learner        # contains G1's commit
+git checkout g3-editor         # contains G1 and G2
 npm install
 npm test
-npm run pilot -- --seeds 20 --budget 60000
-npm run dev                    # press Train (about 25 s paced), try two more seeds, tick Fast and train again
+npm run e2e
+npm run dev
 ```
 
-Then, on a Chromebook, open the built page (or the dev server) with `?pilot=20` and read the table: every seed
-should say stable yes, target yes, under 60 s. That is the pilot's definition of done measured (BRIEF section 13).
-Merge `g2-learner` into `main` if satisfied (it brings G1 with it).
+On the page: pick Round 3 in the selector, tick measures, drag sliders, read the sentence change as you drag, type a
+prediction, press Train (tick Fast if you do not want to watch). The sentence must say what you set; the status
+says "stable" (or that the GM is still changing its mind) and never "target met" unless the plan is Profit alone;
+the readout sits beside your prediction; touch the plan again and the readout clears until you train again. Round
+1 is locked (no toggle, no slider): that is section 8's "students only predict". `?round=3` on the address opens
+Round 3 directly. `?pilot=20` is unchanged and still measures Round 1 whatever the selector showed.
+
+Look at on the Chromebook: at 1366 × 768 the curve is below the fold (the Train button is about 700 px from the
+top). Say whether the curve should move up, shrink, or stay: G4 rebuilds the area under the controls (the replay
+and the P&L table), so the layout decision belongs there.
+
+Then the G1/G2 gate from the previous HANDOFF still stands (`?pilot=20` on a Chromebook, three seeds by hand). Merge
+`g3-editor` into `main` if satisfied (it brings G1 and G2 with it).
 
 ## Decisions the owner should look at (all in docs/DECISIONS.md)
 
-- **D8, D9** (G0): Profit, not Revenue, as KPI 1; the drop-off action is the day plan.
-- **D15 to D27** (G1): the economics that moved after Astra's reviews and the calibration.
-- **D28 to D33** (G2): the smaller observation key; stable versus target met; the fixed evaluation week; the
-  browser pilot mode; the visit-count step size (the one that made 20 of 20 possible); pacing at 1,200 weeks a
-  second with a Fast checkbox.
-- Seeds beyond the pilot's twenty miss about one in thirty by adding a second help day (G2 Result). If that bothers
-  the lesson, the lever is more training (`maxEpisodes`) or a longer stability window, both in `DEFAULT_LEARNER`.
+- **D34** the round selector is on the page until G5's teacher panel.
+- **D35** Round 1 is locked entirely (no toggle, no slider); the first draft left the Profit slider editable and
+  Astra read section 8 the other way.
+- **D36** only the Round 1 plan (Profit positive, everything else off or at 0) has a target class; every other plan
+  is only ever "stable". The page cannot say "target met" for a plan the bible has not defined a class for.
+- **D37** a run belongs to its plan: any edit afterwards clears the readout, status and curve.
+- The bible changed in sections 7 (the clauses of the words, the empty-plan sentence, the hint), 8 (the lock and
+  limit rules) and 13 (which plans have a target).
 
-## Next thread does first (G3: the bonus plan editor)
+## What G3 found that later groups should know
 
-1. Read `.claude/docs/ROADMAP.md`, `docs/BRIEF.md` sections 7 and 8, and the G2 plan's Result.
-2. Write `.claude/docs/plans/g3-editor.md`: six KPIs with toggles and sliders −10..+10, the plan in words (the
-   template in section 7), the prediction box, the Round 2 and Round 3 limits (maxActive), and how the page passes
-   the spec to the Trainer; the Round 1 preset stays the default. Astra reviews it.
-3. Seams and failing tests first: the plain-words renderer is a pure function over a RewardSpec; the editor's
-   state is a RewardSpec; the Trainer already takes any spec.
-4. Keep the words: GM, bonus plan, readout; the KPI names and units are in section 7.
+- Plans indifferent to some choices (Incidents only, Dogs served only) may never meet D29's stability rule and run
+  to the 150,000 cap: paced, that is the full 60 s and "60 s is up, the GM is still changing its mind". Plans with
+  money in them settle in 22,000 to 35,000 episodes (18 to 29 s paced). G5's speed slider is the lever; the
+  harness measures any plan: `npm run pilot -- --seeds 5 --reward <preset or file.json>`.
+- `Trainer.evals()` keeps the full `WeekReport` of every scheduled evaluation and `trainer.evaluate()` gives the
+  greedy week on demand: G4's replay and P&L table can be drawn from those without touching the learner.
+
+## Next thread does first (G4: the week replay and the readout)
+
+1. Read `.claude/docs/ROADMAP.md`, `docs/BRIEF.md` sections 1, 5 and 10, and the Results of the G2 and G3 plans.
+2. Write `.claude/docs/plans/g4-replay.md`: the week replay on canvas (yard, dogs, crew, ratio gauge, incident
+   counter, reputation meter, cash counter), the weekly P&L and operations report as a table from `WeekReport`
+   (section 10 names every line), the prediction beside the readout (the `.compare` panel of G3 is the seam: keep
+   `#prediction` and `#readout`), the readout label, and what happens to the curve's place on the page (the
+   Chromebook fold above). Astra reviews it.
+3. Seams and failing tests first: a pure function from a `WeekReport` to the table's rows; the replay reads the
+   `StepRecord`s of one greedy week (`runEpisode` returns them) and keeps no state of its own.
+4. Keep the words: GM, bonus plan, readout, incident (an icon and a counter, never an injury), crew, measure.

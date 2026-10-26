@@ -8,11 +8,36 @@
   <body>
     <main id="app">
       <h1>Reward the Pack</h1>
-      <p>Good Dog Daycare. You own it. The GM runs it. You write the bonus plan.</p>
-      <p class="round">
-        <strong>Round 1.</strong> The GM is paid 10 points per $100 of profit, and nothing else. Watch it learn a week
-        of running the daycare, then read what it chose to do. (Writing your own bonus plan comes in a later round.)
-      </p>
+      <p class="tagline">Good Dog Daycare. You own it. The GM runs it. You write the bonus plan.</p>
+
+      <div class="round-bar">
+        <label for="round">Round</label>
+        <select id="round">
+          <option value="round1">Round 1: profit only</option>
+          <option value="round2">Round 2: up to three measures</option>
+          <option value="round3">Round 3: all six measures</option>
+        </select>
+        <p id="round-note" class="round-note"></p>
+      </div>
+
+      <section id="editor" aria-labelledby="editor-title">
+        <h2 id="editor-title">The GM's bonus plan</h2>
+      </section>
+
+      <div class="compare">
+        <div class="compare-side">
+          <label class="compare-label" for="prediction">Your team's prediction (write it before you train)</label>
+          <textarea
+            id="prediction"
+            rows="3"
+            placeholder="What will the GM do with this bonus plan? How many dogs, how many staff on the floor, how many incidents?"
+          ></textarea>
+        </div>
+        <div class="compare-side">
+          <p class="compare-label readout-label" id="readout-label">The GM's test week</p>
+          <p id="readout" aria-live="polite"></p>
+        </div>
+      </div>
 
       <div class="controls">
         <label for="seed">Seed</label>
@@ -20,12 +45,9 @@
         <button id="train" type="button">Train the GM</button>
         <label class="fast"><input id="fast" type="checkbox" /> Fast (no pacing)</label>
       </div>
-      <p id="status">Press Train the GM to start.</p>
+      <p id="status">Write your prediction, then press Train the GM.</p>
 
       <canvas id="curve" width="1100" height="619" aria-label="The training curve: bonus points per week as the GM trains"></canvas>
-
-      <p class="readout-label">The GM's test week</p>
-      <p id="readout"></p>
 
       <section id="pilot"></section>
     </main>

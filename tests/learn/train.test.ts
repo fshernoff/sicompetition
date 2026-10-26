@@ -8,7 +8,9 @@ import { runEpisode } from '../../src/sim/episode.ts';
 import { recklessPolicy } from '../../src/sim/policies.ts';
 import { isRound1Outcome, outcomeKey } from '../../src/sim/readout.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
-import { config, round1 } from '../helpers.ts';
+import type { WeekReport } from '../../src/world/types.ts';
+import { loadPreset } from '../../src/world/config.ts';
+import { config, round1, spec } from '../helpers.ts';
 
 const mean = (xs: readonly number[]) => xs.reduce((a, x) => a + x, 0) / xs.length;
 const RECKLESS_PLAN_INDEX = 6; // (all, premium, 1) in BOOKINGS × RATES × STAFF_COUNTS order
@@ -190,4 +192,92 @@ describe('Trainer', () => {
     expect(s.targetMet).toBe(false);
     expect(t.runEpisodes(10).episodes).toBe(1000);
   });
+});
+
+// G3: the target class is the plan's, not the trainer's (D36). A plan without one is only ever "stable".
+describe('Trainer target', () => {
+  it('given null, reports no target and never target met, even when the week is the Round 1 class', () => {
+    const t = new Trainer(config, round1, 1, {}, null);
+    const s = t.runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    expect(s.hasTarget).toBe(false);
+    expect(s.stable).toBe(true);
+    expect(s.done).toBe(true);
+    expect(s.targetMet).toBe(false);
+    expect(isRound1Outcome(t.evaluate())).toBe(true);
+  }, 60_000);
+
+  it('does not change what is learned: the curve and the evaluations match the Round 1 trainer', () => {
+    const withTarget = new Trainer(config, round1, 2);
+    const without = new Trainer(config, round1, 2, {}, null);
+    const a = withTarget.runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    const b = without.runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    expect(a.hasTarget).toBe(true);
+    expect(a.targetMet).toBe(true);
+    expect(b.targetMet).toBe(false);
+    expect(b.episodes).toBe(a.episodes);
+    expect(without.curve()).toEqual(withTarget.curve());
+    expect(without.evals().map((e) => e.key)).toEqual(withTarget.evals().map((e) => e.key));
+  }, 60_000);
+
+  it('asks a custom predicate about the fixed week and then weeks 1..5, once, when the GM first becomes stable', () => {
+    // Full reports, not keys: all six weeks share the Round 1 key, so only the reports tell week 3 from week 0
+    // (Astra, G3 diff review).
+    const seen: WeekReport[] = [];
+    const all = new Trainer(config, round1, 1, {}, (r) => {
+      seen.push(r);
+      return true;
+    });
+    const yes = all.runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    expect(yes.hasTarget).toBe(true);
+    expect(yes.stable).toBe(true);
+    expect(yes.targetMet).toBe(true);
+    expect(seen.length).toBe(6);
+    expect(seen[0]).toEqual(all.evaluate());
+    for (let k = 1; k <= 5; k++) expect(seen[k]).toEqual(all.evaluateOn(k));
+    expect(new Set(seen.map((r) => JSON.stringify(r))).size).toBe(6); // six different weeks, not the fixed week six times
+    // A predicate that accepts the fixed week but rejects week 3: not met, and stopping is unchanged.
+    const asked: WeekReport[] = [];
+    const third = new Trainer(config, round1, 1, {}, (r) => {
+      asked.push(r);
+      return asked.length !== 4;
+    });
+    const no = third.runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    expect(no.stable).toBe(true);
+    expect(no.targetMet).toBe(false);
+    expect(no.episodes).toBe(yes.episodes);
+    expect(asked.length).toBe(4); // stops asking at the first refusal
+    expect(asked[3]).toEqual(third.evaluateOn(3)); // and the refused report was week 3's
+    // A predicate that accepts a week the Round 1 class rejects, on a plan the Round 1 predicate would fail.
+    const careful = new Trainer(config, loadPreset('balanced').spec, 1, {}, (r) => !isRound1Outcome(r));
+    const other = careful.runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    expect(other.hasTarget).toBe(true);
+    expect(other.stable).toBe(true);
+    expect(other.targetMet).toBe(true);
+  }, 60_000);
+
+  it('derives the default target from the plan', () => {
+    const nudged = structuredClone(round1);
+    nudged.kpis.incidents = { on: false, weight: -10 };
+    expect(new Trainer(config, nudged, 1).snapshot().hasTarget).toBe(true);
+    expect(new Trainer(config, round1, 1).snapshot().hasTarget).toBe(true);
+    expect(new Trainer(config, spec({ profit: 3 }), 1).snapshot().hasTarget).toBe(true);
+    expect(new Trainer(config, spec({ profit: 10, incidents: -5 }), 1).snapshot().hasTarget).toBe(false);
+    expect(new Trainer(config, spec({ profit: -10 }), 1).snapshot().hasTarget).toBe(false);
+    expect(new Trainer(config, spec({}), 1).snapshot().hasTarget).toBe(false);
+  });
+
+  it('trains an edited plan to a stable week with no target, and the all-off plan to a stable week paid nothing', () => {
+    const balanced = new Trainer(config, loadPreset('balanced').spec, 1);
+    const s = balanced.runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    expect(s.hasTarget).toBe(false);
+    expect(s.stable).toBe(true);
+    expect(s.done).toBe(true);
+    expect(s.targetMet).toBe(false);
+    expect(s.lastEval?.key).toBe(outcomeKey(balanced.evaluate()));
+    const empty = new Trainer(config, spec({}), 1).runEpisodes(DEFAULT_LEARNER.maxEpisodes);
+    expect(empty.stable).toBe(true);
+    expect(empty.lastReward).toBe(0);
+    expect(empty.movingAverage).toBe(0);
+    expect(empty.lastEval?.reward).toBe(0);
+  }, 60_000);
 });

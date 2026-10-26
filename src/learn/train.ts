@@ -1,7 +1,7 @@
 // The trainer: tabular Q-learning over the week, with a wall-clock budget. G2 plan, settings table; BRIEF section 13.
 import type { Action, EpisodeSeeds, Policy, RewardSpec, Rng, State, WeekReport, WorldConfig } from '../world/types.ts';
-import type { OutcomeClass } from '../sim/readout.ts';
-import { isRound1Outcome, outcomeClass, outcomeKey } from '../sim/readout.ts';
+import type { OutcomeClass, TargetPredicate } from '../sim/readout.ts';
+import { outcomeClass, outcomeKey, targetOutcome } from '../sim/readout.ts';
 import { runEpisode } from '../sim/episode.ts';
 import { rewardFor } from '../world/reward.ts';
 import { episodeSeeds, makeRng } from '../world/rng.ts';
@@ -161,7 +161,8 @@ export interface TrainingSnapshot {
   evaluations: number;
   lastEval: EvalPoint | null;
   stable: boolean; // ε at its floor and the last `stableEvals` outcome keys identical (D29)
-  targetMet: boolean; // stable and isRound1Outcome on the fixed week and on evaluateOn(1..5); computed when stable
+  hasTarget: boolean; // the plan has a target class (targetOutcome, D36); without one targetMet is never true
+  targetMet: boolean; // stable and the target on the fixed week and on evaluateOn(1..5); computed when stable
   done: boolean; // stable, or maxEpisodes reached
   reachedObservations: number;
 }
@@ -192,11 +193,18 @@ export class Trainer {
   private targetMet = false;
   private done = false;
   private readonly chooser: Chooser;
+  /** The plan's target class, or null: then the five extra weeks are never run and targetMet stays false. */
+  private readonly target: TargetPredicate | null;
 
-  constructor(world: WorldConfig, spec: RewardSpec, seed: number, learner: Partial<LearnerConfig> = {}) {
+  /**
+   * `target` defaults to targetOutcome(spec): the Round 1 class for a profit-only positive plan, null for any other
+   * (D36). The target only decides targetMet; it never touches training, the curve or the scheduled evaluations.
+   */
+  constructor(world: WorldConfig, spec: RewardSpec, seed: number, learner: Partial<LearnerConfig> = {}, target: TargetPredicate | null = targetOutcome(spec)) {
     this.world = world;
     this.spec = spec;
     this.seed = seed;
+    this.target = target;
     this.config = { ...DEFAULT_LEARNER, ...learner };
     this.q = new QTable();
     this.average = new MovingAverage(this.config.movingAverageWindow);
@@ -241,6 +249,7 @@ export class Trainer {
       evaluations: this.scheduled.length,
       lastEval,
       stable: this.stable,
+      hasTarget: this.target !== null,
       targetMet: this.targetMet,
       done: this.done,
       reachedObservations: this.q.reachedObservations(),
@@ -319,11 +328,13 @@ export class Trainer {
     return true;
   }
 
-  /** The Round 1 class (section 7) on the fixed week and on evaluation weeks 1..5. */
+  /** The target class on the fixed week and on evaluation weeks 1..5 (section 13); false without a target. */
   private meetsTarget(): boolean {
-    if (!isRound1Outcome(this.lastEval().report)) return false;
+    const target = this.target;
+    if (target === null) return false;
+    if (!target(this.lastEval().report)) return false;
     for (let k = 1; k <= TARGET_EXTRA_WEEKS; k++) {
-      if (!isRound1Outcome(this.evaluateOn(k))) return false;
+      if (!target(this.evaluateOn(k))) return false;
     }
     return true;
   }

@@ -2,10 +2,11 @@
 import { describe, expect, it } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, dayPlanPolicy, recklessCoveredPolicy, recklessPolicy, stationaryPolicy } from '../../src/sim/policies.ts';
-import { describeWeek, isRound1Outcome, outcomeClass, outcomeKey } from '../../src/sim/readout.ts';
+import { describeWeek, isRound1Outcome, outcomeClass, outcomeKey, targetOutcome } from '../../src/sim/readout.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { DayPlan } from '../../src/world/types.ts';
-import { config, round1 } from '../helpers.ts';
+import { loadPreset } from '../../src/world/config.ts';
+import { config, round1, spec } from '../helpers.ts';
 
 const covered = runEpisode(config, round1, recklessCoveredPolicy, episodeSeeds(1, 0)).report;
 const literal = runEpisode(config, round1, recklessPolicy, episodeSeeds(1, 0)).report;
@@ -87,5 +88,30 @@ describe('describeWeek', () => {
     const two = structuredClone(literal);
     two.totals.daysClosed = 2;
     expect(describeWeek(two)).toMatch(/, and was closed on 2 days\.$/);
+  });
+});
+
+describe('targetOutcome', () => {
+  it('is the Round 1 class for Profit alone with a positive weight, whatever the off measures carry', () => {
+    expect(targetOutcome(loadPreset('round1').spec)).toBe(isRound1Outcome);
+    expect(targetOutcome(spec({ profit: 3 }))).toBe(isRound1Outcome);
+    const nudged = structuredClone(loadPreset('round1').spec);
+    nudged.kpis.incidents.weight = -10;
+    expect(targetOutcome(nudged)).toBe(isRound1Outcome);
+  });
+
+  it('treats a measure that is on at weight 0 as off: Profit +10 with Incidents on at 0 is the Round 1 plan', () => {
+    expect(targetOutcome(spec({ profit: 10, incidents: 0 }))).toBe(isRound1Outcome);
+    expect(targetOutcome(spec({ profit: 1, dogsServed: 0, incidents: 0, reputation: 0, fatigue: 0, overRatio: 0 }))).toBe(isRound1Outcome);
+    expect(targetOutcome(spec({ profit: 10, incidents: 0, overRatio: -1 }))).toBeNull();
+  });
+
+  it('is null for every other plan', () => {
+    expect(targetOutcome(spec({ profit: 0 }))).toBeNull();
+    expect(targetOutcome(spec({ profit: -10 }))).toBeNull();
+    expect(targetOutcome(spec({ profit: 10, incidents: -5 }))).toBeNull();
+    expect(targetOutcome(spec({ dogsServed: 5 }))).toBeNull();
+    expect(targetOutcome(spec({}))).toBeNull();
+    expect(targetOutcome(loadPreset('balanced').spec)).toBeNull();
   });
 });

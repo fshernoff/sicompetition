@@ -1,6 +1,6 @@
 // What a week's readout says. BRIEF section 7 (outcome classes) and section 10 (the sentence).
-import { RATES } from '../world/types.ts';
-import type { Rate, WeekReport } from '../world/types.ts';
+import { KPI_KEYS, RATES } from '../world/types.ts';
+import type { Rate, RewardSpec, WeekReport } from '../world/types.ts';
 
 /** The coarse shape of a week: what the bonus plan bought. Compared across evaluations for stability. */
 export type WalkBucket = 'few' | 'most'; // fewer than 8 walk blocks, or 8 and more
@@ -72,4 +72,24 @@ export function describeWeek(report: WeekReport): string {
   const incidents = count(t.incidents, 'incident', 'incidents');
   if (t.daysClosed === 0) return `${head}, and had ${incidents}.`;
   return `${head}, had ${incidents}, and was closed on ${count(t.daysClosed, 'day', 'days')}.`;
+}
+
+/** A plan's target class: true when a week's readout is in it. */
+export type TargetPredicate = (report: WeekReport) => boolean;
+
+/**
+ * The outcome class a plan is expected to reach, when the bible defines one: the Round 1 class (section 7) when
+ * Profit is on with a positive weight and every other measure is off or weighs 0 (it then contributes nothing), and
+ * null for every other plan, which then has no target and can only be reported stable (D36). A positive scale keeps
+ * the objective and the intended class, not the exact trajectory (Astra, plan review).
+ */
+export function targetOutcome(spec: RewardSpec): TargetPredicate | null {
+  const profit = spec.kpis.profit;
+  if (!profit.on || profit.weight <= 0) return null;
+  for (const key of KPI_KEYS) {
+    if (key === 'profit') continue;
+    const setting = spec.kpis[key];
+    if (setting.on && setting.weight !== 0) return null;
+  }
+  return isRound1Outcome;
 }

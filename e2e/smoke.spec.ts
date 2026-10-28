@@ -12,7 +12,7 @@ import { STUDENT_ALLOWED, STUDENT_BANS } from '../tests/ui/bans.ts';
 // teacher panel is closed by default and holds the teacher's controls (G5), and Round 1 trains to the reckless week
 // in headless Chromium (G2 plan, acceptance 3) with its export equal to a node-side twin (G5). Since G5b the student
 // sees the GM as a person (D50): the engine trains out of sight, then the GM's one week plays and the readout follows.
-const ORIGIN = 'http://127.0.0.1:4173';
+const ORIGIN = `http://127.0.0.1:${process.env.E2E_PORT ?? 4173}`; // playwright.config.ts's port
 
 /** The fixed keys of an export (BRIEF section 11; the export test pins the same list). */
 const EXPORT_KEYS = ['app', 'config', 'curve', 'evaluations', 'exportedAt', 'learner', 'plan', 'planWords', 'prediction', 'predictionCheck', 'predictionPicks', 'readout', 'round', 'seed', 'version'].sort();

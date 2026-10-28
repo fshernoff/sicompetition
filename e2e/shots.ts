@@ -11,7 +11,7 @@ import { chromium } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { pause, serveDist, stamp, stopServer } from './serve.ts';
 
-const PORT = 4189;
+const PORT = Number(process.env.SHOTS_PORT ?? 4189); // a parallel worktree passes its own
 const PACKED = ['pick-acceptAll-all', 'pick-rate-premium', 'pick-solo-3-4', 'pick-naps-0', 'pick-incidents-7plus'];
 const WHY = 'It packs the yard with one staffer and never naps, so lots of incidents.';
 

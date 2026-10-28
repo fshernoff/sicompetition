@@ -53,3 +53,36 @@ Two Opus agents in parallel, the same sample, the same locked camera and light (
 The sample: a corgi and a golden in three poses each (moving, sitting, asleep), an adult crew member, the GM in three
 states, and a 4 × 4 piece of the board with the fence, composed into one frame at the yard's scale. The three readers
 judge the two samples side by side against the bar and D58; the better one is D59's method.
+
+## The spike's verdict (Oct 28): the hybrid
+
+Spike A (generated, `Temp/spike-a/`), spike B (three.js models rendered from one camera, `Temp/spike-b/`) and the
+hybrid H (B's board and GM, A's dogs and crew, `Temp/spike-hybrid/`), judged side by side by the three readers:
+
+| Reader | Ranking | Which method for which part |
+|---|---|---|
+| Main thread | H, A, B | dogs and crew A; board and GM B, re-rendered to the figures' finish |
+| Sonnet (fresh, saw only the images) | H, A, B | dogs and crew A; board and GM B |
+| Astra | A, H, B (as results) | for the final bar, artist-authored low-poly dogs and crew through B's camera; within what we can make, H is the development route; GM and board B |
+
+Why not B's dogs: all three readers found them below the bar (the golden reads as a deer or a seal, the corgi a fox,
+the crew a mannequin). Why not A's board and GM: a bare, serrated board and three GM states that are three different
+objects. Why not an asset pack or an artist: D1 and the Challenge's rule (100% original content made for the Challenge
+after Aug 1, 2026) rule out bought or CC0 models, and there is no artist; generated images made for the project and
+disclosed are within the rules (D55).
+
+**The method (D59):** the cast (dogs and crew) generated, the set (board, clubhouse, fence, props) and the GM modelled
+in code and rendered offline from one camera. The gates the readers set, all accepted:
+
+1. One camera spec (2:1 isometric, about 30° elevation, the backs of the dogs visible) and one scale table pinned in
+   code; a generated sprite outside the camera is rejected, not used.
+2. A locked reference per breed (its first clean strip) for every later pose; coat drift is a reject.
+3. No baked shadows; every shadow drawn in code to one spec that matches the set's softness.
+4. One colour grade and a light sharpen on every cast sprite, so the cast sits in the set's finish; the set
+   re-rendered with denser facets, soft occlusion and the cast's palette (both sides meet in the middle).
+5. Facing: the cast mirrored at run time only after a mirrored contact sheet passes; movement kept to the two
+   camera-facing diagonals (no back views needed).
+6. Fewer unique dogs, more recolours (one model, two or three coats), to keep the defect rate down.
+7. The set's architecture to scale (the clubhouse door about 1.2 × the crew's height); the GM orb's band edge clean;
+   the done state reads "done", not "up" or a halo.
+8. Before the full cast: a 6 × 3 contact sheet on the board at 1× and 2×, read by the three readers.

@@ -13,7 +13,7 @@ import { chromium } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { pause, serveDist, stopServer } from './serve.ts';
 
-const PORT = 4196; // not 4190: the fetch standard blocks it ("bad port")
+const PORT = Number(process.env.PERF_PORT ?? 4196); // not 4190: the fetch standard blocks it ("bad port")
 const PACKED = ['pick-acceptAll-all', 'pick-rate-premium', 'pick-solo-3-4', 'pick-naps-0', 'pick-incidents-7plus'];
 
 function arg(name: string): string | undefined {

@@ -40,6 +40,33 @@ async function statusSays(page: Page, words: string, timeout = 90_000): Promise<
   await page.waitForFunction((w) => document.querySelector('#status')?.textContent?.includes(w) ?? false, words, { timeout });
 }
 
+async function weekOver(page: Page): Promise<void> {
+  // The status line, not the button: a rerun's button reads "again" from the start.
+  await statusSays(page, 'getting ready');
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent?.startsWith('The week is over') ?? false, undefined, { timeout: 120_000 });
+  await pause(1500);
+}
+
+async function pick(page: Page, chips: string[]): Promise<void> {
+  for (const chip of chips) await page.click(`label[for="${chip}"]`);
+}
+
+/** Sets a measure's slider the way a drag ends: the value, then input and change. */
+async function slide(page: Page, key: string, value: number): Promise<void> {
+  await page.locator(`#kpi-${key}-weight`).evaluate((el, v) => {
+    const input = el as HTMLInputElement;
+    input.value = String(v);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
+async function toRound3(page: Page): Promise<void> {
+  await page.click('#teacher-open');
+  await page.check('#round-round3');
+  await page.click('#teacher-close');
+}
+
 async function main(): Promise<void> {
   const outDir = arg('out') ?? `Temp/shots/${stamp(new Date())}`;
   let url = arg('url');
@@ -105,6 +132,70 @@ async function main(): Promise<void> {
       await pause(3500);
       await shot(big, '12-projector-mid-week');
       await big.close();
+
+      // The stress states (G5d plan review, finding 9).
+      const missed = await open(browser, url, 1366, 768);
+      await pick(missed, ['pick-acceptAll-none', 'pick-rate-low', 'pick-solo-0', 'pick-naps-6plus', 'pick-incidents-0-2']);
+      await missed.click('#train');
+      await weekOver(missed);
+      await shot(missed, '13-scorecard-all-missed');
+      await missed.close();
+
+      const mixed = await open(browser, url, 1366, 768);
+      await pick(mixed, ['pick-acceptAll-all', 'pick-rate-low', 'pick-solo-3-4', 'pick-naps-1-5', 'pick-incidents-7plus']);
+      await mixed.fill('#prediction', 'We think it will take every booking it can because profit is all it is paid on, keep one staffer on the floor to save on wages, skip naps because a nap block earns nothing, and the yard will get crowded enough that incidents pile up by the end of the week, especially on the busy days.');
+      await shot(mixed, '14-long-why');
+      await mixed.click('#train');
+      await weekOver(mixed);
+      await shot(mixed, '15-scorecard-mixed');
+      await mixed.close();
+
+      const extremes = await open(browser, url, 1366, 768);
+      await toRound3(extremes);
+      for (const key of ['dogsServed', 'incidents', 'reputation', 'fatigue', 'overRatio']) await extremes.check(`#kpi-${key}-on`);
+      for (const [key, v] of [['profit', 10], ['dogsServed', -10], ['incidents', -10], ['reputation', 10], ['fatigue', -10], ['overRatio', -10]] as const) await slide(extremes, key, v);
+      await pause(400);
+      await shot(extremes, '16-sliders-extremes');
+      await extremes.close();
+
+      const careful = await open(browser, url, 1366, 768);
+      await toRound3(careful);
+      for (const key of ['incidents', 'fatigue', 'overRatio']) await careful.check(`#kpi-${key}-on`);
+      for (const key of ['incidents', 'fatigue', 'overRatio']) await slide(careful, key, -10);
+      await pick(careful, ['pick-acceptAll-some', 'pick-rate-standard', 'pick-solo-0', 'pick-naps-6plus', 'pick-incidents-0-2']);
+      await careful.click('#train');
+      await statusSays(careful, 'running the week');
+      await pause(3500);
+      await shot(careful, '17-careful-mid-week');
+      await careful.waitForFunction(() => document.querySelector('#status')?.textContent?.startsWith('The week is over') ?? false, undefined, { timeout: 120_000 });
+      await pause(1500);
+      await shot(careful, '18-careful-scorecard');
+      await careful.locator('#report').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+      await pause(400);
+      await shot(careful, '19-careful-report');
+      await careful.close();
+
+      // The drawn yard, when the art cannot load.
+      const vector = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+      await vector.route(/\.(webp|png|svg)(\?.*)?$/, (route) => route.abort());
+      await vector.goto(url);
+      await settled(vector);
+      await pick(vector, PACKED);
+      await vector.click('#train');
+      await statusSays(vector, 'running the week');
+      await pause(3500);
+      await shot(vector, '20-fallback-yard-mid-week');
+      await vector.close();
+
+      // The tray after a run, at the stacked width.
+      const narrowRun = await open(browser, url, 1024, 768);
+      await pick(narrowRun, PACKED);
+      await narrowRun.click('#train');
+      await weekOver(narrowRun);
+      await narrowRun.click('#teacher-open');
+      await pause(600);
+      await shot(narrowRun, '21-tray-after-run-1024');
+      await narrowRun.close();
     } finally {
       await browser.close();
     }

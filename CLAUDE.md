@@ -22,7 +22,7 @@ Every other repo under `/Users/fred/Programming` is read-only to a thread here. 
 | `docs/DECISIONS.md` | Why, one line each, D1 onward. |
 | `docs/challenge-plan.md` | The Challenge brief this was built from. Intent, not design. |
 | `.claude/docs/HANDOFF.md` | Status only: where the last thread stopped, what the next one does first. |
-| `.claude/docs/ROADMAP.md` | The groups G1 to G5 and their dates. |
+| `.claude/docs/ROADMAP.md` | The groups G1 to G7 and their dates. |
 | `.claude/docs/plans/<group>.md` | One plan per group: goal, acceptance, packages, tests, what the owner sees, result. |
 | `docs/capture.md` | The shot list for the 30-second screen capture. |
 | `docs/lesson/` | The nine printed sheets of the unit (BRIEF section 14): the teacher guide, the round briefs, the role cards, the concept check and its key, the memo, the readings. |

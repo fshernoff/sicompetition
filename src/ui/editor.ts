@@ -9,6 +9,7 @@
 import { activeCount, describeBonusPlan, kpiInfo, planLocked, setWeight, signedDollars, signedNote, toggleKpi } from '../world/bonusPlan.ts';
 import type { PresetName, RewardPreset } from '../world/config.ts';
 import type { KpiKey, RewardSpec, WorldConfig } from '../world/types.ts';
+import { BONUS_ICON_PATHS, iconSvg, measureIconSvg } from './icons.ts';
 
 export interface Editor {
   readonly element: HTMLElement;
@@ -47,6 +48,7 @@ interface Row {
   toggle: HTMLInputElement;
   slider: HTMLInputElement;
   value: HTMLElement;
+  state: HTMLElement;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string): HTMLElementTagNameMap[K] {
@@ -54,6 +56,32 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, t
   if (className !== undefined) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function icon(key: KpiKey): HTMLElement {
+  const tile = el('span', `kpi-icon kpi-icon-${key}`);
+  tile.setAttribute('aria-hidden', 'true');
+  tile.innerHTML = measureIconSvg(key); // one icon per measure everywhere (icons.ts)
+  return tile;
+}
+
+/**
+ * What a screen reader says for a slider: the whole amount, its sign and unit in words ("plus 10 dollars per 100
+ * dollars of profit", "minus 5 dollars per incident", "0 dollars per dog served"), since the visible unit is
+ * aria-hidden beside it.
+ */
+export function spokenAmount(key: KpiKey, weight: number, world: WorldConfig): string {
+  const unit: Record<KpiKey, string> = {
+    profit: 'per 100 dollars of profit',
+    dogsServed: 'per dog served',
+    incidents: 'per incident',
+    reputation: 'per point of reputation gained',
+    fatigue: `per block the crew's fatigue is above ${world.fatigue.kpiThreshold}%`,
+    overRatio: `per block the floor runs over ${world.bookings.legalRatio} dogs per staffer`,
+  };
+  const n = Math.abs(weight);
+  const sign = weight > 0 ? 'plus ' : weight < 0 ? 'minus ' : '';
+  return `${sign}${n} ${n === 1 ? 'dollar' : 'dollars'} ${unit[key]}`;
 }
 
 /** "Round 1" from "Round 1: profit only"; the whole label when it has no colon. */
@@ -69,6 +97,9 @@ function roundName(preset: RewardPreset): string {
  * locked plan (Round 1) has every toggle and slider disabled and #limit reads "Round 1: the plan is set. Predict
  * what the GM will do, then put it to work."; otherwise #limit reads "N of M measures on." with " Turn one off to turn
  * another on." appended when the limit is reached and a measure is still off.
+ * The look (G5c): #limit under the card's heading, then a row per measure (its icon, its name as the toggle's label,
+ * the dollar amount and its unit, the slider, the toggle: a native checkbox drawn as a switch), then the plan in
+ * words in a highlighted strip and the note under it.
  */
 export function mountEditor(container: HTMLElement, world: WorldConfig, preset: RewardPreset): Editor {
   let current: RewardPreset = structuredClone(preset);
@@ -80,11 +111,12 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
   list.setAttribute('aria-label', 'The measures in the bonus plan');
   const rows: Row[] = kpiInfo(world).map((info) => {
     const row = el('div', 'kpi-row');
-    const name = el('label', 'kpi-name');
-    const toggle = el('input');
+    row.dataset.key = info.key;
+    const toggle = el('input', 'toggle');
     toggle.type = 'checkbox';
     toggle.id = `kpi-${info.key}-on`;
-    name.append(toggle, el('span', undefined, info.name));
+    const name = el('label', 'kpi-name', info.name);
+    name.htmlFor = toggle.id;
     const slider = el('input', 'kpi-weight');
     slider.type = 'range';
     slider.id = `kpi-${info.key}-weight`;
@@ -92,11 +124,18 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
     slider.max = '10';
     slider.step = '1';
     slider.setAttribute('aria-label', `Bonus amount for ${info.name}`);
+    const amount = el('span', 'kpi-amount');
     const value = el('span', 'kpi-value');
     value.id = `kpi-${info.key}-value`;
     value.setAttribute('aria-hidden', 'true'); // the slider's own value is what a screen reader announces
     const per = el('span', 'kpi-per', info.per);
-    row.append(name, slider, value, per);
+    per.setAttribute('aria-hidden', 'true');
+    amount.append(value, ' ', per);
+    // Read-only rounds (Round 1) show the measure's state as a pill and its amount as text; the toggle and the slider
+    // stay in the page, disabled and visually hidden, so the plan reads as set rather than as a broken form.
+    const state = el('span', 'kpi-state');
+    state.setAttribute('aria-hidden', 'true'); // the checkbox carries the state for a screen reader
+    row.append(icon(info.key), name, state, amount, slider, toggle);
     list.appendChild(row);
 
     toggle.addEventListener('change', () => {
@@ -106,30 +145,42 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
       else change(next);
     });
     slider.addEventListener('input', () => change(setWeight(plan, info.key, Number(slider.value))));
-    return { key: info.key, row, toggle, slider, value };
+    return { key: info.key, row, toggle, slider, value, state };
   });
 
   const limit = el('p', 'plan-limit');
   limit.id = 'limit';
+  const strip = el('div', 'plan-strip');
+  const stripIcon = el('span', 'plan-strip-icon');
+  stripIcon.setAttribute('aria-hidden', 'true');
+  stripIcon.innerHTML = iconSvg(BONUS_ICON_PATHS);
+  const stripText = el('div', 'plan-strip-text');
+  // Shown after the week, when the plan card stands beside the scorecard (G5c).
+  const stripLabel = el('p', 'plan-strip-label', 'The plan it worked to');
   const words = el('p', 'plan-words');
   words.id = 'plan-words';
   words.setAttribute('aria-live', 'polite');
+  stripText.append(stripLabel, words);
+  strip.append(stripIcon, stripText);
   const note = el('p', 'plan-note');
   note.id = 'plan-note';
-  container.append(list, limit, words, note);
+  container.append(limit, list, strip, note);
 
   function render(): void {
     const locked = planLocked(current);
     const on = activeCount(plan);
     const full = on >= current.maxActive;
+    container.classList.toggle('plan-locked', locked);
     for (const r of rows) {
       const setting = plan.kpis[r.key];
       r.toggle.checked = setting.on;
       r.toggle.disabled = !enabled || locked || (!setting.on && full);
       r.slider.value = String(setting.weight);
+      r.slider.style.setProperty('--fill', `${((setting.weight + 10) / 20) * 100}%`); // the track's filled part
       r.slider.disabled = !enabled || locked || !setting.on;
       r.value.textContent = signedDollars(setting.weight);
-      r.slider.setAttribute('aria-valuetext', signedDollars(setting.weight));
+      r.slider.setAttribute('aria-valuetext', spokenAmount(r.key, setting.weight, world));
+      r.state.textContent = setting.on ? 'On' : 'Off';
       r.row.classList.toggle('off', !setting.on);
     }
     if (locked) {

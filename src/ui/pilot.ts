@@ -9,6 +9,7 @@ import { AGAIN, BUDGET_MS, clearRun, redraw, runTraining, setControls, showError
 import type { Page } from './app.ts';
 import { checkLine } from './check.ts';
 import { studentStatus } from './status.ts';
+import { emptyPicks } from './prediction.ts';
 
 const MAX_PILOT_SEEDS = 200;
 
@@ -52,7 +53,7 @@ async function pilotSeeds(page: Page, n: number): Promise<void> {
   for (let seed = 1; seed <= n; seed++) {
     page.seed.value = String(seed);
     clearRun(page); // each seed starts clean: the replay, the sentence, the table and the curve (D37)
-    page.setup = { seed, round: 'round1', prediction: '' };
+    page.setup = { seed, round: 'round1', prediction: '', picks: emptyPicks() };
     const label = `Pilot seed ${seed} of ${n} · `;
     page.status.textContent = label + studentStatus('preparing');
     page.replay.dataset.week = 'preparing';

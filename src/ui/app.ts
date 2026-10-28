@@ -23,9 +23,15 @@ import { drawCurve } from './curve.ts';
 import type { CurveColors } from './curve.ts';
 import { mountEditor, roundFromSearch } from './editor.ts';
 import type { Editor } from './editor.ts';
-import { drawReplay, replayClock, replayFrame } from './replay.ts';
+import { drawReplay, replayArtReady, replayClock, replayFrame } from './replay.ts';
 import type { ReplayColors } from './replay.ts';
-import { renderReport, reportTable } from './report.ts';
+import { headlineTiles, renderReport, renderTiles, reportTable } from './report.ts';
+import { PICKS, PICKS_HINT, calledLine, checkPrediction, emptyPicks, picksComplete } from './prediction.ts';
+import type { PickField, PickResult, Picks } from './prediction.ts';
+import { describeBonusPlan } from '../world/bonusPlan.ts';
+import gmPresentingUrl from '../assets/art/gm-presenting.webp';
+import gmStandingUrl from '../assets/art/gm-standing.webp';
+import gmThinkingUrl from '../assets/art/gm-thinking.webp';
 import { ROUND_NOTES } from './roundNotes.ts';
 import { studentStatus } from './status.ts';
 import { mountTeacher, rejectSeed } from './teacher.ts';
@@ -45,6 +51,8 @@ const REPLAY_CAPTION = "The GM's week";
 const PREPARING_PLACEHOLDER = 'Monday, before opening: the GM is getting ready.';
 /** The button's words after a run (and after the pilot). */
 export const AGAIN = 'Put the GM to work again';
+/** The placeholder's background: clear, so the dimmed yard behind the canvas shows (G5c). */
+const CLEAR = 'rgba(0, 0, 0, 0)';
 const ERROR_LINE = 'The GM stopped because of a problem. Ask your teacher for help.';
 const NO_RUN = 'No run yet.';
 const SEED_MESSAGE = `The seed must be a whole number from 0 to ${MAX_SEED}.`;
@@ -60,6 +68,7 @@ export interface RunSetup {
   seed: number;
   round: PresetName;
   prediction: string; // the team's prediction as it stood at the click: read there and nowhere else (D2, D47)
+  picks: Picks; // the five picks as they stood at the click (D47, D56)
 }
 
 export interface Page {
@@ -67,7 +76,24 @@ export interface Page {
   roundNote: HTMLElement;
   rounds: HTMLInputElement[]; // the teacher's three round radios, in ROUNDS order
   editor: Editor;
-  prediction: HTMLTextAreaElement; // the team's prediction: read only at the click, for the export (D2, D47)
+  prediction: HTMLTextAreaElement; // the team's "Why?": read only at the click, for the export (D2, D47)
+  /** The five picks' radios (D56), every option of every pick, in PICKS order. */
+  pickRadios: HTMLInputElement[];
+  picksBox: HTMLElement; // the five pick rows
+  picksHint: HTMLElement; // "Make all five picks to put the GM to work.", tied to the button while a pick is missing
+  /** After the week: the called line, what the GM did and the scorecard, in place of the picks. */
+  resultBox: HTMLElement;
+  scorecard: HTMLElement;
+  calledLine: HTMLElement;
+  newPrediction: HTMLButtonElement; // "Make a new prediction": a clear (D56)
+  /** The scorecard shows the click's picks: the radios stay locked until a clear (D56). */
+  scorecardShown: boolean;
+  /** False while a run (or the pilot) holds the controls (setControls). */
+  controlsEnabled: boolean;
+  stagePlan: HTMLElement; // the plan the GM works to, beside the yard during and after a run
+  stagePlanWords: HTMLElement;
+  stagePicks: HTMLElement; // the team's five picks beside the yard, so the class watches the week against them
+  stagePicksList: HTMLElement;
   seed: HTMLInputElement;
   train: HTMLButtonElement;
   teacher: HTMLElement; // the tray
@@ -93,6 +119,7 @@ export interface Page {
   readoutLabel: HTMLElement;
   report: HTMLElement; // the weekly P&L and operations report, hidden until a run ends
   reportTable: HTMLTableElement;
+  reportTiles: HTMLElement; // the report's headline numbers, above the table (WP3's tiles)
   pilot: HTMLElement;
   colors: CurveColors;
   replayColors: ReplayColors;
@@ -133,7 +160,7 @@ export class RunCancelled extends Error {
   }
 }
 
-/** The prediction beside what the GM did. */
+/** The prediction card: the picks, and after the week the scorecard and what the GM did. */
 function compareArea(): HTMLElement {
   const el = document.querySelector('.compare');
   if (!(el instanceof HTMLElement)) throw new Error('page: .compare is missing');
@@ -185,6 +212,224 @@ function readReplayColors(get: (name: string, fallback: string) => string): Repl
   };
 }
 
+/** Smooth scrolling, or instant under prefers-reduced-motion: reduce (G5c, acceptance 5). */
+export function scrollBehavior(): ScrollBehavior {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
+/**
+ * The yard's art, decoded once (WP2's replayArtReady: memoised, never rejects; the yard keeps its vector drawing if an
+ * image fails). Started at mount, awaited before the first week plays.
+ */
+function replayArt(): Promise<void> {
+  return replayArtReady();
+}
+
+/** The GM beside the status line (G5c): waiting, thinking while it gets ready, at work in the week, presenting after. */
+function showPose(page: Page): void {
+  const week = page.replay.dataset.week;
+  const pose = page.readoutShown ? 'done' : week === 'preparing' ? 'preparing' : week === 'final' ? 'playing' : 'idle';
+  if (page.watch.dataset.gm !== pose) page.watch.dataset.gm = pose;
+}
+
+const CHECK_ICON =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const CROSS_ICON =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" focusable="false"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+
+/**
+ * The five picks (D56): a fieldset per pick with its legend (the pick's label) and its options as chips: native
+ * radios (name "pick-<field>", id "pick-<field>-<value>"), each with its label[for] as the chip; a chosen chip shows
+ * a check mark, not colour alone. Returns the radios in PICKS order.
+ */
+function renderPicks(container: HTMLElement): HTMLInputElement[] {
+  const radios: HTMLInputElement[] = [];
+  const sets = PICKS.map((pick) => {
+    const set = document.createElement('fieldset');
+    set.className = 'pick';
+    set.dataset.field = pick.field;
+    const legend = document.createElement('legend');
+    legend.className = 'pick-label';
+    legend.textContent = pick.label;
+    const chips = document.createElement('div');
+    chips.className = 'pick-chips';
+    for (const option of pick.options) {
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.className = 'pick-input';
+      radio.name = `pick-${pick.field}`;
+      radio.id = `pick-${pick.field}-${option.value}`;
+      radio.value = option.value;
+      const label = document.createElement('label');
+      label.className = 'pick-chip';
+      label.htmlFor = radio.id;
+      const tick = document.createElement('span');
+      tick.className = 'pick-tick';
+      tick.setAttribute('aria-hidden', 'true');
+      tick.innerHTML = CHECK_ICON;
+      label.append(tick, option.label);
+      chips.append(radio, label);
+      radios.push(radio);
+    }
+    set.append(legend, chips);
+    return set;
+  });
+  container.replaceChildren(...sets);
+  return radios;
+}
+
+/** The picks as the radios hold them now. */
+export function readPicks(page: Page): Picks {
+  const picks = emptyPicks();
+  for (const radio of page.pickRadios) {
+    if (!radio.checked) continue;
+    const field = radio.name.slice('pick-'.length) as PickField;
+    picks[field] = radio.value;
+  }
+  return picks;
+}
+
+/**
+ * The picks and the button follow the controls and the scorecard: the radios are locked while a run (or the pilot)
+ * holds the controls and while the scorecard shows the click's picks; Put the GM to work waits for all five, and the
+ * hint, tied to the button while it waits, says so (D56).
+ */
+function syncPicks(page: Page): void {
+  const locked = !page.controlsEnabled || page.scorecardShown;
+  for (const radio of page.pickRadios) radio.disabled = locked;
+  const complete = picksComplete(readPicks(page));
+  page.train.disabled = !page.controlsEnabled || !complete;
+  page.picksHint.hidden = complete;
+  if (complete) page.train.removeAttribute('aria-describedby');
+  else page.train.setAttribute('aria-describedby', page.picksHint.id);
+}
+
+/**
+ * "Your picks" beside the yard: the click's five picks (page.setup.picks), as the page's labels and chip words, so
+ * the class watches the week against its prediction. Nothing of what the GM did shows until the week is over; then
+ * `results` adds each row's called or missed mark. Hidden when the run has no complete picks (the pilot).
+ */
+function showStagePicks(page: Page, results: readonly PickResult[] | null = null): void {
+  const picks = page.setup?.picks;
+  if (picks === undefined || !picksComplete(picks)) {
+    page.stagePicks.hidden = true;
+    page.stagePicksList.replaceChildren();
+    return;
+  }
+  const rows = PICKS.map((pick) => {
+    const li = document.createElement('li');
+    li.className = 'stage-pick';
+    const label = document.createElement('span');
+    label.className = 'stage-pick-label';
+    label.textContent = pick.label;
+    const chip = document.createElement('span');
+    chip.className = 'stage-pick-chip';
+    chip.textContent = pick.options.find((o) => o.value === picks[pick.field])?.label ?? '—';
+    li.append(label, chip);
+    const result = results?.find((r) => r.field === pick.field);
+    if (result !== undefined) {
+      li.classList.add(result.called ? 'called' : 'missed');
+      const mark = document.createElement('span');
+      mark.className = 'stage-pick-mark';
+      mark.innerHTML = result.called ? CHECK_ICON : CROSS_ICON;
+      mark.firstElementChild?.setAttribute('aria-hidden', 'true');
+      const word = document.createElement('span');
+      word.className = 'visually-hidden';
+      word.textContent = result.called ? 'Called' : 'Missed';
+      mark.appendChild(word);
+      li.appendChild(mark);
+    }
+    return li;
+  });
+  page.stagePicksList.replaceChildren(...rows);
+  page.stagePicks.hidden = false;
+}
+
+/**
+ * After the week (D56): the prediction card turns into the scorecard of the click's picks (page.setup.picks) against
+ * the week the page holds: a row per pick with the team's pick, what the GM did and called or missed (a mark and a
+ * word), and the called line. The radios stay locked until a clear.
+ */
+function showScorecard(page: Page): void {
+  const trace = page.trace;
+  const setup = page.setup;
+  if (trace === null || setup === null) return;
+  const results = checkPrediction(setup.picks, trace.report);
+  const table = document.createElement('table');
+  table.className = 'score-table';
+  const head = table.createTHead().insertRow();
+  for (const [text, cls] of [
+    ['The pick', 'score-h-label'],
+    ['Your pick', 'score-h-pick'],
+    ['The GM did', 'score-h-actual'],
+    ['', 'score-h-mark'],
+  ] as const) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.className = cls;
+    if (text === '') {
+      const hidden = document.createElement('span');
+      hidden.className = 'visually-hidden';
+      hidden.textContent = 'Called or missed';
+      th.appendChild(hidden);
+    } else {
+      th.textContent = text;
+    }
+    head.appendChild(th);
+  }
+  const body = table.createTBody();
+  for (const r of results) {
+    const row = body.insertRow();
+    row.className = r.called ? 'score-row called' : 'score-row missed';
+    row.dataset.field = r.field;
+    row.dataset.called = String(r.called);
+    const label = document.createElement('th');
+    label.scope = 'row';
+    label.textContent = r.label;
+    const picked = row.insertCell();
+    picked.className = 'score-pick';
+    picked.textContent = r.picked ?? '—';
+    const actual = row.insertCell();
+    actual.className = 'score-actual';
+    actual.textContent = r.actual;
+    const mark = row.insertCell();
+    mark.className = 'score-mark';
+    const badge = document.createElement('span');
+    badge.className = 'mark';
+    const glyph = document.createElement('span');
+    glyph.className = 'mark-icon';
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.innerHTML = r.called ? CHECK_ICON : CROSS_ICON;
+    badge.append(glyph, r.called ? 'Called' : 'Missed');
+    mark.appendChild(badge);
+    row.prepend(label);
+  }
+  page.scorecard.replaceChildren(table);
+  showStagePicks(page, results);
+  page.calledLine.textContent = calledLine(results);
+  page.calledLine.hidden = false;
+  page.scorecard.hidden = false;
+  page.picksBox.hidden = true;
+  page.newPrediction.hidden = false;
+  page.compare.dataset.state = 'scorecard';
+  page.scorecardShown = true;
+  syncPicks(page);
+}
+
+/** The scorecard goes (with the run, D37) and the picks come back as they were, unlocked unless a run holds them. */
+function hideScorecard(page: Page): void {
+  page.scorecard.replaceChildren();
+  page.scorecard.hidden = true;
+  page.calledLine.textContent = '';
+  page.calledLine.hidden = true;
+  page.resultBox.hidden = true;
+  page.picksBox.hidden = false;
+  page.newPrediction.hidden = true;
+  page.compare.dataset.state = 'picks';
+  page.scorecardShown = false;
+  syncPicks(page);
+}
+
 /** The seed field as an integer 0..4294967295, or null if it is anything else. */
 export function readSeed(input: HTMLInputElement): number | null {
   const text = input.value.trim();
@@ -221,8 +466,16 @@ function paintReplay(page: Page, now: number): boolean {
   };
   const trace = page.trace;
   if (trace === null) {
+    // Before a week and while the GM gets ready, the canvas is clear and the yard art behind it shows through, dimmed
+    // (the stage's CSS): only the placeholder's line is drawn. Cleared here first, so no earlier week stays under it.
+    const ctx = page.replayCtx;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, page.replay.width, page.replay.height);
+    ctx.restore();
+    const clear = { ...options, colors: { ...page.replayColors, background: CLEAR } };
     const preparing = page.replay.dataset.week === 'preparing';
-    drawReplay(page.replayCtx, size.width, size.height, null, preparing ? { ...options, placeholder: PREPARING_PLACEHOLDER } : options);
+    drawReplay(ctx, size.width, size.height, null, preparing ? { ...clear, placeholder: PREPARING_PLACEHOLDER } : clear);
     return true;
   }
   const clock = replayClock(now - page.replayStartedAt);
@@ -237,6 +490,7 @@ function paintReplay(page: Page, now: number): boolean {
  * when a run starts, ends or is cleared; between redraws the playback's frames paint only the replay.
  */
 export function redraw(page: Page, now: number = performance.now()): void {
+  showPose(page);
   page.replaySize = sizeCanvas(page.replay);
   paintReplay(page, now);
   if (page.learning.hidden) return; // a hidden canvas has no size; the curve waits until it is shown
@@ -308,10 +562,13 @@ export function showReadout(page: Page, label = ''): void {
   page.readoutLabel.textContent = READOUT_LABEL;
   page.replayCaption.textContent = REPLAY_CAPTION;
   renderReport(page.reportTable, reportTable(trace.report, page.spec, page.world));
+  renderTiles(page.reportTiles, headlineTiles(trace.report, page.spec, page.world));
   page.report.hidden = false;
   page.replayAgain.hidden = false;
   page.status.textContent = label + studentStatus('done');
+  page.resultBox.hidden = false; // what the GM did, in the prediction card
   page.readoutShown = true;
+  showPose(page);
 }
 
 /**
@@ -391,11 +648,13 @@ export function showError(page: Page, err: unknown): void {
  * run's readout is out (D51). The reveal, the learning curve, the tab and the tray's close button are never locked.
  */
 export function setControls(page: Page, enabled: boolean): void {
+  page.controlsEnabled = enabled;
   page.editor.setEnabled(enabled);
   page.prediction.disabled = !enabled;
   for (const radio of page.rounds) radio.disabled = !enabled;
   page.seed.disabled = !enabled;
-  page.train.disabled = !enabled;
+  page.newPrediction.disabled = !enabled;
+  syncPicks(page); // the picks and the button: on only with the five picked and no scorecard holding them (D56)
   page.exportButton.disabled = !(enabled && page.readoutShown && page.result !== null && page.trace !== null);
 }
 
@@ -431,7 +690,12 @@ export function clearRun(page: Page): void {
   page.replayCaption.textContent = REPLAY_CAPTION;
   page.replayAgain.hidden = true;
   page.reportTable.replaceChildren();
+  page.reportTiles.replaceChildren();
   page.report.hidden = true;
+  hideScorecard(page); // the scorecard goes with the run; the picks come back as they were (D56)
+  page.stagePlan.hidden = true;
+  page.stagePicks.hidden = true;
+  page.stagePicksList.replaceChildren();
   page.readout.textContent = '';
   page.readoutLabel.textContent = READOUT_LABEL;
   page.check.textContent = NO_RUN;
@@ -447,6 +711,17 @@ export function mountApp(): Page {
   const world = loadDefaultConfig();
   const first = roundFromSearch(window.location.search);
   const editor = mountEditor(byId('editor', HTMLElement), world, loadPreset(first));
+  const picksBox = byId('picks', HTMLElement);
+  const pickRadios = renderPicks(picksBox);
+  const art: Readonly<Record<string, string>> = {
+    'gm-presenting': gmPresentingUrl,
+    'gm-standing': gmStandingUrl,
+    'gm-thinking': gmThinkingUrl,
+  };
+  for (const img of document.querySelectorAll<HTMLImageElement>('img[data-art]')) {
+    const url = art[img.dataset.art ?? ''];
+    if (url !== undefined) img.src = url;
+  }
   const css = cssVars();
   const page: Page = {
     roundLabel: byId('round-label', HTMLElement),
@@ -454,6 +729,19 @@ export function mountApp(): Page {
     rounds: ROUNDS.map((name) => byId(`round-${name}`, HTMLInputElement)),
     editor,
     prediction: byId('prediction', HTMLTextAreaElement),
+    pickRadios,
+    picksBox,
+    picksHint: byId('picks-hint', HTMLElement),
+    resultBox: byId('result', HTMLElement),
+    scorecard: byId('scorecard', HTMLElement),
+    calledLine: byId('called-line', HTMLElement),
+    newPrediction: byId('new-prediction', HTMLButtonElement),
+    scorecardShown: false,
+    controlsEnabled: true,
+    stagePlan: byId('stage-plan', HTMLElement),
+    stagePlanWords: byId('stage-plan-words', HTMLElement),
+    stagePicks: byId('stage-picks', HTMLElement),
+    stagePicksList: byId('stage-picks-list', HTMLElement),
     seed: byId('seed', HTMLInputElement),
     train: byId('train', HTMLButtonElement),
     teacher: byId('teacher', HTMLElement),
@@ -479,6 +767,7 @@ export function mountApp(): Page {
     readoutLabel: byId('readout-label', HTMLElement),
     report: byId('report', HTMLElement),
     reportTable: byId('report-table', HTMLTableElement),
+    reportTiles: byId('report-tiles', HTMLElement),
     pilot: byId('pilot', HTMLElement),
     colors: readColors(css),
     replayColors: readReplayColors(css),
@@ -495,6 +784,21 @@ export function mountApp(): Page {
     readoutShown: false,
   };
   showRound(page, first);
+  page.picksHint.textContent = PICKS_HINT;
+  syncPicks(page);
+  void replayArt(); // decode the yard's art while the class makes its picks
+
+  // A pick is part of the prediction, not the plan: it never clears a run; it only lets the button on (D56).
+  for (const radio of pickRadios) radio.addEventListener('change', () => syncPicks(page));
+
+  // Make a new prediction: a clear (D37, D56). The run and its scorecard go, the picks come back as they were.
+  page.newPrediction.addEventListener('click', () => {
+    clearRun(page);
+    page.status.textContent = studentStatus('idle');
+    const first = pickRadios.find((r) => r.checked) ?? pickRadios[0];
+    first?.focus({ preventScroll: true });
+    page.compare.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
+  });
 
   editor.onChange = () => clearRun(page);
   for (const radio of page.rounds) {
@@ -525,17 +829,24 @@ export function mountApp(): Page {
       seed,
       round: page.editor.preset().name,
       prediction: page.prediction.value, // read here and nowhere else (D2, D47)
+      picks: readPicks(page), // a fresh copy at the click: the scorecard and the export read this (D47, D56)
     };
+    page.stagePlanWords.textContent = describeBonusPlan(page.spec, page.world);
+    page.stagePlan.hidden = false;
+    showStagePicks(page);
     page.status.textContent = studentStatus('preparing');
     page.replay.dataset.week = 'preparing';
     // The class watches the yard without touching anything (D42).
-    page.watch.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    page.watch.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     let owner = -1;
     // The whole locked lifecycle is one guarded operation; only the run's owner writes an error or unlocks (Astra,
     // G5b diff review: a drawing failure in recovery must not strand the controls, a stale run must not write).
     void (async () => {
       try {
         redraw(page); // the yard's in-world wait
+        // The yard's art is decoded before the engine starts, so no frame of the week is ever drawn without it (it
+        // started loading at mount; on a cold Chromebook the wait counts in the run's 60 s, from the click).
+        await replayArt();
         const run = runTraining(page, seed, clickedAt, '');
         owner = page.token; // runTraining moved the token on as it started: this click owns that run
         await run;
@@ -544,7 +855,9 @@ export function mountApp(): Page {
         const played = await playWeek(page);
         if (!played || page.token !== owner) return;
         showReadout(page);
-        page.compare.scrollIntoView({ behavior: 'smooth', block: 'start' }); // the box score after the game
+        showScorecard(page);
+        page.calledLine.focus({ preventScroll: true }); // the result first, for a keyboard and a screen reader
+        page.compare.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); // the box score after the game
       } catch (err) {
         if (err instanceof RunCancelled) return;
         if (owner !== -1 && page.token !== owner) return; // a newer run owns the page now
@@ -588,5 +901,7 @@ export function mountApp(): Page {
   page.replay.dataset.week = 'none';
   page.replay.dataset.plays = '0';
   redraw(page);
+  // The placeholder is painted before the bundled faces arrive; paint it again in the display face once they have.
+  void document.fonts.ready.then(() => redraw(page));
   return page;
 }

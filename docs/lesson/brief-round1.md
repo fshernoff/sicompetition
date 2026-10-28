@@ -26,20 +26,26 @@ Each day, the GM earns $10 per $100 of profit.
 ## Run the week
 
 1. Read the plan above. In Round 1 it is already set.
-2. Write your prediction on this sheet.
-3. Type it into the prediction box. Never type a name in the prediction box.
-4. Click Put the GM to work.
-5. Read What the GM did, beside your prediction, then the report below it.
+2. Circle your five picks on this sheet and write your Why.
+3. Make the same five picks on the page and type the Why into the box. Never type a name in the prediction box.
+4. Click Put the GM to work. It waits until all five picks are made.
+5. After the week, the prediction card turns into a scorecard: each pick beside what the GM did. Read What the GM did, then the report below it.
 6. Your teacher exports the run before anything is changed.
 
 ## Your prediction
 
-- Dogs accepted: → ______________________________
-- Rate: → ______________________________
-- Crew on the floor: → ______________________________
-- Naps: → ______________________________
-- Incidents: → ______________________________
+- Days it accepts every booking: None / 1 to 4 / All 5 (circle one)
+- Day rate: Low / Standard / Premium / A mix (circle one)
+- Days with 1 staffer on the floor: None / 1 or 2 / 3 or 4 / All 5 (circle one)
+- Nap blocks: None / 1 to 5 / 6 or more (circle one)
+- Incidents: 0 to 2 / 3 to 6 / 7 or more (circle one)
 - Why: → ______________________________
+
+What the picks count:
+
+- A closed day never counts as accepting every booking or as a day with 1 staffer.
+- The day rate is over the days the daycare opened. "A mix" means more than one rate.
+- Nap blocks are the blocks the dogs actually napped. Incidents are the week's incidents.
 
 ## After the week
 

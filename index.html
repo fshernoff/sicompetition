@@ -3,58 +3,110 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#FBF6EC" />
     <title>Reward the Pack</title>
   </head>
   <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <h1><svg class="hero-spark hero-spark-left" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M9 5l6 6M4 16h9M9 27l6-6"/></svg>Reward the Pack<svg class="hero-spark hero-spark-right" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M9 5l6 6M4 16h9M9 27l6-6"/></svg></h1>
+        <p class="tagline">Good Dog Daycare. You own it. The GM is an AI: it runs the week, and you write its bonus plan.</p>
+        <p class="round-badge"><span id="round-label">Round 1: profit only</span></p>
+      </div>
+    </header>
+
     <main id="app">
-      <h1>Reward the Pack</h1>
-      <p class="tagline">Good Dog Daycare. You own it. The GM is an AI: it runs the week, and you write its bonus plan.</p>
+      <p id="round-note" class="round-note"></p>
 
-      <p class="round-line"><span id="round-label">Round 1: profit only</span> <span id="round-note" class="round-note"></span></p>
+      <div class="deck">
+        <section id="editor" class="card plan-card" aria-labelledby="editor-title">
+          <h2 id="editor-title" class="card-title">The GM's bonus plan</h2>
+        </section>
 
-      <section id="editor" aria-labelledby="editor-title">
-        <h2 id="editor-title">The GM's bonus plan</h2>
-      </section>
+        <section id="predict" class="card predict-card compare" aria-labelledby="predict-title" data-state="picks">
+          <div class="card-head">
+            <h2 id="predict-title" class="card-title">Your team's prediction</h2>
+            <span class="week-over-pill" aria-hidden="true">The week is over</span>
+          </div>
 
-      <div class="compare">
-        <div class="compare-side">
-          <label class="compare-label" for="prediction">Your team's prediction (write it before you put the GM to work)</label>
-          <textarea
-            id="prediction"
-            rows="2"
-            placeholder="What will the GM do with this bonus plan? How many dogs, how many staff on the floor, how many incidents?"
-          ></textarea>
-        </div>
-        <div class="compare-side">
-          <p class="compare-label readout-label" id="readout-label">What the GM did</p>
-          <p id="readout" aria-live="polite"></p>
-        </div>
+          <div id="picks" class="picks"></div>
+
+          <div id="result" class="result" hidden>
+            <div class="result-head">
+              <img class="gm gm-result" data-art="gm-presenting" alt="" width="302" height="357" />
+              <p id="called-line" class="called-line" tabindex="-1"></p>
+            </div>
+            <div id="scorecard" class="scorecard" hidden></div>
+            <div class="readout-box">
+              <p class="readout-label" id="readout-label">What the GM did</p>
+              <p id="readout" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <div class="predict-foot">
+            <img class="gm gm-idle" data-art="gm-standing" alt="" width="278" height="364" />
+            <div class="predict-why">
+              <label class="why-label" for="prediction">Why? <span class="why-sub">Your team's reasons (write it before you put the GM to work)</span></label>
+              <textarea
+                id="prediction"
+                rows="2"
+                placeholder="What will the GM do with this bonus plan, and why? Think about the dogs, the crew on the floor and the incidents."
+              ></textarea>
+              <div class="actions">
+                <button id="new-prediction" type="button" class="btn btn-quiet" hidden>Make a new prediction</button>
+                <button id="train" type="button" class="btn btn-primary" aria-describedby="picks-hint" disabled>Put the GM to work</button>
+              </div>
+              <p id="picks-hint" class="picks-hint">Make all five picks to put the GM to work.</p>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div class="controls">
-        <button id="train" type="button">Put the GM to work</button>
-      </div>
-
-      <section id="watch" aria-label="Watch the GM at work">
-        <p id="status">Write your prediction, then put the GM to work.</p>
-        <figure class="replay-figure">
-          <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
-          <figcaption id="replay-caption">The GM's week</figcaption>
-          <button id="replay-again" type="button" hidden>Watch the week again</button>
-        </figure>
+      <section id="watch" aria-label="Watch the GM at work" data-gm="idle">
+        <div class="stage card">
+          <div class="stage-side">
+            <p id="status">Write your prediction, then put the GM to work.</p>
+            <div class="stage-gm">
+              <img class="gm gm-pose" data-pose="idle" data-art="gm-standing" alt="The GM, waiting for its first week" width="278" height="364" />
+              <img class="gm gm-pose" data-pose="preparing" data-art="gm-thinking" alt="The GM, thinking about Monday" width="247" height="363" />
+              <img class="gm gm-pose" data-pose="playing" data-art="gm-standing" alt="The GM at work in the yard" width="278" height="364" />
+              <img class="gm gm-pose" data-pose="done" data-art="gm-presenting" alt="The GM, presenting its week" width="302" height="357" />
+            </div>
+            <div id="stage-picks" class="stage-picks" hidden>
+              <p class="stage-box-label">Your picks</p>
+              <ul id="stage-picks-list" class="stage-picks-list"></ul>
+            </div>
+            <div id="stage-plan" class="stage-plan" hidden>
+              <p class="stage-box-label">The bonus plan it works to</p>
+              <p id="stage-plan-words" class="stage-plan-words"></p>
+            </div>
+          </div>
+          <figure class="replay-figure">
+            <div class="stage-head">
+              <figcaption id="replay-caption">The GM's week</figcaption>
+              <button id="replay-again" type="button" class="btn btn-quiet btn-small" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>Watch the week again</button>
+            </div>
+            <div class="yard-frame">
+              <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
+            </div>
+          </figure>
+        </div>
       </section>
 
       <section id="report" aria-labelledby="report-title" hidden>
-        <h2 id="report-title">The weekly P&amp;L and operations report</h2>
+        <div class="section-head">
+          <h2 id="report-title">The weekly P&amp;L and operations report</h2>
+        </div>
+        <div id="report-tiles"></div>
         <table id="report-table"></table>
       </section>
 
-      <section id="rules" aria-labelledby="rules-title" hidden>
+      <section id="rules" class="card sheet" aria-labelledby="rules-title" hidden>
         <h2 id="rules-title">The hidden rules of Good Dog Daycare</h2>
         <ol id="rules-list"></ol>
       </section>
 
-      <section id="learning" aria-labelledby="learning-title" hidden>
+      <section id="learning" class="card sheet" aria-labelledby="learning-title" hidden>
         <h2 id="learning-title">The learning curve (the teacher's view)</h2>
         <figure class="learning-figure">
           <canvas id="curve" width="1100" height="619" aria-label="The bonus of each practice week of the AI behind the GM"></canvas>
@@ -69,6 +121,7 @@
     <aside id="teacher" class="teacher" hidden aria-label="Teacher panel">
       <div class="teacher-inner">
         <div class="teacher-row">
+          <p class="teacher-title">Teacher</p>
           <fieldset id="round" class="rounds">
             <legend>Round</legend>
             <label><input type="radio" name="round" id="round-round1" value="round1" checked /> Round 1</label>
@@ -81,8 +134,8 @@
           </span>
           <button id="reveal" type="button">Reveal the hidden rules</button>
           <button id="show-curve" type="button">Show the learning curve</button>
-          <button id="export" type="button" disabled>Export this run</button>
-          <button id="teacher-close" type="button">Close</button>
+          <button id="export" type="button" class="teacher-export" disabled>Export this run</button>
+          <button id="teacher-close" type="button" class="teacher-close">Close</button>
         </div>
         <p id="check" class="check">No run yet.</p>
         <p class="teacher-hint">The export carries the prediction as it stood when the GM was put to work.</p>

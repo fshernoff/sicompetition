@@ -14,7 +14,9 @@ import { loadDefaultConfig, loadPreset } from '../src/world/config.ts';
 const ORIGIN = 'http://127.0.0.1:4173';
 
 /** The fixed keys of an export (BRIEF section 11; the export test pins the same list). */
-const EXPORT_KEYS = ['app', 'config', 'curve', 'evaluations', 'exportedAt', 'learner', 'plan', 'planWords', 'prediction', 'readout', 'round', 'seed', 'version'].sort();
+const EXPORT_KEYS = ['app', 'config', 'curve', 'evaluations', 'exportedAt', 'learner', 'plan', 'planWords', 'prediction', 'predictionCheck', 'predictionPicks', 'readout', 'round', 'seed', 'version'].sort();
+/** The packed-yard prediction (D56): Round 1 on seed 1 calls all five. */
+const PACKED = { acceptAll: 'all', rate: 'premium', solo: '3-4', naps: '0', incidents: '7plus' } as const;
 
 /** The student's status sentences (src/ui/status.ts, D50). */
 const IDLE = 'Write your prediction, then put the GM to work.';
@@ -101,6 +103,17 @@ function watchRequests(page: Page): string[] {
 }
 
 /** Opens the teacher tray (the tab in the corner) if it is closed. */
+/**
+ * Makes the five picks (D56) the way a student does: a click on each visible chip (the label of the radio
+ * "#pick-<field>-<value>"), never a forced check (Astra, G5c plan review), and the radio is then checked.
+ */
+async function makePicks(page: Page, picks: Record<string, string> = PACKED): Promise<void> {
+  for (const [field, value] of Object.entries(picks)) {
+    await page.click(`label[for="pick-${field}-${value}"]`);
+    await expect(page.locator(`#pick-${field}-${value}`)).toBeChecked();
+  }
+}
+
 async function openTray(page: Page): Promise<void> {
   if (await page.locator('#teacher').isHidden()) await page.click('#teacher-open');
   await expect(page.locator('#teacher')).toBeVisible();
@@ -170,6 +183,7 @@ test('the page loads offline-clean, the tray closed, the rules hidden', async ({
   await page.fill('#seed', '');
   await page.click('#teacher-close');
   await expect(page.locator('#teacher')).toBeHidden();
+  await makePicks(page);
   await page.click('#train');
   await expect(page.locator('#teacher')).toBeVisible();
   await expect(page.locator('#check')).toContainText('whole number');
@@ -234,11 +248,21 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
       for (const r of records) log.push(r.oldValue ?? '');
     }).observe(el, { attributes: true, attributeFilter: ['data-week'], attributeOldValue: true });
   });
+  // Put the GM to work waits for the five picks (D56): predict before the run.
+  await expect(page.locator('#train')).toBeDisabled();
+  await expect(page.locator('#picks-hint')).toHaveText('Make all five picks to put the GM to work.');
+  await makePicks(page, { acceptAll: 'all', rate: 'premium', solo: '3-4', naps: '0' });
+  await expect(page.locator('#train')).toBeDisabled();
+  await makePicks(page);
+  await expect(page.locator('#train')).toBeEnabled();
+  await expect(page.locator('#picks-hint')).toBeHidden();
   await samplePreparing(page);
   const started = Date.now();
   await page.click('#train');
   // The week plays: every control stays off until the readout is out (D51).
   await expect(page.locator('#status')).toHaveText(PLAYING, { timeout: 60_000 });
+  await expect(page.locator('#scorecard')).toBeHidden(); // nothing of the result before the week is over (D51)
+  await expect(page.locator('input[name^="pick-"]:enabled')).toHaveCount(0); // the picks lock with the run
   for (const id of ['#prediction', '#round-round1', '#round-round2', '#kpi-profit-on', '#kpi-profit-weight', '#seed', '#train', '#export']) {
     await expect(page.locator(id)).toBeDisabled();
   }
@@ -298,6 +322,10 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   await expect(page.locator('#kpi-profit-weight')).toBeDisabled();
   const readout = (await page.locator('#readout').textContent()) ?? '';
   expect(readout).toMatch(/accepted every booking on 5 of 5 days/);
+  // The prediction card is a scorecard now: each pick beside what the GM did (D56).
+  await expect(page.locator('#scorecard [data-field]')).toHaveCount(5);
+  await expect(page.locator('#scorecard [data-called="true"]')).toHaveCount(5);
+  await expect(page.locator('#called-line')).toHaveText('You called 5 of 5.');
   expect(readout).toMatch(/ran the floor with 1 staffer on 4 days/);
   expect(readout).toMatch(/chose nap 0 times/);
   await expect
@@ -353,6 +381,8 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   expect(file['plan']).toEqual(loadPreset('round1').spec);
   expect(file['planWords']).toBe('Each day, the GM earns $10 per $100 of profit.');
   expect(file['prediction']).toBe(prediction);
+  expect(file['predictionPicks']).toEqual(PACKED);
+  expect((file['predictionCheck'] as { called: boolean }[]).every((c) => c.called)).toBe(true);
   const exported = file['readout'] as { sentence: string; report: unknown };
   expect(exported.sentence).toBe(readout);
   expect(exported.report).toEqual(week);
@@ -396,7 +426,48 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   expect(ruleEnd.bottom).toBeLessThanOrEqual(ruleEnd.trayTop);
   console.log(`[e2e] Round 1 from the click to the readout in ${ms} ms: ${readout}`);
   expect(ms).toBeLessThan(60_000);
+  // "Make a new prediction" is a clear (D37, D56): the scorecard and the run go, the picks come back as they were, the
+  // status is the idle sentence, the export goes off, and the button is ready for the same picks.
+  await page.click('#teacher-close');
+  await page.click('#new-prediction');
+  await expect(page.locator('#scorecard')).toBeHidden();
+  await expect(page.locator('#called-line')).toBeHidden();
+  for (const [field, value] of Object.entries(PACKED)) await expect(page.locator(`#pick-${field}-${value}`)).toBeChecked();
+  await expect(page.locator('input[name^="pick-"]:enabled')).toHaveCount(17);
+  await expect(page.locator('#status')).toHaveText(IDLE);
+  await expect(page.locator('#readout')).toHaveText('');
+  await expect(page.locator('#export')).toBeDisabled();
+  await expect(page.locator('#train')).toBeEnabled();
   expect(foreign).toEqual([]);
+});
+
+test('the fold holds on Round 1 and on Round 3 with all six measures on, after the fonts and the art have loaded', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  for (const address of ['/', '/?round=3']) {
+    await page.goto(address);
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await Promise.all(Array.from(document.images, (img) => (img.complete ? null : img.decode().catch(() => null))));
+    });
+    if (address !== '/') {
+      for (const key of ['dogsServed', 'incidents', 'reputation', 'fatigue', 'overRatio']) await page.check(`#kpi-${key}-on`);
+      await expect(page.locator('#limit')).toHaveText('6 of 6 measures on.');
+    }
+    await makePicks(page);
+    const bottom = async (): Promise<number> => {
+      const box = await page.locator('#train').boundingBox();
+      return (box?.y ?? 9999) + (box?.height ?? 0);
+    };
+    const closed = await bottom();
+    await openTray(page);
+    const open = await bottom();
+    const trayTop = (await page.locator('#teacher').boundingBox())?.y ?? 0;
+    console.log(`[e2e] ${address}: the button's bottom ${Math.round(closed)} px (tray open: ${Math.round(open)}, tray top ${Math.round(trayTop)})`);
+    expect(closed).toBeLessThanOrEqual(700);
+    expect(open).toBe(closed); // the tray overlays; the button does not move (D46)
+    expect(open).toBeLessThanOrEqual(trayTop);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1366);
+  }
 });
 
 // G3: the bonus plan editor (G3 plan, acceptance 2). Sliders are set the way a drag sets them: the value, then an
@@ -489,6 +560,9 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await page.click('#reveal'); // the rules are the config's, not the run's: they stay through clears and runs
   await expect(page.locator('#rules')).toBeVisible();
   await expect(page.locator('#export')).toBeDisabled();
+  // Mixed on purpose: the edited plan's week accepts every booking on 5 of 5 days and runs solo on 2 (called), naps 0
+  // times and has 5 incidents (missed), so the scorecard must show both.
+  await makePicks(page, { acceptAll: 'all', rate: 'mix', solo: '1-2', naps: '1-5', incidents: '0-2' });
   await page.click('#train');
   // A resize mid-week neither restarts nor ends the week: it plays on and the readout follows (Astra, plan review).
   await expect(page.locator('#status')).toHaveText(PLAYING, { timeout: 60_000 });
@@ -530,6 +604,20 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   expect(file['prediction']).toBe(prediction);
   expect((file['readout'] as { sentence: string }).sentence).toBe(expected);
   expect((file['learner'] as { hasTarget: boolean; targetMet: boolean }).hasTarget).toBe(false);
+  // A mixed scorecard: every row on the page is the export's check, called or missed (D56; Astra, G5c plan review).
+  const check = file['predictionCheck'] as { field: string; picked: string | null; actual: string; called: boolean }[];
+  expect(check.some((c) => c.called)).toBe(true);
+  expect(check.some((c) => !c.called)).toBe(true);
+  await expect(page.locator('#scorecard [data-called="true"]')).toHaveCount(check.filter((c) => c.called).length);
+  await expect(page.locator('#scorecard [data-called="false"]')).toHaveCount(check.filter((c) => !c.called).length);
+  for (const c of check) {
+    const row = page.locator(`#scorecard [data-field="${c.field}"]`);
+    await expect(row).toHaveAttribute('data-called', String(c.called));
+    await expect(row).toContainText(c.actual);
+    if (c.picked !== null) await expect(row).toContainText(c.picked);
+  }
+  await expect(page.locator('#called-line')).toHaveText(`You called ${check.filter((c) => c.called).length} of 5.`);
+  await expect(page.locator('input[name^="pick-"]:enabled')).toHaveCount(0); // the scorecard is the click's picks
   // A slider edit after a run clears that run's results, even while the final week is playing (D37; Astra, diff
   // review: the clear must cancel a live producer, not only an idle one), and the export goes off with them.
   await page.click('#replay-again');
@@ -544,6 +632,10 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await expect(page.locator('#replay')).toHaveAttribute('data-week', 'none');
   await expect(page.locator('#export')).toBeDisabled();
   await expect(page.locator('#check')).toHaveText('No run yet.');
+  // The scorecard goes with the run and the picks come back, as they were (D37 extended to the prediction, D56).
+  await expect(page.locator('#scorecard')).toBeHidden();
+  await expect(page.locator('#pick-rate-mix')).toBeChecked();
+  await expect(page.locator('input[name^="pick-"]:enabled')).toHaveCount(17);
   await expect(page.locator('#rules')).toBeVisible(); // the rules survive the clear
   // The clear cancels the replay's producer: nothing redraws the old week on a later frame or a resize (Astra).
   await twoFrames(page);
@@ -560,6 +652,8 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   // A second run, then a round change through the tray clears it and reloads the preset.
   await page.click('#train');
   await weekOver(page);
+  await expect(page.locator('#scorecard [data-field]')).toHaveCount(5); // the rerun is scored with the same picks
+  await expect(page.locator('#called-line')).toHaveText(/^You called [0-5] of 5\.$/);
   await expect(page.locator('#readout')).toContainText(/The GM accepted every booking on \d of 5 days/);
   await expect(page.locator('#export')).toBeEnabled();
   await expect(page.locator('#rules')).toBeVisible(); // and the next run
@@ -587,6 +681,7 @@ test('a plan the engine never settles on is, for the student, just the week the 
   // While the GM gets ready (the engine runs to its cap, about a second here) every frame shows the placeholder and
   // nothing of the readout, sampled in the browser (Astra, plan and diff reviews: prove nothing plays while it trains).
   await samplePreparing(page);
+  await makePicks(page);
   await page.click('#train');
   await weekOver(page);
   console.log(`[e2e] frames sampled while the GM got ready (the unsettled plan): ${await expectPreparingClean(page)}`);
@@ -613,6 +708,9 @@ test('the pilot mode trains Round 1 whatever the address says, and its export is
   await page.goto('/?pilot=2&round=3');
   await expect(page.locator('#pilot h2')).toContainText('Round 1');
   await expect(page.locator('.pilot-summary')).toHaveText('2 of 2 seeds target met in under 60 s', { timeout: 60_000 });
+  await expect(page.locator('#scorecard')).toBeHidden(); // the pilot predicts nothing and scores nothing (D56)
+  await expect(page.locator('#train')).toBeDisabled(); // and the button waits for a class's five picks
+  await expect(page.locator('#picks-hint')).toBeVisible();
   await expect(page.locator('#round-round1')).toBeChecked();
   await expect(page.locator('#round-label')).toHaveText('Round 1: profit only');
   await expect(page.locator('#plan-words')).toHaveText(ROUND1_WORDS);
@@ -630,6 +728,7 @@ test('the pilot mode trains Round 1 whatever the address says, and its export is
   expect(file).not.toHaveProperty('speed');
   expect(file['round']).toBe('round1');
   expect(file['prediction']).toBe('');
+  expect(file['predictionPicks']).toEqual({ acceptAll: null, rate: null, solo: null, naps: null, incidents: null }); // the pilot predicts nothing
   const twin = new Trainer(loadDefaultConfig(), loadPreset('round1').spec, 2);
   const end = twin.runEpisodes(twin.config.maxEpisodes);
   expect((file['readout'] as { report: unknown }).report).toEqual(twin.evaluate());

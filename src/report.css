@@ -1,0 +1,111 @@
+/* The weekly P&L and operations report: the headline tiles and the table (G5c, WP3). */
+#report-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+#report-tiles:empty { display: none; }
+@media (max-width: 1100px) { #report-tiles { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
+
+.tile {
+  position: relative;
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #E8DFCB);
+  border-radius: var(--radius, 18px);
+  padding: 14px 16px 12px;
+  box-shadow: 0 1px 2px rgba(15, 82, 87, 0.08), 0 6px 16px rgba(15, 82, 87, 0.07);
+  border-top: 4px solid var(--m-profit, #F6C344);
+}
+.tile:nth-child(2) { border-top-color: var(--coral, #F2665A); }
+.tile:nth-child(3) { border-top-color: var(--m-incidents, #E0624F); }
+.tile:nth-child(4) { border-top-color: var(--m-reputation, #F6C344); }
+.tile:nth-child(5) { border-top-color: var(--m-ratio, #0F5257); }
+.tile-icon { position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; color: var(--teal, #0F5257); opacity: 0.8; }
+/* Each tile's icon in its measure's colour, as in the plan's rows and the yard's HUD (one icon, one colour per measure). */
+.tile:nth-child(1) .tile-icon { color: var(--m-profit, #1F9D74); opacity: 1; }
+.tile:nth-child(2) .tile-icon { color: var(--coral, #D2402F); opacity: 1; }
+.tile:nth-child(3) .tile-icon { color: var(--m-incidents, #EC5A4C); opacity: 1; }
+.tile:nth-child(4) .tile-icon { color: var(--m-reputation, #3A7FD5); opacity: 1; }
+.tile:nth-child(5) .tile-icon { color: var(--m-ratio, #F08A3C); opacity: 1; }
+.tile-value {
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--teal, #0F5257);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  padding-right: 28px;
+}
+.tile-label { margin-top: 4px; font-size: 15px; font-weight: 600; color: var(--ink-soft, #4A5A5C); }
+
+/* The table: scrolls inside its card below 900 px. */
+#report-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #E8DFCB);
+  border-radius: var(--radius, 18px);
+  overflow: hidden;
+}
+@media (max-width: 1099px) {
+  #report-table { display: block; overflow-x: auto; max-width: 100%; }
+}
+#report-table caption { font-size: 15px; text-align: left; padding: 0 4px 8px; font-weight: 600; color: var(--ink-soft, #4A5A5C); caption-side: top; }
+#report-table th, #report-table td { padding: 7px 8px; text-align: right; border-bottom: 1px solid var(--line, #EFE7D6); white-space: nowrap; }
+#report-table thead th {
+  background: var(--teal, #0F5257);
+  color: #fff;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+#report-table tbody th[scope='row'] {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink, #1F2D2E);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--card, #fff);
+  white-space: normal;
+  min-width: 170px;
+  max-width: 220px;
+}
+#report-table tbody tr:nth-child(even) td { background: rgba(246, 195, 68, 0.06); }
+#report-table tbody tr:nth-child(even) th[scope='row'] { background: #FDFAF2; }
+#report-table th.group {
+  text-align: left;
+  background: var(--teal-soft, #D9ECEB);
+  color: var(--teal, #0F5257);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 8px 12px;
+  border-left: 5px solid var(--teal, #0F5257);
+  position: static;
+  white-space: normal;
+}
+#report-table td.week { white-space: normal; }
+#report-table td.week, #report-table thead th:last-child { border-left: 2px solid var(--line, #E8DFCB); }
+#report-table td.week { background: var(--yellow-soft, #FFF3CF) !important; font-weight: 700; }
+#report-table thead th:last-child { background: #0A3C40; box-shadow: inset 0 -4px 0 var(--yellow, #F6C344); }
+#report-table tr.emphasis th, #report-table tr.emphasis td { font-weight: 800; color: var(--teal, #0F5257); border-top: 2px solid var(--teal, #0F5257); }
+#report-table td.warn { background: rgba(242, 102, 90, 0.18) !important; color: #9B2C22; font-weight: 700; }
+#report-table td.chips { white-space: normal; text-align: left; min-width: 160px; vertical-align: top; }
+#report-table td.chips .chip { display: block; width: auto; margin: 0; padding: 2px 0 2px 8px; border-radius: 0; background: none; border-left: 3px solid var(--teal-soft, #BFDCDA); font-size: 15px; line-height: 1.25; white-space: normal; }
+#report-table td.chips .chip.muted { color: var(--ink-soft, #5A6668); border-left-color: var(--line, #E1D6BC); font-weight: 500; }
+#report-table .sep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+#report-table .chip {
+  display: inline-block;
+  padding: 1px 8px;
+  margin: 1px 0;
+  border-radius: 999px;
+  background: var(--teal-soft, #D9ECEB);
+  color: var(--teal, #0F5257);
+  font-size: 15px;
+  font-weight: 600;
+}

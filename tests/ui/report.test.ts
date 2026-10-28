@@ -287,3 +287,25 @@ describe('reportTable: words', () => {
     expect(text).not.toMatch(/injur|reward|episode|epsilon|ε|evaluation|target met|stable|\bpoints\b|practi|train/i);
   });
 });
+
+describe('headlineTiles (G5c)', () => {
+  it('opens the report with five numbers in the table\'s own formats', async () => {
+    const { headlineTiles } = await import('../../src/ui/report.ts');
+    const { Trainer } = await import('../../src/learn/train.ts');
+    const { loadDefaultConfig, loadPreset } = await import('../../src/world/config.ts');
+    const w = loadDefaultConfig();
+    const s = loadPreset('round1').spec;
+    const trainer = new Trainer(w, s, 1);
+    trainer.runEpisodes(trainer.config.maxEpisodes);
+    expect(headlineTiles(trainer.evaluate(), s, w)).toEqual([
+      { label: 'Profit this week', value: '$5,393' },
+      { label: "The GM's bonus", value: '+$539.30' },
+      { label: 'Incidents', value: '7' },
+      { label: 'Reputation', value: '50 → 32' },
+      { label: 'Blocks over 15 dogs per staffer', value: '16' },
+    ]);
+    const patched = structuredClone(w);
+    patched.bookings.legalRatio = 12;
+    expect(headlineTiles(trainer.evaluate(), s, patched)[4]?.label).toBe('Blocks over 12 dogs per staffer');
+  });
+});

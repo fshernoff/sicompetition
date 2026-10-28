@@ -4,59 +4,58 @@ Status only. Updated at the end of every thread; read first by the next one.
 
 ## Where things stand (2026-10-28, end of session 6)
 
-- `main` holds everything: G0 to G7, fast-forwarded from `g7-lesson` on Oct 28 at the owner's request (`5f1c2bf`
-  before this HANDOFF's commit). The group branches (`g1-simulator` to `g7-lesson`) are kept; nothing is pushed. The
-  next group branches from `main`.
-- The game (G1 to G5b) and the unit on paper (G7, nine sheets in `docs/lesson/`, BRIEF section 14) are built. What is
-  left before the pilot class on Nov 9 is the owner's: the tests below, the deploy and the printing.
-- The owner's steer at the start of G7 (D53, superseding D50's "person"): the GM is openly an AI the owners put in
-  charge (the old GM quit). The page's tagline says so: "Good Dog Daycare. You own it. The GM is an AI: it runs the
-  week, and you write its bonus plan." Students get one sentence of how ("Before Monday it tries out its choices and
-  keeps whatever earns the most bonus."); the learning curve is the teacher's optional look in the period 6 debrief.
-  The screen still never shows the engine.
-- Green on `main` after the merge: `npx vitest run` 34 files / 360 tests. Before the merge, on the same commit: lint,
-  build, `npm run e2e` (7 tests, 41.8 s), the pilot 20 of 20 with G2's counts (the Result of
-  `.claude/docs/plans/g7-lesson.md`).
-- The disclosure line in the README is confirmed by the owner (Oct 28); carry it into the submission's
-  Acknowledgements.
+- `main` holds G0 to G7 (merged by the owner's request, `f784bbd`, the fallback for the pilot). `g5c-look` (one commit
+  on top of `main`) is G5c, the look: not merged, nothing pushed.
+- G5c (the owner: "professional, polished and gamified ... do not settle until you feel people would think this is
+  created by a multimillion dollar ed tech company at first glance"): the page in concept A's art direction (warm,
+  illustrated, rounded cards, Fredoka and Nunito bundled), four generated production images (D55; provenance in
+  `docs/art-provenance/`), the prediction as five picks and a Why that turn into a scorecard (D56; BRIEF 1.1), the
+  plan and the prediction side by side above the fold (D57), the report opening with five headline tiles. Nothing in
+  the engine changed.
+- Green on `g5c-look`: `npx vitest run` 35 files / 370 tests, lint, build, `npm run e2e` 8 tests (43.9 s), the pilot
+  20 of 20 with G2's counts, `npm run capture` 23.3 s, 612 KB fetched. Numbers and commands in the Result of
+  `.claude/docs/plans/g5c-look.md`; triages `g5c-plan-astra-triage.md` and `g5c-astra-triage.md`.
+- Screenshots of every state at 1366 × 768: `Temp/g5c-shots/` (git-ignored).
 
-## Before the pilot class, Nov 9 (Fred)
+## The owner gate for G5c (Fred), before the freeze on Nov 5
 
-1. **The Chromebook** (the one unmeasured gate, D6): open the page with `?pilot=20` and confirm 20 of 20; time the
-   wait from Put the GM to work to the week starting, for Round 1 and for Round 3 with only Incidents on (Profit off,
-   the slowest plan, to the 150,000-week cap); say whether "The GM is getting ready for Monday." reads as the GM getting
-   ready or as a loading screen. Too slow is the first G6 fix.
-2. **Deploy** `main` to Netlify (connect the repo, or `npm run build` and drop `dist/` on Netlify Drop); repeat 1 on
-   the deployed address; put the address in `docs/lesson/teacher-guide.md` under "Before class".
-3. **Print** for the pilot's two periods: the teacher guide, the concept check (pre), the Round 1 brief, the role
-   cards, and the Round 2 brief if the second period runs Round 2. Check the page counts on Letter; edit any word (if
-   `npm test` then fails, its message names the page word a sheet must keep).
-4. **Sources:** open each source in `docs/lesson/debrief-readings.md` before citing it in the PDF; Astra checked the
-   CFPB and OpenAI pages, the journal citations are from memory.
-5. **Optional:** the 30-second capture (`npm run build && npm run capture`, or your own from `docs/capture.md`).
-6. **At the pilot, write down:** the three most common confusions, the real wait on the class's Chromebooks, whether
-   students read the readout without help, and any word changed on the sheets. G6 is planned from these notes.
+```
+git checkout g5c-look
+npm install && npm test && npm run e2e
+npm run dev
+```
+
+1. Play a round as a student on the Mac: the picks, the wait, the week, the scorecard, the report. Say anything that
+   still looks amateur or reads wrong.
+2. **The shipped art (D55):** look at `src/assets/art/` and `docs/art-provenance/README.md` and approve the set (or
+   say which to redo). This is separate from the lesson-materials disclosure you confirmed; the README now has one
+   sentence on the illustrations, and the submission's References and Acknowledgements should carry both.
+3. **The rehearsal on the Chromebook and the projector:** the five picks, Put the GM to work, the wait (Round 1, and
+   Round 3 with only Incidents on), the week, the scorecard, Export this run, an edit, a rerun; cold load included.
+   `?pilot=20` still 20 of 20. If anything fails, `main` at `f784bbd` is the signed-off page to deploy instead.
+4. If satisfied: merge `g5c-look` into `main`, deploy, print the sheets (the briefs now ask the five picks).
 
 ## Decisions the owner should look at (docs/DECISIONS.md)
 
-- **D53** the GM is openly an AI the owners put in charge; the screen still never shows how it decides.
-- **D54** the lesson sheets quote the page, and a test holds them to it.
+- **D55** generated art may ship, sparingly, with approval and provenance (supersedes D16).
+- **D56** the prediction is five picks and a why; the scorecard; the lifecycle (locks, clears, the pilot).
+- **D57** the plan and the prediction side by side above the fold (revises D42).
 
-## What G7 found that later groups should know
+## What G5c found that later groups should know
 
-- The page keeps no run after a reload. The sheets have teams copy the report's numbers ("From the report") and the
-  guide reruns a plan from its seed (same plan and seed, same week) for the gallery walk and the memo. If the pilot
-  finds this clumsy, an on-page "print this report" is a G6 candidate.
-- The round notes live in `src/ui/roundNotes.ts` so the lesson test can read them; change a note there and the
-  briefs' test fails until the brief quotes the new words.
-- Signed measures: under a negative dollar amount a loss or a drop pays the GM (the page's hint says so); any sheet
-  that explains a measure must say "counts the opposite", never "counts against".
+- The picks' contract is in `src/ui/prediction.ts` (radios `#pick-<field>-<value>`, `#scorecard [data-field]
+  [data-called]`, `#called-line`, `#picks-hint`); the e2e makes picks by clicking the chips, never forced.
+- A closed day keeps its planned rate in the report; the rate pick reads the open days only.
+- The art is awaited at the click, before training starts, so no frame is ever drawn without it; the vector yard
+  of G4 stays as the fallback if an image fails.
+- One icon and colour per measure: `src/ui/icons.ts` and the `--m-*` tokens; the editor, the yard's HUD and the
+  report's tiles all use them.
+- Three font files ship (Fredoka 600, Nunito 600 and 800); the canvas draws in those weights only.
 
 ## Next thread does first (G6: fixes from the pilot, Nov 10 to 13)
 
-1. Branch `g6-pilot-fixes` from `main`. Read `.claude/docs/ROADMAP.md`, the Result of
-   `.claude/docs/plans/g7-lesson.md`, the two G7 triages, and the owner's notes from the Chromebook checks and the
-   pilot class (Nov 9).
-2. Write `.claude/docs/plans/g6-pilot-fixes.md` from those notes. The words stay the owner's (D45, D53); the student's
-   screen stays the lesson (D39). A fix that changes a page word the sheets quote changes the sheet in the same group.
-   The full unit starts Nov 16.
+1. Branch `g6-pilot-fixes` from `main` (after the owner merges G5c, or from `f784bbd` if he keeps the old look). Read
+   the ROADMAP, the Results of `g7-lesson.md` and `g5c-look.md`, the triages, and the owner's notes from the
+   Chromebook rehearsal and the pilot class (Nov 9).
+2. Write `.claude/docs/plans/g6-pilot-fixes.md` from those notes. A fix that changes a page word the sheets quote
+   changes the sheet in the same group.

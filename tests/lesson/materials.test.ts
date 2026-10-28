@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { Trainer } from '../../src/learn/train.ts';
 import { describeWeek } from '../../src/sim/readout.ts';
 import { formatMoney } from '../../src/ui/report.ts';
+import { PICKS } from '../../src/ui/prediction.ts';
 import { ROUND_NOTES } from '../../src/ui/roundNotes.ts';
 import { describeBonusPlan, kpiInfo } from '../../src/world/bonusPlan.ts';
 import { loadPreset } from '../../src/world/config.ts';
@@ -191,6 +192,12 @@ describe('the round briefs quote the page (D54)', () => {
       expect(text, 'the prediction is exported as typed (section 11)').toContain('Never type a name in the prediction box.');
       // The page keeps no run after a reload, so the numbers a later period needs go on paper (Astra, G7 diff review).
       expect(text, 'the report\'s numbers copied onto the sheet').toMatch(/From the report:/);
+      // The five picks, as the page asks them, each with its chips to circle (D56, D54).
+      for (const pick of PICKS) {
+        // "Incidents" is also a measure's name, so the pick's line is the one that offers all of its chips.
+        const line = text.split('\n').find((l) => l.includes(pick.label) && pick.options.every((o) => l.includes(o.label)));
+        expect(line, `${file}: a line asking "${pick.label}" with ${pick.options.map((o) => o.label).join(' / ')}`).toBeDefined();
+      }
     });
   }
 

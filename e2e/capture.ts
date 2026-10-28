@@ -95,6 +95,11 @@ async function main(): Promise<void> {
         await page.click('#teacher-close');
       }
       await pause(2000);
+      // The packed-yard picks, made by clicking the visible chips (D56), then the Why.
+      for (const chip of ['pick-acceptAll-all', 'pick-rate-premium', 'pick-solo-3-4', 'pick-naps-0', 'pick-incidents-7plus']) {
+        await page.click(`label[for="${chip}"]`);
+        await pause(500);
+      }
       await page.fill('#prediction', PREDICTION);
       await pause(1000);
       await page.click('#train');

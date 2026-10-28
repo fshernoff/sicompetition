@@ -13,7 +13,7 @@ Students can:
 
 ## Before class
 
-- One URL: the deployed page. Test it once on a Chromebook.
+- One URL: the deployed page. Test it on a Chromebook.
 - One Chromebook per team of four, and the smartboard.
 - Print: brief-round1.md, brief-round2.md and brief-round3.md (one per team), role-cards.md (one set per team), concept-check.md (twice per student), board-memo.md, debrief-readings.md. Keep concept-check-key.md.
 
@@ -32,12 +32,12 @@ The Teacher tab sits in the bottom-right corner. Students never need it.
 
 The status line says where the GM is:
 
-1. "Write your prediction, then put the GM to work."
+1. "Write your prediction, then put the GM to work." The prediction card asks five picks (days it accepts every booking, day rate, days with 1 staffer, nap blocks, incidents) and a Why. The button waits until all five are made. A closed day never counts as accepting every booking or as a solo day; the rate is over open days.
 2. "The GM is getting ready for Monday." This usually takes a few seconds, up to a minute on a slow Chromebook.
 3. "The GM is running the week." The week plays on the yard in about 8 seconds.
 4. "The week is over: what the GM did is beside your prediction, and the full report is below."
 
-What the GM did appears beside the prediction. The full weekly P&L and operations report is below it.
+The prediction card turns into a scorecard: each pick beside what the GM did, ending "You called N of 5." The full weekly P&L and operations report is below it, opening with five big numbers. The GM appears beside the status line.
 
 ## What Round 1 does on seed 1
 
@@ -51,7 +51,7 @@ Each period is 50 minutes.
 
 | Period | What happens | Sheet | Collected |
 |---|---|---|---|
-| Period 1 | Concept check (15 min, alone, pre). Read the Round 1 brief together (10). The class agrees a prediction and you type it into the box on the smartboard (10). Put the GM to work, read What the GM did (10). Export (5). | concept-check, brief-round1 | Concept check, the Round 1 file |
+| Period 1 | Concept check (15 min, alone, pre). Read the Round 1 brief together (10). The class agrees five picks and a why, and you make them on the smartboard (10). Put the GM to work, read the scorecard (10). Export (5). | concept-check, brief-round1 | Concept check, the Round 1 file |
 | Period 2 | Teams read the Round 1 report: what did the GM find? (15) Goodhart's law: when a measure becomes a target, it stops being a good measure (10). Hand out role cards (10). Each role lists who a profit-only plan ignores: the dogs, the crew, the dog owners who pick up at six, the inspector (15). | role-cards | Stakeholder lists, on paper |
 | Period 3 | Round 2: pitches (10), a plan of up to three measures (15), prediction on paper and in the box (5), run (5), compare (10), you export each team's run (5). | brief-round2 | Brief, the Round 2 files |
 | Period 4 | Gallery walk: each team shows its Round 2 readout and the gap from its prediction (30). The class names the surprises (20). | brief-round2 | Gap notes on the Round 2 brief |
@@ -71,7 +71,7 @@ The optional look in period 6: Show the learning curve shows the bonus of each w
 - Click Export this run after each team's run and before any edit. An edit clears the run.
 - Save each file in a folder named for the team's team code. The file name carries the round and seed only.
 - Add nothing to the file.
-- Tell students: "Never type a name in the prediction box." The box is exported as typed.
+- Tell students: "Never type a name in the prediction box." The Why is exported as typed. The export also carries the five picks and each one called or missed: the prediction gap.
 - The page keeps no run after a reload. Each team copies the report's key numbers onto its brief ("From the report"), which periods 2, 4 and 7 use. The same plan and seed always give the same week, so you can put any plan to work again on the smartboard: Round 1 on seed 1 for period 2, a team's copied plan for the gallery walk.
 - Score the concept check with the key. The team code and seat number pair a student's pre and post sheets without a name.
 
@@ -79,7 +79,6 @@ The optional look in period 6: Show the learning curve shows the bonus of each w
 
 - A team that struggles in Round 3: tell it to turn on only two measures.
 - Early finishers: set a second seed in the Teacher tab and see whether the GM does the same thing with the same plan.
-- There is no hard mode on the page.
 
 ## Safety
 

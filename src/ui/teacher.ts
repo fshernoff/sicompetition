@@ -7,7 +7,7 @@
 // curve. It never runs the GM's week again.
 import { hiddenRules } from '../world/hiddenRules.ts';
 import { describeBonusPlan } from '../world/bonusPlan.ts';
-import { redraw } from './app.ts';
+import { redraw, scrollBehavior } from './app.ts';
 import type { Page } from './app.ts';
 import { buildExport, downloadJson, exportFilename } from './export.ts';
 import type { RunExportInput } from './export.ts';
@@ -67,7 +67,7 @@ function toggleRules(page: Page): void {
   renderRules(page);
   page.rules.hidden = false;
   page.reveal.textContent = HIDE;
-  page.rules.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  page.rules.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
 }
 
 /**
@@ -83,7 +83,7 @@ function toggleCurve(page: Page): void {
   page.learning.hidden = false;
   page.showCurve.textContent = HIDE_CURVE;
   redraw(page);
-  page.learning.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  page.learning.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
 }
 
 /**
@@ -100,6 +100,7 @@ export function exportInput(page: Page): RunExportInput | null {
     spec: page.spec,
     planWords: describeBonusPlan(page.spec, page.world),
     prediction: setup.prediction,
+    picks: setup.picks,
     trace,
     curve: trainer.curve(),
     evals: trainer.evals(),
@@ -110,8 +111,15 @@ export function exportInput(page: Page): RunExportInput | null {
   };
 }
 
+/** A mortarboard, beside "Teacher" on the corner tab and in the tray's title (decoration only). */
+const CAP_ICON =
+  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6 11.3v4.4c1.6 1.5 3.6 2.3 6 2.3s4.4-.8 6-2.3v-4.4"/><path d="M22 9.5v5"/></svg>';
+
 /** Wires the tab, the tray's close button, the reveal, the learning curve and the export. */
 export function mountTeacher(page: Page): void {
+  for (const el of [page.teacherOpen, page.teacher.querySelector('.teacher-title')]) {
+    if (el) el.insertAdjacentHTML('afterbegin', CAP_ICON);
+  }
   page.teacherOpen.addEventListener('click', () => openTray(page));
   page.teacherClose.addEventListener('click', () => {
     closeTray(page);

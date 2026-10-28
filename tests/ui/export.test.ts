@@ -9,6 +9,7 @@ import { describeBonusPlan } from '../../src/world/bonusPlan.ts';
 import { loadDefaultConfig, loadPreset } from '../../src/world/config.ts';
 import { buildExport, exportFilename } from '../../src/ui/export.ts';
 import type { RunExportInput } from '../../src/ui/export.ts';
+import type { Picks } from '../../src/ui/prediction.ts';
 
 const world = loadDefaultConfig();
 const spec = loadPreset('round1').spec;
@@ -17,6 +18,7 @@ const snapshot = trainer.runEpisodes(600); // two evaluations: the untrained GM 
 const trace = trainer.evaluateTrace();
 const prediction = 'Every dog it can take, "one staffer",\nlots of incidents.';
 const exportedAt = new Date(2026, 10, 9, 10, 12, 30); // local time: 9 Nov 2026, 10:12:30
+const picks: Picks = { acceptAll: 'all', rate: 'premium', solo: '3-4', naps: '0', incidents: null };
 
 function input(over: Partial<RunExportInput> = {}): RunExportInput {
   return {
@@ -26,6 +28,7 @@ function input(over: Partial<RunExportInput> = {}): RunExportInput {
     spec,
     planWords: describeBonusPlan(spec, world),
     prediction,
+    picks,
     trace,
     curve: trainer.curve(),
     evals: trainer.evals(),
@@ -56,7 +59,7 @@ describe('buildExport', () => {
 
   it('has the fixed keys and the run\'s setup', () => {
     expect(Object.keys(doc).sort()).toEqual(
-      ['app', 'config', 'curve', 'evaluations', 'exportedAt', 'learner', 'plan', 'planWords', 'prediction', 'readout', 'round', 'seed', 'version'].sort(),
+      ['app', 'config', 'curve', 'evaluations', 'exportedAt', 'learner', 'plan', 'planWords', 'prediction', 'predictionCheck', 'predictionPicks', 'readout', 'round', 'seed', 'version'].sort(),
     );
     expect(doc.version).toBe(1);
     expect(doc.app).toBe('Reward the Pack');
@@ -67,6 +70,13 @@ describe('buildExport', () => {
     expect(doc).not.toHaveProperty('speed'); // no speed control since D52
     expect(doc.plan).toEqual(spec);
     expect(doc.planWords).toBe('Each day, the GM earns $10 per $100 of profit.');
+  });
+
+  it('carries the five picks as at the click and each beside what the GM did (D56)', () => {
+    expect(doc.predictionPicks).toEqual(picks);
+    expect(doc.predictionCheck.map((c) => c.field)).toEqual(['acceptAll', 'rate', 'solo', 'naps', 'incidents']);
+    expect(doc.predictionCheck[4]).toMatchObject({ field: 'incidents', picked: null, called: false });
+    expect(Object.keys(doc.predictionCheck[0] ?? {}).sort()).toEqual(['actual', 'called', 'field', 'picked']);
   });
 
   it('carries the prediction verbatim', () => {

@@ -3,6 +3,7 @@
 // puts the rows into a <table>. No DOM access at module top level: reportTable is tested under node.
 // Seam written by the main thread; WP2 (Sonnet) builds it.
 import { kpiInfo, signedDollars } from '../world/bonusPlan.ts';
+import { BONUS_ICON_PATHS, MEASURE_ICON_PATHS } from './icons.ts';
 import { KPI_UNITS, RATES } from '../world/types.ts';
 import type { DayReport, FloorActivity, KpiKey, RewardSpec, WeekReport, WorldConfig } from '../world/types.ts';
 
@@ -97,6 +98,72 @@ function dayDelta(key: KpiKey, d: DayReport, i: number, report: WeekReport): num
       return d.reputationAtPickup - before;
     }
   }
+}
+
+export interface HeadlineTile {
+  /** The tile's caption. */
+  label: string;
+  /** The big number, in the table's own formats. */
+  value: string;
+}
+
+/**
+ * The five numbers the report opens with (G5c), above the table, in this order and these words:
+ *   "Profit this week" — formatMoney(totals.profit): "$5,393";
+ *   "The GM's bonus" — formatBonus(totals.reward): "+$539.30";
+ *   "Incidents" — String(totals.incidents): "7";
+ *   "Reputation" — "50 → 32", reputationStart → reputationEnd (the change is the table's to give);
+ *   "Blocks over 15 dogs per staffer" — String(totals.blocksOverRatio): "16" (the 15 is world.bookings.legalRatio).
+ * The bonus is the plan's own total (totals.reward); `spec` is accepted for symmetry with reportTable. WP3 (Sonnet).
+ */
+export function headlineTiles(report: WeekReport, spec: RewardSpec, world: WorldConfig): HeadlineTile[] {
+  void spec;
+  const t = report.totals;
+  return [
+    { label: 'Profit this week', value: formatMoney(t.profit) },
+    { label: "The GM's bonus", value: formatBonus(t.reward) },
+    { label: 'Incidents', value: String(t.incidents) },
+    { label: 'Reputation', value: `${t.reputationStart} → ${t.reputationEnd}` },
+    { label: `Blocks over ${world.bookings.legalRatio} dogs per staffer`, value: String(t.blocksOverRatio) },
+  ];
+}
+
+/** The tiles' icons, in tile order: the measures' own shapes (src/ui/icons.ts), the bonus as the money bag (G5c: one icon per measure). */
+const TILE_ICONS: readonly string[] = [
+  MEASURE_ICON_PATHS.profit,
+  BONUS_ICON_PATHS,
+  MEASURE_ICON_PATHS.incidents,
+  MEASURE_ICON_PATHS.reputation,
+  MEASURE_ICON_PATHS.overRatio,
+];
+
+/** Renders the headline tiles into the container: value in big tabular numerals, the label under it, an icon. */
+export function renderTiles(container: HTMLElement, tiles: HeadlineTile[]): void {
+  const doc = container.ownerDocument;
+  const svgNs = 'http://www.w3.org/2000/svg';
+  const nodes = tiles.map((tile, i) => {
+    const card = doc.createElement('div');
+    card.className = 'tile';
+    const icon = doc.createElementNS(svgNs, 'svg');
+    icon.setAttribute('class', 'tile-icon');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('fill', 'none');
+    icon.setAttribute('stroke', 'currentColor');
+    icon.setAttribute('stroke-width', '1.8');
+    icon.setAttribute('stroke-linecap', 'round');
+    icon.setAttribute('stroke-linejoin', 'round');
+    icon.innerHTML = TILE_ICONS[i % TILE_ICONS.length] ?? '';
+    const value = doc.createElement('div');
+    value.className = 'tile-value';
+    value.textContent = tile.value;
+    const label = doc.createElement('div');
+    label.className = 'tile-label';
+    label.textContent = tile.label;
+    card.append(icon, value, label);
+    return card;
+  });
+  container.replaceChildren(...nodes);
 }
 
 /**
@@ -275,6 +342,16 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
     return e;
   };
 
+  // The activities cell: each block a chip, the " · " kept as text so textContent is unchanged.
+  const chips = (td: HTMLElement, text: string): HTMLElement => {
+    text.split(' · ').forEach((part, i) => {
+      if (i > 0) td.append(el('span', ' · ', 'sep'));
+      td.append(el('span', part, i === 0 ? 'chip muted' : 'chip'));
+    });
+    td.classList.add('chips');
+    return td;
+  };
+
   const caption = el('caption', 'Monday to Friday, and the week');
   const head = el('thead');
   const headRow = el('tr');
@@ -300,7 +377,12 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
       const label = el('th', r.label);
       label.setAttribute('scope', 'row');
       tr.append(label);
-      for (const d of r.days) tr.append(el('td', d));
+      const overRatio = /^Blocks over /.test(r.label);
+      for (const d of r.days) {
+        const td = d.includes(' · ') ? chips(el('td'), d) : el('td', d);
+        if (overRatio && Number(d) > 0) td.classList.add('warn');
+        tr.append(td);
+      }
       tr.append(el('td', r.week, 'week'));
       tbody.append(tr);
     }

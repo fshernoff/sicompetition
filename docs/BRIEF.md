@@ -24,8 +24,8 @@ in seconds, and the game never shows how it decides, the way a football game nev
 is simulated: no weeks counts, no learning curve, no "settled", no week played on the yard while the engine works.
 What the students are told of how is one sentence, on the Round 1 brief: "Before Monday it tries out its choices and
 keeps whatever earns the most bonus." The student's screen carries the tagline, the round (a line of text), the bonus
-plan and its sentence, the prediction, the Put the GM to work button, the status line, the yard (the replay of
-section 10.2) and the readout. The GM's bonus is money, in dollars, never points (D45), and the GM is "it". The
+plan and its sentence, the prediction (five picks and a why, section 1.1), the Put the GM to work button, the status
+line with the GM beside it (the art of D55), the yard (the replay of section 10.2) and the readout. The GM's bonus is money, in dollars, never points (D45), and the GM is "it". The
 learner's instruments (weeks trained, ε, evaluations, stable, "target met", the learning curve), the seed and the
 round presets are the teacher's (section 11).
 
@@ -40,6 +40,25 @@ unlock then. The first status is "Write your prediction, then put the GM to work
 plan changed. Put the GM to work to see what it does with this one." The replay's caption is "The GM's week". A plan
 the engine never settles on is, for the student, simply the week the GM ran; the teacher's check line says it did
 not settle.
+
+### 1.1 The prediction and the scorecard (G5c, D56)
+
+The team predicts with five picks, chips in buckets, and a free-text "Why?" (the export's `prediction`):
+
+| Pick (the page's words) | Options | Read off the week |
+|---|---|---|
+| Days it accepts every booking | None / 1 to 4 / All 5 | totals.daysAcceptedAll (a closed day never counts) |
+| Day rate | Low / Standard / Premium / A mix | the rates of the open days: one rate, or more than one; none when every day closed |
+| Days with 1 staffer on the floor | None / 1 or 2 / 3 or 4 / All 5 | totals.daysOneStaffer (a closed day never counts) |
+| Nap blocks | None / 1 to 5 / 6 or more | totals.napBlocks (the blocks that napped, after fallbacks) |
+| Incidents | 0 to 2 / 3 to 6 / 7 or more | totals.incidents |
+
+Put the GM to work waits until all five are picked ("Make all five picks to put the GM to work."). The click copies
+the picks; they lock with the run. When the week is over the prediction card shows the scorecard: each pick beside
+what the GM did ("1 to 4 (3)", "Premium", "A mix (low × 1, premium × 4)", "Closed all week"), called or missed, and
+"You called N of 5."; the picks stay locked while it shows. A plan edit, a round change or "Make a new prediction"
+clears the run and the scorecard (D37) and brings the picks back as they were; "Put the GM to work again" reruns with
+the same picks. The pilot mode predicts nothing and shows no scorecard. `src/ui/prediction.ts` is the rule.
 
 ## 2. The week
 
@@ -420,7 +439,8 @@ rules can always scroll clear of it. In it:
   when the GM was put to work, D47), `readout` (`sentence` and `report`, the run's final week, the same trace the
   sentence, the replay and the table show), `curve` (`weeks`, `bonus`, `average`: three arrays of the run's length,
   in cents), `evaluations` (`week`, `bonus`, `key`) and `learner` (`weeksTrained`, `epsilon`, `evaluations`,
-  `stable`, `hasTarget`, `targetMet`, `seconds`, `outOfBudget`). No names, no team names unless the team types one
+  `stable`, `hasTarget`, `targetMet`, `seconds`, `outOfBudget`), and since G5c `predictionPicks` (the five picks at the
+  click, a value or null each) and `predictionCheck` (per pick: `field`, `picked`, `actual`, `called`; section 1.1). No names, no team names unless the team types one
   into the prediction. A Blob download, never a request.
 
 The student's controls are the bonus plan, the prediction and Put the GM to work (D39, D45, D50). The pilot mode

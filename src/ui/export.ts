@@ -8,6 +8,8 @@ import type { CurvePoint, EvalPoint, TrainingSnapshot } from '../learn/train.ts'
 import type { PresetName } from '../world/config.ts';
 import type { EpisodeTrace, RewardSpec, WeekReport } from '../world/types.ts';
 import { describeWeek } from '../sim/readout.ts';
+import { checkPrediction } from './prediction.ts';
+import type { PickField, Picks } from './prediction.ts';
 
 export interface RunExportInput {
   configName: string;
@@ -16,6 +18,8 @@ export interface RunExportInput {
   spec: RewardSpec;
   planWords: string;
   prediction: string;
+  /** The five picks as they stood at the click (D47, D56). */
+  picks: Picks;
   trace: EpisodeTrace;
   curve: readonly CurvePoint[];
   evals: readonly EvalPoint[];
@@ -35,6 +39,9 @@ export interface RunExport {
   plan: RewardSpec;
   planWords: string;
   prediction: string;
+  /** The five picks at the click, and each beside what the GM did (D56): the evidence plan's prediction gap. */
+  predictionPicks: Picks;
+  predictionCheck: { field: PickField; picked: string | null; actual: string; called: boolean }[];
   readout: { sentence: string; report: WeekReport };
   /** Three arrays of the trainer's length: the week (1-based), the bonus that week and the moving average, in cents. */
   curve: { weeks: number[]; bonus: number[]; average: number[] };
@@ -65,6 +72,8 @@ export function buildExport(input: RunExportInput): RunExport {
     plan: structuredClone(input.spec),
     planWords: input.planWords,
     prediction: input.prediction,
+    predictionPicks: { ...input.picks },
+    predictionCheck: checkPrediction(input.picks, input.trace.report).map((r) => ({ field: r.field, picked: r.picked, actual: r.actual, called: r.called })),
     readout: { sentence: describeWeek(input.trace.report), report: structuredClone(input.trace.report) },
     curve: {
       weeks: input.curve.map((p) => p.episode),

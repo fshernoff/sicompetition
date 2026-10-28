@@ -4,14 +4,16 @@ The shot list for your own recording. No sound is needed.
 
 ## What to record
 
-- 0 to 3 s: the page on Round 1 at 1366 x 768, the prediction typed in the box.
-- 3 s: press Put the GM to work.
-- 3 to 6 s: the page slides down to the yard, and the status line reads "The GM is getting ready for Monday." for a
-  moment.
-- 6 to 20 s: the GM runs the week in the yard, block by block (about 7 s of play): the dogs, the crew, the incident
+- 0 to 5 s: the page on Round 1 at 1366 x 768. The five picks are made one chip at a time (every booking on all 5 days,
+  the premium rate, 1 staffer on 3 or 4 days, no naps, 7 or more incidents) and the Why is typed in the box.
+- 5 s: press Put the GM to work (the button was waiting for the fifth pick).
+- 5 to 8 s: the page slides down to the yard. The GM appears beside the status line, which reads "The GM is getting
+  ready for Monday." for a moment.
+- 8 to 20 s: the GM runs the week in the yard, block by block (about 8 s of play): the dogs, the crew, the incident
   counter, the reputation meter and the cash counter.
-- 20 to 25 s: the page slides back up to the team's prediction beside "What the GM did".
-- 25 to 30 s: one scroll down to the weekly P&L and operations report.
+- 20 to 25 s: the page slides back up and the prediction card turns over into the scorecard: each pick beside what the
+  GM did, then "You called N of 5."
+- 25 to 30 s: one scroll down to the weekly P&L and operations report, opening with its tiles (the big numbers).
 
 ## How
 

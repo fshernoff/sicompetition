@@ -103,15 +103,13 @@ appears only as anonymous text or as a team's exported plans replayed on screen 
   `.github/workflows/pages.yml` on every push to `main`; the address is in the teacher guide and the README. (Oct 28)
 - [x] **Push the repo public**: https://github.com/fshernoff/sicompetition , with the README, the licence and the
   live link. Checked first (Oct 28): no keys, tokens or env files in the history, no student data. (Oct 28)
-- [ ] **Evidence kit ready for Nov 9** (Claude prepares, Fred approves):
-  - [ ] A folder layout for the exports: one folder per team code, one per period (e.g.
-    `Evidence/<period>/<team-code>/*.json`), kept off the public repo (no student names anywhere, but class data
-    stays private). `Evidence/` is already in `.gitignore`.
-  - [ ] A scoring sheet for the concept check (team code, seat number, pre/post, the eight items' scores), as a
-    spreadsheet or CSV template.
-  - [ ] Team codes assigned (e.g. P1-A, P1-B), never names.
-  - [ ] A pilot notes sheet: the three most common confusions, the wait on the Chromebooks, whether teams read the
-    readout cold, any sheet word changed.
+- [ ] **Evidence kit ready for Nov 9** (Claude prepared it Oct 28, `docs/evidence/`; Fred approves):
+  - [x] The folder layout: `Evidence/<pilot|unit>/<period>/<team-code>/`, the page's export names unchanged, paper
+    scans under `paper/` by team code. `Evidence/` is git-ignored and made on Fred's Mac with the templates in it.
+  - [x] The concept-check score sheet: `concept-check-scores.csv` (phase, team code, seat, pre/post, q1 to q8).
+  - [ ] Team codes: the format is set (`P2-A`, seat 1 to 4); Fred fills in his period numbers and hands them out.
+  - [x] The pilot notes sheet: `pilot-notes.md` (the wait per team, reading the report cold, confusions, words,
+    timing, anything broken, one line a student said).
 
 ## 1. The pilot, Nov 9 to 13 (one class, two periods)
 

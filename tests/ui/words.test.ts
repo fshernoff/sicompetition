@@ -1,7 +1,7 @@
-// The words on the student's screen (BRIEF section 1, D38, D39, D45): business words only. The page's HTML outside
-// the teacher panel carries none of the learner's instruments and none of the forbidden words, and no teacher's
-// control (the seed, the speed, the round presets live inside #teacher, which is hidden by default); the curve's
-// text is the GM getting better at earning its bonus, not a chart about episodes.
+// The words on the student's screen (BRIEF section 1, D38, D39, D45, D50): the GM is a person going to work, so the
+// page's HTML outside the teacher's parts (the tray and the learning section, both hidden by default) carries none of
+// the learner's instruments, no learning curve and no word that shows the engine (learn, settled, weeks); no
+// teacher's control is on the student's page.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { curveWords, yTickLabel } from '../../src/ui/curve.ts';
@@ -9,13 +9,19 @@ import { curveWords, yTickLabel } from '../../src/ui/curve.ts';
 const html = readFileSync('index.html', 'utf8');
 const css = readFileSync('src/style.css', 'utf8');
 
-/** The teacher panel's HTML (the one <aside id="teacher"> block) and the rest of the body: the student's page. */
-function split(): { teacher: string; student: string } {
+/**
+ * The teacher's HTML (the one <aside id="teacher"> tray and the one <section id="learning">) and the rest of the
+ * body: the student's page.
+ */
+function split(): { teacher: string; learning: string; student: string } {
   const body = html.replace(/<title>.*?<\/title>/s, '').replace(/<h1>.*?<\/h1>/s, '');
   const asides = body.match(/<aside id="teacher"[\s\S]*?<\/aside>/g) ?? [];
   expect(asides, 'one <aside id="teacher"> block').toHaveLength(1);
+  const sections = body.match(/<section id="learning"[\s\S]*?<\/section>/g) ?? [];
+  expect(sections, 'one <section id="learning"> block').toHaveLength(1);
   const teacher = asides[0] as string;
-  return { teacher, student: body.replace(teacher, ' ') };
+  const learning = sections[0] as string;
+  return { teacher, learning, student: body.replace(teacher, ' ').replace(learning, ' ') };
 }
 
 describe('index.html', () => {
@@ -48,7 +54,9 @@ describe('index.html', () => {
       'round-round2',
       'round-round3',
       'seed',
-      'speed',
+      'show-curve',
+      'learning',
+      'learning-title',
       'reveal',
       'export',
       'teacher-close',
@@ -64,7 +72,7 @@ describe('index.html', () => {
     const visible = student.replace(/<[^>]+>/g, ' ');
     const labels = Array.from(student.matchAll(/\b(?:aria-label|placeholder|title|alt)="([^"]*)"/g), (m) => m[1] ?? '').join(' ');
     const text = `${visible} ${labels}`;
-    for (const word of [/episode/i, /ε/, /epsilon/i, /target met/i, /\bstable\b/i, /injur/i, /reward/i, /evaluation/i, /\bQ-?learn/i, /\bpoints?\b/i, /practi/i, /test week/i, /\btrain/i, /weights?\b/i, /\bseed\b/i, /\bspeed\b/i, /\bfast\b/i, /pacing/i]) {
+    for (const word of [/episode/i, /ε/, /epsilon/i, /target met/i, /\bstable\b/i, /injur/i, /reward/i, /evaluation/i, /\bQ-?learn/i, /\bpoints?\b/i, /practi/i, /test week/i, /\btrain/i, /weights?\b/i, /\bseed\b/i, /\bspeed\b/i, /\bfast\b/i, /pacing/i, /\blearn/i, /settled/i, /routine/i, /\bweeks\b/i, /curve/i, /still changing/i]) {
       expect(text, String(word)).not.toMatch(word);
     }
     // The ids and classes may keep their names (#train, .kpi-weight): a student never reads them.
@@ -74,7 +82,7 @@ describe('index.html', () => {
   it("keeps the teacher's controls inside the panel, which is closed by default (D39)", () => {
     const { teacher, student } = split();
     expect(teacher).toMatch(/<aside id="teacher"[^>]*\bhidden\b/);
-    for (const id of ['round', 'round-round1', 'round-round2', 'round-round3', 'seed', 'speed', 'reveal', 'export', 'teacher-close', 'check']) {
+    for (const id of ['round', 'round-round1', 'round-round2', 'round-round3', 'seed', 'show-curve', 'reveal', 'export', 'teacher-close', 'check']) {
       expect(teacher, `#${id} in the panel`).toMatch(new RegExp(`id="${id}"`));
       expect(student, `#${id} not on the student's page`).not.toMatch(new RegExp(`id="${id}"`));
     }
@@ -84,6 +92,17 @@ describe('index.html', () => {
     expect(student).toMatch(/id="teacher-open"[^>]*>Teacher</); // the one tab that opens the panel
     expect(html).toMatch(/<section id="rules"[^>]*\bhidden\b/); // the hidden rules print only when the teacher reveals them
     expect(student).not.toMatch(/10 dogs per staffer/); // the safe ratio is H1's number (D43)
+    expect(html).not.toMatch(/id="speed"/); // no speed control: training is always unpaced (D52)
+  });
+
+  it("keeps the learning curve in the teacher's section, hidden by default (D50)", () => {
+    const { learning, student } = split();
+    expect(learning).toMatch(/<section id="learning"[^>]*\bhidden\b/);
+    expect(learning).toMatch(/id="curve"/);
+    expect(learning).toMatch(/id="curve-caption"/);
+    expect(student).not.toMatch(/<canvas id="curve"/);
+    expect(student).not.toMatch(/id="curve-caption"/);
+    expect(split().teacher).toMatch(/id="show-curve"[^>]*>Show the learning curve</);
   });
 
   it("keeps the stylesheet's own text (the empty readout's line) in the owner's words too", () => {
@@ -91,20 +110,18 @@ describe('index.html', () => {
     expect(readout?.[2]).toBe('The readout appears here once the GM is on the job.');
     expect(css.match(/#readout:empty::before/g)).toHaveLength(1); // one declaration, so nothing later overrides it
     const contents = Array.from(css.matchAll(/content:\s*(['"])(.*?)\1/g), (m) => m[2] ?? '').join(' ');
-    expect(contents).not.toMatch(/practi|points?\b|test week|episode|\btrain|weights?\b/i);
+    expect(contents).not.toMatch(/practi|points?\b|test week|episode|\btrain|weights?\b|\blearn|settled|\bweeks\b/i);
   });
 
-  it('captions the curve as the owner who wrote the plan (D45)', () => {
-    expect(html).toMatch(/id="curve-caption"[^>]*>\s*You wrote the bonus plan\. Watch the GM's bonus climb as it learns how to earn it\./);
-    expect(html).toMatch(/Each dot is a week run its current way, nothing new tried\./);
+  it('never calls the dollar amounts weights on the student\'s page (G4b)', () => {
     expect(split().student).not.toMatch(/weights?\b/i); // the sliders set dollar amounts, not weights (Astra, plan review)
   });
 
-  it("puts the GM to work and names a week the GM's way", () => {
+  it("puts the GM to work and shows what the GM did in the GM's week (D50)", () => {
     expect(html).toMatch(/id="train"[^>]*>Put the GM to work</);
     expect(html).toMatch(/id="status">Write your prediction, then put the GM to work\.</);
-    expect(html).toMatch(/id="readout-label">A week the GM's way</);
-    expect(html).toMatch(/id="replay-caption">A week the GM's way</);
+    expect(html).toMatch(/id="readout-label">What the GM did</);
+    expect(html).toMatch(/id="replay-caption">The GM's week</);
     expect(html).toMatch(/write it before you put the GM to work/);
     expect(html).toMatch(/id="round-label">Round 1: profit only</); // the round is a line on the student's page, not a control
   });

@@ -26,7 +26,7 @@
           ></textarea>
         </div>
         <div class="compare-side">
-          <p class="compare-label readout-label" id="readout-label">A week the GM's way</p>
+          <p class="compare-label readout-label" id="readout-label">What the GM did</p>
           <p id="readout" aria-live="polite"></p>
         </div>
       </div>
@@ -37,20 +37,11 @@
 
       <section id="watch" aria-label="Watch the GM at work">
         <p id="status">Write your prediction, then put the GM to work.</p>
-        <div class="watch-row">
-          <figure class="curve-figure">
-            <canvas id="curve" width="1100" height="619" aria-label="The GM's weekly bonus as it learns the job"></canvas>
-            <figcaption id="curve-caption">
-              You wrote the bonus plan. Watch the GM's bonus climb as it learns how to earn it.
-              Each dot is a week run its current way, nothing new tried.
-            </figcaption>
-          </figure>
-          <figure class="replay-figure">
-            <canvas id="replay" width="640" height="540" data-week="none" aria-label="A week the GM's way, played block by block"></canvas>
-            <figcaption id="replay-caption">A week the GM's way</figcaption>
-            <button id="replay-again" type="button" hidden>Watch the week again</button>
-          </figure>
-        </div>
+        <figure class="replay-figure">
+          <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
+          <figcaption id="replay-caption">The GM's week</figcaption>
+          <button id="replay-again" type="button" hidden>Watch the week again</button>
+        </figure>
       </section>
 
       <section id="report" aria-labelledby="report-title" hidden>
@@ -61,6 +52,14 @@
       <section id="rules" aria-labelledby="rules-title" hidden>
         <h2 id="rules-title">The hidden rules of Good Dog Daycare</h2>
         <ol id="rules-list"></ol>
+      </section>
+
+      <section id="learning" aria-labelledby="learning-title" hidden>
+        <h2 id="learning-title">The learning curve (the teacher's view)</h2>
+        <figure class="learning-figure">
+          <canvas id="curve" width="1100" height="619" aria-label="The bonus of each practice week of the AI behind the GM"></canvas>
+          <figcaption id="curve-caption">The class never sees this. The GM is an AI that practised these weeks before running the one the class watched: each grey dot is a practice week's bonus, the blue line the average of the last 100, the orange marks a week run its current way. It stopped when that week stopped changing.</figcaption>
+        </figure>
       </section>
 
       <section id="pilot"></section>
@@ -80,16 +79,13 @@
             <label for="seed">Seed</label>
             <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
           </span>
-          <span class="teacher-field">
-            <label for="speed">Speed</label>
-            <select id="speed"></select>
-          </span>
           <button id="reveal" type="button">Reveal the hidden rules</button>
+          <button id="show-curve" type="button">Show the learning curve</button>
           <button id="export" type="button" disabled>Export this run</button>
           <button id="teacher-close" type="button">Close</button>
         </div>
         <p id="check" class="check">No run yet.</p>
-        <p class="teacher-hint">Slow takes about twice as long and a run may hit the 60 s limit. The export carries the prediction as it stood when the GM was put to work.</p>
+        <p class="teacher-hint">The export carries the prediction as it stood when the GM was put to work.</p>
       </div>
     </aside>
     <script type="module" src="./src/main.ts"></script>

@@ -75,7 +75,7 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 .plan-note:empty { display: none; }
 
 /* The prediction beside the readout: two columns above 700 px, one below. */
-.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 0 8px; }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 0 8px; scroll-margin-top: 8px; }
 .compare-side { display: flex; flex-direction: column; min-width: 0; }
 .compare-label { display: block; margin: 0 0 4px; font-size: 0.85em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
 #prediction {
@@ -118,14 +118,28 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
   cursor: pointer;
 }
 #train:disabled { opacity: 0.55; cursor: progress; }
-/* The watching area: the status line, then the curve (about 60 %) beside the replay (about 40 %) at the same
-   height, stacked below 900 px. The click scrolls it to the top; min-height gives that scroll room while the table
-   below is still hidden (D42). */
-#watch { min-height: 100vh; scroll-margin-top: 8px; }
+/* The watching area: the status line, then the yard (the week replay), centred and as large as the room allows
+   (D50). The click scrolls it to the top; min-height gives that scroll room while the table below is still hidden
+   (D42). The yard's height is the window's less a budget for the status line, the caption and the watch-again
+   button, less the tray's measured height when it is open, so the whole stack sits above the tray; its width
+   follows at 32 : 27. */
+:root { --view-height: 100vh; --yard-budget: 150px; }
+@supports (height: 100dvh) {
+  :root { --view-height: 100dvh; }
+}
+#watch {
+  min-height: 100vh;
+  scroll-margin-top: 8px;
+  --yard-room: calc(var(--view-height) - var(--yard-budget));
+}
+html.teacher-open #watch { --yard-room: calc(var(--view-height) - var(--yard-budget) - var(--tray-height, 160px)); }
 #status { min-height: 1.45em; margin: 8px 0 10px; font-variant-numeric: tabular-nums; }
-.watch-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
-.watch-row figure { margin: 0; min-width: 0; }
-.watch-row figcaption { margin: 6px 2px 0; }
+.replay-figure {
+  margin: 0 auto;
+  width: min(100%, max(320px, calc(var(--yard-room) * 32 / 27)));
+  text-align: center;
+}
+.replay-figure figcaption { margin: 6px 2px 0; }
 #replay-caption { font-weight: 600; }
 
 #curve, #replay {
@@ -136,9 +150,8 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
   border: 1px solid var(--chart-grid);
   border-radius: 8px;
 }
-#curve { aspect-ratio: 16 / 9; }
-/* 3 : 2 of the width at 16 : 9 and 32 : 27 keeps the two canvases the same height at any width. */
 #replay { aspect-ratio: 32 / 27; }
+#curve { aspect-ratio: 16 / 9; }
 #replay-again {
   font: inherit;
   margin: 8px 0 0;
@@ -150,9 +163,10 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
   cursor: pointer;
 }
 
+/* A narrow window: the yard takes the full width, up to 640 px, and still fits the window's height (Astra, G5b
+   diff review: a width-only rule overflowed an 800 × 600 window). */
 @media (max-width: 900px) {
-  .watch-row { grid-template-columns: minmax(0, 1fr); }
-  #replay { aspect-ratio: 4 / 3; max-width: 640px; }
+  .replay-figure { width: min(100%, 640px, max(320px, calc(var(--yard-room) * 32 / 27))); max-width: none; }
 }
 
 /* The weekly P&L and operations report: a column per day and the week. A narrow screen scrolls the table inside
@@ -193,6 +207,12 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 #rules h2 { font-size: 1.15em; margin: 0 0 6px; }
 #rules-list { margin: 0; padding-left: 1.6em; line-height: 1.55; }
 #rules-list li { margin: 0 0 6px; }
+
+/* The learning curve, printed under the report when the teacher shows it (D50): the teacher's view, never the class's. */
+#learning { margin: 20px 0 0; }
+#learning h2 { font-size: 1.15em; margin: 0 0 6px; }
+.learning-figure { margin: 0; }
+.learning-figure figcaption { margin: 6px 2px 0; color: var(--muted); font-size: 0.9em; }
 
 /* The teacher's tab: small, in the bottom-right corner, over the page; it takes no room in the layout (D46). */
 .teacher-tab {
@@ -235,7 +255,7 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 .rounds label { display: inline-flex; align-items: center; gap: 4px; font-weight: 400; cursor: pointer; }
 .rounds input { margin: 0; }
 .rounds label:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
-.teacher input[type='number'], .teacher select, .teacher button {
+.teacher input[type='number'], .teacher button {
   font: inherit;
   padding: 3px 7px;
   border: 1px solid var(--muted);
@@ -245,7 +265,7 @@ h1 { margin: 0 0 2px; line-height: 1.15; }
 }
 #seed { width: 7em; }
 .teacher button { cursor: pointer; }
-.teacher input:disabled, .teacher select:disabled, .teacher button:disabled { opacity: 0.55; cursor: not-allowed; }
+.teacher input:disabled, .teacher button:disabled { opacity: 0.55; cursor: not-allowed; }
 .check { margin: 6px 0 0; font-variant-numeric: tabular-nums; }
 .teacher-hint { margin: 2px 0 0; font-size: 0.85em; color: var(--muted); }
 html.teacher-open #app { padding-bottom: calc(var(--tray-height, 160px) + 16px); }

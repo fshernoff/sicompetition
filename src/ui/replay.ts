@@ -264,6 +264,8 @@ export interface ReplayOptions {
   /** The legal ratio mark on the gauge (world.bookings.legalRatio) and the gauge's top (world.requests.max). */
   legalRatio: number;
   gaugeMax: number;
+  /** The line drawn without a frame, in place of the default placeholder (the page's "getting ready" line, D50). */
+  placeholder?: string;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -461,11 +463,12 @@ export function drawReplay(
 
   if (frame === null) {
     const fs = clamp(Math.min(width / 34, height / 20), 11, 24);
-    fitFont(ctx, PLACEHOLDER, width * 0.9, fs);
+    const line = options.placeholder ?? PLACEHOLDER;
+    fitFont(ctx, line, width * 0.9, fs);
     ctx.fillStyle = colors.ink;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(PLACEHOLDER, width / 2, height / 2);
+    ctx.fillText(line, width / 2, height / 2);
     return;
   }
 

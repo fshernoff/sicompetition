@@ -23,7 +23,6 @@ function input(over: Partial<RunExportInput> = {}): RunExportInput {
     configName: world.name,
     round: 'round1',
     seed: 1,
-    speed: 'normal',
     spec,
     planWords: describeBonusPlan(spec, world),
     prediction,
@@ -57,7 +56,7 @@ describe('buildExport', () => {
 
   it('has the fixed keys and the run\'s setup', () => {
     expect(Object.keys(doc).sort()).toEqual(
-      ['app', 'config', 'curve', 'evaluations', 'exportedAt', 'learner', 'plan', 'planWords', 'prediction', 'readout', 'round', 'seed', 'speed', 'version'].sort(),
+      ['app', 'config', 'curve', 'evaluations', 'exportedAt', 'learner', 'plan', 'planWords', 'prediction', 'readout', 'round', 'seed', 'version'].sort(),
     );
     expect(doc.version).toBe(1);
     expect(doc.app).toBe('Reward the Pack');
@@ -65,7 +64,7 @@ describe('buildExport', () => {
     expect(doc.config).toBe('default');
     expect(doc.round).toBe('round1');
     expect(doc.seed).toBe(1);
-    expect(doc.speed).toBe('normal');
+    expect(doc).not.toHaveProperty('speed'); // no speed control since D52
     expect(doc.plan).toEqual(spec);
     expect(doc.planWords).toBe('Each day, the GM earns $10 per $100 of profit.');
   });

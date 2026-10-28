@@ -51,11 +51,11 @@ npm run capture    # after a build: a 30-second recording of one Round 1 run in 
   the bible first, then the JSON, then the test.
 - Words: GM, bonus plan, weekly P&L and operations report (readout), incident (an icon and a counter), crew, Good
   Dog Daycare. The GM's bonus is dollars, never points; the GM is put to work and is weeks into the job, never
-  trained or practising; a run shows a week the GM's way (D45). Never "injury", never "reward function" on the page.
+  trained or practising; the student never sees the engine: no weeks counts, no curve, no "settled" (D45, D50). Never "injury", never "reward function" on the page.
 - No network at runtime, no analytics, no fonts or scripts from a CDN. `tests/scaffold.test.ts` and the Playwright
   smoke pin this.
 - Exports carry no student identifiers.
 - The student's screen carries business words only. ε, evaluation counts, "target met", the seed and the speed are
-  the teacher's (BRIEF sections 1 and 11, D38, D39); the status line says weeks on the job and whether the GM has
-  settled into its routine or is still changing how it runs the place.
+  the teacher's (BRIEF sections 1 and 11, D38, D39); the status line says where the GM is in its week (getting ready, running
+  the week, the week is over) and never a number (D50).
 - Numbers reported in HANDOFF or a plan result are from this session's runs, with the command that produced them.

@@ -6,37 +6,36 @@
 
 ## 1. What the student sees
 
-A team owns Good Dog Daycare. They hire a GM (the agent) and write its bonus plan (the reward). The GM runs one
-five-day week, Monday to Friday, in 20 steps: four blocks a day (drop-off, late morning, afternoon, pickup). The
-team puts the GM to work, watches its weekly bonus climb as it learns the job, then reads the weekly P&L and
-operations report (the readout) and compares it to the prediction they typed in beforehand.
+A team owns Good Dog Daycare. They hire a GM and write the GM's bonus plan. The GM runs one five-day week, Monday to
+Friday, in 20 steps: four blocks a day (drop-off, late morning, afternoon, pickup). The team writes a prediction,
+puts the GM to work, watches the GM run the week in the yard, and then reads the weekly P&L and operations report (the
+readout) beside the prediction they typed in beforehand.
 
-Words that are fixed everywhere (page, docs, code comments): the agent is the **GM**; the reward is its **bonus
-plan**; a run's result is the **weekly P&L and operations report** (short: the readout); an **incident** is an icon
-and a counter, never an injury; the daycare is **Good Dog Daycare**; the staff are the **crew**.
+Words that are fixed everywhere (page, docs, code comments): the GM; the **bonus plan** (in code, the reward spec); a
+run's result is the **weekly P&L and operations report** (short: the readout); an **incident** is an icon and a
+counter, never an injury; the daycare is **Good Dog Daycare**; the staff are the **crew**.
 
-The page is an incentive-design lesson, not a lesson in training a model. The GM is the employee the owners cannot
-supervise, and the only thing a student has to know about it is that it tries things, keeps what pays, and cares
-about nothing but its bonus plan. So the student's screen carries business words only: the round, the bonus plan and
-its sentence, the prediction, the Put the GM to work button, the bonus curve, and the readout. The curve is the hook
-of the lesson (the class watches the GM's weekly bonus climb as it learns how to earn it) and is
-captioned that way, not as a chart to interpret. The status line says how many weeks the GM has been on the job and
-whether it has settled into its routine or is still changing how it runs the place, and nothing else. The GM's bonus
-is money, in dollars, never points, and the page speaks of the job, never of training or practice (D45). The learner's instruments (ε, evaluation counts, "target met"), the seed, the speed and the round
-selector are the teacher's (section 11) and leave the student's screen in G4 and G5 (D38, D39).
+The page is a business game, not a lesson in training a model (D38, D45, D50). For the students the GM is a person:
+the manager the owners cannot supervise, who cares about nothing but the bonus plan they wrote. Underneath, the GM is
+a reinforcement learner, because that finds a plan's loophole reliably in seconds, and the game never shows it, the
+way a football game never shows how the other side's coach is simulated: no weeks counts, no learning curve, no
+"settled", no week played on the yard while the engine works. The student's screen carries the round (a line of
+text), the bonus plan and its sentence, the prediction, the Put the GM to work button, the status line, the yard
+(the replay of section 10.2) and the readout. The GM's bonus is money, in dollars, never points (D45). The learner's
+instruments (weeks trained, ε, evaluations, stable, "target met", the learning curve), the seed and the round
+presets are the teacher's (section 11).
 
-The status line's three sentences (G4, D41; the words of D45): while the GM works, "The GM is 12,000 weeks into the
-job and still changing how it runs the place."; when it is stable (section 13), "After 24,000 weeks on the job, the GM
-has settled into its routine."; when a run ends without settling, "After 150,000 weeks on the job, the GM is still
-changing how it runs the place.", prefixed "Time is up: after …" when the 60 s budget ran out first. The button reads
-"Put the GM to work" ("Put the GM to work again" after a run); the first status "Write your prediction, then put the
-GM to work." The curve's caption: "You wrote the bonus plan. Watch the GM's bonus climb as it learns how to earn it. Each
-dot is a week run its current way, nothing new tried."; its axes read "Weeks on the
-job" and "The GM's bonus for the week ($)" with dollar signs on the ticks, its legend "Each week on the job", "Average
-of the last 100 weeks", "A week run its current way". The readout is three views of the same week, labelled "A week
-the GM's way" ("A week the GM's way (not settled yet)" after a run that did not settle): the sentence beside the
-prediction, the replay and the table (section 10); while the GM works, the sentence describes the week the replay is
-playing, and when the run ends all three show the final week.
+The run as the class sees it (D50, D51): the button reads "Put the GM to work" ("Put the GM to work again" after a
+run). On the click the page scrolls to the yard and the status says "The GM is getting ready for Monday." while the
+engine trains, unpaced, out of sight; the yard shows "Monday, before opening: the GM is getting ready." Then the status
+says "The GM is running the week." and the yard plays the GM's week once (section 10.2). When Friday's pickup has
+held, the sentence appears beside the prediction under the label "What the GM did", the table and "Watch the week
+again" appear below the yard, the status says "The week is over: what the GM did is beside your prediction, and the
+full report is below.", and the page scrolls back to the prediction and the sentence side by side; the controls
+unlock then. The first status is "Write your prediction, then put the GM to work."; after an edit clears a run, "The
+plan changed. Put the GM to work to see what it does with this one." The replay's caption is "The GM's week". A plan
+the engine never settles on is, for the student, simply the week the GM ran; the teacher's check line says it did
+not settle.
 
 ## 2. The week
 
@@ -360,9 +359,10 @@ prices and the $2,000 are `bookings.legalRatio`, `fatigue.kpiThreshold`, `rates`
 
 ### 10.2 The replay (G4)
 
-The greedy week (a week the GM's way) played block by block on a canvas, 300 ms a block and a 1.5 s hold on Friday's pickup. While the GM works, the replay plays its current week and takes a fresh one each time a week finishes, and the
-sentence follows it (the class watches the untrained GM's muddle turn into the packed yard); when the run ends it
-plays the final week, the one the sentence and the table describe, once more and holds; a button replays it. A
+The GM's week (the greedy week on the fixed evaluation week of section 13, once the engine has stopped) played block
+by block on a canvas, 300 ms a block and a 1.5 s hold on Friday's pickup. Nothing plays while the engine trains (D50):
+the yard shows its placeholder until the final week is ready, plays that week once, the one the sentence and the
+table describe, and holds; "Watch the week again" replays it. A
 frame for step t shows the floor during block t. The day as resolved at drop-off (dogs, crew, scheduled crew, closed,
 the rate and the bookings) is read from the state after the drop-off step and from the state before the action in
 the other three blocks (the state after pickup is already the next morning's); the day, the block, today's requests
@@ -381,9 +381,10 @@ visible, the rules are not); small counters for dogs sent home sick and inspecto
 under the yard name the block's events as events, never as rules (D44): "Incident", "Vet bill $150", "Inspector:
 $250 fine", "2 dogs sent home sick", "The staffer called out: closed today", "Walk photo posted"; a fallback is in
 the header and gets no caption, and the walk's reputation gain is not named. Never "injury". Before a run:
-"The GM's week plays here once it is on the job."
+"The GM's week plays here once it is on the job."; while the GM gets ready: "Monday, before opening: the GM is getting
+ready."
 
-## 11. What the teacher sees (G5)
+## 11. What the teacher sees (G5, G5b)
 
 A teacher panel, closed by default, holds everything that is not the lesson. It is a tray at the bottom of the
 window, opened by a small "Teacher" tab in the bottom-right corner (the one teacher's control that stays on the
@@ -396,10 +397,12 @@ rules can always scroll clear of it. In it:
   any run (D37). `?round=2|3` on the address still preloads a round.
 - **The seed** (0..4294967295). A bad seed at the click opens the tray, puts the message on the check line and
   focuses the field; the student's status line never carries it.
-- **The speed** (D48): Slow (600 weeks a second), Normal (1,200, the constant of D33 and the default), Fast (2,400)
-  and Full speed (no pacing; the Fast checkbox of D33). The paced arithmetic is the one the button had: the time
-  since the previous frame, capped at 0.1 s, times the pace, carried as a fraction, at least one week a frame. The
-  pilot mode is never paced, whatever the control says.
+- **No speed control** (D52, superseding D33 and D48): the engine always trains unpaced, out of sight; pacing was for
+  watching a learning curve the class no longer sees.
+- **Show the learning curve** prints the bonus curve of G2 (each practice week's bonus, the average of the last 100,
+  the evaluations) under the rules, with a teacher's caption, for a debrief about how the GM was built if the teacher
+  wants one; a second press hides it. Like the rules it survives runs and clears (empty after a clear).
+
 - **Reveal the hidden rules** prints section 6 in plain words, H1 to H12, one line each with every number from the
   config, into a section under the report, and scrolls to it; a second press hides it. The rules are the config's,
   not the run's: they stay through runs and clears.
@@ -407,17 +410,16 @@ rules can always scroll clear of it. In it:
   · ε 0.10 · evaluations 49 · stable · target met · 20.6 s"; while a run is on "… · not stable yet · 10.0 s";
   "not stable" when a run ends unsettled; "target not met", or "no target for this plan" (D36), in place of
   "target met"; ", over budget" after the seconds when the 60 s ran out; "No run yet." before a run.
-- **Export this run**, on from the end of a run until the next clear, downloads one JSON file,
+- **Export this run**, on once the readout is out (D51) until the next clear, downloads one JSON file,
   `reward-the-pack-<round>-seed<seed>-<yyyymmdd>-<hhmm>.json`, from what the page holds, never running the GM's
-  week again: `version` 1, `app`, `exportedAt`, `config` (the config name), `round`, `seed`, `speed` (the pacing
-  applied: a pilot seed says `full`), `plan` (the RewardSpec of section 7), `planWords`, `prediction` (as it stood
+  week again: `version` 1, `app`, `exportedAt`, `config` (the config name), `round`, `seed`, `plan` (the RewardSpec of section 7), `planWords`, `prediction` (as it stood
   when the GM was put to work, D47), `readout` (`sentence` and `report`, the run's final week, the same trace the
   sentence, the replay and the table show), `curve` (`weeks`, `bonus`, `average`: three arrays of the run's length,
   in cents), `evaluations` (`week`, `bonus`, `key`) and `learner` (`weeksTrained`, `epsilon`, `evaluations`,
   `stable`, `hasTarget`, `targetMet`, `seconds`, `outOfBudget`). No names, no team names unless the team types one
   into the prediction. A Blob download, never a request.
 
-The student's controls are the bonus plan, the prediction and Put the GM to work (D39, D45). The pilot mode
+The student's controls are the bonus plan, the prediction and Put the GM to work (D39, D45, D50). The pilot mode
 (`?pilot=N`, D31) is the harness's page twin, not a lesson page: it keeps its table, prefixes the status line with
 "Pilot seed 2 of 20 · " and is never paced; its "target met" is also on the check line.
 
@@ -449,8 +451,8 @@ evaluation, so two evaluations of an unchanged table are identical. Extra checks
 k)` for k = 1..5 (and k up to 100 for held-out measurement). Training episode i uses `episodeSeeds(seed, i)`.
 
 **Stable** means: exploration has reached its floor and the outcome key (section 7) of the last 5 evaluations, all
-taken at the floor, is identical. Stable is what the page shows (as "settled into its routine"); it says the GM has
-stopped changing how it runs the place, not that it is right.
+taken at the floor, is identical. Stable is what stops the engine and puts the GM's week on the yard; the teacher's check line
+shows it, the student's screen never does (D50). It says the policy stopped changing, not that it is right.
 
 **Step size.** The n-th update of a table cell uses max(α_min, 1/n): a sample average while the cell is new, then a
 small constant weight on the latest week (D32). On the board: "the GM averages what it has seen for each choice,

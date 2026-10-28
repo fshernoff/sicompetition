@@ -1,25 +1,30 @@
-// The status line in the owner's words (BRIEF section 1, D38, D45): how many weeks the GM has been on the job and
-// whether it has settled into its routine or is still changing how it runs the place. Nothing of the learner's: no
-// ε, no evaluation count, no seconds, no "paced", no "target met", no "episode", no practice or training. A pure
-// function of the snapshot; the pilot prefixes its own label.
-import type { TrainingSnapshot } from '../learn/train.ts';
+// The status line (BRIEF section 1, D50): the GM is a person going to work, so the line says where the GM is in its
+// week and nothing about the engine underneath: no number, no weeks count, no "settled", nothing of the learner's.
+// A pure function of the phase; the pilot prefixes its own label. WP2 (Sonnet).
+
+/** Where the student's run stands: before a run, while the GM gets ready (the learner trains, out of sight), while
+ * the week plays, after it, and after a plan edit cleared a run. */
+export type StudentPhase = 'idle' | 'preparing' | 'playing' | 'done' | 'changed';
 
 /**
- * One of three sentences:
- *   running:            "The GM is 12,000 weeks into the job and still changing how it runs the place."
- *   settled (stable):   "After 24,000 weeks on the job, the GM has settled into its routine."
- *   ended, not settled: "After 150,000 weeks on the job, the GM is still changing how it runs the place."
- *                       and, when the 60 s ran out first (outOfBudget and not stable):
- *                       "Time is up: after 72,000 weeks on the job, the GM is still changing how it runs the place."
- * A run has ended when the snapshot is done or the budget is out. A settled run that crossed the budget in its last
- * slice says settled (the lateness is the pilot table's). Weeks are formatted en-US with commas; "1 week" singular.
- * The e2e waits for "has settled", so "settled" never appears before `s.stable`.
+ * One fixed sentence per phase:
+ *   idle:      "Write your prediction, then put the GM to work."
+ *   preparing: "The GM is getting ready for Monday."
+ *   playing:   "The GM is running the week."
+ *   done:      "The week is over: what the GM did is beside your prediction, and the full report is below."
+ *   changed:   "The plan changed. Put the GM to work to see what it does with this one."
  */
-export function studentStatus(s: TrainingSnapshot, outOfBudget: boolean): string {
-  const weeks = `${s.episodes.toLocaleString('en-US')} ${s.episodes === 1 ? 'week' : 'weeks'}`;
-  if (s.stable) return `After ${weeks} on the job, the GM has settled into its routine.`;
-  const unsettled = `${weeks} on the job, the GM is still changing how it runs the place.`;
-  if (outOfBudget) return `Time is up: after ${unsettled}`;
-  if (s.done) return `After ${unsettled}`;
-  return `The GM is ${weeks} into the job and still changing how it runs the place.`;
+export function studentStatus(phase: StudentPhase): string {
+  switch (phase) {
+    case 'idle':
+      return 'Write your prediction, then put the GM to work.';
+    case 'preparing':
+      return 'The GM is getting ready for Monday.';
+    case 'playing':
+      return 'The GM is running the week.';
+    case 'done':
+      return 'The week is over: what the GM did is beside your prediction, and the full report is below.';
+    case 'changed':
+      return 'The plan changed. Put the GM to work to see what it does with this one.';
+  }
 }

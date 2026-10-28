@@ -1,5 +1,5 @@
 // The export of one run (BRIEF section 11, D47): one JSON document built from what the page holds at the end of a
-// run, never re-evaluated: the config name, the round, the seed, the speed, the bonus plan and its sentence, the
+// run, never re-evaluated: the config name, the round, the seed, the bonus plan and its sentence, the
 // prediction as it stood at the click, the readout (the sentence and the run's final week report, the same trace
 // the replay and the table show), the bonus curve, the evaluations and the learner's numbers. No names, no
 // identifiers: the keys are fixed and the only free text is the prediction. buildExport and exportFilename are
@@ -7,14 +7,12 @@
 import type { CurvePoint, EvalPoint, TrainingSnapshot } from '../learn/train.ts';
 import type { PresetName } from '../world/config.ts';
 import type { EpisodeTrace, RewardSpec, WeekReport } from '../world/types.ts';
-import type { SpeedName } from './speed.ts';
 import { describeWeek } from '../sim/readout.ts';
 
 export interface RunExportInput {
   configName: string;
   round: PresetName;
   seed: number;
-  speed: SpeedName;
   spec: RewardSpec;
   planWords: string;
   prediction: string;
@@ -34,7 +32,6 @@ export interface RunExport {
   config: string;
   round: PresetName;
   seed: number;
-  speed: SpeedName;
   plan: RewardSpec;
   planWords: string;
   prediction: string;
@@ -65,7 +62,6 @@ export function buildExport(input: RunExportInput): RunExport {
     config: input.configName,
     round: input.round,
     seed: input.seed,
-    speed: input.speed,
     plan: structuredClone(input.spec),
     planWords: input.planWords,
     prediction: input.prediction,

@@ -1,19 +1,17 @@
 // The page controller: the round line, the bonus plan editor, the prediction, the Put the GM to work button (#train),
-// and under them the watching area (the status line, the bonus curve, the week replay) and the weekly P&L and
-// operations report. The teacher's controls (the round, the seed, the speed, the hidden rules, the export, the check
-// line) live in the tray that teacher.ts mounts (BRIEF section 11, D39). The page puts the GM to work; underneath,
-// the learner trains (D45).
-// Training runs in requestAnimationFrame: each frame trains (paced, or for 10 ms) and draws the replay's current
-// block; the curve and the status line are redrawn at most 10 times a second, and the canvases are measured only then
-// and on resize. A run stops when the trainer is done or 60 s after the click, whichever comes first (BRIEF section
-// 13: rendering counts against the budget).
-// One greedy week, three views (D40): the sentence beside the prediction, the replay and the table all come from one
-// EpisodeTrace the page holds. While the GM works, the replay plays a week the GM's way (the greedy week as the table
-// stands) and takes a fresh one each time a week has played, and the sentence is rewritten from that same week. When
-// the run ends, the final week's sentence, table, first frame and the status are written inside the run's clock; then
-// the final week plays once more and holds on Friday, outside it.
-// A run belongs to the plan it was trained on (D37): the click snapshots the editor's plan into page.spec, and any
-// change to the plan after a run calls clearRun, which also cancels the replay through the run token.
+// and under them the watching area (the status line and the yard, the week replay) and the weekly P&L and operations
+// report. The teacher's controls (the round, the seed, the hidden rules, the learning curve, the export, the check
+// line) live in the tray that teacher.ts mounts (BRIEF section 11, D39).
+// The GM is a person; the AI is the game engine (D50). The click puts the GM to work: the learner trains unpaced in
+// requestAnimationFrame slices, out of sight, while the yard shows the in-world wait; the teacher's check line and,
+// when the teacher shows it, the learning curve are redrawn at most 10 times a second. Training stops when the trainer
+// is done or 60 s after the click (D6, BRIEF section 13: the final week computed and its first frame drawn count
+// against the budget). Then the GM's one week, the final greedy week, plays once on the yard, and only when it has
+// played does the readout come out: the sentence beside the prediction, the table and "Watch the week again" (D51).
+// One greedy week, three views (D40): the sentence, the replay and the table all come from the one EpisodeTrace the
+// page holds. A run belongs to the plan it was trained on (D37): the click snapshots the editor's plan into
+// page.spec, and any change to the plan after a run calls clearRun, which also cancels the run and the replay through
+// the run token.
 import { DEFAULT_LEARNER, Trainer } from '../learn/train.ts';
 import type { TrainingSnapshot } from '../learn/train.ts';
 import { describeWeek, outcomeKey } from '../sim/readout.ts';
@@ -28,14 +26,12 @@ import type { Editor } from './editor.ts';
 import { drawReplay, replayClock, replayFrame } from './replay.ts';
 import type { ReplayColors } from './replay.ts';
 import { renderReport, reportTable } from './report.ts';
-import { DEFAULT_SPEED, SPEEDS, paceFor, paceSlice, speedName } from './speed.ts';
-import type { SpeedName } from './speed.ts';
 import { studentStatus } from './status.ts';
 import { mountTeacher, rejectSeed } from './teacher.ts';
 
 export const BUDGET_MS = 60_000; // from the click (or a pilot seed's start), rendering included
-const SLICE_MS = 10; // training time per animation frame when not paced (Full speed, and the pilot)
-const REDRAW_MS = 100; // at most 10 curve redraws (and canvas measurements) a second
+const SLICE_MS = 10; // training time per animation frame (always unpaced, D52)
+const REDRAW_MS = 100; // at most 10 check-line and curve redraws (and canvas measurements) a second
 const MAX_SEED = 4_294_967_295;
 const MAX_BACKING_WIDTH = 1920;
 const MAX_BACKING_HEIGHT = 1080;
@@ -48,11 +44,10 @@ const ROUND_NOTES: Readonly<Partial<Record<PresetName, string>>> = {
   round2: 'Turn on up to three measures and set their dollar amounts. Write your prediction, then put the GM to work.',
   round3: 'All six measures are yours. Write your prediction, then put the GM to work.',
 };
-const READOUT_LABEL = "A week the GM's way";
-const READOUT_LABEL_UNSETTLED = "A week the GM's way (not settled yet)";
-const REPLAY_CAPTION = "A week the GM's way";
-const REPLAY_CAPTION_TRAINING = "A week the GM's way, right now";
-const PLAN_CHANGED = 'The plan changed. Put the GM to work to see what it does with this one.';
+const READOUT_LABEL = 'What the GM did';
+const REPLAY_CAPTION = "The GM's week";
+/** The yard while the GM gets ready (the learner trains, out of sight): an in-world wait, not a loading screen. */
+const PREPARING_PLACEHOLDER = 'Monday, before opening: the GM is getting ready.';
 /** The button's words after a run (and after the pilot). */
 export const AGAIN = 'Put the GM to work again';
 const ERROR_LINE = 'The GM stopped because of a problem. Ask your teacher for help.';
@@ -69,7 +64,6 @@ interface CanvasSize {
 export interface RunSetup {
   seed: number;
   round: PresetName;
-  speed: SpeedName; // the pacing applied to the run (the pilot's is always 'full')
   prediction: string; // the team's prediction as it stood at the click: read there and nowhere else (D2, D47)
 }
 
@@ -80,7 +74,6 @@ export interface Page {
   editor: Editor;
   prediction: HTMLTextAreaElement; // the team's prediction: read only at the click, for the export (D2, D47)
   seed: HTMLInputElement;
-  speed: HTMLSelectElement; // filled from SPEEDS
   train: HTMLButtonElement;
   teacher: HTMLElement; // the tray
   teacherOpen: HTMLButtonElement; // the tab in the corner
@@ -88,13 +81,16 @@ export interface Page {
   reveal: HTMLButtonElement;
   rules: HTMLElement; // the hidden rules section, under the report
   rulesList: HTMLOListElement;
+  learning: HTMLElement; // the teacher's learning curve section, under the rules; hidden until the teacher shows it
+  showCurve: HTMLButtonElement;
   exportButton: HTMLButtonElement;
   check: HTMLElement; // the learner's check line in the tray (D6, section 13)
-  watch: HTMLElement; // the status line, the curve and the replay: scrolled into view at the click
+  compare: HTMLElement; // the prediction beside what the GM did: scrolled into view when the week is over
+  watch: HTMLElement; // the status line and the yard: scrolled into view at the click
   status: HTMLElement;
-  canvas: HTMLCanvasElement; // the bonus curve
+  canvas: HTMLCanvasElement; // the learning curve, in the teacher's section
   ctx: CanvasRenderingContext2D;
-  replay: HTMLCanvasElement; // the week replay; data-week is "none", "training" or "final"
+  /** The week replay. data-week is "none", "preparing" or "final"; data-plays counts the playbacks clicks started. */
   replayCtx: CanvasRenderingContext2D;
   replayCaption: HTMLElement;
   replayAgain: HTMLButtonElement;
@@ -108,26 +104,30 @@ export interface Page {
   world: WorldConfig;
   spec: RewardSpec; // the plan of the current or last run, snapshotted and validated at the click
   trainer: Trainer | null; // the last run, kept so a window resize can redraw its curve
-  /** The week the sentence and the replay show (and the table, after a run); null before a run and after a clear. */
+  replay: HTMLCanvasElement;
+  /** The run's final week, which the replay, the sentence and the table show; null before a run, while the GM gets
+   * ready and after a clear. */
   trace: EpisodeTrace | null;
   /** performance.now() when the replay of `trace` started playing. */
   replayStartedAt: number;
   /** Bumped by clearRun and at the start of a run; a scheduled frame holding an older token draws nothing. */
   token: number;
-  /** A final-week playback loop is running, so "Watch the week again" restarts it instead of starting another. */
-  playing: boolean;
+  /** The playback loop running now, if any: a second start while it plays restarts it instead of starting another. */
+  playback: Promise<boolean> | null;
   /** The replay canvas's size, measured at the 10 Hz redraw and on resize, never every frame. */
   replaySize: CanvasSize | null;
   /** The current or last run's setup, from the click; null before a run and after a clear. */
   setup: RunSetup | null;
   /** The last run's result, set when it resolves; null before a run, during one and after a clear. */
   result: RunResult | null;
+  /** The readout (the sentence, the table, Watch the week again) is out; the export waits for it (D51). */
+  readoutShown: boolean;
 }
 
 export interface RunResult {
   snapshot: TrainingSnapshot;
   ms: number; // from the start to the stop
-  outOfBudget: boolean; // the run (training, the final week's sentence, table and frame included) passed 60 s
+  outOfBudget: boolean; // the run (training, the final week computed and its first frame drawn) passed 60 s
 }
 
 /** A run whose results were cleared while it trained: its frames stop and write nothing. */
@@ -136,6 +136,13 @@ export class RunCancelled extends Error {
     super('The run was cleared before it finished.');
     this.name = 'RunCancelled';
   }
+}
+
+/** The prediction beside what the GM did. */
+function compareArea(): HTMLElement {
+  const el = document.querySelector('.compare');
+  if (!(el instanceof HTMLElement)) throw new Error('page: .compare is missing');
+  return el;
 }
 
 function byId<T extends HTMLElement>(id: string, kind: new () => T): T {
@@ -219,7 +226,8 @@ function paintReplay(page: Page, now: number): boolean {
   };
   const trace = page.trace;
   if (trace === null) {
-    drawReplay(page.replayCtx, size.width, size.height, null, options);
+    const preparing = page.replay.dataset.week === 'preparing';
+    drawReplay(page.replayCtx, size.width, size.height, null, preparing ? { ...options, placeholder: PREPARING_PLACEHOLDER } : options);
     return true;
   }
   const clock = replayClock(now - page.replayStartedAt);
@@ -229,11 +237,14 @@ function paintReplay(page: Page, now: number): boolean {
 }
 
 /**
- * Measures both canvases, draws the curve, and paints the replay at `now`. Called at most 10 times a second during a
- * run, on resize, and when a run starts, ends or is cleared; between redraws the run's frames paint only the replay.
+ * Measures the replay and paints it at `now`, and, only while the teacher's learning section is shown, measures and
+ * draws the curve. Called at most 10 times a second during a run, on resize, when the learning section is shown, and
+ * when a run starts, ends or is cleared; between redraws the playback's frames paint only the replay.
  */
 export function redraw(page: Page, now: number = performance.now()): void {
   page.replaySize = sizeCanvas(page.replay);
+  paintReplay(page, now);
+  if (page.learning.hidden) return; // a hidden canvas has no size; the curve waits until it is shown
   const { width, height, ratio } = sizeCanvas(page.canvas);
   const t = page.trainer;
   drawCurve(page.ctx, width, height, t ? t.curve() : [], t ? t.evals() : [], {
@@ -242,79 +253,96 @@ export function redraw(page: Page, now: number = performance.now()): void {
     averageWindow: t ? t.config.movingAverageWindow : DEFAULT_LEARNER.movingAverageWindow,
     minEpisodes: 2000,
   });
-  paintReplay(page, now);
-}
-
-/** Puts `trace` on the replay from its first block and writes its sentence beside the prediction (D40). */
-function showWeek(page: Page, trace: EpisodeTrace, now: number): void {
-  page.trace = trace;
-  page.replayStartedAt = now;
-  page.readout.textContent = describeWeek(trace.report);
-  page.replay.dataset.key = outcomeKey(trace.report);
 }
 
 /**
- * Plays the week on the replay once from its first block and holds on Friday's pickup, outside any run's clock.
- * A second call while it plays restarts it. The loop stops when the week is done or the token has moved on.
+ * Plays the run's week on the replay once from its first block and holds on Friday's pickup. Shared by the click's
+ * playback and "Watch the week again": a second start while the week plays restarts it on the one loop instead of
+ * starting another. Resolves true when the week has played and held, false if clearRun moved the token meanwhile (the
+ * loop then stops and draws nothing); rejects if painting throws.
  */
-function playFinal(page: Page): void {
-  if (page.trace === null) return;
+function startPlayback(page: Page): Promise<boolean> {
+  if (page.trace === null) return Promise.resolve(false);
   page.replayStartedAt = performance.now();
-  if (page.playing) return; // the loop already running picks up the new start
-  page.playing = true;
+  if (page.playback !== null) return page.playback; // the loop already running picks up the new start
   const token = page.token;
-  const frame = (now: number): void => {
-    if (token !== page.token) return; // cleared: clearRun has reset `playing` and drawn the placeholder
-    try {
-      if (paintReplay(page, now)) {
-        page.playing = false;
+  const playback = new Promise<boolean>((resolve, reject) => {
+    const frame = (now: number): void => {
+      if (token !== page.token) {
+        resolve(false); // cleared: clearRun has dropped the loop and drawn the placeholder
         return;
       }
-    } catch (err) {
-      page.playing = false;
-      showError(page, err);
-      return;
-    }
+      try {
+        if (paintReplay(page, now)) {
+          page.playback = null;
+          resolve(true);
+          return;
+        }
+      } catch (err) {
+        page.playback = null;
+        reject(err);
+        return;
+      }
+      requestAnimationFrame(frame);
+    };
     requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
+  });
+  page.playback = playback;
+  return playback;
 }
 
 /**
- * Trains one seed with the frame loop, from `startedAt` (performance.now() at the click). `label` goes in front of
- * the status line (the pilot names the seed). Paced (`pace` weeks a second): each frame trains the slice paceSlice
- * gives for the time since the previous frame; unpaced (null): each frame trains for 10 ms. Every frame paints the replay; when the week on it has played,
- * a fresh week the GM's way replaces it and the sentence follows. Resolves when the trainer is done or the budget
- * has run out, after the final week is on the page; rejects with RunCancelled if clearRun ran meanwhile.
+ * The GM's week, played once for the class (D51): from its first block, holding on Friday's pickup, and counted in
+ * #replay[data-plays]. Resolves true when it has played, false if the run was cleared meanwhile; rejects on a drawing
+ * error.
  */
-export function runTraining(
-  page: Page,
-  seed: number,
-  startedAt: number,
-  label: string,
-  pace: number | null,
-): Promise<RunResult> {
+export function playWeek(page: Page): Promise<boolean> {
+  page.replay.dataset.plays = String(Number(page.replay.dataset.plays ?? '0') + 1);
+  return startPlayback(page);
+}
+
+/**
+ * The readout, once the week has played (D51): the sentence beside the prediction, the table, Watch the week again
+ * and the done status (`label` in front of it: the pilot names the seed). Sets readoutShown, which the export waits
+ * for.
+ */
+export function showReadout(page: Page, label = ''): void {
+  const trace = page.trace;
+  if (trace === null) throw new Error('page: no week to read out');
+  page.readout.textContent = describeWeek(trace.report);
+  page.readoutLabel.textContent = READOUT_LABEL;
+  page.replayCaption.textContent = REPLAY_CAPTION;
+  renderReport(page.reportTable, reportTable(trace.report, page.spec, page.world));
+  page.report.hidden = false;
+  page.replayAgain.hidden = false;
+  page.status.textContent = label + studentStatus('done');
+  page.readoutShown = true;
+}
+
+/**
+ * Trains one seed with the frame loop, from `startedAt` (performance.now() at the click, or the pilot seed's start),
+ * always unpaced (D52): each frame trains for 10 ms. Nothing of a week is on the yard while it trains: the yard holds
+ * its placeholder, and the teacher's check line (and the curve, when shown) is redrawn at most 10 times a second.
+ * When the trainer is done or the budget has run out, inside the clock, the final week becomes the page's trace and
+ * its first frame is drawn; then the clock stops. Writes nothing the student reads: the caller writes the status
+ * (`label` is kept for the caller's sake and the pilot's). Resolves with the result; rejects with RunCancelled if
+ * clearRun ran meanwhile.
+ */
+export function runTraining(page: Page, seed: number, startedAt: number, label: string): Promise<RunResult> {
+  void label; // the student's words are the caller's (D50): the click's statuses, the pilot's own
   return new Promise((resolve, reject) => {
     const token = ++page.token; // this run's frames; clearRun moves it on to cancel them
     let trainer: Trainer;
     try {
       trainer = new Trainer(page.world, page.spec, seed);
       page.trainer = trainer;
-      // The replay opens on the new GM's week its way (the untrained table), and the sentence describes that week.
-      showWeek(page, trainer.evaluateTrace(), performance.now());
-      page.replay.dataset.week = 'training';
-      page.replayCaption.textContent = REPLAY_CAPTION_TRAINING;
-      const first = trainer.snapshot();
-      page.status.textContent = label + studentStatus(first, false);
-      page.check.textContent = checkLine(first, performance.now() - startedAt, false);
+      page.check.textContent = checkLine(trainer.snapshot(), performance.now() - startedAt, false);
       redraw(page);
     } catch (err) {
       reject(err);
       return;
     }
     let lastDraw = performance.now();
-    let lastFrame = startedAt;
-    let owed = 0; // paced: the fractional episodes carried from frame to frame, so the pace holds at any frame rate
 
     const frame = (): void => {
       if (token !== page.token) {
@@ -322,53 +350,30 @@ export function runTraining(
         return;
       }
       try {
-        let snapshot: TrainingSnapshot;
-        const start = performance.now();
-        if (start - startedAt >= BUDGET_MS) {
-          // The deadline is checked before a slice, so no training is started past it.
-          snapshot = trainer.snapshot();
-        } else if (pace !== null) {
-          const slice = paceSlice(owed, start - lastFrame, pace);
-          lastFrame = start;
-          owed = slice.owed;
-          snapshot = trainer.runEpisodes(slice.episodes); // the training slice
-        } else {
-          snapshot = trainer.runFor(SLICE_MS); // the training slice: no DOM, no drawing
-        }
+        // The deadline is checked before a slice, so no training is started past it.
+        const snapshot = performance.now() - startedAt >= BUDGET_MS ? trainer.snapshot() : trainer.runFor(SLICE_MS);
         const now = performance.now();
         const timeUp = now - startedAt >= BUDGET_MS;
         if (snapshot.done || timeUp) {
-          // The final week: its sentence, the table, its first frame, the curve and the status, all inside the
-          // run's clock, so the status says "settled" only once the rest is on the page.
+          // The final week, inside the run's clock: it becomes the page's trace, and its first frame is drawn.
           const final = trainer.evaluateTrace();
-          showWeek(page, final, performance.now());
-          const words = snapshot.stable ? READOUT_LABEL : READOUT_LABEL_UNSETTLED;
-          page.readoutLabel.textContent = words;
-          page.replayCaption.textContent = words;
-          renderReport(page.reportTable, reportTable(final.report, page.spec, page.world));
-          page.report.hidden = false;
+          page.trace = final;
+          page.replayStartedAt = performance.now();
           page.replay.dataset.week = 'final';
-          page.replayAgain.hidden = false;
-          redraw(page);
-          page.status.textContent = label + studentStatus(snapshot, timeUp);
+          page.replay.dataset.key = outcomeKey(final.report);
+          redraw(page, page.replayStartedAt); // the first block, and the curve if the teacher shows it
           // The clock stops after that work, so a run that finishes its last slice near the deadline is counted late.
           const ms = performance.now() - startedAt;
           const result: RunResult = { snapshot, ms, outOfBudget: ms >= BUDGET_MS };
+          page.result = result;
           page.check.textContent = checkLine(snapshot, ms, result.outOfBudget);
-          page.result = result; // before resolving, so the click's finally enables the export
           resolve(result);
-          playFinal(page); // the final week once more, holding on Friday: outside the clock
           return;
         }
-        // The week on the replay has played and held: play a fresh week the GM's way, and the sentence follows.
-        if (replayClock(now - page.replayStartedAt).done) showWeek(page, trainer.evaluateTrace(), now);
         if (now - lastDraw >= REDRAW_MS) {
           lastDraw = now;
-          page.status.textContent = label + studentStatus(snapshot, false);
           page.check.textContent = checkLine(snapshot, now - startedAt, false);
           redraw(page, now);
-        } else {
-          paintReplay(page, now);
         }
         requestAnimationFrame(frame);
       } catch (err) {
@@ -386,18 +391,17 @@ export function showError(page: Page, err: unknown): void {
 }
 
 /**
- * Everything a run locks: the editor, the prediction, the button, and the teacher's round radios, seed, speed and
- * export. Off for a run and for the whole pilot; on restores the editor to its round's own locks, and the export
- * only when there is a run to export. The reveal, the tab and the tray's close button are never locked.
+ * Everything a run locks: the editor, the prediction, the button, and the teacher's round radios, seed and export.
+ * Off for a run and for the whole pilot; on restores the editor to its round's own locks, and the export only once a
+ * run's readout is out (D51). The reveal, the learning curve, the tab and the tray's close button are never locked.
  */
 export function setControls(page: Page, enabled: boolean): void {
   page.editor.setEnabled(enabled);
   page.prediction.disabled = !enabled;
   for (const radio of page.rounds) radio.disabled = !enabled;
   page.seed.disabled = !enabled;
-  page.speed.disabled = !enabled;
   page.train.disabled = !enabled;
-  page.exportButton.disabled = !(enabled && page.result !== null && page.trace !== null);
+  page.exportButton.disabled = !(enabled && page.readoutShown && page.result !== null && page.trace !== null);
 }
 
 /** Checks `name`'s radio and writes the round line (its label and note). Does not touch the editor. */
@@ -409,9 +413,10 @@ export function showRound(page: Page, name: PresetName): void {
 
 /**
  * Clears the last run's results, the one lifecycle operation (D37): moves the token on (any scheduled replay or
- * training frame of the old run then does nothing), drops the trace and its clock, the run's setup and result, and
- * resets the replay, its caption and button, the table, the sentence and its label, the curve, the check line and the
- * export button. The hidden rules are the config's, not the run's: they stay. After a run the status says the plan
+ * training frame of the old run then does nothing), drops the trace and its clock, the run's setup and result and the
+ * published readout, and resets the replay (its data-week and data-plays), its caption and button, the table, the
+ * sentence and its label, the curve, the check line and the export button. The hidden rules are the config's, not the
+ * run's, and the learning section is the teacher's: they stay (an empty curve). After a run the status says the plan
  * changed.
  * Called by an edit, a round change, the button's click before a run, and the pilot before each seed.
  */
@@ -423,8 +428,10 @@ export function clearRun(page: Page): void {
   page.setup = null;
   page.result = null;
   page.replayStartedAt = 0;
-  page.playing = false;
+  page.playback = null;
+  page.readoutShown = false;
   page.replay.dataset.week = 'none';
+  page.replay.dataset.plays = '0';
   delete page.replay.dataset.key;
   page.replayCaption.textContent = REPLAY_CAPTION;
   page.replayAgain.hidden = true;
@@ -434,8 +441,8 @@ export function clearRun(page: Page): void {
   page.readoutLabel.textContent = READOUT_LABEL;
   page.check.textContent = NO_RUN;
   page.exportButton.disabled = true;
-  redraw(page); // the empty curve and the replay's placeholder
-  if (hadRun) page.status.textContent = PLAN_CHANGED;
+  redraw(page); // the replay's placeholder, and the empty curve if the teacher shows it
+  if (hadRun) page.status.textContent = studentStatus('changed');
 }
 
 /** Finds the page's elements, mounts the editor for the round on the address, draws the empty canvases, wires it all. */
@@ -443,14 +450,6 @@ export function mountApp(): Page {
   const canvas = byId('curve', HTMLCanvasElement);
   const replay = byId('replay', HTMLCanvasElement);
   const world = loadDefaultConfig();
-  const speed = byId('speed', HTMLSelectElement);
-  for (const s of SPEEDS) {
-    const option = document.createElement('option');
-    option.value = s.name;
-    option.textContent = s.label;
-    speed.appendChild(option);
-  }
-  speed.value = DEFAULT_SPEED;
   const first = roundFromSearch(window.location.search);
   const editor = mountEditor(byId('editor', HTMLElement), world, loadPreset(first));
   const css = cssVars();
@@ -461,7 +460,6 @@ export function mountApp(): Page {
     editor,
     prediction: byId('prediction', HTMLTextAreaElement),
     seed: byId('seed', HTMLInputElement),
-    speed,
     train: byId('train', HTMLButtonElement),
     teacher: byId('teacher', HTMLElement),
     teacherOpen: byId('teacher-open', HTMLButtonElement),
@@ -469,8 +467,11 @@ export function mountApp(): Page {
     reveal: byId('reveal', HTMLButtonElement),
     rules: byId('rules', HTMLElement),
     rulesList: byId('rules-list', HTMLOListElement),
+    learning: byId('learning', HTMLElement),
+    showCurve: byId('show-curve', HTMLButtonElement),
     exportButton: byId('export', HTMLButtonElement),
     check: byId('check', HTMLElement),
+    compare: compareArea(),
     watch: byId('watch', HTMLElement),
     status: byId('status', HTMLElement),
     canvas,
@@ -492,10 +493,11 @@ export function mountApp(): Page {
     trace: null,
     replayStartedAt: 0,
     token: 0,
-    playing: false,
+    playback: null,
     replaySize: null,
     setup: null,
     result: null,
+    readoutShown: false,
   };
   showRound(page, first);
 
@@ -527,24 +529,52 @@ export function mountApp(): Page {
     page.setup = {
       seed,
       round: page.editor.preset().name,
-      speed: speedName(page.speed.value),
       prediction: page.prediction.value, // read here and nowhere else (D2, D47)
     };
-    const run = runTraining(page, seed, clickedAt, '', paceFor(page.speed.value));
-    // The class watches the status, the curve and the replay without touching anything (D42). The scroll comes after
-    // the run's first sentence is written, since that sentence makes the panel above taller.
+    page.status.textContent = studentStatus('preparing');
+    page.replay.dataset.week = 'preparing';
+    // The class watches the yard without touching anything (D42).
     page.watch.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    run
-      .catch((err: unknown) => {
-        if (!(err instanceof RunCancelled)) showError(page, err);
-      })
-      .finally(() => {
-        setControls(page, true);
-        page.train.textContent = AGAIN;
-      });
+    let owner = -1;
+    // The whole locked lifecycle is one guarded operation; only the run's owner writes an error or unlocks (Astra,
+    // G5b diff review: a drawing failure in recovery must not strand the controls, a stale run must not write).
+    void (async () => {
+      try {
+        redraw(page); // the yard's in-world wait
+        const run = runTraining(page, seed, clickedAt, '');
+        owner = page.token; // runTraining moved the token on as it started: this click owns that run
+        await run;
+        if (page.token !== owner) return;
+        page.status.textContent = studentStatus('playing');
+        const played = await playWeek(page);
+        if (!played || page.token !== owner) return;
+        showReadout(page);
+        page.compare.scrollIntoView({ behavior: 'smooth', block: 'start' }); // the box score after the game
+      } catch (err) {
+        if (err instanceof RunCancelled) return;
+        if (owner !== -1 && page.token !== owner) return; // a newer run owns the page now
+        showError(page, err);
+        if (page.trace === null) {
+          page.replay.dataset.week = 'none'; // the GM is no longer getting ready: the yard's usual placeholder
+          try {
+            redraw(page);
+          } catch (drawErr) {
+            console.error(drawErr); // best effort: the controls come back either way
+          }
+        }
+      } finally {
+        if (owner === -1 || page.token === owner) {
+          setControls(page, true);
+          page.train.textContent = AGAIN;
+        }
+      }
+    })();
   });
 
-  page.replayAgain.addEventListener('click', () => playFinal(page));
+  // Watch the week again: the saved week only, no training, no republishing, no scroll (D51).
+  page.replayAgain.addEventListener('click', () => {
+    startPlayback(page).catch((err: unknown) => showError(page, err));
+  });
 
   // A resize draws what the page holds at that moment (after a clear, the empty curve and the placeholder), so it
   // never brings a cleared week back and needs no token.
@@ -561,6 +591,7 @@ export function mountApp(): Page {
   mountTeacher(page);
 
   page.replay.dataset.week = 'none';
+  page.replay.dataset.plays = '0';
   redraw(page);
   return page;
 }

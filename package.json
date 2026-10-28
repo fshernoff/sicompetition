@@ -18,6 +18,8 @@
     "sim": "node src/sim/cli.ts",
     "e2e": "playwright test",
     "capture": "node e2e/capture.ts",
+    "shots": "node e2e/shots.ts",
+    "perf": "node e2e/perf.ts",
     "calibrate": "node src/sim/calibrate.ts",
     "pilot": "node src/learn/pilot.ts"
   },

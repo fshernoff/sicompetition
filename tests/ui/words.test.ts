@@ -4,6 +4,7 @@
 // teacher's control is on the student's page.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { STUDENT_BANS } from './bans.ts';
 import { curveWords, yTickLabel } from '../../src/ui/curve.ts';
 
 const html = readFileSync('index.html', 'utf8');
@@ -72,7 +73,7 @@ describe('index.html', () => {
     const visible = student.replace(/<[^>]+>/g, ' ');
     const labels = Array.from(student.matchAll(/\b(?:aria-label|placeholder|title|alt)="([^"]*)"/g), (m) => m[1] ?? '').join(' ');
     const text = `${visible} ${labels}`;
-    for (const word of [/episode/i, /ε/, /epsilon/i, /target met/i, /\bstable\b/i, /injur/i, /reward/i, /evaluation/i, /\bQ-?learn/i, /\bpoints?\b/i, /practi/i, /test week/i, /\btrain/i, /weights?\b/i, /\bseed\b/i, /\bspeed\b/i, /\bfast\b/i, /pacing/i, /\blearn/i, /settled/i, /routine/i, /\bweeks\b/i, /curve/i, /still changing/i]) {
+    for (const word of STUDENT_BANS) {
       expect(text, String(word)).not.toMatch(word);
     }
     // The ids and classes may keep their names (#train, .kpi-weight): a student never reads them.

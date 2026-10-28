@@ -6,6 +6,7 @@ import { describeWeek, outcomeKey } from '../src/sim/readout.ts';
 import { formatMoney } from '../src/ui/report.ts';
 import { setWeight, toggleKpi } from '../src/world/bonusPlan.ts';
 import { loadDefaultConfig, loadPreset } from '../src/world/config.ts';
+import { STUDENT_ALLOWED, STUDENT_BANS } from '../tests/ui/bans.ts';
 
 // The one Playwright smoke, in parts: the built page loads clean and makes no request beyond its own origin, the
 // teacher panel is closed by default and holds the teacher's controls (G5), and Round 1 trains to the reckless week
@@ -734,4 +735,78 @@ test('the pilot mode trains Round 1 whatever the address says, and its export is
   expect((file['readout'] as { report: unknown }).report).toEqual(twin.evaluate());
   expect((file['learner'] as { weeksTrained: number }).weeksTrained).toBe(end.episodes);
   expect(Number(episodesCell.replace(/,/g, ''))).toBe(end.episodes);
+});
+
+/** Presses Tab until the element with `id` has focus (at most `limit` presses); a keyboard user's way there. */
+async function tabTo(page: Page, id: string, limit = 80): Promise<void> {
+  for (let i = 0; i < limit && !(await page.evaluate((want) => document.activeElement?.id === want, id)); i++) await page.keyboard.press('Tab');
+  await expect(page.locator(`#${id}`)).toBeFocused();
+}
+
+/** What a student reads at this moment: the rendered text (the closed tray and hidden sections are not rendered) and
+ * the labels a screen reader says. */
+async function studentText(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const labels = Array.from(document.querySelectorAll<HTMLElement>('[aria-label], [placeholder], [title], [alt]'))
+      .filter((el) => el.getClientRects().length > 0)
+      .map((el) => ['aria-label', 'placeholder', 'title', 'alt'].map((a) => el.getAttribute(a) ?? '').join(' '));
+    return `${document.body.innerText} ${labels.join(' ')}`;
+  });
+}
+
+test('a student runs the week by keyboard alone, and nothing the page shows, the yard included, uses a word a student never reads', async ({ page }) => {
+  // Every string drawn on a canvas, the yard's captions and HUD included (G5d acceptance 6).
+  await page.addInitScript(() => {
+    const drawn: string[] = [];
+    (window as unknown as { __drawn: string[] }).__drawn = drawn;
+    for (const proto of [CanvasRenderingContext2D.prototype, globalThis.OffscreenCanvasRenderingContext2D?.prototype]) {
+      if (!proto) continue;
+      for (const name of ['fillText', 'strokeText'] as const) {
+        const original = proto[name] as (...args: unknown[]) => void;
+        (proto as unknown as Record<string, unknown>)[name] = function (this: unknown, ...args: unknown[]) {
+          drawn.push(String(args[0]));
+          return original.apply(this, args);
+        };
+      }
+    }
+  });
+  await page.goto('/');
+  const shown = [await studentText(page)];
+  // The five picks: Tab into each group, Space takes its first option, the arrows move to the pick (and take it).
+  await tabTo(page, 'pick-acceptAll-none');
+  const moves: Record<keyof typeof PACKED, number> = { acceptAll: 2, rate: 2, solo: 2, naps: 0, incidents: 2 };
+  for (const [i, [, n]] of Object.entries(moves).entries()) {
+    if (i > 0) await page.keyboard.press('Tab');
+    await page.keyboard.press('Space');
+    for (let k = 0; k < n; k++) await page.keyboard.press('ArrowRight');
+  }
+  for (const [field, value] of Object.entries(PACKED)) await expect(page.locator(`#pick-${field}-${value}`)).toBeChecked();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#prediction')).toBeFocused();
+  await page.keyboard.type('It packs the yard with one staffer and never naps.');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#train')).toBeFocused();
+  shown.push(await studentText(page));
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#status')).toHaveText(PREPARING);
+  shown.push(await studentText(page));
+  await expect(page.locator('#status')).toHaveText(PLAYING, { timeout: 90_000 });
+  shown.push(await studentText(page));
+  await expect(page.locator('#train')).toHaveText('Put the GM to work again', { timeout: 90_000 });
+  // The result first: focus goes to the called line (G5c acceptance 5).
+  await expect(page.locator('#called-line')).toBeFocused();
+  shown.push(await studentText(page));
+  // The tray opens from the keyboard and gives focus back to its tab when it closes.
+  await tabTo(page, 'teacher-open');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#teacher')).toBeVisible();
+  await tabTo(page, 'teacher-close');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#teacher')).toBeHidden();
+  await expect(page.locator('#teacher-open')).toBeFocused();
+  const drawn = await page.evaluate(() => (window as unknown as { __drawn: string[] }).__drawn);
+  expect(drawn.length).toBeGreaterThan(0);
+  const text = STUDENT_ALLOWED.reduce((t, phrase) => t.replace(phrase, ' '), `${shown.join('\n')}\n${drawn.join('\n')}`);
+  const hits = STUDENT_BANS.flatMap((word) => (text.match(new RegExp(`.{0,40}${word.source}.{0,40}`, word.flags.includes('i') ? 'gi' : 'g')) ?? []));
+  expect(hits).toEqual([]);
 });

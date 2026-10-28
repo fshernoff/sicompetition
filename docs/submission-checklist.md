@@ -183,6 +183,28 @@ on camera.
 
 ## 6. Submit (target Dec 18, 5:00 p.m. ET; registration closes then; submission closes Dec 23, 5:00 p.m. ET)
 
+**The portal's form** (seen by Fred, Oct 28; it is open to him, so the Educator registration can submit):
+
+| Field | What goes in |
+|---|---|
+| Team name | Jupiter High School Educators (set by the registration) |
+| Category, track | Educator Category; Standard Track (the default for educator teams) |
+| Project title | Reward the Pack |
+| Short description | 500 characters at most; the draft below |
+| URL for video | The no-password video link (section 4) |
+| Project narrative | The PDF, under 30 MB; past 11 pages the portal **deletes** the extra pages, so the count is checked before upload |
+| Certification | Original, made for the Challenge after Aug 1, 2026; "All SI tools or technologies used are identified and credited. All research and artifacts (maps, photos, etc.) are identified and credited." The PDF's References and the art provenance must make that true |
+
+Short description draft (466 characters; once section 3 has run, swap one sentence for the headline result):
+
+> Reward the Pack is a free browser game for AP Business. Student teams own a dog daycare, put an AI general manager
+> in charge and write its bonus plan. Before each week they predict what the GM will do; the AI then chases exactly
+> what the plan pays for, not what the team meant, and a scorecard shows which predictions they called. Over three
+> rounds students learn to design incentives for AI and for people. No logins, no student data: one link any teacher
+> can open.
+
+- [ ] Title and short description entered, the description edited and approved by Fred. (Claude drafted; Fred)
+
 - [ ] The repo public and its README current; the game deployed and its link working. (Fred)
 - [ ] The video link with no password, tested on several kinds of computer. (Fred)
 - [ ] The PDF final. (Fred)

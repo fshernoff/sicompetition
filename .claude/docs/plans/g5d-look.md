@@ -62,8 +62,10 @@ per asset; past that the owner decides between shipping, the fallback or more ti
   light direction, one finish across the set; no figure cut by the image's edges or the page's crop (scenery may run
   off the frame). A defect means regenerate, or a controlled
   repair recorded in the provenance with a full re-review; never "too small to see".
-- **D59 The direction is reset for the audience** (written when the sprint picks it): the chosen direction, why, what
-  it rejects. G5c's concept A is superseded.
+- **D59 The look is Floor** (Oct 28, unanimous across four independent rankings; `.claude/docs/reviews/g5d-directions.md`):
+  a premium management game in low-poly isometric, the GM a faceted orb with one glowing band in three states, adult
+  crew, Archivo. Its fix list is in the directions file. The production method is decided by a spike (generated
+  sprites against low-poly models rendered from one camera) on a common sample, judged by the three readers.
 - **D60 Motion never invents business behaviour** (written with WP3): nothing on the yard moves to show an action the
   trace does not record; idle life (a breath, a tail) is the only decoration and never suggests supervision, walking
   or care; the visual randomness has its own seeded generator, never the engine's.

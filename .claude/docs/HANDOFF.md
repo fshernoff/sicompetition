@@ -17,13 +17,18 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
 - **The fallback:** branch `g5c-fallback` at `611145a` (worktree `Temp/fallback`): G5c with the header cropped to
   its figure-free middle, three clean passes; tests 370/370, e2e 8/8. Not merged, not pushed: the live site still
   shows the poodle until the owner says "ship the fallback".
-- **Running when this was written:** the pipeline spike, two Opus agents on one sample (a corgi and a golden in
-  three poses, adult crew, the GM orb in three states, a board piece): A generated (`Temp/spike-a/`), B low-poly
-  models in three.js rendered offline (`Temp/spike-b/`). Brief: `.claude/docs/reviews/g5d-spike-brief.md`.
-- **Next:** the three readers (main thread, Astra, a fresh Sonnet) judge the two spikes side by side; record the
-  method in D59; the manifest seam (`src/assets/art/manifest.ts`: id, file, native size, foot anchor, facing) and
-  the canvas token names; then Phase 2: WP2 the page and the rail (Opus), WP3 the yard on the board (Opus), WP4 the
-  art set (Opus), WP5 the words (Sonnet); review rounds to the stop rule; the owner's gate before the Nov 5 freeze.
+- **The method (D59):** the spike (`Temp/spike-a/`, `Temp/spike-b/`, `Temp/spike-hybrid/`) judged by the three readers:
+  the hybrid. The cast (dogs, crew) generated under eight gates; the set and the GM modelled in three.js and rendered
+  offline (`.claude/docs/reviews/g5d-directions.md`). The art contract: `src/assets/art/manifest.ts`. Ports for
+  parallel worktrees: `E2E_PORT`, `SHOTS_PORT`, `PERF_PORT`.
+- **Phase 2 running when this was written** (briefs: `.claude/docs/plans/g5d-packages.md`): WP2 the page and the rail
+  (Opus, its own worktree and branch), WP3 the yard (Opus, its own worktree and branch), WP4a the cast and WP4b the set
+  and the GM (Opus, the main checkout, new files only, not committed by them). WP2 and WP3 commit on their worktree
+  branches; the main thread reviews every diff, merges them into `g5d-look`, and swaps their placeholders for WP4's
+  art.
+- **Next:** review and merge the four; the D58 passes for every new image (the main thread, Astra, a fresh Sonnet);
+  review round 1 (shots, the three reads, the rounds file `.claude/docs/reviews/g5d-look-rounds.md`); WP5 the words;
+  rounds to the stop rule; Astra on the group's diff; the owner's gate before the Nov 5 freeze.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.
 
 ## Session 7 (2026-10-28): the submission thread started

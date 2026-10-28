@@ -2,16 +2,16 @@
 // and under them the watching area (the status line and the yard, the week replay) and the weekly P&L and operations
 // report. The teacher's controls (the round, the seed, the hidden rules, the learning curve, the export, the check
 // line) live in the tray that teacher.ts mounts (BRIEF section 11, D39).
-// The GM is a person; the AI is the game engine (D50). The click puts the GM to work: the learner trains unpaced in
-// requestAnimationFrame slices, out of sight, while the yard shows the in-world wait; the teacher's check line and,
-// when the teacher shows it, the learning curve are redrawn at most 10 times a second. Training stops when the trainer
-// is done or 60 s after the click (D6, BRIEF section 13: the final week computed and its first frame drawn count
-// against the budget). Then the GM's one week, the final greedy week, plays once on the yard, and only when it has
-// played does the readout come out: the sentence beside the prediction, the table and "Watch the week again" (D51).
-// One greedy week, three views (D40): the sentence, the replay and the table all come from the one EpisodeTrace the
-// page holds. A run belongs to the plan it was trained on (D37): the click snapshots the editor's plan into
-// page.spec, and any change to the plan after a run calls clearRun, which also cancels the run and the replay through
-// the run token.
+// The GM is an AI the owners put in charge, and how it decides never shows (D50, D53). The click puts the GM to work:
+// the learner trains unpaced in requestAnimationFrame slices, out of sight, while the yard shows the in-world wait; the
+// teacher's check line and, when the teacher shows it, the learning curve are redrawn at most 10 times a second.
+// Training stops when the trainer is done or 60 s after the click (D6, BRIEF section 13: the final week computed and
+// its first frame drawn count against the budget). Then the GM's one week, the final greedy week, plays once on the
+// yard, and only when it has played does the readout come out: the sentence beside the prediction, the table and
+// "Watch the week again" (D51). One greedy week, three views (D40): the sentence, the replay and the table all come
+// from the one EpisodeTrace the page holds. A run belongs to the plan it was trained on (D37): the click snapshots the
+// editor's plan into page.spec, and any change to the plan after a run calls clearRun, which also cancels the run and
+// the replay through the run token.
 import { DEFAULT_LEARNER, Trainer } from '../learn/train.ts';
 import type { TrainingSnapshot } from '../learn/train.ts';
 import { describeWeek, outcomeKey } from '../sim/readout.ts';
@@ -26,6 +26,7 @@ import type { Editor } from './editor.ts';
 import { drawReplay, replayClock, replayFrame } from './replay.ts';
 import type { ReplayColors } from './replay.ts';
 import { renderReport, reportTable } from './report.ts';
+import { ROUND_NOTES } from './roundNotes.ts';
 import { studentStatus } from './status.ts';
 import { mountTeacher, rejectSeed } from './teacher.ts';
 
@@ -38,12 +39,6 @@ const MAX_BACKING_HEIGHT = 1080;
 
 /** The rounds the teacher's radios offer (BRIEF section 8), in order; their labels come from the presets. */
 export const ROUNDS: readonly PresetName[] = ['round1', 'round2', 'round3'];
-/** The one line beside the round's label, per round. */
-const ROUND_NOTES: Readonly<Partial<Record<PresetName, string>>> = {
-  round1: 'The GM is paid on profit and nothing else. Read the plan, predict what the GM will do, then put it to work.',
-  round2: 'Turn on up to three measures and set their dollar amounts. Write your prediction, then put the GM to work.',
-  round3: 'All six measures are yours. Write your prediction, then put the GM to work.',
-};
 const READOUT_LABEL = 'What the GM did';
 const REPLAY_CAPTION = "The GM's week";
 /** The yard while the GM gets ready (the learner trains, out of sight): an in-world wait, not a loading screen. */

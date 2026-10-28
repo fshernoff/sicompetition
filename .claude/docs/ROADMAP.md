@@ -13,7 +13,7 @@ owner gate before it is merged.
 | G5 | Teacher panel (a tray: round presets, seed, speed, reveal hidden rules, the learner's check line; D38, D39: the student page keeps the plan, the prediction and Put the GM to work), JSON export, Netlify deploy (Node 24, relative paths), the 30-second screen capture (`npm run capture` and the shot list) | Pilot class, Nov 9 | Nov 7 to 8 (built Oct 26 on `g5-teacher`, awaiting the gate) |
 | G5b | The GM is a person (D50 to D52): the engine trains out of sight, the class watches one week, the readout follows; the learning curve and the check line are the teacher's; no speed control | Fred plays a round as a student and finds nothing that shows the engine | Oct 28 (built on `g5b-person`, awaiting the gate) |
 | G6 | Fixes from the pilot's three confusions | Full unit, Nov 16 | Nov 10 to 13 |
-| G7 | Lesson materials: teacher guide, round briefs, role cards, concept check, memo template (Sonnet packages; Astra reviews for clarity) | Fred teaches period 1 | Nov 2 to 13 |
+| G7 | Lesson materials: teacher guide, round briefs, role cards, concept check, memo template, debrief readings (Sonnet packages; Astra reviews for clarity); the GM is openly an AI (D53) | Fred prints the sheets, confirms the disclosure line and teaches period 1 | Nov 2 to 13 (built Oct 28 on `g7-lesson`, awaiting the gate) |
 
 ## What each group leaves behind
 

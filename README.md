@@ -1,9 +1,10 @@
 # Reward the Pack
 
-A browser lesson for AP Business. Student teams own Good Dog Daycare and never work a shift. They hire a
-reinforcement-learning agent as general manager, and the only lever the owners hold is its bonus plan. They write
-the plan, put the GM to work and watch its bonus climb in under a minute, then read the weekly P&L and operations
-report to find out what their plan actually paid for.
+A browser lesson for AP Business. Student teams own Good Dog Daycare and never work a shift. The old GM quit, and
+the owners have put an AI in the GM's chair; the only lever they hold is its bonus plan. They write the plan, predict
+what the GM will do, put it to work and watch it run one week, then read the weekly P&L and operations report beside
+their prediction to find out what their plan actually paid for. Underneath, the GM is a reinforcement-learning agent
+that works out, before Monday, what earns it the most bonus; the students never see how it decides.
 
 One static page: Vite, TypeScript, HTML canvas. No backend, no accounts, no analytics, no network calls at runtime,
 nothing stored anywhere but the student's download folder.
@@ -38,6 +39,12 @@ It prints one JSON document: the full world config, the bonus plan it used, the 
 
 The Teacher tab in the bottom-right corner opens a tray with the round presets, the seed, Reveal the hidden rules, Show the learning curve (the teacher's view of how the AI behind the GM practised), Export this run, and the check line. There is no speed control: the engine always runs at full speed. Export this run writes one JSON file per run holding the plan, the prediction as it stood when the GM was put to work, the readout, the bonus curve and the seed, and nothing that names a student. `?round=2` still preloads a round and `?pilot=20` still runs the Chromebook check.
 
+## Lesson materials
+
+`docs/lesson/` holds the unit on paper, Markdown that prints: a two-page teacher guide (start there), a one-page
+student brief per round, four role cards, the pre/post concept check and its key, the board memo template and the
+debrief readings. The sheets quote the page, and `npm test` fails if a quoted word drifts from it.
+
 `npm run capture` after `npm run build` records a 30-second Round 1 run to `Temp/capture/`; `docs/capture.md` is the shot list for your own recording.
 
 ## Deploy
@@ -47,8 +54,9 @@ Netlify builds with `npm run build` and publishes `dist/` (see `netlify.toml`; N
 ## Disclosure of SI use
 
 Claude Code (Anthropic) assisted the build as a coding agent, and the Codex CLI (OpenAI, GPT-6-Astra) reviewed plans
-and diffs. The simulator rules, the lesson design and all student-facing text are the author's. Nothing in this
-repository was copied from any earlier project.
+and diffs. The simulator rules and the lesson design are the author's. Claude Code drafted the lesson materials in
+`docs/lesson/` from the author's unit design; the author reviews, edits as needed and approves every sheet before it reaches a class.
+Nothing in this repository was copied from any earlier project.
 
 ## License
 

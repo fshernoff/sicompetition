@@ -15,15 +15,19 @@ Words that are fixed everywhere (page, docs, code comments): the GM; the **bonus
 run's result is the **weekly P&L and operations report** (short: the readout); an **incident** is an icon and a
 counter, never an injury; the daycare is **Good Dog Daycare**; the staff are the **crew**.
 
-The page is a business game, not a lesson in training a model (D38, D45, D50). For the students the GM is a person:
-the manager the owners cannot supervise, who cares about nothing but the bonus plan they wrote. Underneath, the GM is
-a reinforcement learner, because that finds a plan's loophole reliably in seconds, and the game never shows it, the
-way a football game never shows how the other side's coach is simulated: no weeks counts, no learning curve, no
-"settled", no week played on the yard while the engine works. The student's screen carries the round (a line of
-text), the bonus plan and its sentence, the prediction, the Put the GM to work button, the status line, the yard
-(the replay of section 10.2) and the readout. The GM's bonus is money, in dollars, never points (D45). The learner's
-instruments (weeks trained, ε, evaluations, stable, "target met", the learning curve), the seed and the round
-presets are the teacher's (section 11).
+The page is a business game, not a lesson in training a model (D38, D45, D50, D53). For the students the GM is an AI
+the owners have put in charge (D53): the old GM quit, and the owners put an AI in the GM's chair. It books the dogs,
+sets the day rate, schedules the crew and runs the floor; nobody supervises it; it cares about nothing but the bonus
+plan they wrote. The page's tagline says so: "Good Dog Daycare. You own it. The GM is an AI: it runs the week, and you
+write its bonus plan." Underneath, the GM is a reinforcement learner, because that finds a plan's loophole reliably
+in seconds, and the game never shows how it decides, the way a football game never shows how the other side's coach
+is simulated: no weeks counts, no learning curve, no "settled", no week played on the yard while the engine works.
+What the students are told of how is one sentence, on the Round 1 brief: "Before Monday it tries out its choices and
+keeps whatever earns the most bonus." The student's screen carries the tagline, the round (a line of text), the bonus
+plan and its sentence, the prediction, the Put the GM to work button, the status line, the yard (the replay of
+section 10.2) and the readout. The GM's bonus is money, in dollars, never points (D45), and the GM is "it". The
+learner's instruments (weeks trained, ε, evaluations, stable, "target met", the learning curve), the seed and the
+round presets are the teacher's (section 11).
 
 The run as the class sees it (D50, D51): the button reads "Put the GM to work" ("Put the GM to work again" after a
 run). On the click the page scrolls to the yard and the status says "The GM is getting ready for Monday." while the
@@ -466,3 +470,21 @@ within the time budget on the target Chromebook (60 s from the click on Put the 
 target met.
 Learning rate, exploration schedule, episode budget, table initialisation and tie-breaking are G2's plan, reported
 with the numbers that met this.
+
+## 14. The lesson materials (G7)
+
+Nine sheets in `docs/lesson/`, Markdown that prints, for an eight-period unit in teams of four (the Challenge
+plan's unit, in D53's frame). The teacher's: `teacher-guide.md` (two pages) and `concept-check-key.md`. The
+student's: `brief-round1.md`, `brief-round2.md`, `brief-round3.md` (one page each), `role-cards.md` (CFO, COO, CMO,
+Compliance officer, one page cut in four), `concept-check.md` (eight questions, the same sheet before and after the
+unit), `board-memo.md` and `debrief-readings.md` (two pages, with its sources).
+
+Their rules, held by `tests/lesson/materials.test.ts` (D54): they quote the page (each round's label and note, the
+measures' names, the tagline, the plan in words, the tray's labels, Round 1's sentence on seed 1 as the engine
+writes it); the words are the game's (section 1: never "reward function", training in any form, "episode", points,
+"injury"; the GM is "it"); the student's sheets carry none of the teacher's words (seed, settled, learning curve),
+no reward but the debrief's "reward hacking", no hidden rule of section 6 before the reveal, and a team code where a
+name would go. In the period 6 debrief the principal-agent problem (someone acting for you has their own interests and
+cannot be watched) and reward hacking, or specification gaming (a system meets the measure as written and misses
+what was meant), are named as two related problems that this game shows meeting; the teacher may show the learning
+curve there (section 11), the one place the class sees behind the curtain.

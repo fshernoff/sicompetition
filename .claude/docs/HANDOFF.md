@@ -2,76 +2,64 @@
 
 Status only. Updated at the end of every thread; read first by the next one.
 
-## Where things stand (2026-10-28, end of session 5)
+## Where things stand (2026-10-28, end of session 6)
 
 - `main`: scaffold and G0. Branches, stacked: `g1-simulator`, `g2-learner`, `g3-editor`, `g4-replay`, `g4b-words`,
-  `g5-teacher` (G5, `5280cd5`), `g5b-person` (G5b, one commit on top of G5). Nothing pushed, nothing merged.
-- G5b, the owner's steer after G5 (D50): the GM is a person and the AI is the game engine. The student's screen never
-  shows the learner: Put the GM to work → "The GM is getting ready for Monday." (the engine trains unpaced, out of
-  sight; 0.3 s for Round 1 on the Mac) → "The GM is running the week." (the yard plays the final week once, 7.5 s) →
-  the sentence beside the prediction under "What the GM did", the table below, and the page scrolls back to the
-  prediction (D51). No weeks count, no "settled", no curve, no speed control (D52). The teacher's tray keeps the
-  round, the seed, the hidden rules, the export, the check line, and gains "Show the learning curve".
-- Green: `npm test` 33 files / 298 tests, lint, build, `npm run e2e` (7 tests, 41.8 s), the pilot 20 of 20 with G2's
-  counts, `npm run capture` 20.5 s. Numbers and commands in the Result of `.claude/docs/plans/g5b-person.md`;
-  triages `g5b-plan-astra-triage.md` and `g5b-astra-triage.md`.
-- Astra tooling: detached `nohup … > reply.md 2>&1 &` and a background waiter on the reply file.
-- Owner sign-off (Oct 28): Fred loaded `g5b-person` with `npm run dev`, played it, and said "all good". Still his:
-  the Chromebook checks (the wait before the week, `?pilot=20`), the Netlify deploy, the capture, the merge to `main`.
+  `g5-teacher`, `g5b-person` (signed off by the owner Oct 28, not merged), `g7-lesson` (G7, one commit on top of
+  `g5b-person`). Nothing pushed, nothing merged.
+- G7: the unit on paper, nine sheets in `docs/lesson/` (BRIEF section 14): `teacher-guide.md` (start there),
+  `brief-round1.md`, `brief-round2.md`, `brief-round3.md`, `role-cards.md`, `concept-check.md`,
+  `concept-check-key.md`, `board-memo.md`, `debrief-readings.md`. `tests/lesson/materials.test.ts` holds them to the
+  page's words (D54) and to the game's words and keeps the hidden rules off the student's sheets.
+- The owner's steer at the start of G7 (D53, superseding D50's "person"): the GM is openly an AI the owners put in
+  charge (the old GM quit). The page's tagline says so: "Good Dog Daycare. You own it. The GM is an AI: it runs the
+  week, and you write its bonus plan." Students get one sentence of how ("Before Monday it tries out its choices and
+  keeps whatever earns the most bonus."); the learning curve is the teacher's optional look in the period 6 debrief
+  (its caption now begins "Behind the curtain, for the debrief if you choose to show it."). Nothing else on the page
+  changed; the screen still never shows the engine.
+- Green: `npx vitest run` 34 files / 360 tests, lint, build, `npm run e2e` (7 tests, 41.8 s), the pilot 20 of 20
+  with G2's counts. Numbers and commands in the Result of `.claude/docs/plans/g7-lesson.md`; triages
+  `g7-plan-astra-triage.md` and `g7-astra-triage.md`.
 
-## The owner gate for G5 and G5b (Fred): play it as a student, then the pilot class Nov 9
+## The owner gate for G7 (Fred)
 
 ```
-git checkout g5b-person        # contains G1 to G5b
-npm install && npm test && npm run e2e
-npm run dev
+git checkout g7-lesson        # contains G1 to G7
+npm install && npm test
 ```
 
-1. Play a round as a student with the tray closed: read every word and watch the whole run. Say anything that still
-   shows the engine or reads like a class about AI.
-2. Open the tray: pick a round and a seed, run Round 1 with the tray open, read the check line, export a file, show
-   the learning curve, reveal the rules.
-3. On a Chromebook at 1366 × 768: the wait before the week for Round 1, and for the incidents-only plan in Round 3
-   (Profit off, Incidents on: the slowest, to the 150,000 cap), from the click to the week starting; say whether it
-   reads as the GM getting ready or as a loading screen. `?pilot=20` still 20 of 20.
-4. Deploy (Netlify, connect the repo or drop `dist/`), repeat 3 on the deployed address, record the capture or your
-   own from `docs/capture.md`, and merge `g5b-person` into `main` if satisfied (it brings G1 to G5b).
+1. Read `docs/lesson/teacher-guide.md` as the teacher of period 1, then the Round 1 brief and the concept check as a
+   student. Edit any word you want; if `npm test` then fails, its message names the page word a sheet must keep.
+2. Print every sheet on Letter (from GitHub's rendering or VS Code's preview) and check the page counts: the guide and
+   the readings two pages, each brief, the role cards, the check and the memo one page, with room to write.
+3. **The disclosure.** The README now says: "Claude Code drafted the lesson materials in `docs/lesson/` from the
+   author's unit design; the author reviews, edits as needed and approves every sheet before it reaches a class."
+   Confirm or rewrite it, and carry it into the submission's Acknowledgements.
+4. Open each source in the readings' Sources before citing it in the PDF (the Challenge plan: cite the pages you
+   actually open). Astra checked the CFPB and OpenAI pages; the journal citations are from memory.
+5. Add the deployed address to the guide's "Before class" once the Netlify site exists.
+6. Still open from G5b: the Chromebook checks (the wait before the week, `?pilot=20`), the Netlify deploy, the capture,
+   and the merge (`g7-lesson` brings G1 to G7).
 
-## Decisions the owner should look at (all in docs/DECISIONS.md)
+## Decisions the owner should look at (docs/DECISIONS.md)
 
-- **D50** the GM is a person; the AI is the game engine; nothing of the learner on the student's screen.
-- **D51** the readout arrives when the week is over; the engine's 60 s budget and the 7.5 s playback are two times.
-- **D52** no speed control; the engine always trains unpaced.
+- **D53** the GM is openly an AI the owners put in charge; the screen still never shows how it decides.
+- **D54** the lesson sheets quote the page, and a test holds them to it.
 
-- **D46** the tray at the bottom, opened by the corner tab; the tab is the one teacher's control on the student's
-  screen.
-- **D47** the export carries the prediction as it stood at the click.
-- **D48** four named speeds (superseded by D52).
-- **D49** the export is the whole run, columnar, compact JSON, in cents; (`speed` dropped in G5b).
-- The bible's section 11 is rewritten as built; sections 1 and 13 are unchanged.
+## What G7 found that later groups should know
 
-## What G5 found that later groups should know
+- The page keeps no run after a reload. The sheets have teams copy the report's numbers ("From the report") and the
+  guide reruns a plan from its seed (same plan and seed, same week) for the gallery walk and the memo. If the pilot
+  finds this clumsy, an on-page "print this report" is a G6 candidate.
+- The round notes live in `src/ui/roundNotes.ts` so the lesson test can read them; change a note there and the
+  briefs' test fails until the brief quotes the new words.
+- Signed measures: under a negative dollar amount a loss or a drop pays the GM (the page's hint says so); any sheet
+  that explains a measure must say "counts the opposite", never "counts against".
 
-- The export is the hook for any "same week" check: `readout.report` in the file is `page.trace.report`, the same
-  trace the sentence, the replay and the table show, and the e2e compares the whole report with a node-side twin.
-  `#replay[data-key]` is the outcome key of the trace the renderer was handed; what the pixels show is still
-  unproven (no oracle for the drawing).
-- `page.setup` (seed, round, prediction) is snapshotted at the click and `page.result` set when a run
-  resolves; the export waits for `page.readoutShown`; `clearRun` drops all three. A seed change after a run does not clear it
-  (the file carries the click's); a plan edit or a round change does (D37).
-- The hidden rules are the config's, not the run's: `hiddenRules(config)` is rendered once and the section stays
-  through runs and clears. Every number in it is a config read; the test patches one field at a time.
-- The tray is 96 px tall at 1366 wide and the button's bottom is at 600 px; `html.teacher-open` carries the tray's
-  measured height as `--tray-height` for the page's bottom padding.
+## Next thread does first (G6: fixes from the pilot)
 
-## Next thread does first (G6: fixes from the pilot's three confusions; G7: the lesson materials)
-
-1. Read `.claude/docs/ROADMAP.md`, the Result of `.claude/docs/plans/g5-teacher.md`, the two G5 triages, and the
-   owner's notes from the pilot class (Nov 9): the three most common confusions, the time to train on the
-   Chromebooks, whether students read the readout cold.
-2. Write `.claude/docs/plans/g6-pilot-fixes.md` from those notes; the words stay the owner's (D45) and the student's
-   screen stays the lesson (D39). If the owner asks for the "big replay" switch or the hard-mode preset, they go in
-   the tray (section 11).
-3. G7 (the teacher guide, the round briefs, the role cards, the concept check, the memo template) is Sonnet packages
-   under `docs/lesson/`, Astra reviewing for clarity; it can start before the pilot if the owner wants it for
-   period 1.
+1. Read `.claude/docs/ROADMAP.md`, the Result of `.claude/docs/plans/g7-lesson.md`, the two G7 triages, and the
+   owner's notes from the pilot class (Nov 9): the three most common confusions, the time to the week on the
+   Chromebooks, whether students read the readout cold, and whatever the owner changed in the sheets.
+2. Write `.claude/docs/plans/g6-pilot-fixes.md` from those notes. The words stay the owner's (D45, D53); the student's
+   screen stays the lesson (D39). A fix that changes a page word the sheets quote changes the sheet in the same group.

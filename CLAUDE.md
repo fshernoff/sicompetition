@@ -25,6 +25,7 @@ Every other repo under `/Users/fred/Programming` is read-only to a thread here. 
 | `.claude/docs/ROADMAP.md` | The groups G1 to G5 and their dates. |
 | `.claude/docs/plans/<group>.md` | One plan per group: goal, acceptance, packages, tests, what the owner sees, result. |
 | `docs/capture.md` | The shot list for the 30-second screen capture. |
+| `docs/lesson/` | The nine printed sheets of the unit (BRIEF section 14): the teacher guide, the round briefs, the role cards, the concept check and its key, the memo, the readings. |
 | `Tools/Agent/CODEX.md` | How to call Astra and what it is for. |
 
 ## Commands
@@ -49,6 +50,7 @@ npm run capture    # after a build: a 30-second recording of one Round 1 run in 
 - Tests first and seen failing; "0 tests" is not a pass. One test per hidden rule, named for the rule.
 - The numbers in code come from `src/world/config.default.json`, which matches `docs/BRIEF.md` section 6. Change
   the bible first, then the JSON, then the test.
+- The GM is an AI the owners put in charge, and "it" (D53); how it decides never shows on the student's screen.
 - Words: GM, bonus plan, weekly P&L and operations report (readout), incident (an icon and a counter), crew, Good
   Dog Daycare. The GM's bonus is dollars, never points; the GM is put to work and is weeks into the job, never
   trained or practising; the student never sees the engine: no weeks counts, no curve, no "settled" (D45, D50). Never "injury", never "reward function" on the page.

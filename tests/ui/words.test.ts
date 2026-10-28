@@ -102,6 +102,9 @@ describe('index.html', () => {
     expect(learning).toMatch(/id="curve-caption"/);
     expect(student).not.toMatch(/<canvas id="curve"/);
     expect(student).not.toMatch(/id="curve-caption"/);
+    // The teacher may show it in the period 6 debrief (D53), so the caption no longer says the class never sees it.
+    expect(learning).toMatch(/id="curve-caption">Behind the curtain, for the debrief if you choose to show it\./);
+    expect(learning).not.toMatch(/never sees/);
     expect(split().teacher).toMatch(/id="show-curve"[^>]*>Show the learning curve</);
   });
 
@@ -115,6 +118,10 @@ describe('index.html', () => {
 
   it('never calls the dollar amounts weights on the student\'s page (G4b)', () => {
     expect(split().student).not.toMatch(/weights?\b/i); // the sliders set dollar amounts, not weights (Astra, plan review)
+  });
+
+  it('says on the page that the GM is an AI the owners put in charge (D53)', () => {
+    expect(html).toMatch(/class="tagline">Good Dog Daycare\. You own it\. The GM is an AI: it runs the week, and you write its bonus plan\.</);
   });
 
   it("puts the GM to work and shows what the GM did in the GM's week (D50)", () => {

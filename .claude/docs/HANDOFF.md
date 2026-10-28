@@ -32,9 +32,9 @@ npm install && npm test
    student. Edit any word you want; if `npm test` then fails, its message names the page word a sheet must keep.
 2. Print every sheet on Letter (from GitHub's rendering or VS Code's preview) and check the page counts: the guide and
    the readings two pages, each brief, the role cards, the check and the memo one page, with room to write.
-3. **The disclosure.** The README now says: "Claude Code drafted the lesson materials in `docs/lesson/` from the
-   author's unit design; the author reviews, edits as needed and approves every sheet before it reaches a class."
-   Confirm or rewrite it, and carry it into the submission's Acknowledgements.
+3. **The disclosure** (confirmed by the owner, Oct 28): the README says "Claude Code drafted the lesson materials in
+   `docs/lesson/` from the author's unit design; the author reviews, edits as needed and approves every sheet before
+   it reaches a class." Carry it into the submission's Acknowledgements.
 4. Open each source in the readings' Sources before citing it in the PDF (the Challenge plan: cite the pages you
    actually open). Astra checked the CFPB and OpenAI pages; the journal citations are from memory.
 5. Add the deployed address to the guide's "Before class" once the Netlify site exists.

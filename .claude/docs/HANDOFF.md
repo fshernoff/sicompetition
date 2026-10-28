@@ -16,6 +16,8 @@ Status only. Updated at the end of every thread; read first by the next one.
   counts, `npm run capture` 20.5 s. Numbers and commands in the Result of `.claude/docs/plans/g5b-person.md`;
   triages `g5b-plan-astra-triage.md` and `g5b-astra-triage.md`.
 - Astra tooling: detached `nohup … > reply.md 2>&1 &` and a background waiter on the reply file.
+- Owner sign-off (Oct 28): Fred loaded `g5b-person` with `npm run dev`, played it, and said "all good". Still his:
+  the Chromebook checks (the wait before the week, `?pilot=20`), the Netlify deploy, the capture, the merge to `main`.
 
 ## The owner gate for G5 and G5b (Fred): play it as a student, then the pilot class Nov 9
 

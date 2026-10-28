@@ -2,7 +2,21 @@
 
 Status only. Updated at the end of every thread; read first by the next one.
 
-## Where things stand (2026-10-28, end of session 6)
+## Session 7 (2026-10-28): the submission thread started
+
+- The rules were re-verified on the official pages; `docs/submission-checklist.md` carries what changed (registration
+  closes Dec 18, hard; submission Dec 23; the school on the title page; Next Steps' four prompts).
+- Fred: registered in the Educator category; no student faces, names or releases, the video shows the product.
+  Fred asked not to be quizzed: take his calls, act, and ask only when blocked.
+- `g5c-look` merged into `main` (fast-forward, Fred's call); `main` pushed to the public repo
+  https://github.com/fshernoff/sicompetition ; live at **https://fshernoff.github.io/sicompetition/** through
+  `.github/workflows/pages.yml` (tests, build, deploy on every push to `main`). Checked: run 40735849540 green, the
+  page, its JS, CSS and all 18 art and font files return 200. Green before the merge: 370/370 tests, lint, build,
+  e2e 8/8 (45.3 s).
+- Still Fred's: the Chromebook and projector rehearsal at the live address. Next for Claude: the evidence kit for
+  Nov 9 (checklist section 0).
+
+## Where things stood (2026-10-28, end of session 6)
 
 - `main` holds G0 to G7 (merged by the owner's request, `f784bbd`, the fallback for the pilot). `g5c-look` (one commit
   on top of `main`) is G5c, the look: not merged, nothing pushed.

@@ -2,6 +2,30 @@
 
 Status only. Updated at the end of every thread; read first by the next one.
 
+## Session 7, later (2026-10-28): G5d, the look reopened (in progress on `g5d-look`)
+
+The owner found a two-headed poodle in the live header and said the page "looks like a nice ai generated web app";
+he reopened G5c's goal for Opus, Sonnet and Astra. Plan: `.claude/docs/plans/g5d-look.md` (Astra's plan review
+triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
+
+- **Done:** D58 (three clean figure-by-figure passes per shipped image, `docs/art-provenance/qa.md`,
+  `tests/art/qa.test.ts` failing 20 on G5c's art by design); the tools (`npm run shots` 22 states, `npm run perf`
+  with G5c's baseline in the plan, `Tools/Agent/art_qa.py`); the keyboard and runtime-words e2e (bans shared in
+  `tests/ui/bans.ts`); the direction sprint (Floor, Ledger, Casebook in `Temp/direction/`, `compare.html`); four
+  independent rankings, unanimous for **Floor** (D59); the rail seam `src/ui/rail.ts` (stub) with
+  `tests/ui/rail.test.ts` failing 7. Commits on `g5d-look`: d93a027, 92e6cf5, fc2a8e5.
+- **The fallback:** branch `g5c-fallback` at `611145a` (worktree `Temp/fallback`): G5c with the header cropped to
+  its figure-free middle, three clean passes; tests 370/370, e2e 8/8. Not merged, not pushed: the live site still
+  shows the poodle until the owner says "ship the fallback".
+- **Running when this was written:** the pipeline spike, two Opus agents on one sample (a corgi and a golden in
+  three poses, adult crew, the GM orb in three states, a board piece): A generated (`Temp/spike-a/`), B low-poly
+  models in three.js rendered offline (`Temp/spike-b/`). Brief: `.claude/docs/reviews/g5d-spike-brief.md`.
+- **Next:** the three readers (main thread, Astra, a fresh Sonnet) judge the two spikes side by side; record the
+  method in D59; the manifest seam (`src/assets/art/manifest.ts`: id, file, native size, foot anchor, facing) and
+  the canvas token names; then Phase 2: WP2 the page and the rail (Opus), WP3 the yard on the board (Opus), WP4 the
+  art set (Opus), WP5 the words (Sonnet); review rounds to the stop rule; the owner's gate before the Nov 5 freeze.
+- **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.
+
 ## Session 7 (2026-10-28): the submission thread started
 
 - The rules were re-verified on the official pages; `docs/submission-checklist.md` carries what changed (registration

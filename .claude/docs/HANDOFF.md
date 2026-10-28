@@ -52,7 +52,35 @@ npm run dev
   report's tiles all use them.
 - Three font files ship (Fredoka 600, Nunito 600 and 800); the canvas draws in those weights only.
 
-## Next thread does first (G6: fixes from the pilot, Nov 10 to 13)
+## Next thread does first: the submission, with Fred (`docs/submission-checklist.md`)
+
+The owner's ask (Oct 28): a thread that works through the competition submission with him. The submission is a PDF
+narrative (10 pages plus a title page), a public video link (4:00) and the signed consent form; the code and the game
+are links inside it, not the submission itself. The checklist is the working list: tick boxes with the proof, and
+keep it current.
+
+1. Read `docs/submission-checklist.md`, then `docs/challenge-plan.md` ("Challenge requirements", "Evidence plan",
+   "The video and the written summary", "Open questions"), this HANDOFF, and the Results of `g7-lesson.md` and
+   `g5c-look.md` (what the class sees now: the AI GM, the five picks and the scorecard, the export's fields).
+2. **Re-verify the rules** on the official pages (the links at the top of the checklist) with a web fetch, and update
+   the checklist where they differ: page and size limits, section order, video length and hosting, deadlines,
+   consent, registration, SI disclosure. Say what changed. The plan's facts are from Oct 25 and must not be trusted
+   as current.
+3. Ask Fred where section 0 stands: registration, the consent form, the open questions, the district's SI guidance,
+   student media releases, the G5c gate, the deploy, the public repo. Tick what is done.
+4. Before the pilot on Nov 9, build the evidence kit (section 0): the export folder layout (`Evidence/` must be
+   git-ignored: class data never goes in the repo), the concept-check scoring template, the team codes, the pilot
+   notes sheet. Small enough for one group; write it as a plan (`.claude/docs/plans/g8-evidence-kit.md`) if it
+   includes code, as the working model asks.
+5. Then follow the checklist's dates: G6 after the pilot (from Fred's notes), the evidence script the week of Dec 5,
+   the video script and the PDF drafts Dec 5 to 11, Fred's edits, submission by Dec 18. Every number in the PDF comes
+   from the evidence script's output on Fred's data, with the command, never from memory.
+
+Standing rules for this work: nothing with a student's name enters the repo or a prompt to Astra; Fred registers,
+signs, uploads and submits; Claude drafts, Fred edits and approves every word that goes out under his name; ask
+before pushing, merging or sending anything outside the repo.
+
+## After the submission work: G6 (fixes from the pilot, Nov 10 to 13)
 
 1. Branch `g6-pilot-fixes` from `main` (after the owner merges G5c, or from `f784bbd` if he keeps the old look). Read
    the ROADMAP, the Results of `g7-lesson.md` and `g5c-look.md`, the triages, and the owner's notes from the

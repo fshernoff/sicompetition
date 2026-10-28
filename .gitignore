@@ -7,3 +7,6 @@ Temp/
 test-results/
 playwright-report/
 blob-report/
+
+# Class evidence (exports, concept-check scores, memos): never in the repo, even with team codes only.
+Evidence/

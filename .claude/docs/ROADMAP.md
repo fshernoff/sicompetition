@@ -22,3 +22,12 @@ owner gate before it is merged.
 - Tests that were seen failing first.
 - An Astra triage file.
 - One commit, and a HANDOFF for the next thread.
+
+## The submission (`docs/submission-checklist.md`)
+
+| Group | Builds | Owner gate | Dates |
+|---|---|---|---|
+| G8 | The evidence kit for the pilot and the unit: the export folder layout (git-ignored), the concept-check scoring template, team codes, the pilot notes sheet | Fred uses it at the pilot | by Nov 8 |
+| G9 | The evidence script: pre/post, prediction accuracy by round (the picks called), plan complexity by round, two figures, no identifiers | Fred checks the numbers against his sheets | Dec 5 to 8 |
+| G10 | The PDF draft and the video script, every number from G9's output | Fred edits, records, submits | Dec 5 to 18 (hard deadline Dec 23) |
+

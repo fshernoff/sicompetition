@@ -26,6 +26,7 @@ Every other repo under `/Users/fred/Programming` is read-only to a thread here. 
 | `.claude/docs/plans/<group>.md` | One plan per group: goal, acceptance, packages, tests, what the owner sees, result. |
 | `docs/capture.md` | The shot list for the 30-second screen capture. |
 | `docs/art-provenance/` | Where every shipped image came from (D55): tool, model, date, prompts, originals, steps. |
+| `docs/submission-checklist.md` | The Challenge submission, step by step: who does what by when, ticked with proof. |
 | `docs/lesson/` | The nine printed sheets of the unit (BRIEF section 14): the teacher guide, the round briefs, the role cards, the concept check and its key, the memo, the readings. |
 | `Tools/Agent/CODEX.md` | How to call Astra and what it is for. |
 

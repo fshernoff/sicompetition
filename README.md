@@ -49,7 +49,7 @@ debrief readings. The sheets quote the page, and `npm test` fails if a quoted wo
 
 ## Deploy
 
-Netlify builds with `npm run build` and publishes `dist/` (see `netlify.toml`; Node 24). Connect the repository to a Netlify site, or drag the `dist/` folder onto Netlify Drop. The asset paths are relative, so the same build works at the site root or under a path. Nothing calls out at runtime.
+The page is live at **https://fshernoff.github.io/sicompetition/**. Every push to `main` runs the tests, builds and publishes `dist/` to GitHub Pages (`.github/workflows/pages.yml`; Node 24). Netlify works too (`netlify.toml`): connect the repository, or drag `dist/` onto Netlify Drop. The asset paths are relative, so the same build works at the site root or under a path. Nothing calls out at runtime.
 
 ## Disclosure of SI use
 

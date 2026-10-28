@@ -94,12 +94,15 @@ appears only as anonymous text or as a team's exported plans replayed on screen 
     it on the smartboard. (Fred)
 - [x] **Student media releases**: not needed. No student faces, voices or names in the video or the PDF; the video
   shows the product. (Fred, Oct 28)
-- [ ] **Play G5c, rehearse on the Chromebook and the projector, merge** `g5c-look` (or keep `main` at `f784bbd`).
-  (Fred; see `.claude/docs/HANDOFF.md`.)
-- [ ] **Deploy** to Netlify; put the address in `docs/lesson/teacher-guide.md` (line 16 says "the deployed page").
-  (Fred deploys; Claude edits the guide.)
-- [ ] **Push the repo public** (`sicompetition`), with the README, the licence and the deploy link. (Fred decides
-  when; Claude checks nothing private is in it first.)
+- [x] **Merge** `g5c-look` into `main`. (Fred's call, Oct 28; `main` at `13ee869` before the deploy commit; tests
+  370/370, lint, build and the e2e 8/8 green that day.)
+- [ ] **Rehearse on the Chromebook and the projector** at the live address: the picks, the wait (Round 1, and Round 3
+  with only Incidents on), the week, the scorecard, Export this run, an edit, a rerun, cold load; `?pilot=20` 20 of
+  20. If anything fails, `f784bbd` is the old look. (Fred)
+- [x] **Deploy**: GitHub Pages, https://fshernoff.github.io/sicompetition/ , published by
+  `.github/workflows/pages.yml` on every push to `main`; the address is in the teacher guide and the README. (Oct 28)
+- [x] **Push the repo public**: https://github.com/fshernoff/sicompetition , with the README, the licence and the
+  live link. Checked first (Oct 28): no keys, tokens or env files in the history, no student data. (Oct 28)
 - [ ] **Evidence kit ready for Nov 9** (Claude prepares, Fred approves):
   - [ ] A folder layout for the exports: one folder per team code, one per period (e.g.
     `Evidence/<period>/<team-code>/*.json`), kept off the public repo (no student names anywhere, but class data

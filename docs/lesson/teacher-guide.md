@@ -13,7 +13,7 @@ Students can:
 
 ## Before class
 
-- One URL: the deployed page. Test it on a Chromebook.
+- One URL: https://fshernoff.github.io/sicompetition/ . Test it on a Chromebook.
 - One Chromebook per team of four, and the smartboard.
 - Print: brief-round1.md, brief-round2.md and brief-round3.md (one per team), role-cards.md (one set per team), concept-check.md (twice per student), board-memo.md, debrief-readings.md. Keep concept-check-key.md.
 

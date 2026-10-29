@@ -200,3 +200,32 @@ apps): first runs 1,406 / 1,412 / 1,432 ms, reruns 1,169 to 1,201 ms, p95 16.7 t
 | M1 | Medium | 03 | Getting ready: the lower half of both columns is empty (left below y ≈ 430, right below ≈ 570) |
 | M2 | Low | 04 | "Today's profit so far, after the GM's pay:" wraps with its number on the next line; "The GM's bonus this week so far" wraps to two lines |
 | M3 | Low | 04 | While the week plays, the reasons card's bottom edge is cut at the window's edge |
+
+### Astra and the Opus critic (unanchored)
+
+Astra: "credible, polished classroom software", not yet the strict bar: 1 blocking, 2 high, 7 medium. The critic:
+clears five seconds, not the closer look: 1 blocking, 3 high, 16 medium, 8 low; every other number reconciles.
+
+- Blocking: the tray at 1024 cuts the new replay note under "Watch the week again" (A1, C3; a round 3 regression);
+  "Today's profit so far, after the GM's pay" (+$1,031.40) is larger than the Today line's price × dogs − wages
+  ($636), because the line names the rate and the wages but not the $30-a-dog activity add-ons (C1; a round 3
+  regression).
+- High: the notice-only fallback drops this block's event chip and "The GM" marker, and says "beside" where the
+  stacked layout puts the panel above (A2, C2); "2 dogs found sick" beside "Incidents: none this block" with no line
+  between the two (A3, C9); the shots' 768 px viewport against a real Chromebook window's about 640 px (C4, inferred,
+  to be checked on the owner's Chromebook).
+- Medium, both: cleanliness at 0% looks neutral (A5, C8; against D65); the Why helper contradicts itself (A7, C17);
+  "Put the GM to work again" against "Watch the week again" (A10, C12); the headline's wrap (A9, C11). Astra alone:
+  the sliders' zero on every track; the P&L's bonus reconciliation before the owners' result. The critic alone: the
+  bar's height changes when the run starts; the bonus shown as "+" mid-week against "−" elsewhere; the day's
+  choices in small grey text; the report ends with no next step; costs have no subtotal; "(walk asked)" unexplained;
+  two numbered sequences on the first screen; Round 3's notice skips setting the plan; dead space on 03 and the
+  scorecards; the people have no ground shadow.
+
+### The result of the budget
+
+Four rounds are spent and the stop rule is not met. The counts by round (blocking / high / medium, Astra then the
+critic): round 2: 2/9/6 and 3/9/16; round 3: 0/2/8 and 0/4/15; round 4: 1/2/7 and 1/3/16. Round 4's blocking and
+two of its highs are regressions from round 3's own fixes; the rest are new, finer findings. The mediums have not
+fallen below seven from either reader in any round, so "no more than three mediums" looks out of reach with these
+readers at this bar. By the plan's budget clause the owner decides: ship, the fallback, or more time.

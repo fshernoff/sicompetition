@@ -55,9 +55,9 @@ const setFile = path.join(ART, 'set.json');
 
 // --- the mess (review round 2, row 15) ------------------------------------------------------------------------------
 const MESS_Q = 1; // the decals' WebP: Chromium encodes quality 1 losslessly (lossy put a grey fringe on their soft edges)
-const MESS_NOTE = "mess: the decals the yard lays on the board by the frame's cleanliness (D60: state, nothing invented), each shown while cleanliness is under `below` (so under 10 all three show): drawn with its top-left corner on the board-image pixel `at`, at the board's own scale, over the board and under every figure. Each is the board's own render of that patch of lawn with the mess on it (the same frame, light, shadows and grade; the lawn's own facets round it, copied unchanged; the yard's contact shadow under its objects), transparent wherever the board shows through unchanged, so it is only right on this board.webp. Anything in one higher than 8 cm (the bowl on its side, 24 cm) comes with `blocked`: [x, y, w, h] in world metres, padded as map.blocked, where no figure may stand while the decal shows.";
+const MESS_NOTE = "mess: the decals the yard lays on the board by the frame's cleanliness (D60: state, nothing invented), each shown while cleanliness is under `below` (so under 10 all three show): drawn with its top-left corner on the board-image pixel `at`, at the board's own scale, over the board and under every figure. Each carries no lawn: only its pieces (with their own edge alpha) and their shadows (the board's shadow tint at the shadow's alpha, the yard's contact shadow under each object), rendered through the board's own frame, light and grade; its alpha is 0 wherever the mess changes nothing, so laid on board.webp it leaves every other pixel exactly as it is. Anything in one higher than 8 cm (the bowl on its side, 24 cm) comes with `blocked`: [x, y, w, h] in world metres, padded as map.blocked, where no figure may stand while the decal shows.";
 async function renderMess() {
-  const r = await call('mess', { quality: MESS_Q, boardQuality: 0.9, check: true });
+  const r = await call('mess', { quality: MESS_Q, boardQuality: 0.9 });
   const shipped = fs.readFileSync(path.join(OUT, 'board.webp'));
   const mine = Buffer.from(r.board.webp.split(',')[1], 'base64');
   if (!mine.equals(shipped)) throw new Error(`the board rendered for the decals is not the shipped board.webp (${mine.length} B against ${shipped.length} B): the decals would not match it`);
@@ -71,7 +71,7 @@ async function renderMess() {
     const file = `set/mess-${d.id}.webp`;
     const bytes = write(path.join(ART, file), d.webp);
     write(path.join(TEMP, `mess-${d.id}.png`), d.png);
-    console.log(`${file} ${d.size.join(' x ')} at ${d.at} below ${d.below}: ${bytes} B`);
+    console.log(`${file} ${d.size.join(' x ')} at ${d.at} below ${d.below}: ${bytes} B (${d.cleared} px cleared where the mess changes nothing)`);
     return { id: d.id, file, size: d.size, at: d.at, below: d.below, ...(d.blocked.length ? { blocked: d.blocked } : {}) };
   });
   console.log(`mess renders ${r.ms} ms in the page`);
@@ -148,7 +148,8 @@ if (mode === 'mess') {
   // the check: the board with the decals laid on it against the board rendered with the mess in place, as shipped
   // (both WebPs) and as rendered (the lossless masters)
   for (const [tag, boardFile, ds] of [['shipped', `/src/assets/art/${set.board.file}`, decals('webp')], ['masters', '/Temp/set/mess-board.png', decals('png')]]) {
-    const c = await call('checkMess', { boardFile, decals: ds, fullFile: '/Temp/set/mess-full.png' });
+    const c = await call('checkMess', { boardFile, decals: ds, fullFile: '/Temp/set/mess-full.png', cleanFile: '/Temp/set/mess-board.png' });
+    console.log(`exact (${tag}): ${c.exact.map((e) => `${e.file}: ${e.unchanged} px the mess leaves alone (the renders with and without it agree), ${e.moved} of them moved; ${e.mess} px of the mess itself`).join('; ')}`);
     write(path.join(TEMP, `mess-check-${tag}-heat.png`), c.heat);
     console.log(`check (${tag}): ${c.stats.map((z) => `${z.zone}: max ${z.max}, mean ${z.mean}, ${z.over4} px over 4`).join('; ')}`);
     if (tag === 'shipped') for (const e of c.edges) console.log(`  ${e.file}: border alpha max ${e.border}; ${e.opaque} opaque px, worst against the full render ${e.worstOpaque}; ${e.partial} partly clear px, ${e.darkFringe} much darker than an opaque neighbour`);

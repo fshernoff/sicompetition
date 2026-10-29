@@ -185,27 +185,28 @@ export function renderBoard(group, { extra = [], layers = null, contacts = null 
 
 // A mess decal (review round 2, row 15) through the board's own frame `F` and lights, so it lands exactly in the board's
 // light and perspective; `offset` is the board's crop (renderBoard's). `group` is board.js's decalGroup: the clean lawn
-// hides what sinks below it and takes the objects' shadows, the tinted cells and the flat pieces lie on it, the
-// objects stand on it. The same passes as the board's: colour; the key light's shadows on the ground as a mask, blurred
-// and laid at 30% in the deep green-black, with the yard's contact shadow under each object (group.userData.contacts),
-// kept to the ground; the grade. Only the decal's own pixels are drawn (the
-// lawn writes depth, never colour), so the result is transparent wherever the board shows through unchanged.
+// hides what sinks below it and takes the objects' shadows, never drawn; the flat pieces lie on it, the objects stand
+// on it. The same passes as the board's: colour; the key light's shadows on the ground as a mask, blurred and laid at
+// 30% in the deep green-black, with the yard's contact shadow under each object (group.userData.contacts), kept to the
+// ground; the grade. The decal carries no lawn: only its pieces, with their own edge alpha, and their shadows, as the
+// board's tint at the shadow's alpha. The board lays its shadows the same way (the tint over the lawn, then the grade,
+// which is affine per channel, so it passes through the alpha), so laid on the shipped board a shadow darkens the
+// board's own pixels exactly as the board's render darkens its lawn; everywhere else its alpha is 0 and the board is
+// left exactly as it is.
 // Returns the decal cropped to its faintest pixel plus `pad`, and `at`: the board-image pixel of its top-left corner.
 export function renderDecal(group, F, offset, { pad = 2 } = {}) {
   group.updateMatrixWorld(true);
   const role = (o) => o.userData.role;
   const hidden = (o = {}) => new THREE.MeshBasicMaterial({ colorWrite: false, ...o });
-  // the lawn is pushed back a hair in depth, so the cells that lie exactly on it are drawn and anything below it is not
-  const behind = () => hidden({ polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-  const colour = pass(group, F, (o) => (role(o) === 'lawn' ? behind() : o.material), { lit: true });
+  // the lawn writes depth only, exactly as the board's lawn stands, so it hides just what the board's lawn hides
+  const colour = pass(group, F, (o) => (role(o) === 'lawn' ? hidden() : o.material), { lit: true });
   const centre = W((SLAB.x0 + SLAB.x1) / 2, (SLAB.y0 + SLAB.y1) / 2, 0);
   const shadowMask = pass(group, F, (o) => ({
     lawn: new THREE.ShadowMaterial({ color: 0x000000, opacity: 1 }),
     flats: new THREE.ShadowMaterial({ color: 0x000000, opacity: 1 }),
-    cells: null, // they lie exactly on the lawn, which takes the shadow for them
     objects: hidden(),
   })[role(o)], { light: keyLight(centre, 8.5) });
-  const groundMask = pass(group, F, (o) => (role(o) === 'objects' ? hidden() : role(o) === 'cells' ? null : new THREE.MeshBasicMaterial({ color: 0xffffff })));
+  const groundMask = pass(group, F, (o) => (role(o) === 'objects' ? hidden() : new THREE.MeshBasicMaterial({ color: 0xffffff })));
 
   const out = canvas2d(colour.width, colour.height);
   const g = out.getContext('2d');

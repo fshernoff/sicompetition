@@ -5,16 +5,13 @@
 //           the mud wears off the paws
 //   kibble  a spill of kibble fanning out from a heap, a red rubber ring and a tennis ball
 //   bowl    a steel water bowl knocked over on its side, the puddle flowing out of its mouth, a few drops beyond it
-// Each is three parts, as board.js's lawn() and decalGroup() take them:
-//   tintAt(p, colour)   the grass round its pieces, vertex by vertex: the colour unchanged (no stain, no wash, no
-//                       band round any of the three), or null to leave a vertex alone. The lawn's cells it touches are copied with the lawn's own vertices, facet
-//                       tones and occlusion, so they meet the board's lawn exactly; they also join a decal's pieces into
-//                       one patch (no loose specks).
-//   shadeAt(p)          its own baked soft occlusion on the grass (1 everywhere now: the objects are grounded by
-//                       contact shadows to their lower right instead, never a halo on the side facing the light).
+// A decal carries no lawn: only its own pieces and their shadows, so laid on the board it leaves every other pixel exactly
+// as it was (render.js, renderDecal). Each is, as board.js's decalGroup() takes it:
 //   flats, objects      Meshers: flat pieces just over the lawn (the mud, its sheen, the prints, the puddle, the drops;
 //                       they take shadows, cast none) and objects (kibble, the ring, the ball, the bowl; they cast the
 //                       key light's shadow).
+//   veils               flat pieces laid at an opacity, as { m: Mesher, opacity } (the paw prints, the mud wearing off
+//                       them: on the board they fade into the lawn itself, never toward a guess at its colour).
 //   contacts            the yard's contact shadow under each object (render.js, contactLayer), to its lower right.
 //   blocked, top        for anything higher than 8 cm (the bowl on its side): its footprint and the lawn behind it, as
 //                       layout.js's blockRect keeps the board's props, and its height.
@@ -111,30 +108,21 @@ const polyDist = (p, pts, closed = true) => {
 };
 // signed: negative inside the polygon
 const polySigned = (p, pts) => (pointInPoly(p, pts) ? -1 : 1) * polyDist(p, pts);
-// the convex hull of points (monotone chain), counter-clockwise
-function hull(points) {
-  const p = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const lower = [], upper = [];
-  for (const q of p) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop(); lower.push(q); }
-  for (const q of [...p].reverse()) { while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push(q); }
-  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
-}
 
 // A paw print at (x, y), its toes toward `ang` (radians in the lawn's plane, 0 along +x), `s` its scale: a pad and four
 // toes, flat on the lawn.
-function pawPrint(m, x, y, ang, s, color) {
+function pawPrint(m, x, y, ang, s, color, h = FLAT) {
   const at = (u, v) => { const [a, b] = turn([u * s, v * s], ang); return [x + a, y + b]; };
   // the pad: wider than long, its back edge a shallow notch
   const pad = [[-0.026, 0], [-0.034, 0.03], [-0.008, 0.046], [0.02, 0.036], [0.03, 0], [0.02, -0.036], [-0.008, -0.046], [-0.034, -0.03]];
-  flatPoly(m, pad.map(([u, v]) => at(u, v)), FLAT, color);
+  flatPoly(m, pad.map(([u, v]) => at(u, v)), h, color);
   for (const [u, v, r] of [[0.062, 0.047, 0.016], [0.083, 0.017, 0.018], [0.083, -0.017, 0.018], [0.062, -0.047, 0.016]]) {
     const pts = [];
     for (let k = 0; k < 6; k++) {
       const t = (k / 6) * Math.PI * 2 + 0.3;
       pts.push(at(u + Math.cos(t) * r * 1.12, v + Math.sin(t) * r));
     }
-    flatPoly(m, pts, FLAT, color);
+    flatPoly(m, pts, h, color);
   }
 }
 // A quadratic Bezier through three points, sampled by arc length: [{ p, ang }] every `step` metres from its start, and
@@ -185,22 +173,18 @@ function mud(s) {
     const streak = outline(cx + ox, cy + oy, rx, ry, a, 10, (t, k) => 1 + (hash(520, k) - 0.5) * 0.12);
     flatPoly(flats, streak, FLAT + 0.001, MC.sheen, (k) => 1 + (hash(521, k) - 0.5) * 0.04);
   }
-  // the prints: a trot's left and right in turn, the mud wearing off them as they go
+  // the prints: a trot's left and right in turn, the mud wearing off them as they go (each fainter, a hair over the
+  // pool so the first lies cleanly on its edge)
   const tracks = s.trails.map((t) => along(...t.p, 0.24, t.n));
+  const veils = [];
   tracks.forEach(({ prints }, ti) => prints.forEach(({ p, ang }, k) => {
     const [ox, oy] = turn([0, (k % 2 ? 1 : -1) * 0.07], ang);
-    const x = p[0] + ox, y = p[1] + oy;
     const fade = 0.04 + 0.6 * (k / Math.max(1, prints.length - 1));
-    pawPrint(flats, x, y, ang + (hash(ti, k, 5) - 0.5) * 0.25, 1.5, MC.mudDeep.clone().lerp(lawnColour(x, y), fade));
+    const m = new Mesher({ seed: 205 });
+    pawPrint(m, p[0] + ox, p[1] + oy, ang + (hash(ti, k, 5) - 0.5) * 0.25, 1.5, MC.mudDeep, FLAT + 0.0015);
+    veils.push({ m, opacity: 1 - fade });
   }));
-  const lines = tracks.map((t) => t.line);
-  // no stain round it: the grass by the mud and along the tracks is the board's own, copied unchanged only to join
-  // the pieces into one patch
-  const tintAt = (p, clr) => {
-    const [x, y] = toWorld(p);
-    return polySigned([x, y], edge) < 0.12 || lines.some((l) => polyDist([x, y], l, false) < 0.14) ? clr : null;
-  };
-  return { id: s.id, below: s.below, tintAt, shadeAt: () => 1, flats, objects };
+  return { id: s.id, below: s.below, flats, objects, veils };
 }
 
 function kibble(s) {
@@ -261,15 +245,7 @@ function kibble(s) {
     }),
     { x: Bl.x, y: Bl.y, r: 0.034, dx: 0.45, dy: 0.5 },
   ];
-
-  // no tint under it: the grass round everything (their hull, a little wider) is the board's own, copied unchanged only
-  // to join the pieces into one patch (a trampled tint toward the fence's tan read as a pale wash: D58, Oct 29)
-  const H = hull([...pieces.map((q) => [q.x, q.y]), ...contacts.map((c) => [c.x, c.y])]);
-  const tintAt = (p, clr) => {
-    const [x, y] = toWorld(p);
-    return polySigned([x, y], H) < 0.2 ? clr : null;
-  };
-  return { id: s.id, below: s.below, tintAt, shadeAt: () => 1, flats, objects, contacts };
+  return { id: s.id, below: s.below, flats, objects, contacts };
 }
 
 function bowl(s) {
@@ -344,16 +320,7 @@ function bowl(s) {
   const xs = [], ys = [];
   for (let i = 0; i < P.count; i++) { xs.push(-P.getZ(i)); ys.push(-P.getX(i)); }
   const blockedRect = blockRect(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys), top);
-  // no tint round it: the grass by the puddle and the drops, and under and behind the bowl (its blocked footprint, so
-  // the bowl's outline lies on the grass, never on a clear edge), is the board's own, copied only to join them
-  const [bx0, by0, bw, bh] = blockedRect;
-  const tintAt = (p, clr) => {
-    const [x, y] = toWorld(p);
-    const near = polySigned([x, y], edge) < 0.12 || (x >= bx0 - 0.08 && x <= bx0 + bw + 0.08 && y >= by0 - 0.08 && y <= by0 + bh + 0.08)
-      || drops.some(([x2, y2, r]) => Math.hypot(x - x2, y - y2) < r + 0.12);
-    return near ? clr : null;
-  };
-  return { id: s.id, below: s.below, tintAt, shadeAt: () => 1, flats, objects, contacts, blocked: blockedRect ? [blockedRect] : [], top };
+  return { id: s.id, below: s.below, flats, objects, contacts, blocked: blockedRect ? [blockedRect] : [], top };
 }
 
 // Every triangle of a non-indexed geometry into a Mesher, coloured by colorAt(centroid) with its own winding.
@@ -379,8 +346,7 @@ export function buildMess(id) {
   return BUILD[id](s);
 }
 
-// Several at once, for the check (the board with every decal in place): the first decal that tints a vertex wins (they
-// never overlap), their occlusions multiply, their flats and objects are merged.
+// Several at once, for the check (the board with every decal in place): their flats, objects and contact shadows merged.
 export function combineMess(list) {
   const merge = (k) => {
     const m = new Mesher();
@@ -388,9 +354,8 @@ export function combineMess(list) {
     return m;
   };
   return {
-    tintAt: (p, clr) => { for (const d of list) { const c = d.tintAt(p, clr); if (c) return c; } return null; },
-    shadeAt: (p) => list.reduce((k, d) => k * d.shadeAt(p), 1),
     contacts: list.flatMap((d) => d.contacts ?? []),
+    veils: list.flatMap((d) => d.veils ?? []),
     flats: merge('flats'),
     objects: merge('objects'),
   };

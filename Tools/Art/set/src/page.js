@@ -3,7 +3,7 @@
 /* global document, Image */
 import * as THREE from 'three';
 import { W } from './lib.js';
-import { VIEW, KEY, PPM, SPRITE_SCALE } from './stage.js';
+import { VIEW, KEY, PPM, SPRITE_SCALE, alphaBox, crop } from './stage.js';
 import { buildBoard, decalGroup } from './board.js';
 import { buildGM, GM } from './gm.js';
 import { renderBoard, renderGM, renderDecal, SHADOW } from './render.js';
@@ -41,30 +41,52 @@ export function board({ quality = 0.9 } = {}) {
 // is returned so the driver can prove it is byte for byte the shipped board (the decals are only right on that board);
 // then each decal through that frame: its image, its size and `at`, the board-image pixel of its top-left corner. With
 // `check`: the board rendered with all three in place, to compare with the board and the decals laid on it.
-export function mess({ quality = 0.9, boardQuality = 0.9, check = true } = {}) {
+export function mess({ quality = 0.9, boardQuality = 0.9 } = {}) {
   const t0 = performance.now();
   const extra = gmRoom();
   const b = renderBoard(buildBoard(), { extra });
+  // the board with all three in place: where it equals the clean board, the mess changes nothing, and each decal's
+  // alpha there is set to 0 (a sliver of an edge or a shadow's last tail that rounds to nothing on the render's lawn
+  // could otherwise round to a level on the shipped board's)
+  const all = combineMess(MESS.map((s) => buildMess(s.id)));
+  const f = renderBoard(buildBoard({ mess: all }), { extra, contacts: all.contacts });
   const out = { board: { png: png(b.canvas), webp: webp(b.canvas, boardQuality), size: [b.canvas.width, b.canvas.height], offset: b.offset }, decals: [] };
+  out.full = { png: png(f.canvas), size: [f.canvas.width, f.canvas.height], offset: f.offset };
+  const Wb = b.canvas.width;
+  const C = b.canvas.getContext('2d').getImageData(0, 0, Wb, b.canvas.height).data;
+  const Fd = f.canvas.getContext('2d').getImageData(0, 0, Wb, f.canvas.height).data;
   for (const spec of MESS) {
     const m = buildMess(spec.id);
-    const d = renderDecal(decalGroup(m), b.F, b.offset);
-    out.decals.push({ id: spec.id, below: spec.below, png: png(d.canvas), webp: webp(d.canvas, quality), size: [d.canvas.width, d.canvas.height], at: d.at, blocked: m.blocked ?? [], top: m.top });
-  }
-  if (check) {
-    const all = combineMess(MESS.map((s) => buildMess(s.id)));
-    const f = renderBoard(buildBoard({ mess: all }), { extra, contacts: all.contacts });
-    out.full = { png: png(f.canvas), size: [f.canvas.width, f.canvas.height], offset: f.offset };
+    const d = onlyWhereChanged(renderDecal(decalGroup(m), b.F, b.offset), C, Fd, Wb);
+    out.decals.push({ id: spec.id, below: spec.below, png: png(d.canvas), webp: webp(d.canvas, quality), size: [d.canvas.width, d.canvas.height], at: d.at, blocked: m.blocked ?? [], top: m.top, cleared: d.cleared });
   }
   out.ms = Math.round(performance.now() - t0);
   return out;
 }
 
+// A decal's alpha set to 0 wherever the board rendered with the mess (Fd) equals the clean board (C), both RGBA in the
+// board image's pixels, W wide; then cropped again to its faintest pixel plus 2 px.
+function onlyWhereChanged({ canvas, at }, C, Fd, W, pad = 2) {
+  const g = canvas.getContext('2d');
+  const img = g.getImageData(0, 0, canvas.width, canvas.height);
+  const D = img.data;
+  let cleared = 0;
+  for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+    const k = (y * canvas.width + x) * 4, i = ((y + at[1]) * W + x + at[0]) * 4;
+    if (!D[k + 3]) continue;
+    if (C[i] === Fd[i] && C[i + 1] === Fd[i + 1] && C[i + 2] === Fd[i + 2] && C[i + 3] === Fd[i + 3]) { D[k] = D[k + 1] = D[k + 2] = D[k + 3] = 0; cleared++; }
+  }
+  g.putImageData(img, 0, 0);
+  const box = alphaBox(canvas, 1);
+  const bx = { x0: box.x0 - pad, y0: box.y0 - pad, x1: box.x1 + pad, y1: box.y1 + pad };
+  return { canvas: crop(canvas, bx), at: [at[0] + bx.x0, at[1] + bx.y0], cleared };
+}
+
 // The check: the board with the decals laid on it at their `at` (as the yard would, pixel for pixel at the image's
 // scale) against the board rendered with the mess in place. Inside each decal's box and outside every box, the largest
 // and the mean difference per channel, and how many pixels differ by more than 4; a heat map of the difference (x8).
-export async function checkMess({ boardFile, decals, fullFile }) {
-  const [bimg, fimg, ...dimgs] = await Promise.all([load(boardFile), load(fullFile), ...decals.map((d) => load(d.file))]);
+export async function checkMess({ boardFile, decals, fullFile, cleanFile }) {
+  const [bimg, fimg, cimg, ...dimgs] = await Promise.all([load(boardFile), load(fullFile), load(cleanFile), ...decals.map((d) => load(d.file))]);
   const w = bimg.width, h = bimg.height;
   const comp = canvas2d(w, h), cg = comp.getContext('2d');
   cg.drawImage(bimg, 0, 0);
@@ -72,6 +94,25 @@ export async function checkMess({ boardFile, decals, fullFile }) {
   const full = canvas2d(w, h), fg = full.getContext('2d');
   fg.drawImage(fimg, 0, 0);
   const A = cg.getImageData(0, 0, w, h).data, B = fg.getImageData(0, 0, w, h).data;
+  // exactness: in each decal's box, the pixels the mess leaves alone (the lossless renders with and without it agree in
+  // every channel) must come out of the composite exactly as the board went in
+  const cc = canvas2d(w, h), ccg = cc.getContext('2d');
+  ccg.drawImage(cimg, 0, 0);
+  const Cl = ccg.getImageData(0, 0, w, h).data;
+  const bb = canvas2d(w, h), bbg = bb.getContext('2d');
+  bbg.drawImage(bimg, 0, 0);
+  const Bd = bbg.getImageData(0, 0, w, h).data;
+  const exact = decals.map((d) => {
+    let unchanged = 0, moved = 0, mess = 0;
+    for (let y = d.at[1]; y < d.at[1] + d.size[1]; y++) for (let x = d.at[0]; x < d.at[0] + d.size[0]; x++) {
+      const i = (y * w + x) * 4;
+      if (B[i] === Cl[i] && B[i + 1] === Cl[i + 1] && B[i + 2] === Cl[i + 2] && B[i + 3] === Cl[i + 3]) {
+        unchanged++;
+        if (A[i] !== Bd[i] || A[i + 1] !== Bd[i + 1] || A[i + 2] !== Bd[i + 2] || A[i + 3] !== Bd[i + 3]) moved++;
+      } else mess++;
+    }
+    return { file: d.file, unchanged, moved, mess };
+  });
   const boxes = decals.map((d) => [d.at[0], d.at[1], d.at[0] + d.size[0], d.at[1] + d.size[1]]);
   const zone = (x, y) => boxes.findIndex(([x0, y0, x1, y1]) => x >= x0 && x < x1 && y >= y0 && y < y1);
   const stats = [...decals.map((d) => ({ zone: d.file })), { zone: 'outside the decals' }].map((z) => ({ ...z, max: 0, sum: 0, n: 0, over4: 0 }));
@@ -112,7 +153,7 @@ export async function checkMess({ boardFile, decals, fullFile }) {
     }
     return { file: decals[i].file, border, opaque, worstOpaque: worst, partial, darkFringe: dark };
   });
-  return { stats: stats.map(({ zone, max, sum, n, over4 }) => ({ zone, max, mean: Math.round((sum / n) * 1000) / 1000, over4 })), edges, heat: png(hc), composite: png(comp) };
+  return { stats: stats.map(({ zone, max, sum, n, over4 }) => ({ zone, max, mean: Math.round((sum / n) * 1000) / 1000, over4 })), exact, edges, heat: png(hc), composite: png(comp) };
 }
 
 // The board's layers before they are combined (a diagnostic for the art QA).

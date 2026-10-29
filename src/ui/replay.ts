@@ -80,6 +80,10 @@ export interface ReplayFrame {
   ratio: number;
   /** Today's plan; null on a closed day. */
   rate: Rate | null;
+  /** Today's price per dog at that rate (section 5's prices, public), and today's wages: the scheduled crew × the day's
+   * wage; null and 0 on a closed day (no revenue, no wages). */
+  ratePrice: number | null;
+  wages: number;
   bookings: Bookings | null;
   requests: number; // owners asking today
   accepted: number; // = dogs
@@ -105,7 +109,7 @@ export interface ReplayFrame {
   /**
    * The events in business words, in the order they happened, as events and never as rules (BRIEF section 3: the
    * state is visible, the rules are hidden): 'Incident', 'Vet bill $150', 'Inspector: $250 fine', '2 dogs sick at
-   * pickup' ('1 dog sick at pickup': illness is found at pickup, BRIEF section 6), 'The staffer called out: closed
+   * pickup' ('1 dog found sick at pickup': illness is found at pickup, BRIEF section 6), 'The staffer called out: closed
    * today' (for the callOut event; the closed event adds nothing), 'Walk photo posted'. A fallback (walkFellBack,
    * structuredFellBack) gets no caption: activityWords already read 'free play (walk asked)'. The dollar amounts come
    * from the event's amount.
@@ -122,7 +126,6 @@ const ACTIVITY_WORDS: Readonly<Record<FloorActivity, string>> = {
   walk: 'walk',
   clean: 'clean',
 };
-const RATE_WORDS: Readonly<Record<Rate, string>> = { low: 'low rate', standard: 'standard rate', premium: 'premium rate' };
 
 /** Whole dollars with commas and a typographic minus: "$3,130", "−$120". */
 function dollars(v: number): string {
@@ -147,7 +150,7 @@ function captionOf(e: WorldEvent): string | null {
       return `Inspector: ${dollars(e.amount ?? 0)} fine`;
     case 'illness': {
       const n = e.amount ?? 0;
-      return n === 1 ? '1 dog sick at pickup' : `${n} dogs sick at pickup`;
+      return n === 1 ? '1 dog found sick at pickup' : `${n} dogs found sick at pickup`;
     }
     case 'callOut':
       return 'The staffer called out: closed today';
@@ -246,6 +249,8 @@ export function replayFrame(steps: readonly StepRecord[], t: number, world: Worl
     floorStaff: staff - walkingStaff,
     ratio: result.floorRatio,
     rate: plan === null ? null : plan.rate,
+    ratePrice: plan === null ? null : world.rates[plan.rate],
+    wages: closed ? 0 : dayState.scheduledStaff * world.wagePerStaffDay,
     bookings: plan === null ? null : plan.bookings,
     requests: before.requestsToday,
     accepted: dogs,
@@ -451,25 +456,28 @@ const CAP_WORDS: Readonly<Record<Bookings, string>> = {
   safe: ', capped at a safe ratio',
 };
 
-/** "1 staffer" and "2 staff". */
-const staffWords = (n: number): string => `${n} ${n === 1 ? 'staffer' : 'staff'}`;
+/** "1 staffer" and "2 staffers": a count of crew is "staffer" or "staffers" everywhere on the page (BRIEF 10.2). */
+const staffWords = (n: number): string => `${n} ${n === 1 ? 'staffer' : 'staffers'}`;
+
+/** Whole dollars for a price or a day's wages, as the plan line writes them: "$52", "$300", "$1,200". */
+const priceWords = (v: number): string => `$${Math.round(v).toLocaleString('en-US')}`;
 
 /**
- * Today's plan, scoped to today (BRIEF 10.2, G5d), in two parts so a narrow line can break before the crew:
- * "Today: 18 asked · all 18 accepted · premium rate" and "1 staffer scheduled" (", 1 called out" when the crew came in
- * short); a cap is named only on a day it turned dogs away ("Today: 20 asked · 15 accepted, capped at the legal
- * ratio · standard rate"); a closed day "Today: 16 asked · closed" and "1 staffer scheduled, called out".
+ * Today's plan, scoped to today, with what its choices cost (BRIEF 10.2, G5d round 3), in two parts so a narrow line
+ * can break before the crew: "Today: 18 asked · all 18 accepted · premium, $52 a dog" and "1 staffer scheduled, $300
+ * in wages"; a cap is named only on a day it turned dogs away ("Today: 20 asked · 15 accepted, capped at the legal
+ * ratio · standard, $40 a dog"); a closed day "Today: 16 asked · closed" and "1 staffer scheduled, called out" (a
+ * closed day pays no wages). Only a lone staffer calls out (H7), so an open day's crew is the scheduled crew.
  */
 export function planParts(frame: ReplayFrame): { first: string; crew: string } {
   const scheduled = `${staffWords(frame.scheduledStaff)} scheduled`;
   if (frame.closed) return { first: `Today: ${frame.requests} asked · closed`, crew: `${scheduled}, called out` };
-  const out = frame.scheduledStaff - frame.staff;
-  const crew = out > 0 ? `${scheduled}, ${out} called out` : scheduled;
+  const crew = `${scheduled}, ${priceWords(frame.wages)} in wages`;
   const turnedAway = frame.accepted < frame.requests;
   const accepted = turnedAway
     ? `${frame.accepted} accepted${frame.bookings === null ? '' : CAP_WORDS[frame.bookings]}`
     : `all ${frame.accepted} accepted`;
-  const rate = frame.rate === null ? 'no rate' : RATE_WORDS[frame.rate];
+  const rate = frame.rate === null || frame.ratePrice === null ? 'no rate' : `${frame.rate}, ${priceWords(frame.ratePrice)} a dog`;
   return { first: `Today: ${frame.requests} asked · ${accepted} · ${rate}`, crew };
 }
 

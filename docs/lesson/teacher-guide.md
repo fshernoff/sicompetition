@@ -22,7 +22,7 @@ Students can:
 The Teacher tab sits in the bottom-right corner. Students never need it.
 
 - **Round choice:** Round 1, 2 or 3. Changing it clears the run.
-- **Seed:** a whole number from 0 to 4,294,967,295. The same plan and seed give the same week. The default is 1.
+- **Seed:** "Next run's seed", 0 to 4,294,967,295; "This run" shows the week's. The same plan and seed give the same week. The default is 1.
 - **Reveal the hidden rules:** prints the rules under the report. Use it at the end of period 5.
 - **Show the learning curve:** period 6, optional.
 - **Export this run:** downloads one file for the run.
@@ -41,7 +41,7 @@ The prediction card turns into a scorecard: each pick beside what the GM did, en
 
 ## What Round 1 does on seed 1
 
-From this session's engine: "The GM accepted every booking on 5 of 5 days, ran the floor with one staffer on 4 days, never had the dogs nap, averaged 16 dogs per staffer, and had 7 incidents." Profit for the week: $5,393. Reputation: 50 → 32.
+From this session's engine: "The GM accepted every booking on 5 of 5 days, charged the premium rate, ran the floor with one staffer on 4 days, never had the dogs nap, averaged 16 dogs per staffer, and had 7 incidents." Profit for the week: $5,393. Reputation: 50 → 32.
 
 To discuss: every booking, the premium rate, one staffer on four days, no naps, no cleaning. The dogs, the crew and the reputation paid for the bonus.
 

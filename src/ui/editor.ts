@@ -85,20 +85,18 @@ export function spokenAmount(key: KpiKey, weight: number, world: WorldConfig): s
 }
 
 /**
- * Writes the plan in words into `el` one clause a line (G5d round 1, row 29): a line starts at each "earns $N" or
- * "loses $N" (with the "and " before the last), the first line keeps "Each day, the GM", and each clause's amount is
- * bold. The element's text is `sentence`, word for word (the e2e and the export read it).
+ * Writes the plan in words into `el` (G5d round 3, row 14). One measure: the sentence as it is, its amount bold. More
+ * than one: "Each day, the GM" on its own line, then one clause a list item (each clause from its "earns $N" or "loses
+ * $N", with the "and " before the last), a wrapped clause hanging under its own text. Each amount is bold. The
+ * element's text is `sentence`, word for word (the e2e and the export read it).
  */
 export function planLines(el: HTMLElement, sentence: string): void {
   const doc = el.ownerDocument;
-  const starts = [0];
-  for (const m of sentence.matchAll(/(?:and )?(?:earns|loses) \$/g)) if (m.index > 0) starts.push(m.index);
-  // The first clause stays on the opening line with "Each day, the GM".
-  if (starts.length > 1) starts.splice(1, 1);
-  const lines = starts.map((at, i) => {
-    const text = sentence.slice(at, starts[i + 1] ?? sentence.length);
+  const starts: number[] = [];
+  for (const m of sentence.matchAll(/(?:and )?(?:earns|loses) \$/g)) starts.push(m.index);
+  const clause = (text: string, cls: string): HTMLElement => {
     const line = doc.createElement('span');
-    line.className = 'plan-line';
+    line.className = cls;
     const amount = /(?:earns|loses) (\$[\d,]+)/.exec(text);
     if (amount === null || amount[1] === undefined) {
       line.textContent = text;
@@ -109,8 +107,21 @@ export function planLines(el: HTMLElement, sentence: string): void {
       line.append(text.slice(0, from), b, text.slice(from + amount[1].length));
     }
     return line;
-  });
-  el.replaceChildren(...lines);
+  };
+  el.classList.toggle('is-list', starts.length > 1);
+  if (starts.length <= 1) {
+    el.replaceChildren(clause(sentence, 'plan-line'));
+    return;
+  }
+  const first = starts[0] ?? 0;
+  const lead = doc.createElement('span');
+  lead.className = 'plan-lead';
+  lead.textContent = sentence.slice(0, first).trimEnd();
+  const items = starts.map((at, i) => clause(sentence.slice(at, starts[i + 1] ?? sentence.length).trimEnd(), 'plan-line'));
+  // The spaces between the parts stay in the text (the sentence word for word); the layout puts each on its own line.
+  const parts: (HTMLElement | string)[] = [lead];
+  for (const item of items) parts.push(' ', item);
+  el.replaceChildren(...parts);
 }
 
 /** "Round 1" from "Round 1: profit only"; the whole label when it has no colon. */
@@ -146,7 +157,14 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
   const head = el('div', 'plan-head');
   head.setAttribute('aria-hidden', 'true');
   head.append(el('span', 'plan-head-measure', 'Measure'), el('span', 'plan-head-in', 'In the plan'), el('span', 'plan-head-amount', 'Amount'));
-  table.appendChild(head);
+  // An editable plan's sliders share one scale, labelled once over them like a chart's axis: its ends and its zero,
+  // over every track's zero tick (round 3, row 18). Decoration only: each slider says its amount to a screen reader.
+  const ruler = el('div', 'plan-ruler');
+  ruler.setAttribute('aria-hidden', 'true');
+  const rulerScale = el('span', 'ruler-scale');
+  rulerScale.append(el('span', 'ruler-lo', '−$10'), el('span', 'ruler-zero', '0'), el('span', 'ruler-hi', '+$10'));
+  ruler.append(rulerScale);
+  table.append(head, ruler);
   const rows: Row[] = kpiInfo(world).map((info) => {
     const row = el('div', 'kpi-row');
     row.dataset.key = info.key;
@@ -169,14 +187,9 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
     per.setAttribute('aria-hidden', 'true');
     const figure = el('span', 'kpi-figure');
     figure.append(value, ' ', per);
-    // The slider's range in words at its ends, and its zero marked on the track (round 2, row 16); decoration only,
-    // the slider's aria-valuetext says the amount.
-    const lo = el('span', 'scale-end', '−$10');
-    const hi = el('span', 'scale-end', '+$10');
-    lo.setAttribute('aria-hidden', 'true');
-    hi.setAttribute('aria-hidden', 'true');
+    // The slider, its zero marked on the track; the scale's ends and zero are labelled once in the head (the ruler).
     const scale = el('span', 'kpi-scale');
-    scale.append(lo, slider, hi);
+    scale.append(slider);
     const amount = el('span', 'kpi-amount');
     amount.append(scale, figure);
     // A set plan (Round 1) shows whether the measure is in the plan as a lamp and a word; the toggle and the slider

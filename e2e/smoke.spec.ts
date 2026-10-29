@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { Trainer } from '../src/learn/train.ts';
 import { describeWeek, outcomeKey } from '../src/sim/readout.ts';
-import { formatMoney } from '../src/ui/report.ts';
+import { formatMoney, withCents } from '../src/ui/report.ts';
 import { setWeight, toggleKpi } from '../src/world/bonusPlan.ts';
 import { loadDefaultConfig, loadPreset } from '../src/world/config.ts';
 import { STUDENT_ALLOWED, STUDENT_BANS } from '../tests/ui/bans.ts';
@@ -294,6 +294,7 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
       const tray = document.querySelector('#teacher') as HTMLElement | null;
       return {
         statusTop: Math.round(box('#status').top),
+        barBottom: Math.round(box('.topbar').bottom), // the slim brand bar stays at the top while the week plays
         replayWidth: Math.round(box('#replay').width),
         replayBottom: Math.round(box('#replay').bottom),
         replayCaptionBottom: Math.round(box('#replay-caption').bottom),
@@ -301,7 +302,7 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
         compareBottom: Math.round(box('.compare').bottom),
         trayTop: tray && !tray.hidden ? Math.round(tray.getBoundingClientRect().top) : window.innerHeight,
         // The rail's last line while the week plays: the whole rail fits the window (G5d round 2 follow-up; the status
-        // is pinned to the top then, so the rail cannot scroll).
+        // is pinned under the brand bar then, so the rail cannot scroll).
         railLast: Math.round(
           Array.from(document.querySelectorAll('#rail-live p, #rail-live .meter-name, #rail-live .meter-num'))
             .filter((el) => el.getClientRects().length > 0)
@@ -315,8 +316,8 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   await expect
     .poll(async () => {
       const g = await geometry();
-      return g.status === PLAYING && g.statusTop >= 0 && g.statusTop <= 16 && g.replayBottom <= g.trayTop && g.replayCaptionBottom <= g.trayTop && g.scrollWidth <= 1366;
-    }, { timeout: 5_000, message: 'the week playing, the status at the top and the yard and its caption above the open tray' })
+      return g.status === PLAYING && g.barBottom > 0 && g.statusTop >= g.barBottom && g.statusTop <= g.barBottom + 16 && g.replayBottom <= g.trayTop && g.replayCaptionBottom <= g.trayTop && g.scrollWidth <= 1366;
+    }, { timeout: 5_000, message: 'the week playing, the status just under the brand bar and the yard and its caption above the open tray' })
     .toBe(true);
   const during = await geometry();
   console.log(`[e2e] while the week plays: ${JSON.stringify(during)}`);
@@ -373,7 +374,7 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   expect(check).toContain(`Weeks trained ${twinEnd.episodes.toLocaleString('en-US')} ·`);
   await expect(page.locator('#report')).toBeVisible();
   const line = (label: RegExp) => page.locator('#report-table tr').filter({ has: page.locator('th', { hasText: label }) });
-  await expect(line(/^Profit before the GM's bonus$/).locator('td').last()).toHaveText(formatMoney(week.totals.profit)); // BRIEF 10.1 (G5d)
+  await expect(line(/^Profit before the GM's bonus$/).locator('td').last()).toHaveText(withCents(formatMoney(week.totals.profit))); // BRIEF 10.1's data, rendered with its cents (D66)
   await expect(line(/^Incidents$/).locator('td').last()).toHaveText(String(week.totals.incidents));
   await expect(line(/^Dogs accepted$/).locator('td').last()).toHaveText(String(week.totals.dogsServed));
   await expect(page.locator('#replay-again')).toBeVisible();

@@ -28,7 +28,7 @@ import { mountEditor, planLines, roundFromSearch } from './editor.ts';
 import type { Editor } from './editor.ts';
 import { YARD_ASPECT, drawReplay, replayArtReady, replayClock, replayFrame } from './replay.ts';
 import type { ReplayColors, ReplayFonts, ReplayFrame, ReplayOptions } from './replay.ts';
-import { appendArrowed, bonusWithCents, formatDollars, formatMoney, headlineTiles, renderReport, renderTiles, reportTable } from './report.ts';
+import { appendArrowed, bonusWithCents, formatDollars, formatMoney, headlineTiles, renderReport, renderTiles, reportTable, withCents } from './report.ts';
 import { PICKS, PICKS_HINT, calledLine, checkPrediction, emptyPicks, picksComplete } from './prediction.ts';
 import type { PickField, PickResult, Picks } from './prediction.ts';
 import { describeBonusPlan } from '../world/bonusPlan.ts';
@@ -103,7 +103,9 @@ export interface Page {
   stagePlanWords: HTMLElement;
   stageWhy: HTMLElement; // the team's reasons beside the yard while the GM gets ready and runs the week (round 1, row 20)
   stageWhyText: HTMLElement;
-  railRound: HTMLElement; // the round in the run's header, where the bar has scrolled away (row 33)
+  stageFoot: HTMLElement; // under the yard: the next steps on load, the picks and reasons while it plays, the readout after
+  runSeed: HTMLElement; // the tray's "This run" seed, read-only (round 3, row 20)
+  readReport: HTMLButtonElement; // after the week, the primary way on: to the weekly P&L (round 3, row 11)
   stagePicks: HTMLElement; // the team's five picks beside the yard, so the class watches the week against them
   stagePicksList: HTMLElement;
   seed: HTMLInputElement;
@@ -269,11 +271,18 @@ export function syncPhase(page: Page): void {
   const week = page.replay.dataset.week;
   const phase = page.scorecardShown ? 'done' : !page.controlsEnabled && (week === 'preparing' || week === 'final') ? 'run' : 'load';
   if (page.watch.dataset.phase !== phase) page.watch.dataset.phase = phase;
-  // The page's own phase too, for the bar: its round tag gives way to the rail's head's on the run and the week's end
-  // (one round on every screen, round 2, row 29).
+  // The page's own phase too, for the bar (slim and sticky on the run, round 3, row 9).
   if (document.documentElement.dataset.phase !== phase) document.documentElement.dataset.phase = phase;
   const gm = page.readoutShown ? 'done' : week === 'preparing' ? 'preparing' : week === 'final' ? 'playing' : 'idle';
   if (page.watch.dataset.gm !== gm) page.watch.dataset.gm = gm;
+  // The class's picks and reasons: in the rail under the plan while the GM gets ready (the rail has room then), under
+  // the yard while the week plays (the rail is the block's values). Moved, not copied: one element each.
+  const home = gm === 'preparing' ? page.stagePlan.parentElement : page.stageFoot;
+  const before = gm === 'preparing' ? null : page.stageFoot.querySelector('.readout-box');
+  if (home !== null && page.stagePicks.parentElement !== home) {
+    home.insertBefore(page.stagePicks, before);
+    home.insertBefore(page.stageWhy, before);
+  }
 }
 
 /**
@@ -311,7 +320,7 @@ function showBlock(page: Page, frame: ReplayFrame | null): void {
   const dayStart = opened === null ? page.world.cash.weekStart : opened.cash - opened.bonusSoFar;
   const model = railModel(frame, page.world, dayStart);
   page.railView(model);
-  page.stageWhen.textContent = model.when;
+  page.stageWhen.textContent = `${model.when} block`; // "Wednesday · pickup block" (round 3, row 8)
   page.stageWhen.hidden = false;
 }
 
@@ -436,9 +445,9 @@ export interface BusinessClause {
 }
 
 /**
- * The week in one line, the owners' bottom line first (G5d round 2, row 5; D62): "Profit $4,853.70 after the GM's
- * bonus · 7 incidents · reputation down 18". Facts only, no verdict. A number is tied to its neighbours by
- * non-breaking spaces (row 24), so a line never splits a number from its noun.
+ * The week in three short lines, the owners' bottom line first (G5d round 2, row 5; D62; round 3, rows 7 and 21):
+ * "Profit $4,853.70 after the GM's bonus", "7 incidents", "reputation down 18". Facts only, no verdict; money with its
+ * cents (D66). A number is tied to its neighbours by non-breaking spaces, so a line never splits a number from its noun.
  */
 export function businessClauses(totals: EpisodeTrace['report']['totals']): BusinessClause[] {
   // A number keeps its neighbours ("$4,853.70 after", "7 incidents", "down 18"); the words may wrap between them.
@@ -448,7 +457,7 @@ export function businessClauses(totals: EpisodeTrace['report']['totals']): Busin
   const change = totals.reputationEnd - totals.reputationStart;
   const reputation = change < 0 ? `reputation down ${-change}` : change > 0 ? `reputation up ${change}` : 'reputation unchanged';
   return [
-    { text: keep(`Profit ${formatDollars(after)} after the GM's bonus`), hurt: after < 0 },
+    { text: keep(`Profit ${withCents(formatDollars(after))} after the GM's bonus`), hurt: after < 0 },
     { text: keep(incidents), hurt: totals.incidents > 0 },
     { text: keep(reputation), hurt: change < 0 },
   ];
@@ -468,18 +477,24 @@ function renderBusiness(page: Page, trace: EpisodeTrace): void {
   const doc = page.business.ownerDocument;
   const headline = doc.createElement('p');
   headline.className = 'business-line';
+  // One clause a line (round 3, row 21: no line ends on a dangling dot); the dots stay in the text for a screen reader.
   businessClauses(t).forEach((clause, i) => {
-    if (i > 0) headline.append('\u00a0· '); // a line breaks after a dot, never before one
+    if (i > 0) {
+      const dot = doc.createElement('span');
+      dot.className = 'visually-hidden';
+      dot.textContent = ' · ';
+      headline.append(dot);
+    }
     const span = doc.createElement('span');
     span.textContent = clause.text;
-    if (clause.hurt) span.className = 'hurt';
+    span.className = clause.hurt ? 'clause hurt' : 'clause';
     headline.append(span);
   });
   const blocks = trace.report.days.length * BLOCKS_PER_DAY;
   const after = t.profit - t.reward;
   const rows: { icon: string; label: string; value: string; hurt: boolean; strong?: boolean }[] = [
-    { icon: MEASURE_ICON_PATHS.profit, label: "Profit after the GM's bonus", value: formatDollars(after), hurt: after < 0, strong: true },
-    { icon: MEASURE_ICON_PATHS.profit, label: "Profit before the GM's bonus", value: formatMoney(t.profit), hurt: t.profit < 0 },
+    { icon: MEASURE_ICON_PATHS.profit, label: "Profit after the GM's bonus", value: withCents(formatDollars(after)), hurt: after < 0, strong: true },
+    { icon: MEASURE_ICON_PATHS.profit, label: "Profit before the GM's bonus", value: withCents(formatMoney(t.profit)), hurt: t.profit < 0 },
     { icon: BONUS_ICON_PATHS, label: tiles[1]?.label ?? 'Paid to the GM', value: bonusWithCents(tiles[1]?.value ?? ''), hurt: false },
     { icon: MEASURE_ICON_PATHS.incidents, label: tiles[2]?.label ?? '', value: tiles[2]?.value ?? '', hurt: t.incidents > 0 },
     { icon: MEASURE_ICON_PATHS.reputation, label: tiles[3]?.label ?? '', value: tiles[3]?.value ?? '', hurt: t.reputationEnd < t.reputationStart },
@@ -554,6 +569,7 @@ function showScorecard(page: Page): void {
     const actual = row.insertCell();
     actual.className = 'score-actual';
     actual.textContent = r.actual.replace(/(\d) /g, '$1\u00a0'); // "7 incidents" never splits (round 2, row 17)
+    if (r.actual.includes(':')) actual.classList.add('long'); // "A mix: low × 1, premium × 4" may wrap at its comma
     const mark = row.insertCell();
     mark.className = 'score-mark';
     const badge = document.createElement('span');
@@ -762,20 +778,24 @@ export function showReadout(page: Page, label = ''): void {
   page.readout.textContent = describeWeek(trace.report);
   page.readoutLabel.textContent = READOUT_LABEL;
   page.replayCaption.textContent = REPLAY_CAPTION;
+  page.runSeed.textContent = page.setup === null ? '—' : String(page.setup.seed);
   const build = (): void => {
     renderReport(page.reportTable, reportTable(trace.report, page.spec, page.world));
     renderTiles(page.reportTiles, headlineTiles(trace.report, page.spec, page.world), { blocks: trace.report.days.length * BLOCKS_PER_DAY });
     page.report.hidden = false;
   };
-  // A class's week: the report under the scorecard is built and shown on the next frame, so the scorecard's layout
-  // and the report's are two short tasks, not one long one (G5d, acceptance 7); a clear in between keeps it away. The
-  // pilot (a label) builds it at once: its clock stops after the readout's rendering (D6).
+  // A class's week: the report under the scorecard is built in a task of its own after the scorecard's frame, and laid
+  // out in the frame after that, so the week's end is short tasks, never a long one (G5d, acceptance 7; round 3: the
+  // P&L's fixed columns and cents made "build and lay out in one frame" a long task on a Chromebook); a clear in
+  // between keeps it away. The pilot (a label) builds it at once: its clock stops after the readout's rendering (D6).
   if (label !== '') {
     build();
   } else {
     const token = page.token;
     requestAnimationFrame(() => {
-      if (page.token === token && page.readoutShown) build();
+      setTimeout(() => {
+        if (page.token === token && page.readoutShown) build();
+      }, 0);
     });
   }
   page.replayAgain.hidden = false;
@@ -877,7 +897,6 @@ export function setControls(page: Page, enabled: boolean): void {
 export function showRound(page: Page, name: PresetName): void {
   for (const radio of page.rounds) radio.checked = radio.value === name;
   page.roundLabel.textContent = loadPreset(name).label;
-  page.railRound.textContent = page.roundLabel.textContent;
   page.roundNote.textContent = ROUND_NOTES[name] ?? '';
 }
 
@@ -919,6 +938,7 @@ export function clearRun(page: Page, draw = true): void {
   page.readout.textContent = '';
   page.readoutLabel.textContent = READOUT_LABEL;
   page.check.textContent = NO_RUN;
+  page.runSeed.textContent = '—';
   page.exportButton.disabled = true;
   if (draw) redraw(page); // the replay's placeholder, and the empty curve if the teacher shows it
   if (hadRun) page.status.textContent = studentStatus('changed');
@@ -971,7 +991,9 @@ export function mountApp(): Page {
     stagePlanWords: byId('stage-plan-words', HTMLElement),
     stageWhy: byId('stage-why', HTMLElement),
     stageWhyText: byId('stage-why-text', HTMLElement),
-    railRound: byId('rail-round', HTMLElement),
+    stageFoot: document.querySelector<HTMLElement>('.stage-foot') ?? byId('watch', HTMLElement),
+    runSeed: byId('run-seed', HTMLElement),
+    readReport: byId('read-report', HTMLButtonElement),
     stagePicks: byId('stage-picks', HTMLElement),
     stagePicksList: byId('stage-picks-list', HTMLElement),
     seed: byId('seed', HTMLInputElement),
@@ -1025,7 +1047,6 @@ export function mountApp(): Page {
   page.railView(null);
   // The yard's box has the board's shape in every state (WP3's YARD_ASPECT; round 2, rows 18 and 30).
   page.watch.style.setProperty('--yard-aspect', String(YARD_ASPECT));
-  page.railRound.hidden = false; // shown by the stylesheet only on the run and the week's end, where the bar is gone
   showRound(page, first);
   const hintText = page.picksHint.querySelector('.picks-hint-text');
   if (hintText) hintText.textContent = PICKS_HINT;
@@ -1130,11 +1151,14 @@ export function mountApp(): Page {
         page.keepYardSize = true;
         showReadout(page);
         showScorecard(page);
-        // Friday's pickup with the orb in its done state, on the next frame (a redraw draws what the page holds, so it
-        // needs no token).
-        requestAnimationFrame(() => redraw(page));
         page.calledLine.focus({ preventScroll: true }); // the result first, for a keyboard and a screen reader
-        page.compare.scrollIntoView({ behavior: 'auto', block: 'start' }); // the box score after the game, at once (row 30)
+        // On the next frame: Friday's pickup with the orb in its done state (a redraw draws what the page holds, so it
+        // needs no token), and the box score after the game (round 2, row 30). The scroll waits for that frame so the
+        // scorecard's layout is that frame's, not forced inside this task (round 3: one task, under 50 ms).
+        requestAnimationFrame(() => {
+          redraw(page);
+          if (page.token === owner) page.compare.scrollIntoView({ behavior: 'auto', block: 'start' });
+        });
         settleYard(page);
       } catch (err) {
         if (err instanceof RunCancelled) return;
@@ -1158,6 +1182,16 @@ export function mountApp(): Page {
   });
 
   // Watch the week again: the saved week only, no training, no republishing, no scroll (D51).
+  // After the week, the primary way on: the weekly P&L (round 3, row 11).
+  page.readReport.addEventListener('click', () => {
+    page.report.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+    const title = document.getElementById('report-title');
+    if (title !== null) {
+      title.tabIndex = -1;
+      title.focus({ preventScroll: true });
+    }
+  });
+
   page.replayAgain.addEventListener('click', () => {
     startPlayback(page).catch((err: unknown) => showError(page, err));
   });

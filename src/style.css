@@ -79,7 +79,7 @@
   --view-height: calc(100vh / var(--zoom));
   --console-w: min(940px, max(800px, calc(64 * var(--vw))));
   --live-w: clamp(480px, calc(40 * var(--vw)), 560px); /* at 1024 the rail keeps 480 px, so it fits the window */
-  --done-w: min(900px, max(760px, calc(60 * var(--vw)))); /* the week's end: the scorecard's rail, the yard beside it */
+  --done-w: min(920px, max(800px, calc(63 * var(--vw)))); /* the week's end: the scorecard's rail, the yard beside it */
 
   /* The teacher's learning curve: dark ink on a pale chart, navy for the average, orange for the weeks run the
      current way (no blue anywhere, round 2, row 33). */
@@ -193,9 +193,12 @@ img { max-width: 100%; }
 .btn svg { flex: none; }
 
 /* ---------- The bar: the wordmark, the business, the round, the teacher's key ---------- */
+/* The bar stays at the window's top on every screen (round 3, row 9: a capture of any state carries the product's name
+   and the round), slim on the run and the week's end. */
 .topbar {
-  position: relative;
-  z-index: 5;
+  position: sticky;
+  top: 0;
+  z-index: 25;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -217,8 +220,7 @@ img { max-width: 100%; }
   border-left: 1px solid var(--navy-line);
 }
 /* The round is a tag, not a button (round 2, row 28): a pill with a dot, amber words on a faint amber wash. One rule
-   (row 29): the bar carries it on the load screen; on the run and the week's end, where the page has scrolled the bar
-   away, the rail's head carries it, and the bar's is hidden, so the page never shows two. */
+   (rows 29, round 3 row 9): the sticky bar carries it on every screen, and nothing else does. */
 .round-badge {
   display: inline-flex;
   align-items: center;
@@ -233,7 +235,9 @@ img { max-width: 100%; }
   border-radius: 999px;
 }
 .round-badge::before { content: ''; flex: none; width: 7px; height: 7px; background: var(--amber); border-radius: 50%; }
-html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visibility: hidden; }
+html[data-phase='run'], html[data-phase='done'] { --bar-h: 40px; }
+html[data-phase='run'] .teacher-key, html[data-phase='done'] .teacher-key { height: 30px; }
+html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padding-top: 4px; padding-bottom: 4px; }
 .teacher-key {
   display: inline-flex;
   align-items: center;
@@ -258,11 +262,12 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   grid-template-columns: var(--rail-w) minmax(0, 1fr);
   align-items: start;
   min-height: calc(var(--view-height) - var(--bar-h));
-  scroll-margin-top: 0;
+  scroll-margin-top: var(--bar-h); /* under the sticky bar */
 }
-/* The run: the rail narrows and the yard takes the room; the click scrolls the bar away, so the rail's status line
-   and the whole yard sit in the window (above the open tray). */
-#watch[data-phase='run'] { --rail-w: var(--live-w); min-height: var(--view-height); }
+.compare, #report { scroll-margin-top: var(--bar-h); }
+/* The run: the rail narrows and the yard takes the room; the click scrolls the page to the rail's status line, under
+   the slim bar, so the status and the whole yard sit in the window (above the open tray). */
+#watch[data-phase='run'] { --rail-w: var(--live-w); }
 #watch[data-phase='done'] { --rail-w: var(--done-w); }
 .rail {
   align-self: stretch;
@@ -281,9 +286,9 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   margin: 0;
   padding: 14px 18px 18px;
 }
-#watch[data-phase='run'] .stage, #watch[data-phase='done'] .stage { --yard-room: calc(var(--view-height) - var(--tray-pad, 0px) - 82px); }
-/* On the run the yard stays in the window while the rail scrolls (the page is pinned there while the week plays). */
-#watch[data-phase='run'] .stage { position: sticky; top: 0; }
+#watch[data-phase='run'] .stage, #watch[data-phase='done'] .stage { --yard-room: calc(var(--view-height) - var(--bar-h) - var(--tray-pad, 0px) - 82px); }
+/* On the run the yard stays in the window under the bar while the rail scrolls (the page is pinned while it plays). */
+#watch[data-phase='run'] .stage { position: sticky; top: var(--bar-h); }
 
 /* What each phase shows. The load screen and the week's end lay the rail out as a grid: on the load screen the premise
    across the top, then step 1 (the plan) beside steps 2 and 3 (the picks, the Why and the button), their headings
@@ -298,7 +303,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 }
 #watch[data-phase='load'] .rail { grid-template-areas: 'premise premise' 'plan predict'; }
 #watch[data-phase='done'] .rail {
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
   grid-template-rows: auto auto auto 1fr;
   grid-template-areas: 'compare compare' 'plan actions' 'whyl actions' 'why actions';
 }
@@ -330,10 +335,12 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 #watch[data-gm='preparing'] .orb-head [data-orb='ready'],
 #watch[data-gm='playing'] .orb-head [data-orb='running'],
 #watch[data-gm='done'] .orb-head [data-orb='done'] { display: block; }
-#watch[data-gm='preparing'] .orb-head { animation: orb-wait 1.8s ease-in-out infinite; }
-@keyframes orb-wait {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+/* While the GM gets ready the orb breathes between its ready and running pictures (round 3, row 10): the band lights
+   and dims. Reduced motion: the ready picture, still. */
+#watch[data-gm='preparing'] .orb-head [data-orb='running'] { display: block; opacity: 0; animation: orb-breathe 2.4s ease-in-out infinite; }
+@keyframes orb-breathe {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
 /* If the orb's image cannot load, the stylesheet draws a plain one (a dark sphere and its band): nothing broken. */
 .orb.art-failed::before {
@@ -364,23 +371,6 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 }
 /* The line's own box is the orb's height, its words centred in it: the line starts at the rail's top edge. */
 #status { display: flex; flex: 1 1 auto; align-items: center; min-height: 52px; font: 800 21px/1.2 var(--font-ui); font-stretch: 82%; color: var(--navy); }
-/* The round in the run's and the week's end's header (the bar's is hidden there): the same tag on white. */
-.rail-round {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  align-self: center;
-  gap: 8px;
-  padding: 5px 12px 5px 10px;
-  font: 600 15px/1 var(--font-ui);
-  color: var(--amber-ink);
-  white-space: nowrap;
-  background: var(--amber-wash);
-  border: 1px solid #e3b866;
-  border-radius: 999px;
-}
-.rail-round::before { content: ''; flex: none; width: 7px; height: 7px; background: var(--amber); border-radius: 50%; }
-#watch[data-phase='load'] .rail-round { display: none; }
 #watch[data-status='error'] #status { color: var(--red-ink); }
 
 /* ---------- The premise: whose business it is and what this round asks ---------- */
@@ -434,8 +424,14 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   column-gap: 10px;
   align-items: center;
 }
-.plan:not(.plan-locked) .plan-head, .plan:not(.plan-locked) .kpi-row { grid-template-columns: 22px minmax(0, 1fr) 44px; }
-.plan:not(.plan-locked) .kpi-row { grid-template-areas: 'icon name in' '. amount amount'; row-gap: 2px; padding: 6px 0 7px; }
+.plan:not(.plan-locked) .plan-head, .plan:not(.plan-locked) .kpi-row { grid-template-columns: 22px minmax(0, 1fr) 82px; }
+.plan:not(.plan-locked) .kpi-row { grid-template-areas: 'icon name in' '. amount amount'; row-gap: 0; min-height: 0; padding: 2px 0 1px; }
+.plan:not(.plan-locked) .kpi-name { line-height: 1.15; }
+.plan:not(.plan-locked) .kpi-amount { height: 20px; }
+/* The switch's line no taller than the name's (round 3, row 6: rows about 44 px): the 24 px switch stands 3 px proud of
+   it, into the row's padding above and the amount line's empty top below. */
+.plan:not(.plan-locked) .kpi-in { height: 18px; }
+.plan:not(.plan-locked) .kpi-figure { line-height: 1.2; }
 .plan:not(.plan-locked) .kpi-icon { grid-area: icon; }
 .plan:not(.plan-locked) .kpi-name { grid-area: name; }
 .plan:not(.plan-locked) .kpi-in { grid-area: in; justify-content: flex-end; }
@@ -443,6 +439,14 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .plan:not(.plan-locked) .plan-head-amount { display: none; }
 .plan:not(.plan-locked) .plan-head-in { grid-column: 2 / 4; grid-row: 1; justify-self: end; }
 .plan:not(.plan-locked) .plan-head-measure { grid-row: 1; }
+/* The ruler: the sliders' scale, once, over their column (round 3, row 18). */
+.plan-ruler { display: none; }
+.plan:not(.plan-locked) .plan-ruler { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; padding: 3px 0 0; }
+.ruler-scale { grid-column: 2; position: relative; width: var(--slider-w); height: 18px; font-size: 15px; line-height: 18px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.ruler-lo, .ruler-zero, .ruler-hi { position: absolute; top: 0; white-space: nowrap; }
+.ruler-lo { left: 0; }
+.ruler-zero { left: 50%; transform: translateX(-50%); font-weight: 700; color: var(--ink-2); }
+.ruler-hi { right: 0; }
 .plan-head {
   padding: 0 0 6px;
   font: 700 15px/1 var(--font-ui);
@@ -466,14 +470,15 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .kpi-in { display: flex; align-items: center; }
 .kpi-amount { display: flex; align-items: center; justify-content: flex-end; gap: 10px; white-space: nowrap; }
 .kpi-figure { min-width: 124px; text-align: right; color: var(--ink-3); font-size: var(--text-sm); }
-.kpi-scale { display: inline-flex; align-items: center; gap: 6px; }
-.scale-end { font-size: var(--text-sm); font-variant-numeric: tabular-nums; color: var(--ink-3); }
-.plan-locked .scale-end { display: none; }
+.plan { --slider-w: 190px; }
+.kpi-scale { display: inline-flex; align-items: center; }
 .kpi-value { font-size: var(--text-md); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink-3); }
 /* A measure that is off is greyed, the whole row: its name, its amount and its icon (round 2, row 27). */
 .kpi-row.off .kpi-name, .kpi-row.off .kpi-figure, .kpi-row.off .kpi-value { font-weight: 400; color: #68737f; } /* 4.8:1 */
 .kpi-row.off .kpi-icon { color: #a3adb7; }
-.kpi-row.off .scale-end { color: #8a949e; }
+/* An off measure's amount is a dash, not a live figure (round 3, row 12); the figure stays in the page for the plan. */
+.kpi-row.off .kpi-figure > * { display: none; }
+.kpi-row.off .kpi-figure::before { content: '—'; color: #68737f; }
 .kpi-row:not(.off) .kpi-value { color: var(--ink); }
 .kpi-row:not(.off) .kpi-figure { color: var(--ink-2); }
 
@@ -481,6 +486,11 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
    the toggle and the slider stay in the page, disabled, visually hidden. */
 .kpi-state { display: none; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-3); }
 .plan-locked .kpi-state { display: inline-flex; }
+/* An editable plan's switch says On or Off beside it (round 3, row 13): the word, no lamp. */
+.plan:not(.plan-locked) .kpi-state { display: inline-flex; order: -1; width: 30px; }
+.plan:not(.plan-locked) .kpi-state .lamp { display: none; }
+.plan:not(.plan-locked) .kpi-row:not(.off) .kpi-state { font-weight: 700; color: var(--ink); }
+.plan:not(.plan-locked) .kpi-in { gap: 6px; }
 .plan-locked .kpi-row:not(.off) .kpi-state { font-weight: 700; color: var(--ink); }
 .lamp { flex: none; width: 10px; height: 10px; border: 2px solid #8c98a3; border-radius: 50%; }
 .kpi-row:not(.off) .lamp { background: var(--amber); border-color: var(--amber-ink); box-shadow: 0 0 0 3px var(--amber-wash); }
@@ -540,8 +550,8 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   -webkit-appearance: none;
   appearance: none;
   flex: none;
-  width: 150px;
-  height: 22px;
+  width: var(--slider-w);
+  height: 20px;
   margin: 0;
   background: transparent;
   cursor: pointer;
@@ -583,7 +593,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   align-items: flex-start;
   gap: 10px;
   margin: 10px 0 0;
-  padding: 9px 12px;
+  padding: 7px 12px;
   color: #fff;
   background: var(--navy);
   border-radius: var(--r-2);
@@ -593,8 +603,10 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .plan-strip-label { display: none; margin: 0 0 2px; font-size: var(--text-sm); color: #c3ced8; }
 #watch[data-phase='done'] .plan-strip-label { display: block; }
 .plan-words { font: 400 16px/1.35 var(--font-ui); }
-.plan-line { display: block; } /* a clause a line; a wrapped clause continues flush with its own first line */
-.plan-line + .plan-line { padding-left: 1em; } /* the indent is between clauses: each after the first sits in by 1em */
+.plan-line { display: block; }
+.is-list .plan-lead { display: block; }
+.is-list .plan-line { padding-left: 1em; text-indent: -1em; } /* a clause an item, its wrap hanging under its text */
+.is-list .plan-line::before { content: '•'; display: inline-block; width: 1em; text-indent: 0; color: var(--amber); }
 .plan-words b { font-weight: 800; color: #fff; }
 .plan-note { margin: 6px 0 0; font-size: var(--text-sm); color: var(--ink-3); }
 .plan-note:empty { display: none; }
@@ -678,7 +690,17 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 0; }
 .actions #train { flex: 1 1 auto; }
 /* The line that tells the two ways on apart (round 2, row 19): only after the week. */
-.again-note { display: none; margin: 0; font-size: var(--text-sm); line-height: 1.35; color: var(--ink-2); }
+/* "Read the weekly P&L" only after the week, the primary way on there (round 3, row 11). */
+#read-report { display: none; }
+#watch[data-phase='done'] #read-report { display: inline-flex; }
+#read-report::after { transform: rotate(90deg); } /* its arrow points down the page, to the report */
+/* After the week the rerun is a secondary action, like "Make a new prediction". */
+#watch[data-phase='done'] #train { color: var(--navy); background: var(--panel); box-shadow: inset 0 0 0 1.5px var(--control-line); font-size: 16px; animation: none; }
+#watch[data-phase='done'] #train::after { display: none; }
+#watch[data-phase='done'] #train:hover:enabled { background: var(--panel-2); }
+/* The replay's note beside "Watch the week again": what it does, and that a rerun gives the same week. */
+.again-note { display: none; flex: 1 0 100%; margin: -4px 0 0; font-size: var(--text-sm); line-height: 1.35; text-align: right; color: var(--ink-2); }
+#watch[data-phase='done'] .again-note { display: block; }
 
 /* After the week (round 1, row 21; round 2, rows 3, 19, 25): a read-only summary in two halves that line up with the
    scorecard's. The left half: the plan it worked to, then the team's reasons as a quote, the whole of them, never
@@ -711,7 +733,6 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 }
 #watch[data-phase='done'] .actions { grid-area: actions; flex-direction: column; flex-wrap: nowrap; align-self: stretch; margin: 0; padding: 16px 22px; border-left: 1px solid var(--line); }
 #watch[data-phase='done'] .actions .btn { flex: none; width: 100%; }
-#watch[data-phase='done'] .again-note { display: block; }
 /* No reasons written: nothing to quote. */
 #watch[data-phase='done'] .why:has(#prediction:placeholder-shown) .why-label,
 #watch[data-phase='done'] #prediction:placeholder-shown { display: none; }
@@ -722,7 +743,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .pick-dots i.on { background: var(--navy); border-color: var(--navy); }
 
 /* ---------- After the week: how the business did, beside what the team called, with equal weight ---------- */
-.result-cols { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); border-bottom: 1px solid var(--line); }
+.result-cols { display: grid; grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr); border-bottom: 1px solid var(--line); }
 .result-col { min-width: 0; padding: 14px 22px 16px; }
 .result-business { border-right: 1px solid var(--line); }
 .col-title {
@@ -742,38 +763,40 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   color: var(--navy);
 }
 .called-line { border-radius: 4px; }
+.business-line .clause { display: block; } /* one clause a line: no line ends on a dangling dot (round 3, row 21) */
 .business-line .hurt { color: var(--red-ink); }
 /* The business's figures, a table beside the picks' table, the same rows and rules. */
 .biz-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .biz-table th, .biz-table td { padding: 5px 0; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line-2); }
 .biz-table tr:first-child th, .biz-table tr:first-child td { border-top: 1.5px solid var(--line-strong); }
 .biz-table th { font-weight: 600; color: var(--ink-2); }
-.biz-icon { display: inline-grid; place-items: center; margin-right: 6px; vertical-align: -3px; }
-.biz-table td.biz-val { padding-left: 10px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums lining-nums; color: var(--ink); white-space: nowrap; }
+.biz-icon { display: inline-grid; place-items: center; margin-right: 5px; vertical-align: -3px; }
+.biz-table td.biz-val { padding-left: 8px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums lining-nums; color: var(--ink); white-space: nowrap; }
 .biz-table tr.strong th, .biz-table tr.strong td { color: var(--navy); font-weight: 800; }
 .biz-table tr.hurt th, .biz-table tr.hurt td { color: var(--red-ink); }
 .called-line:focus { outline: none; }
 .called-line:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .score-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); }
-.score-table .score-h-label { width: 41%; }
-.score-table .score-h-pick { width: 17%; }
-.score-table .score-h-actual { width: 23%; }
-.score-table .score-h-mark { width: 19%; }
+.score-table .score-h-label { width: auto; }
+.score-table .score-h-pick { width: 88px; }
+.score-table .score-h-actual { width: 124px; }
+.score-table .score-h-mark { width: 78px; }
 .score-table thead th {
   white-space: nowrap;
-  padding: 0 10px 5px 0;
+  padding: 0 20px 5px 0;
   font-weight: 600;
   text-align: left;
   color: var(--ink-3);
   border-bottom: 1.5px solid var(--line-strong);
 }
-.score-table td, .score-table tbody th { padding: 5px 10px 5px 0; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line-2); }
+.score-table td, .score-table tbody th { padding: 5px 20px 5px 0; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line-2); }
 .score-table .score-h-mark, .score-table td.score-mark { padding-right: 0; }
-.score-pick { white-space: nowrap; }
+.score-pick, .score-actual { white-space: nowrap; }
+.score-actual.long { white-space: normal; } /* a mix of rates may wrap at its comma */
 .score-table tbody th { font-weight: 600; line-height: 1.2; color: var(--ink); }
 .score-pick { color: var(--ink-2); }
 .score-actual { font-weight: 700; color: var(--ink); }
-.score-table td.score-mark { padding-right: 0; text-align: right; white-space: nowrap; }
+.score-table td.score-mark { padding-right: 0; text-align: left; white-space: nowrap; }
 .mark { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; white-space: nowrap; }
 .mark-icon { display: grid; place-items: center; width: 18px; height: 18px; color: #fff; border-radius: 50%; }
 .mark-icon svg { width: 12px; height: 12px; }
@@ -783,8 +806,6 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .score-row.missed .mark-icon { color: var(--ink-2); background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-2); }
 .readout-box { padding: 12px 22px 14px; border-bottom: 1px solid var(--line); }
 .readout-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.to-report { font: 700 15px/1 var(--font-ui); color: var(--navy); text-decoration-color: var(--amber); text-decoration-thickness: 2px; text-underline-offset: 4px; white-space: nowrap; }
-.to-report::after { content: ' ↓'; }
 .readout-label { font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
 #readout { margin-top: 5px; font-size: var(--text-md); line-height: 1.4; color: var(--ink); }
 #readout:empty::before { content: 'The readout appears here once the GM is on the job.'; color: var(--ink-3); }
@@ -831,7 +852,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .gauge-limit b { color: var(--ink); }
 .gauge-floor { margin-top: 26px; font-size: var(--text-sm); color: var(--ink-2); }
 
-.live-stats { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+.live-stats { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); } /* the cash label on one line at 1024 */
 .live-stats .stat { min-width: 0; padding: 0 0 0 14px; border-left: 1px solid var(--line); }
 .live-stats .stat:nth-child(odd) { padding: 0 14px 0 0; border-left: 0; }
 .live-stats .stat:nth-child(n + 3) { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-2); }
@@ -861,18 +882,16 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .stat-quiet { color: var(--ink-3); }
 .stat-sub.loss b { color: var(--red-ink); }
 .stat-cash .stat-sub b { color: var(--ink); }
-.live-meters { display: grid; grid-template-columns: 112px minmax(0, 1fr) 44px; gap: 5px 10px; align-items: center; font-size: var(--text-sm); }
-.live-meters .meter { position: relative; height: 8px; background: var(--line-2); border-radius: 3px; }
-.live-meters .meter.bad-high { background: linear-gradient(to right, var(--line-2) 50%, #f5cfc8); }
-.live-meters .meter.bad-low { background: linear-gradient(to left, var(--line-2) 50%, #f5cfc8); }
+.live-meters { display: grid; grid-template-columns: 112px minmax(0, 1fr) 44px; gap: 0 10px; align-items: end; font-size: var(--text-sm); }
+.live-meters > * { padding-top: 6px; }
+.live-meters .meter-name, .live-meters .meter-num { line-height: 18px; }
+.live-meters .meter { position: relative; height: 8px; margin-bottom: 5px; background: var(--line-2); border-radius: 3px; }
 .live-meters .meter i { position: absolute; top: 0; bottom: 0; left: 0; background: #5f6d7a; border-radius: 3px; }
 /* The crew's fatigue: the plan's 70% marked on the track, the part above it hatched, the number red past it. */
 .meter-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--navy); }
 .meter-over { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red) 0 3px, #ee8c7c 3px 6px); border-radius: 0 3px 3px 0; }
 .meter-limit { position: absolute; bottom: calc(100% + 3px); transform: translateX(-50%); font-size: 15px; line-height: 1; color: var(--ink-3); }
-.live-meters .meter:has(.meter-mark) { margin-top: 13px; }
-.live-meters .meter-name:nth-last-child(3) { margin-top: 13px; }
-.live-meters b.meter-num:last-child { margin-top: 13px; }
+.live-meters .meter:has(.meter-mark) { margin-top: 14px; } /* room for "70%" above the track */
 .meter-num { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .meter-num.high { color: var(--red-ink); }
 .rail-live > .live-meters { padding-bottom: 5px; border-bottom: 0; }
@@ -886,6 +905,8 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 /* While the GM gets ready: the picks the class made, the plan it works to and the team's reasons, in the rail; while
    the week plays, the block's values first, then the picks and the reasons under them (round 1, row 20). */
 .stage-plan { padding: 12px 22px; border-bottom: 1px solid var(--line); }
+.live > .stage-picks, .live > .stage-why { padding: 12px 22px; border-bottom: 1px solid var(--line); }
+.stage-plan-words.is-list .plan-line::before { color: var(--amber-ink); }
 #watch[data-gm='playing'] .stage-plan { display: none; }
 .stage-why-text { padding-left: 10px; font-size: var(--text-sm); line-height: 1.4; color: var(--ink); border-left: 3px solid var(--amber); white-space: pre-line; }
 .box-label { margin: 0 0 6px; font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
@@ -942,6 +963,26 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 #watch:not([data-phase='run']) .stage-foot > .stage-picks, #watch:not([data-phase='run']) .stage-foot > .stage-why { display: none; }
 .stage-foot > .readout-box { display: none; padding: 12px 16px 14px; }
 #watch[data-phase='done'] .stage-foot > .readout-box { display: block; }
+/* On load, what happens next, under the yard (round 3, row 17): three short steps, business words only. */
+.next-card { display: none; padding: 12px 16px 14px; }
+#watch[data-phase='load'] .next-card { display: block; }
+.next-steps { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.next-steps li { position: relative; padding-left: 32px; font-size: var(--text-md); line-height: 1.35; color: var(--ink); counter-increment: step; }
+.next-steps li::before {
+  content: counter(step);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  font: 800 14px/1 var(--font-ui);
+  color: var(--navy);
+  background: var(--amber-wash);
+  border: 1.5px solid var(--amber);
+  border-radius: 50%;
+}
 .stage-foot .stage-picks-list { grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 6px 0; }
 .stage-foot .stage-pick { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 2px; min-height: 0; padding: 0 12px; border-top: 0; border-left: 1px solid var(--line-2); }
 .stage-foot .stage-pick:first-child { padding-left: 0; border-left: 0; }
@@ -957,7 +998,9 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 #watch[data-gm='preparing'] .yard-frame::before { opacity: 0.8; }
 
 /* ---------- The weekly P&L and operations report (the headline and the table are in report.css) ---------- */
-#report { padding: 22px 20px 28px; }
+/* The report is built at the week's end below the fold: its layout waits until it nears the window, so the week's end
+   stays two short tasks on a Chromebook (G5d acceptance 7; the P&L's fixed columns and cents made it one long one). */
+#report { padding: 22px 20px 28px; content-visibility: auto; contain-intrinsic-size: auto 1700px; }
 .report-head { display: flex; align-items: baseline; gap: 14px; margin: 0 0 12px; }
 #report-title { margin: 0; font: 850 30px/1 var(--font-ui); font-stretch: 72%; letter-spacing: 0.005em; }
 
@@ -979,7 +1022,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   bottom: 0;
   left: 0;
   z-index: 30;
-  padding: 8px 20px 7px;
+  padding: 8px 16px 7px;
   font-size: var(--text-sm);
   color: #dce3ea;
   background: var(--navy);
@@ -992,14 +1035,22 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.teacher-inner { position: relative; max-width: 1400px; margin: 0 auto; padding-right: 84px; }
-/* One row of groups, each its label over its controls; the check line at the foot. */
-.teacher-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 14px; }
+/* The groups on the left, Close on the right centred on them (round 3, row 20), the check line under both. */
+.teacher-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 16px; max-width: 1400px; margin: 0 auto; }
+.teacher-inner > .teacher-foot { grid-column: 1 / -1; }
+/* One row of groups, each its label over its controls, at 1366 and on the projector (the tray stays one line high, so
+   it overlays the page without moving the button: D46); the check line at the foot. */
+.teacher-row { display: flex; flex-wrap: wrap; align-items: flex-end; row-gap: 10px; }
+.teacher-row > .t-group { margin-left: 10px; padding-left: 10px; }
+/* Each group's columns are its controls, so its label spans them and adds no empty columns (and no width). */
+.t-group { --n: 1; grid-template-columns: repeat(var(--n), auto); }
+.rounds, .t-group[aria-labelledby='t-curtain'] { --n: 3; }
+.t-group[aria-labelledby='t-run'] { --n: 2; }
 .teacher-title { display: inline-flex; align-items: center; gap: 8px; height: 34px; font: 800 18px/1 var(--font-ui); font-stretch: 82%; color: #fff; }
 .teacher-title svg { color: var(--amber); }
 .t-group { display: grid; grid-auto-flow: column; grid-template-rows: auto auto; align-items: center; gap: 5px 8px; min-width: 0; margin: 0; padding: 0 0 0 14px; border: 0; border-left: 1px solid var(--navy-line); }
 .rounds { display: flex; gap: 4px; }
-.t-label, .rounds legend { grid-row: 1; grid-column: 1 / span 6; float: none; margin: 0; padding: 0; font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; color: #c3ced8; }
+.t-label, .rounds legend { grid-row: 1; grid-column: 1 / -1; float: none; margin: 0; padding: 0; font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; color: #c3ced8; }
 .t-group > :not(.t-label) { grid-row: 2; }
 .rounds legend { margin-bottom: 5px; }
 /* The rounds: three chips alike, each with its own radio drawn as a ring; the chosen one filled amber with a navy dot
@@ -1021,6 +1072,9 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .rounds input:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
 .rounds label:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
 .t-field { font-weight: 600; color: #dce3ea; }
+/* This run's seed is read-only: a value, not a field (row 20); the next run's seed is the field. */
+.t-value { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding-right: 4px; white-space: nowrap; }
+.t-value b { font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
 .teacher input[type='number'] {
   width: 7em;
   height: 34px;
@@ -1034,7 +1088,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 }
 .teacher button {
   height: 34px;
-  padding: 0 10px;
+  padding: 0 9px;
   font: 700 15px/1 var(--font-ui);
   color: #fff;
   background: transparent;
@@ -1043,8 +1097,8 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   cursor: pointer;
 }
 .teacher button:hover:enabled { background: var(--navy-2); }
-.teacher .teacher-export:enabled { color: var(--navy); background: var(--amber); border-color: var(--amber); }
-.teacher .teacher-close { position: absolute; top: 0; right: 0; }
+.teacher .teacher-export:enabled { border-color: #c3ced8; } /* outlined like the others, a lighter edge when there is a run */
+.teacher .teacher-close { grid-column: 2; grid-row: 1; padding: 0 12px; }
 .teacher input:disabled, .teacher button:disabled { opacity: 0.5; cursor: not-allowed; }
 .teacher :focus-visible { outline-color: var(--amber); }
 .teacher-foot { display: flex; flex-wrap: wrap; gap: 2px 18px; margin: 8px 0 1px; padding-top: 7px; border-top: 1px solid var(--navy-line); }
@@ -1052,10 +1106,11 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .teacher .t-disclose { display: inline-flex; align-items: center; gap: 6px; }
 .t-disclose::after { content: ''; width: 7px; height: 7px; margin-top: -3px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
 .t-disclose[aria-expanded='true']::after { margin-top: 3px; transform: rotate(-135deg); }
-/* A narrow window wraps the groups: no divider then, so none is left hanging at a line's start (row 28). */
+/* A narrower window: a grid, so the groups line up (round 3, row 20): the title, Round, This run and the next run's seed
+   on the first line, Behind the curtain under the three groups, its divider under Round's. */
 @media (max-width: 1299px) {
-  .teacher-row { column-gap: 22px; }
-  .t-group { padding-left: 0; border-left: 0; }
+  .teacher-row { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; align-items: end; row-gap: 10px; }
+  .t-group[aria-labelledby='t-curtain'] { grid-column: 2 / -1; }
 }
 .check { font-weight: 600; font-variant-numeric: tabular-nums; color: #fff; }
 .teacher-hint { color: #c3ced8; }

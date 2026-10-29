@@ -96,12 +96,16 @@ async function main(): Promise<void> {
       await page.waitForFunction(() => document.querySelector('#train')?.textContent === 'Put the GM to work again', undefined, { timeout: 120_000 });
       await pause(1500);
       await shot(page, '05-scorecard');
-      await page.locator('#watch').scrollIntoViewIfNeeded();
+      // The yard after the week, at its own size: the stage beside the scorecard (05 is the whole window).
+      await page.locator('.stage').scrollIntoViewIfNeeded();
       await pause(400);
-      await shot(page, '06-yard-after');
+      await page.locator('.stage').screenshot({ path: `${outDir}/06-yard-after.png` });
+      console.log(`${outDir}/06-yard-after.png`);
       await page.locator('#report').evaluate((el) => el.scrollIntoView({ block: 'start' }));
       await pause(400);
       await shot(page, '07-report');
+      await page.evaluate(() => window.scrollTo(0, 0)); // the sticky bar at the page's top in the full-page shot
+      await pause(300);
       await shot(page, '00-full-page-after', true);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.click('#teacher-open');

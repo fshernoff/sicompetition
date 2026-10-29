@@ -57,21 +57,35 @@ export function isRound1Outcome(report: WeekReport): boolean {
 }
 
 /**
+ * The rate clause (BRIEF section 10, G5d round 3), from the open days' rates: "charged the premium rate", or "charged
+ * a mix of rates (low × 1, premium × 4)" in the table's week-cell words, low, standard, premium order; null for a week
+ * closed every day (it charged nothing).
+ */
+function rateClause(report: WeekReport): string | null {
+  const open = report.days.filter((d) => !d.closed && d.rate !== null);
+  const counts = RATES.map((r) => ({ r, n: open.filter((d) => d.rate === r).length })).filter((x) => x.n > 0);
+  if (counts.length === 0) return null;
+  if (counts.length === 1) return `charged the ${counts[0]?.r ?? ''} rate`;
+  return `charged a mix of rates (${counts.map((x) => `${x.r} × ${x.n}`).join(', ')})`;
+}
+
+/**
  * The sentence of BRIEF section 10, in business English (G5d). With no closure:
- *   "The GM accepted every booking on 5 of 5 days, ran the floor with one staffer on 4 days, never had the dogs nap,
- *    averaged 16 dogs per staffer, and had 8 incidents."
+ *   "The GM accepted every booking on 5 of 5 days, charged the premium rate, ran the floor with one staffer on 4 days,
+ *    never had the dogs nap, averaged 16 dogs per staffer, and had 8 incidents."
  * With a closure the last clause moves: "..., averaged 19 dogs per staffer, had 9 incidents, and was closed on 1 day."
- * The clauses: "ran the floor with one staffer on 1 day" / "on N days" / "never ran the floor with one staffer"; "had
- * the dogs nap in 1 block" / "in N blocks" / "never had the dogs nap"; "had 1 incident" / "had N incidents" / "had no
- * incidents". Numbers from totals: daysAcceptedAll, daysOneStaffer, napBlocks, avgDogsPerStaffer rounded to a whole
- * number (Math.round), incidents, daysClosed.
+ * The clauses: the rate (rateClause; none for a week closed every day); "ran the floor with one staffer on 1 day" /
+ * "on N days" / "never ran the floor with one staffer"; "had the dogs nap in 1 block" / "in N blocks" / "never had the
+ * dogs nap"; "had 1 incident" / "had N incidents" / "had no incidents". Numbers from totals: daysAcceptedAll,
+ * daysOneStaffer, napBlocks, avgDogsPerStaffer rounded to a whole number (Math.round), incidents, daysClosed.
  */
 export function describeWeek(report: WeekReport): string {
   const t = report.totals;
   const count = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+  const rate = rateClause(report);
   const solo = t.daysOneStaffer === 0 ? 'never ran the floor with one staffer' : `ran the floor with one staffer on ${count(t.daysOneStaffer, 'day', 'days')}`;
   const naps = t.napBlocks === 0 ? 'never had the dogs nap' : `had the dogs nap in ${count(t.napBlocks, 'block', 'blocks')}`;
-  const head = `The GM accepted every booking on ${t.daysAcceptedAll} of 5 days, ${solo}, ${naps}, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer`;
+  const head = `The GM accepted every booking on ${t.daysAcceptedAll} of 5 days, ${rate === null ? '' : `${rate}, `}${solo}, ${naps}, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer`;
   const incidents = t.incidents === 0 ? 'no incidents' : count(t.incidents, 'incident', 'incidents');
   if (t.daysClosed === 0) return `${head}, and had ${incidents}.`;
   return `${head}, had ${incidents}, and was closed on ${count(t.daysClosed, 'day', 'days')}.`;

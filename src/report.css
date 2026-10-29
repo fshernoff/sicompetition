@@ -38,13 +38,17 @@
 
 /* ---------- The statement ---------- */
 .report-panel { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-3); }
+/* Fixed columns (round 3, row 15): the label a quarter, the Week its own width, the five days equal in what is left. */
 #report-table {
   width: 100%;
+  min-width: 860px; /* narrower than this, the panel scrolls rather than squeezing the figures */
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 15px;
   font-variant-numeric: tabular-nums lining-nums;
 }
-#report-table caption { padding: 10px 14px 0; font-size: 15px; text-align: left; color: var(--ink-2); caption-side: top; }
+#report-table col.col-label { width: 25%; }
+#report-table col.col-week { width: 13%; }
 #report-table th, #report-table td { height: 28px; padding: 3px 14px; text-align: right; white-space: nowrap; }
 #report-table thead th {
   height: 34px;
@@ -61,8 +65,6 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  min-width: 200px;
-  max-width: 330px;
   font-weight: 400;
   text-align: left;
   white-space: normal;
@@ -116,8 +118,10 @@
 #report-table tr.subhead td { border-bottom-color: transparent; }
 #report-table tr.activity th[scope='row'] { padding-left: 28px; }
 #report-table tr.activity td:not(.week) { text-align: left; white-space: normal; vertical-align: top; }
-#report-table tr.activity .asked { display: block; font-size: 15px; color: var(--ink-3); white-space: nowrap; }
-#report-table tr.mix td.week { white-space: normal; }
+#report-table tr.activity .asked { display: block; font-size: 15px; color: var(--ink-3); } /* wraps in an equal column */
+/* The counts under the activities (round 3, row 16): one count a line in every cell, read as text like the blocks. */
+#report-table tr.mix td { text-align: left; vertical-align: top; }
+#report-table tr.mix .count { display: block; white-space: nowrap; }
 #report-table tr.activity .phrase { white-space: nowrap; }
 /* The footnote under the table (BRIEF 10.1). */
 #report-table tfoot td.footnote { height: auto; padding: 10px 14px 12px; font-size: 15px; text-align: left; white-space: normal; color: var(--ink-2); }
@@ -129,6 +133,6 @@
 /* A projector's width (round 2, row 14): the table's type at 17 px from 1600 wide (a tall window scales the whole page
    instead: style.css's zoom, 15 px × 1.15 and up). */
 @media (min-width: 1600px) and (max-height: 879px) {
-  #report-table, #report-table caption, #report-table thead th, #report-table tfoot td.footnote, .tile-label, .tile-sub { font-size: 17px; }
+  #report-table, #report-table thead th, #report-table tfoot td.footnote, .tile-label, .tile-sub { font-size: 17px; }
   #report-table tr.profit th, #report-table tr.profit td, #report-table tr.bottom-line th, #report-table tr.bottom-line td { font-size: 19px; }
 }

@@ -25,7 +25,6 @@
                 <img class="orb-img" data-orb="done" data-art="gm-done" alt="" width="56" height="56" />
               </span>
               <p id="status">Write your prediction, then put the GM to work.</p>
-              <span id="rail-round" class="rail-round" hidden></span>
             </div>
 
             <div id="result" class="result" hidden>
@@ -63,16 +62,16 @@
               <p class="week-line">The week is five days of four blocks: 20 blocks.</p>
               <div id="picks" class="picks"></div>
               <div class="why">
-                <label class="why-label" for="prediction"><span class="step" aria-hidden="true">3</span><span class="why-word">Why?</span> <span class="why-sub">Your team's reasons (write it before you put the GM to work)</span></label>
+                <label class="why-label" for="prediction"><span class="step" aria-hidden="true">3</span><span class="why-word">Why?</span> <span class="why-sub">Your team's reasons, for the debrief. Not needed to start, but write it before you put the GM to work.</span></label>
                 <textarea
                   id="prediction"
                   rows="4"
                   placeholder="What will the GM do with this bonus plan, and why? Think about the dogs, the crew on the floor and the incidents."
                 ></textarea>
                 <div class="actions">
+                  <button id="read-report" type="button" class="btn btn-go">Read the weekly P&amp;L</button>
                   <button id="new-prediction" type="button" class="btn btn-quiet" hidden>Make a new prediction</button>
                   <button id="train" type="button" class="btn btn-go" aria-describedby="picks-hint" disabled>Put the GM to work</button>
-                  <p class="again-note">Watch the week again replays this week on the yard. The same plan gives the same week.</p>
                 </div>
                 <p id="picks-hint" class="picks-hint"><span class="pick-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="picks-hint-text">Make all five picks to put the GM to work.</span></p>
               </div>
@@ -93,11 +92,20 @@
             <figcaption id="replay-caption">The GM's week</figcaption>
             <span id="stage-when" class="stage-when" hidden></span>
             <button id="replay-again" type="button" class="btn btn-quiet btn-small" hidden>Watch the week again</button>
+            <p class="again-note">Replays this week on the yard. The same plan gives the same week.</p>
           </div>
           <div class="yard-frame">
             <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
           </div>
           <div class="stage-foot">
+            <div class="next-card">
+              <p class="box-label">What happens next</p>
+              <ol class="next-steps">
+                <li>The GM gets ready for Monday.</li>
+                <li>It runs the week here, block by block, with its numbers beside the yard.</li>
+                <li>Then your scorecard: how the business did beside what you called, and the weekly P&amp;L.</li>
+              </ol>
+            </div>
             <div id="stage-picks" class="stage-picks" hidden>
               <p class="box-label">Your picks for the week</p>
               <ul id="stage-picks-list" class="stage-picks-list"></ul>
@@ -109,7 +117,6 @@
             <div class="readout-box">
               <div class="readout-head">
                 <p class="readout-label" id="readout-label">What the GM did</p>
-                <a class="to-report" href="#report">See the weekly P&amp;L</a>
               </div>
               <p id="readout" aria-live="polite"></p>
             </div>
@@ -155,9 +162,12 @@
           </fieldset>
           <div class="t-group" role="group" aria-labelledby="t-run">
             <span class="t-label" id="t-run">This run</span>
-            <label class="t-field" for="seed">Seed</label>
-            <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
+            <span class="t-field t-value">Seed <b id="run-seed">—</b></span>
             <button id="export" type="button" class="teacher-export" disabled>Export this run</button>
+          </div>
+          <div class="t-group" role="group" aria-labelledby="t-next">
+            <label class="t-label" id="t-next" for="seed">Next run's seed</label>
+            <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
           </div>
           <div class="t-group" role="group" aria-labelledby="t-curtain">
             <span class="t-label" id="t-curtain">Behind the curtain</span>
@@ -165,8 +175,8 @@
             <button id="show-curve" type="button">Show the learning curve</button>
             <button id="training-details" type="button" class="t-disclose" aria-expanded="false" aria-controls="teacher-foot">Training details</button>
           </div>
-          <button id="teacher-close" type="button" class="teacher-close">Close</button>
         </div>
+        <button id="teacher-close" type="button" class="teacher-close">Close</button>
         <p id="teacher-foot" class="teacher-foot" hidden><span id="check" class="check">No run yet.</span><span class="teacher-hint">The export carries the prediction as it stood when the GM was put to work.</span></p>
       </div>
     </aside>

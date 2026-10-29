@@ -42,9 +42,14 @@ describe('the art QA (D58)', () => {
     expect(READERS.filter((reader) => !clean.some((p) => p.reader === reader))).toEqual([]);
   });
 
+  // A defect stays open until the reader who found it records a clean pass on the same bytes after it (a regenerated
+  // or repaired file has new bytes and needs its own three passes; a re-check against a measurement is the one way
+  // the same bytes clear).
   it.each(shipped)('%s has no open defect on its exact bytes', (name) => {
     const sha = sha12(`${ART}/${name}`);
-    expect(ledger().filter((p) => p.file === name && p.sha === sha && p.verdict.startsWith('defect'))).toEqual([]);
+    const rows = ledger().filter((p) => p.file === name && p.sha === sha);
+    const open = rows.filter((p, i) => p.verdict.startsWith('defect') && !rows.slice(i + 1).some((q) => q.reader === p.reader && q.verdict === 'clean'));
+    expect(open).toEqual([]);
   });
 
   it.each(shipped)('%s is in the provenance record', (name) => {

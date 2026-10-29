@@ -417,3 +417,51 @@ Round 3 of the cast (every sprite re-framed with a 2 px margin; 42 sprites):
 | cast/golden-gold-moving.webp | 36d3aa00cb2d | main thread | 2026-10-29 | clean | after the pocket repair: at 2× (4× the page) and the repaired spot at 6×, on cream and near-black |
 | cast/golden-red-moving.webp | 6213ec05c958 | main thread | 2026-10-29 | clean | after the pocket repair: at 2× (4× the page) and the repaired spot at 6×, on cream and near-black |
 | cast/lab-yellow-asleep.webp | 30ec72368b93 | main thread | 2026-10-29 | clean | after the pocket repair: at 2× (4× the page) and the repaired spot at 6×, on cream and near-black |
+| cast/corgi-mahogany-moving.webp | a9eee0e1b316 | Astra | 2026-10-29 | defect: tail tip touches the top image edge. | measured by the main thread: the outer two pixel rings are fully transparent on every cast sprite; re-check asked |
+| cast/corgi-mahogany-sitting.webp | ff6812da8f04 | Astra | 2026-10-29 | defect: ear tip and front paws touch the top and bottom image edges. | measured by the main thread: the outer two pixel rings are fully transparent on every cast sprite; re-check asked |
+| cast/corgi-mahogany-asleep.webp | 972a0b7bfdf6 | Astra | 2026-10-29 | defect: back and forepaws touch the top and bottom image edges. | measured by the main thread: the outer two pixel rings are fully transparent on every cast sprite; re-check asked |
+| cast/golden-gold-moving.webp | 36d3aa00cb2d | Sonnet | 2026-10-29 | clean | after the pocket repair: 3× on cream and dark, the spots at 9-12×, a pocket script (0 enclosed at alpha ≤ 128 and < 250, 4- and 8-connected) |
+| cast/golden-red-moving.webp | 6213ec05c958 | Sonnet | 2026-10-29 | clean | after the pocket repair: 3× on cream and dark, the spots at 9-12×, a pocket script (0 enclosed at alpha ≤ 128 and < 250, 4- and 8-connected) |
+| cast/lab-yellow-asleep.webp | 30ec72368b93 | Sonnet | 2026-10-29 | clean | after the pocket repair: 3× on cream and dark, the spots at 9-12×, a pocket script (0 enclosed at alpha ≤ 128 and < 250, 4- and 8-connected) |
+| cast/corgi-red-moving.webp | 85c7d93c615b | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/corgi-red-sitting.webp | 7ff6f0d7d79b | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/corgi-red-asleep.webp | 20b93406a675 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/corgi-mahogany-moving.webp | a9eee0e1b316 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe); read as corgi-sable-*, the same bytes |
+| cast/corgi-mahogany-sitting.webp | ff6812da8f04 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe); read as corgi-sable-*, the same bytes |
+| cast/corgi-mahogany-asleep.webp | 972a0b7bfdf6 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe); read as corgi-sable-*, the same bytes |
+| cast/beagle-tricolour-moving.webp | 2acbe2488aa4 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/beagle-tricolour-sitting.webp | 3b62276a5f02 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/beagle-tricolour-asleep.webp | 1f68be8e5639 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/collie-black-moving.webp | 62a679f04ed9 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/collie-black-sitting.webp | 0428112c6b21 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/collie-black-asleep.webp | 47c99bf161cc | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/collie-red-moving.webp | 6440fe2e0099 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/collie-red-sitting.webp | 322b4d90ee6e | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/collie-red-asleep.webp | c52ff76dc16b | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/poodle-brown-moving.webp | 36428e3e4823 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/poodle-brown-sitting.webp | c5cb2c7dd119 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/poodle-brown-asleep.webp | 4ae73e9fc588 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/poodle-black-moving.webp | 439e2b57ce1b | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/poodle-black-sitting.webp | b32043e386e9 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/poodle-black-asleep.webp | 28c4ec637909 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-black-moving.webp | 560e53e5a539 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-black-sitting.webp | 697963211828 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-black-asleep.webp | 71264f8940b8 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-chocolate-moving.webp | 24a680b7f8ff | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-chocolate-sitting.webp | fab8c16682e3 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-chocolate-asleep.webp | 64fb35c73674 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-yellow-moving.webp | 06fa277ac743 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/lab-yellow-sitting.webp | d4a37288eb54 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/golden-gold-sitting.webp | bf87645a12c7 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/golden-gold-asleep.webp | e40f6bb2f856 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/golden-red-sitting.webp | 17e75733e10f | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/golden-red-asleep.webp | 3f4de3bd700a | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/crew-leash.webp | 481960bf1f5b | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/crew-ball.webp | 4d5c65b8b65b | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/crew-mop.webp | d87c478f5edc | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/crew2-leash.webp | 16b1bea96a7f | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/crew2-ball.webp | 98891867756b | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| cast/crew2-mop.webp | a22d049d3a85 | Sonnet | 2026-10-29 | clean | round 3: crops, a pixel script (margins, holes, fringe) |
+| set/gm-done.webp | e12e5f32915d | Sonnet | 2026-10-29 | clean | the third render: the same object and place as ready and running; a neutral warm-white band |
+| set/gm-page-done.webp | d44de11da266 | Sonnet | 2026-10-29 | clean | the third render: the same object and place as ready and running; a neutral warm-white band |
+| cast/golden-gold-moving.webp, cast/golden-red-moving.webp, cast/lab-yellow-asleep.webp | (round 3 bytes) | Sonnet | 2026-10-29 | defect: an enclosed translucent pocket (the brisket; the ear and cheek) | repaired: POCKET_REPAIRS; the new bytes' rows are above |

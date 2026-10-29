@@ -27,7 +27,7 @@ function picks(p: Partial<Picks>): Picks {
 
 describe('the five picks', () => {
   it('are the readout sentence\'s five, with the page\'s words', () => {
-    expect(PICKS.map((p) => p.label)).toEqual(['Days it accepts every booking', 'Day rate', 'Days with 1 staffer on the floor', 'Nap blocks', 'Incidents']);
+    expect(PICKS.map((p) => p.label)).toEqual(['Days it accepts every booking', 'Day rate', 'Days with 1 staffer on the floor', 'Nap blocks this week', 'Incidents this week']);
     expect(PICKS.map((p) => p.options.map((o) => o.label))).toEqual([
       ['None', '1 to 4', 'All 5'],
       ['Low', 'Standard', 'Premium', 'A mix'],
@@ -79,17 +79,21 @@ describe('where a week falls', () => {
 });
 
 describe('the scorecard', () => {
-  it('checks each pick against the week, with the exact number after a range', () => {
+  it('checks each pick against the week, saying what the GM did in plain words, never the bucket again (G5d)', () => {
     const w = week({ daysAcceptedAll: 3, daysOneStaffer: 4, napBlocks: 0, incidents: 7 }, ['low', 'premium', 'premium', 'premium', 'premium']);
     // (in a real report a closed day keeps its rate; the mix counts open days only, as below)
     const r = checkPrediction(picks({ acceptAll: 'all', rate: 'mix', solo: '3-4', naps: '0', incidents: '3-6' }), w);
     expect(r.map((x) => [x.field, x.picked, x.actual, x.called])).toEqual([
-      ['acceptAll', 'All 5', '1 to 4 (3)', false],
-      ['rate', 'A mix', 'A mix (low × 1, premium × 4)', true],
-      ['solo', '3 or 4', '3 or 4 (4)', true],
-      ['naps', 'None', 'None', true],
-      ['incidents', '3 to 6', '7 or more (7)', false],
+      ['acceptAll', 'All 5', '3 days', false],
+      ['rate', 'A mix', 'A mix: low × 1, premium × 4', true],
+      ['solo', '3 or 4', '4 days', true],
+      ['naps', 'None', 'No naps', true],
+      ['incidents', '3 to 6', '7 incidents', false],
     ]);
+    const words = (t: Parameters<typeof week>[0]) =>
+      checkPrediction(picks({}), week(t, ['premium', 'premium', 'premium', 'premium', 'premium'])).map((x) => x.actual);
+    expect(words({ daysAcceptedAll: 5, daysOneStaffer: 0, napBlocks: 1, incidents: 1 })).toEqual(['Every day', 'Premium', 'No days', '1 nap block', '1 incident']);
+    expect(words({ daysAcceptedAll: 0, daysOneStaffer: 1, napBlocks: 9, incidents: 0 })).toEqual(['No days', 'Premium', '1 day', '9 nap blocks', 'No incidents']);
     expect(r[0]?.label).toBe('Days it accepts every booking');
     expect(calledLine(r)).toBe('You called 3 of 5.');
   });

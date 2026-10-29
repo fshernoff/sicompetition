@@ -60,15 +60,15 @@ describe('describeWeek', () => {
   it('renders the covered reckless week', () => {
     const t = covered.totals;
     expect(describeWeek(covered)).toBe(
-      `The GM accepted every booking on 5 of 5 days, ran the floor with 1 staffer on 4 days, chose nap 0 times, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer, and had ${t.incidents} incidents.`,
+      `The GM accepted every booking on 5 of 5 days, ran the floor with one staffer on 4 days, never had the dogs nap, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer, and had ${t.incidents} incidents.`,
     );
   });
 
   it('renders the careful week', () => {
     const t = careful.totals;
-    const incidents = t.incidents === 1 ? '1 incident' : `${t.incidents} incidents`;
+    const incidents = t.incidents === 0 ? 'no incidents' : t.incidents === 1 ? '1 incident' : `${t.incidents} incidents`;
     expect(describeWeek(careful)).toBe(
-      `The GM accepted every booking on 5 of 5 days, ran the floor with 1 staffer on 0 days, chose nap 5 times, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer, and had ${incidents}.`,
+      `The GM accepted every booking on 5 of 5 days, never ran the floor with one staffer, had the dogs nap in 5 blocks, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer, and had ${incidents}.`,
     );
   });
 
@@ -76,15 +76,20 @@ describe('describeWeek', () => {
     const t = literal.totals;
     const incidents = t.incidents === 1 ? '1 incident' : `${t.incidents} incidents`;
     expect(describeWeek(literal)).toBe(
-      `The GM accepted every booking on 4 of 5 days, ran the floor with 1 staffer on 4 days, chose nap 0 times, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer, had ${incidents}, and was closed on 1 day.`,
+      `The GM accepted every booking on 4 of 5 days, ran the floor with one staffer on 4 days, never had the dogs nap, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer, had ${incidents}, and was closed on 1 day.`,
     );
   });
 
-  it('uses singulars for one', () => {
+  it('uses singulars for one and business words for none (G5d)', () => {
     const one = structuredClone(covered);
+    one.totals.daysOneStaffer = 1;
     one.totals.napBlocks = 1;
     one.totals.incidents = 1;
-    expect(describeWeek(one)).toMatch(/chose nap 1 time, averaged \d+ dogs per staffer, and had 1 incident\.$/);
+    expect(describeWeek(one)).toMatch(/ran the floor with one staffer on 1 day, had the dogs nap in 1 block, averaged \d+ dogs per staffer, and had 1 incident\.$/);
+    const none = structuredClone(covered);
+    none.totals.incidents = 0;
+    expect(describeWeek(none)).toMatch(/, and had no incidents\.$/);
+    expect(describeWeek(none)).not.toMatch(/\b0 (times|days|blocks|incidents)\b|chose nap/);
     const two = structuredClone(literal);
     two.totals.daysClosed = 2;
     expect(describeWeek(two)).toMatch(/, and was closed on 2 days\.$/);

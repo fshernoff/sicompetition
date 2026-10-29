@@ -19,7 +19,13 @@ const soloWalk = runEpisode(
   episodeSeeds(1, 0),
 ).report; // every walk and every class falls back
 
-const ACTIVITIES = 'Activities (drop-off · late morning · afternoon · pickup)';
+// G5d: the activities as three one-line rows under a sub-heading, and their week as counts in words
+const ACTIVITIES = 'Activities (drop-off is always arrivals)';
+const BLOCKS = ['Late morning', 'Afternoon', 'Pickup'] as const;
+const MIX = 'Naps, cleans and walks';
+const FOOTNOTE = "A walk takes dogs and a staffer off the floor, so a day's average can differ from dogs ÷ crew.";
+const PAY = "The GM's pay under your plan";
+const BOTTOM = "The owners' bottom line ($)";
 
 function rows(t: ReportTable): ReportRow[] {
   return t.groups.flatMap((g) => g.rows);
@@ -60,9 +66,9 @@ describe('formatMoney and formatPoints', () => {
 describe('reportTable: shape', () => {
   const table = reportTable(covered, round1, config);
 
-  it('has a column per day and the week, and three groups with every line of section 10', () => {
+  it('has a column per day and the week, and four groups with every line of section 10', () => {
     expect(table.columns).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Week']);
-    expect(table.groups.map((g) => g.title)).toEqual(['Operations', 'Money ($)', "The GM's pay under your plan (the profit above is before this pay)"]);
+    expect(table.groups.map((g) => g.title)).toEqual(['Operations', 'Money ($)', PAY, BOTTOM]);
     expect(table.groups[0]?.rows.map((r) => r.label)).toEqual([
       'Requests',
       'Dogs accepted',
@@ -71,6 +77,8 @@ describe('reportTable: shape', () => {
       'Crew scheduled',
       'Crew on the floor',
       ACTIVITIES,
+      ...BLOCKS,
+      MIX,
       "Dogs per staffer, the day's average",
       'Blocks over 15 dogs per staffer',
       'Incidents',
@@ -90,12 +98,21 @@ describe('reportTable: shape', () => {
       'Vet bills',
       'Fines',
       'Cleaning supplies',
-      'Profit',
-      'Cash at close',
+      "Profit before the GM's bonus",
     ]);
-    expect(table.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$10 per $100', "The GM's bonus ($)", "Profit after the GM's bonus ($)"]);
+    expect(table.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$10 per $100', "The GM's bonus ($)"]);
+    expect(table.groups[3]?.rows.map((r) => r.label)).toEqual(['Paid to the GM', "Profit after the GM's bonus", 'Cash at close']);
     for (const r of rows(table)) expect(r.days, r.label).toHaveLength(5);
-    expect(rows(table).filter((r) => r.emphasis === true).map((r) => r.label)).toEqual(['Revenue', 'Profit', "The GM's bonus ($)", "Profit after the GM's bonus ($)"]);
+    expect(rows(table).filter((r) => r.emphasis === true).map((r) => r.label)).toEqual([
+      'Revenue',
+      "Profit before the GM's bonus",
+      "The GM's bonus ($)",
+      "Profit after the GM's bonus",
+    ]);
+  });
+
+  it("explains under the table why a day's average can differ from dogs ÷ crew (G5d)", () => {
+    expect(table.footnote).toBe(FOOTNOTE);
   });
 
   it('takes the 15, the 70 and the $2,000 from the config', () => {
@@ -106,7 +123,7 @@ describe('reportTable: shape', () => {
     const t = reportTable(covered, round1, other);
     expect(rows(t).map((r) => r.label)).toContain('Blocks over 12 dogs per staffer');
     expect(rows(t).map((r) => r.label)).toContain('Blocks with crew fatigue above 60%');
-    expect(cells(t, 'Cash at close')[0]).toBe(formatMoney(500 + (covered.days[0]?.profit ?? 0)));
+    expect(cells(t, 'Cash at close')[0]).toBe('$1,517'); // $500 + Monday's $1,130 − the GM's $113
   });
 });
 
@@ -120,8 +137,9 @@ describe('reportTable: the covered reckless week on seed 1', () => {
     expect(cells(table, 'Day rate')).toEqual(['premium $52', 'premium $52', 'premium $52', 'premium $52', 'premium $52', 'premium × 5']);
     expect(cells(table, 'Crew scheduled')).toEqual(['1', '1', '1', '2', '1', '6 staff-days']);
     expect(cells(table, 'Crew on the floor')).toEqual(['1', '1', '1', '2', '1', '1 staffer on 4 days']);
-    const free = 'arrivals · free play · free play · free play';
-    expect(cells(table, ACTIVITIES)).toEqual([free, free, free, free, free, 'nap 0, clean 0, walk 0']);
+    expect(cells(table, ACTIVITIES)).toEqual(['', '', '', '', '', '']);
+    for (const block of BLOCKS) expect(cells(table, block), block).toEqual(['free play', 'free play', 'free play', 'free play', 'free play', '']);
+    expect(cells(table, MIX)).toEqual(['', '', '', '', '', 'no naps · no cleans · no walks']);
     expect(cells(table, "Dogs per staffer, the day's average")).toEqual(['20.0', '19.0', '17.0', '8.0', '16.0', '16.0']);
     expect(cells(table, 'Blocks over 15 dogs per staffer')).toEqual(['4', '4', '4', '0', '4', '16']);
     expect(cells(table, 'Incidents')).toEqual(['4', '2', '2', '0', '1', '9']);
@@ -142,10 +160,8 @@ describe('reportTable: the covered reckless week on seed 1', () => {
     expect(cells(table, 'Vet bills')).toEqual(['$150', '$0', '$0', '$0', '$0', '$150']);
     expect(cells(table, 'Fines')).toEqual(['$0', '$250', '$0', '$0', '$0', '$250']);
     expect(cells(table, 'Cleaning supplies')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
-    expect(cells(table, 'Profit')).toEqual(['$1,130', '$978', '$1,064', '$712', '$997', '$4,881']);
-    expect(cells(table, 'Cash at close')).toEqual(['$3,130', '$4,108', '$5,172', '$5,884', '$6,881', '$6,881']);
-    expect(row(table, 'Profit').week).toBe(formatMoney(covered.totals.profit));
-    expect(row(table, 'Cash at close').week).toBe(formatMoney(covered.totals.cashEnd));
+    expect(cells(table, "Profit before the GM's bonus")).toEqual(['$1,130', '$978', '$1,064', '$712', '$997', '$4,881']);
+    expect(row(table, "Profit before the GM's bonus").week).toBe(formatMoney(covered.totals.profit));
   });
 
   it('pays the Round 1 bonus per day, in dollars, and sums to the total reward', () => {
@@ -154,11 +170,14 @@ describe('reportTable: the covered reckless week on seed 1', () => {
     expect(row(table, "The GM's bonus ($)").week).toBe(formatBonus(covered.totals.reward));
   });
 
-  it("ends with the owners' bottom line: each day's profit less that day's bonus, and the week's (G5d)", () => {
-    const labels = table.groups[2]?.rows.map((r) => r.label);
-    expect(labels?.slice(-2)).toEqual(["The GM's bonus ($)", "Profit after the GM's bonus ($)"]);
-    expect(row(table, "Profit after the GM's bonus ($)").emphasis).toBe(true);
-    expect(cells(table, "Profit after the GM's bonus ($)")).toEqual(['$1,017', '$880.20', '$957.60', '$640.80', '$897.30', '$4,392.90']);
+  it("ends with the owners' bottom line: the GM paid as a cost, the profit after it, and cash that paid it (G5d)", () => {
+    expect(table.groups[3]?.title).toBe(BOTTOM);
+    expect(cells(table, 'Paid to the GM')).toEqual(['−$113', '−$97.80', '−$106.40', '−$71.20', '−$99.70', '−$488.10']);
+    expect(row(table, "Profit after the GM's bonus").emphasis).toBe(true);
+    expect(cells(table, "Profit after the GM's bonus")).toEqual(['$1,017', '$880.20', '$957.60', '$640.80', '$897.30', '$4,392.90']);
+    // the page's cash pays the GM as it earns (BRIEF section 5): $2,000 plus the profit after the bonus, running
+    expect(cells(table, 'Cash at close')).toEqual(['$3,017', '$3,897.20', '$4,854.80', '$5,495.60', '$6,392.90', '$6,392.90']);
+    expect(row(table, 'Cash at close').week).toBe(formatDollars(covered.totals.cashEnd - covered.totals.reward));
     expect(formatDollars(covered.totals.profit - covered.totals.reward)).toBe('$4,392.90');
     expect([formatDollars(-120), formatDollars(0), formatDollars(4853.7), formatDollars(-35.5)]).toEqual(['−$120', '$0', '$4,853.70', '−$35.50']);
   });
@@ -176,17 +195,18 @@ describe('reportTable: other weeks', () => {
     expect(cells(t, 'Crew scheduled')[5]).toBe('5 staff-days');
     expect(cells(t, 'Crew on the floor')[3]).toBe('0, called out');
     expect(cells(t, 'Crew on the floor')[5]).toBe('1 staffer on 4 days');
-    expect(cells(t, ACTIVITIES)[3]).toBe('closed');
+    for (const block of BLOCKS) expect(cells(t, block)[3], block).toBe('closed');
     expect(cells(t, "Dogs per staffer, the day's average")[3]).toBe('—');
     expect(cells(t, 'Incidents')[3]).toBe('0');
     expect(cells(t, 'Reputation at pickup')[3]).toBe('16');
     expect(cells(t, 'Cleanliness at pickup')[3]).toBe('10');
     expect(cells(t, 'Crew fatigue at pickup')[3]).toBe('75');
-    for (const label of ['Day rates', 'Activity add-ons', 'Revenue', 'Wages', 'Refunds', 'Vet bills', 'Fines', 'Cleaning supplies', 'Profit']) {
+    for (const label of ['Day rates', 'Activity add-ons', 'Revenue', 'Wages', 'Refunds', 'Vet bills', 'Fines', 'Cleaning supplies', "Profit before the GM's bonus"]) {
       expect(cells(t, label)[3], label).toBe('$0');
     }
     expect(cells(t, 'Cash at close')[3]).toBe(cells(t, 'Cash at close')[2]);
     expect(cells(t, 'Profit today ($), +$10 per $100')[3]).toBe('$0');
+    expect(cells(t, 'Paid to the GM')[3]).toBe('$0');
   });
 
   it('pays a reputation measure on a closed day: the closure is a reputation change', () => {
@@ -198,11 +218,11 @@ describe('reportTable: other weeks', () => {
     expect(row(t, "The GM's bonus ($)").week).toBe(formatBonus(report.totals.reward));
   });
 
-  it('shows a fallback as what was asked and what the floor ran', () => {
+  it('shows a fallback as what ran, with what was asked, on one line', () => {
     const t = reportTable(soloWalk, round1, config);
-    expect(cells(t, ACTIVITIES)[0]).toBe('arrivals · walk → free play · structured play → free play · nap');
-    expect(cells(t, ACTIVITIES)[3]).toBe('closed');
-    expect(cells(t, ACTIVITIES)[5]).toBe('nap 4, clean 0, walk 0');
+    expect(BLOCKS.map((b) => cells(t, b)[0])).toEqual(['free play (walk asked)', 'free play (structured play asked)', 'nap']);
+    expect(BLOCKS.map((b) => cells(t, b)[3])).toEqual(['closed', 'closed', 'closed']);
+    expect(cells(t, MIX)[5]).toBe('4 naps · no cleans · no walks');
     expect(cells(t, 'Cleanliness at pickup')).toEqual(['48', '28', '10', '20', '0', '80 → 0 (−80)']);
   });
 
@@ -211,8 +231,9 @@ describe('reportTable: other weeks', () => {
     expect(cells(t, 'Day rate')).toEqual(['standard $40', 'standard $40', 'standard $40', 'standard $40', 'standard $40', 'standard × 5']);
     expect(cells(t, 'Crew on the floor')[5]).toBe('1 staffer on 0 days');
     expect(cells(t, 'Crew scheduled')[5]).toBe('10 staff-days');
-    const day = 'arrivals · structured play · nap · clean';
-    expect(cells(t, ACTIVITIES)).toEqual([day, day, day, day, day, 'nap 5, clean 5, walk 0']);
+    expect(BLOCKS.map((b) => cells(t, b)[0])).toEqual(['structured play', 'nap', 'clean']);
+    expect(BLOCKS.map((b) => cells(t, b)[4])).toEqual(['structured play', 'nap', 'clean']);
+    expect(cells(t, MIX)[5]).toBe('5 naps · 5 cleans · no walks');
     expect(cells(t, 'Cleaning supplies')).toEqual(['$250', '$250', '$250', '$250', '$250', '$1,250']);
     expect(cells(t, "Dogs per staffer, the day's average")).toEqual(['10.0', '10.0', '10.0', '10.0', '10.0', '10.0']);
     expect(cells(t, "The GM's bonus ($)")[5]).toBe('+$73.50');
@@ -244,12 +265,11 @@ describe('reportTable: the bonus group follows the plan', () => {
     expect(t.groups[2]?.rows.map((r) => r.label)).toEqual([
       'Profit today ($), +$10 per $100',
       'Incidents, −$5 per incident',
-      'Blocks over the legal ratio, −$5 per block',
+      'Blocks over 15 dogs per staffer, −$5 per block',
       "The GM's bonus ($)",
-      "Profit after the GM's bonus ($)",
     ]);
     expect(cells(t, 'Incidents, −$5 per incident')).toEqual(['−$20', '−$10', '−$10', '$0', '−$5', '−$45']);
-    expect(cells(t, 'Blocks over the legal ratio, −$5 per block')).toEqual(['−$20', '−$20', '−$20', '$0', '−$20', '−$80']);
+    expect(cells(t, 'Blocks over 15 dogs per staffer, −$5 per block')).toEqual(['−$20', '−$20', '−$20', '$0', '−$20', '−$80']);
     expect(cells(t, "The GM's bonus ($)")).toEqual(['+$73', '+$67.80', '+$76.40', '+$71.20', '+$74.70', '+$363.10']);
     expect(row(t, "The GM's bonus ($)").week).toBe(formatBonus(report.totals.reward));
   });
@@ -261,15 +281,15 @@ describe('reportTable: the bonus group follows the plan', () => {
     expect(t.groups[2]?.rows.map((r) => r.label)).toEqual([
       'Dogs served, +$1 per dog',
       'Reputation change, +$5 per point',
-      'Staff fatigue above 70%, −$2 per block',
+      'Blocks with crew fatigue above 70%, −$2 per block',
       "The GM's bonus ($)",
-      "Profit after the GM's bonus ($)",
     ]);
     expect(cells(t, 'Reputation change, +$5 per point')).toEqual(['−$40', '−$50', '−$30', '−$10', '−$15', '−$145']);
     expect(cells(t, 'Dogs served, +$1 per dog')).toEqual(['+$20', '+$19', '+$17', '+$16', '+$16', '+$88']);
-    expect(cells(t, 'Staff fatigue above 70%, −$2 per block')).toEqual(['$0', '−$2', '−$6', '−$8', '−$8', '−$24']);
+    expect(cells(t, 'Blocks with crew fatigue above 70%, −$2 per block')).toEqual(['$0', '−$2', '−$6', '−$8', '−$8', '−$24']);
     expect(row(t, "The GM's bonus ($)").week).toBe(formatBonus(report.totals.reward));
     expect(row(t, "The GM's bonus ($)").week).toBe('−$81');
+    expect(row(t, 'Paid to the GM').week).toBe('+$81'); // a negative bonus comes back to the owners
   });
 
   it('says so when no measure is on', () => {
@@ -277,6 +297,8 @@ describe('reportTable: the bonus group follows the plan', () => {
     const t = reportTable(runEpisode(config, none, recklessCoveredPolicy, episodeSeeds(1, 0)).report, none, config);
     expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['No measure is on: the GM is paid nothing.']);
     expect(cells(t, 'No measure is on: the GM is paid nothing.')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
+    expect(cells(t, 'Paid to the GM')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
+    expect(row(t, "Profit after the GM's bonus").week).toBe(row(t, "Profit before the GM's bonus").week);
   });
 
   it('ignores a measure that is off whatever its weight, names a weight of 1 or 0 as the editor does, and keeps two decimals', () => {
@@ -284,7 +306,7 @@ describe('reportTable: the bonus group follows the plan', () => {
     plan.kpis.dogsServed = { on: false, weight: 7 };
     const report = runEpisode(config, plan, recklessCoveredPolicy, episodeSeeds(1, 0)).report;
     const t = reportTable(report, plan, config);
-    expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$1 per $100', 'Incidents, $0 per incident', "The GM's bonus ($)", "Profit after the GM's bonus ($)"]);
+    expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$1 per $100', 'Incidents, $0 per incident', "The GM's bonus ($)"]);
     expect(cells(t, 'Incidents, $0 per incident')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
     expect(cells(t, 'Profit today ($), +$1 per $100')).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);
     expect(cells(t, "The GM's bonus ($)")).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);
@@ -299,8 +321,8 @@ describe('reportTable: words', () => {
   });
 });
 
-describe('headlineTiles (G5c)', () => {
-  it('opens the report with five numbers in the table\'s own formats', async () => {
+describe('headlineTiles (G5c; G5d: the owners\' bottom line leads)', () => {
+  it('opens the report with five numbers in the table\'s own formats, the profit after the GM\'s bonus first', async () => {
     const { headlineTiles } = await import('../../src/ui/report.ts');
     const { Trainer } = await import('../../src/learn/train.ts');
     const { loadDefaultConfig, loadPreset } = await import('../../src/world/config.ts');
@@ -309,8 +331,8 @@ describe('headlineTiles (G5c)', () => {
     const trainer = new Trainer(w, s, 1);
     trainer.runEpisodes(trainer.config.maxEpisodes);
     expect(headlineTiles(trainer.evaluate(), s, w)).toEqual([
-      { label: 'Profit this week', value: '$5,393' },
-      { label: "The GM's bonus", value: '+$539.30' },
+      { label: "Profit after the GM's bonus", value: '$4,853.70', note: "$5,393 before the GM's bonus" },
+      { label: 'Paid to the GM', value: '−$539.30' },
       { label: 'Incidents', value: '7' },
       { label: 'Reputation', value: '50 → 32' },
       { label: 'Blocks over 15 dogs per staffer', value: '16' },

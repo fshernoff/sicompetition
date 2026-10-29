@@ -65,3 +65,63 @@ picks, the ratio display, the P&L and the tray's groups are at the bar and must 
 | 31 | Med | A | Scorecard "3 or 4 (4)" | Declined | D56's words, on the sheets |
 | 32 | Low | C | "chose nap 0 times" | Declined | describeWeek's sentence, quoted by the teacher guide (D54) |
 | 33 | Low | C | The bar scrolls away on the run screens | Accepted | WP2: the round in the run header |
+
+## Round 2 (Oct 29, `g5d-look` with WP2's and WP3's round 1 fixes merged)
+
+Shots: `Temp/shots/20261028-233947/`. Checks on that build: `npx vitest run` 517 passed, 9 failed (all D58 rows
+for six sprites awaiting Astra); lint 0; dist 772 KB; `npm run e2e` 9 passed (52.9 s); `npm run perf` 1,286 /
+1,106 / 1,085 ms, p95 16.7 to 16.8 ms, 0 long tasks, 4.8 MB.
+
+### The main thread (before reading the others)
+
+| # | Severity | Shot | Finding |
+|---|---|---|---|
+| M1 | Medium | 05 | "The GM's bonus +$539.30" in How the business did keeps a plus sign: a payout reads as income on the business side |
+| M2 | Medium | 01 | The empty board still sits small in a tall grey column on load |
+| M3 | Low | 05 | Empty space under the plan summary in the left column after the week |
+
+### Astra and the Opus critic (unanchored)
+
+Astra: "polished classroom software", not at the bar: 2 blocking, 9 high, 6 medium (all 23 shots at full size; "no
+definite anatomy error, child staff member, stray art text or cutout halo"). The critic: passes at five seconds, not
+on a closer look: 3 blocking, 9 high, 16 medium, 2 low. Both rate the palette, the type, the numbered flow, the
+picks, the gauge, the reconciled P&L arithmetic, the tray's groups and the yard's light and cutouts at the bar.
+
+### Triage (the spec's words changed first: BRIEF 1, 1.1, 5, 7, 10, 10.1, 10.2; D60 to D63; 29 tests written failing)
+
+| # | Sev | From | Finding | Verdict | Owner |
+|---|---|---|---|---|---|
+| 1 | Block | C1, M1 | The GM's bonus keeps its plus sign in the owners' ledger | Accepted (D62) | BRIEF 10.1: a fourth group, the owners' bottom line (Paid to the GM as a cost, Profit after, Cash at close); WP2 |
+| 2 | Block | C2, A9 | Cash never pays the GM | Accepted (D62) | BRIEF 5: the page's cash less the bonus earned so far; `frame.bonusSoFar`; WP2 |
+| 3 | Block | C3, A1, M3 | The long Why cut off with no mark; the primary button below the fold; the left column empty | Accepted | WP2: the full Why in the scorecard's empty lower-left cell; both buttons above the fold at 1366 × 768 |
+| 4 | Block | A2, C11 | The tray slices the rerun button at 1024 and hides it at 1366 | Accepted | WP2: the open tray's height reserved as bottom padding |
+| 5 | High | C4, A10, C27 | Scorecard and report lead with profit before the bonus; a 5 of 5 reads as a good week | Accepted in part | WP2: lead with the profit after the GM's bonus, reputation lost and incidents in the warning colour; no invented verdict (A rates the neutral called/missed at the bar) |
+| 6 | High | C5 | "capped at a safe ratio" when nobody was turned away | Accepted | BRIEF 10.2; WP2 (`planWords`) |
+| 7 | High | C6 | Sick dogs never leave the count | Accepted in part | Illness is found at pickup (BRIEF 6): the caption says so, "2 dogs sick at pickup"; WP2 |
+| 8 | High | C7 | Tuesday's 10.4 does not reconcile | Accepted | A footnote under the table (BRIEF 10.1); WP2 |
+| 9 | High | C8, A4, C30 | Identical cream Labs side by side; three corgis in one pose; three retrievers in one run | Accepted | WP3: in screen space, the same sprite never within 160 px, the same breed and pose never within 110 px; a test |
+| 10 | High | C9, A6, A7 | Mid-week: the GM's action in the weakest text, no cost, the bookings unscoped | Accepted | BRIEF 10.2: "Today: …", a bold "This block: …", "The GM's bonus so far" beside the cash; WP2 |
+| 11 | High | C10, A8 | Two picks have no scope | Accepted | BRIEF 1.1: "Nap blocks this week", "Incidents this week", "Your picks for the week", the 20 blocks; WP2 |
+| 12 | High | C12, A3 | The fallback yard reads as a child's drawing | Accepted | WP3: a deliberate schematic (the floor plan in the palette, tokens for dogs and crew, the orb), no drawn anatomy |
+| 13 | High | A5 (and round 1's A17) | The crew render smooth beside the faceted dogs | Accepted (the second time; the main thread sees it at 2×) | WP4a: the crew remade in the dogs' faceted treatment, with a kneel and a tired pose; D58 again |
+| 14 | High | A11 | The report's 14 px table is too small to project | Accepted | WP2: the table's type scales from 1600 wide, the Week column marked |
+| 15 | Med | A12 | A spotless lawn at cleanliness 0 | Accepted (state shown, nothing invented: D60) | WP4b: mess decals from the set; WP3 shows them by cleanliness |
+| 16 | Med | A13 | The sliders' zero and ends unmarked | Accepted | WP2 |
+| 17 | Med | A14, C17 | "3 or 4 (4)" repeats the bucket; the table wraps | Accepted (D63, reversing round 1) | BRIEF 1.1; WP2: plain words, fixed columns, no orphaned numbers |
+| 18 | Med | A15, C28, M2 | Space: an empty yard small on load; getting ready half empty | Accepted | WP3: the board fills its column, the orb ready on the roof; WP2: phase proportions, a compact getting-ready |
+| 19 | Med | A16 | "Watch the week again" and "Put the GM to work again" are not told apart | Accepted | WP2: one line under the buttons |
+| 20 | Med | A17, C16 | The Activities row wraps and its arrow is unexplained | Accepted | BRIEF 10.1: three one-line rows and a count row; "free play (walk asked)" everywhere; WP2 |
+| 21 | Med | C13 | One measure, several names | Accepted (D61, reversing round 1) | BRIEF 7; WP2 with the sheets (D54's test) |
+| 22 | Med | C14 | The meters: no bad end, the threshold's unit | Accepted | WP2 |
+| 23 | Med | C15 | Copy that reads like engine output | Accepted | BRIEF 10 (the sentence's clauses), 10.2 (the plan line, the streak); WP2 |
+| 24 | Med | C18 | Headlines split numbers from nouns | Accepted | WP2: non-breaking spaces |
+| 25 | Med | C19 | The scorecard's dividers misaligned | Accepted (with 3) | WP2 |
+| 26 | Med | C20 | The done status narrates the layout | Accepted | BRIEF 1: "The week is over."; WP2 |
+| 27 | Med | C21 | Off measures look active | Accepted | WP2: the row greyed |
+| 28 | Med | C22 | The disabled button looks enabled; the round pill looks like a button | Accepted | WP2 |
+| 29 | Med | C23 | The round pill twice or missing | Accepted | WP2: one rule, a compact sticky bar |
+| 30 | Med | C24 | The scroll and the yard's size jump between states | Accepted | WP2 (the bar), WP3 (one camera) |
+| 31 | Med | C25 | The plan sentence's indents; measure names wrap | Accepted | WP2 |
+| 32 | Med | C26 | The Why box does not grow | Accepted | WP2 |
+| 33 | Low | C29 | Blue link and focus ring | Accepted | WP2: navy or amber |
+| 34 | Low | C30 | The tray's round control; "you write its bonus plan" with Round 1 locked | Accepted / declined | WP2 the control; the tagline is the bible's, and the round line says Round 1's plan is set |

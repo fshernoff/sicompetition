@@ -98,9 +98,9 @@ describe('replayFrame: the floor during block t', () => {
     expect(frame(covered, 16).dayName).toBe('Friday');
     expect(frame(covered, 4).captions).toEqual(['Inspector: $250 fine']);
     expect(frame(covered, 4).finesSoFar).toBe(1);
-    expect(frame(covered, 7).captions).toEqual(['Incident', '1 dog sent home sick']);
+    expect(frame(covered, 7).captions).toEqual(['Incident', '1 dog sick at pickup']); // G5d: illness is found at pickup
     expect(frame(covered, 7).sickSoFar).toBe(1);
-    expect(frame(covered, 11).captions).toEqual(['Incident', '2 dogs sent home sick']);
+    expect(frame(covered, 11).captions).toEqual(['Incident', '2 dogs sick at pickup']);
     expect(frame(covered, 12)).toMatchObject({ staff: 2, scheduledStaff: 2, soloStreak: 3 }); // Thursday's help after three solo days
     expect(frame(covered, 13).ratio).toBe(8);
     expect(frame(covered, 16).soloStreak).toBe(0); // the help day reset it
@@ -137,10 +137,10 @@ describe('replayFrame: the floor during block t', () => {
 
   it('names a fallback in the header, not in a caption', () => {
     const walk = frame(soloWalk, 1);
-    expect(walk).toMatchObject({ activity: 'freePlay', requested: 'walk', activityWords: 'walk → free play', walkingDogs: 0, walkingStaff: 0, floorDogs: 20, floorStaff: 1, ratio: 20 });
+    expect(walk).toMatchObject({ activity: 'freePlay', requested: 'walk', activityWords: 'free play (walk asked)', walkingDogs: 0, walkingStaff: 0, floorDogs: 20, floorStaff: 1, ratio: 20 });
     expect(walk.captions).toEqual(['Incident']); // the walkFellBack event gets no caption
     const cls = frame(soloWalk, 2);
-    expect(cls).toMatchObject({ activity: 'freePlay', requested: 'structuredPlay', activityWords: 'structured play → free play' });
+    expect(cls).toMatchObject({ activity: 'freePlay', requested: 'structuredPlay', activityWords: 'free play (structured play asked)' });
     expect(cls.captions).toEqual(['Incident']);
     expect(frame(soloWalk, 3)).toMatchObject({ activity: 'nap', activityWords: 'nap' });
     expect(frame(careful, 1)).toMatchObject({ activity: 'structuredPlay', activityWords: 'structured play', ratio: 10 });
@@ -165,15 +165,32 @@ describe('replayFrame: the floor during block t', () => {
     expect(frame(literal, 19).incidentsSoFar).toBe(literal.report.totals.incidents);
   });
 
-  it("writes the day's plan with the booking choice in business words", () => {
-    expect(planWords(frame(covered, 0))).toBe('20 asked · 20 accepted, every booking · premium rate · crew 1 scheduled, 1 in');
-    expect(planWords(frame(covered, 13))).toBe('16 asked · 16 accepted, every booking · premium rate · crew 2 scheduled, 2 in');
-    expect(planWords(frame(literal, 12))).toBe('16 asked · closed · crew 1 scheduled, nobody in');
+  it("writes today's plan in business words, naming a cap only on a day it turned dogs away (G5d)", () => {
+    expect(planWords(frame(covered, 0))).toBe('Today: 20 asked · all 20 accepted · premium rate · 1 staffer scheduled');
+    expect(planWords(frame(covered, 13))).toBe('Today: 16 asked · all 16 accepted · premium rate · 2 staff scheduled');
+    expect(planWords(frame(literal, 12))).toBe('Today: 16 asked · closed · 1 staffer scheduled, called out');
+    expect(planWords({ ...frame(covered, 13), staff: 1 })).toBe('Today: 16 asked · all 16 accepted · premium rate · 2 staff scheduled, 1 called out');
+    // the careful week caps at a safe ratio, but two staff hold every dog who asked: no cap is named
+    const easy = frame(careful, 0);
+    expect(easy.bookings).toBe('safe');
+    expect(easy.accepted).toBe(easy.requests);
+    expect(planWords(easy)).toBe(`Today: ${easy.requests} asked · all ${easy.requests} accepted · standard rate · 2 staff scheduled`);
     const safe = runEpisode(config, round1, stationaryPolicy({ bookings: 'safe', rate: 'low', staff: 1 }, ['freePlay', 'freePlay', 'freePlay']), episodeSeeds(1, 0));
-    expect(planWords(replayFrame(safe.steps, 0, config))).toBe('20 asked · 10 accepted, capped at a safe ratio · low rate · crew 1 scheduled, 1 in');
+    expect(planWords(replayFrame(safe.steps, 0, config))).toBe('Today: 20 asked · 10 accepted, capped at a safe ratio · low rate · 1 staffer scheduled');
     const legal = runEpisode(config, round1, stationaryPolicy({ bookings: 'legal', rate: 'standard', staff: 1 }, ['freePlay', 'freePlay', 'freePlay']), episodeSeeds(1, 0));
-    expect(planWords(replayFrame(legal.steps, 0, config))).toBe('20 asked · 15 accepted, capped at the legal ratio · standard rate · crew 1 scheduled, 1 in');
+    expect(planWords(replayFrame(legal.steps, 0, config))).toBe('Today: 20 asked · 15 accepted, capped at the legal ratio · standard rate · 1 staffer scheduled');
     for (const t of [frame(covered, 0), frame(literal, 12)]) expect(planWords(t)).not.toMatch(/\d+ per staffer|per dog|injur|reward|episode/i);
+  });
+
+  it("carries the GM's bonus earned through this block, the plan's reward summed over steps 0..t (G5d)", () => {
+    for (const trace of [covered, literal, careful]) {
+      let sum = 0;
+      for (let t = 0; t < 20; t++) {
+        sum += trace.steps[t]?.reward ?? 0;
+        expect(frame(trace, t).bonusSoFar).toBeCloseTo(sum, 9);
+      }
+      expect(frame(trace, 19).bonusSoFar).toBeCloseTo(trace.report.totals.reward, 9);
+    }
   });
 
   it('refuses a step outside the week', () => {

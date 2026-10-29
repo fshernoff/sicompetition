@@ -11,7 +11,7 @@ describe('studentStatus', () => {
     expect(studentStatus('idle')).toBe('Write your prediction, then put the GM to work.');
     expect(studentStatus('preparing')).toBe('The GM is getting ready for Monday.');
     expect(studentStatus('playing')).toBe('The GM is running the week.');
-    expect(studentStatus('done')).toBe('The week is over: what the GM did is beside your prediction, and the full report is below.');
+    expect(studentStatus('done')).toBe('The week is over.'); // G5d: the line says where the GM is, never narrates the layout
     expect(studentStatus('changed')).toBe('The plan changed. Put the GM to work to see what it does with this one.');
   });
 

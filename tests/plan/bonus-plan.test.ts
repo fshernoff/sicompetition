@@ -14,8 +14,8 @@ describe('kpiInfo', () => {
       'Dogs served',
       'Incidents',
       'Reputation change',
-      'Staff fatigue above 70%',
-      'Blocks over the legal ratio',
+      'Blocks with crew fatigue above 70%',
+      'Blocks over 15 dogs per staffer',
     ]);
     expect(info.map((k) => k.per)).toEqual(['per $100', 'per dog', 'per incident', 'per point', 'per block', 'per block']);
   });
@@ -24,7 +24,7 @@ describe('kpiInfo', () => {
     const c = withConfig((w) => {
       w.fatigue.kpiThreshold = 60;
     });
-    expect(kpiInfo(c)[4]?.name).toBe('Staff fatigue above 60%');
+    expect(kpiInfo(c)[4]?.name).toBe('Blocks with crew fatigue above 60%');
   });
 });
 

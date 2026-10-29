@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, recklessCoveredPolicy, recklessPolicy } from '../../src/sim/policies.ts';
 import { railModel } from '../../src/ui/rail.ts';
+import { formatBonus, formatDollars } from '../../src/ui/report.ts';
 import { planWords, replayFrame } from '../../src/ui/replay.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { EpisodeTrace } from '../../src/world/types.ts';
@@ -66,7 +67,10 @@ describe('railModel: the yard in words', () => {
         const f = frame(trace, t);
         const r = rail(trace, t);
         expect(r.cash.start).toBe('$2,000');
-        expect(r.cash.now).toMatch(/^−?\$\d{1,3}(,\d{3})*$/);
+        // G5d: the page's cash pays the GM as it earns (BRIEF section 5), and the bonus so far stands beside it
+        expect(r.cash.now).toBe(formatDollars(f.cash - f.bonusSoFar));
+        expect(r.cash.now).toMatch(/^−?\$\d{1,3}(,\d{3})*(\.\d\d)?$/);
+        expect(r.bonusSoFar).toBe(formatBonus(f.bonusSoFar));
         expect(r.reputation.now).toBe(Math.round(f.reputation));
         const change = Math.round(f.reputation) - start;
         expect(r.reputation.change).toBe(change < 0 ? `Down ${-change} this week` : change > 0 ? `Up ${change} this week` : 'No change this week');
@@ -80,6 +84,19 @@ describe('railModel: the yard in words', () => {
     expect([r.energy, r.cleanliness, r.fatigue]).toEqual([Math.round(f.energy), Math.round(f.cleanliness), Math.round(f.fatigue)]);
     expect([r.tomorrow, r.soloDays]).toEqual([f.requestsTomorrow, f.soloStreak]);
     expect(r.captions).toEqual(f.captions);
+  });
+
+  it('says this block in one bold line: the activity as it ran, the crew and the dogs on the floor (G5d)', () => {
+    const r = rail(covered, 9);
+    const f = frame(covered, 9);
+    expect(r.thisBlock).toBe(`This block: free play · ${f.floorStaff} staffer · ${f.floorDogs} dogs`);
+    const closed = Array.from({ length: 20 }, (_, t) => t).find((t) => frame(literal, t).closed) ?? -1;
+    expect(rail(literal, closed).thisBlock).toBe('This block: closed');
+    const careful2 = rail(careful, 2);
+    expect(careful2.thisBlock).toBe(`This block: nap · 2 staff · ${frame(careful, 2).floorDogs} dogs`);
+    for (const [, trace] of TRACES) {
+      for (let t = 0; t < 20; t++) expect(rail(trace, t).thisBlock).not.toMatch(/→/);
+    }
   });
 
   it('on a closed day shows nobody on the floor and nothing over the limit', () => {

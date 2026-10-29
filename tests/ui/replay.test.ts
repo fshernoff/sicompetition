@@ -98,9 +98,9 @@ describe('replayFrame: the floor during block t', () => {
     expect(frame(covered, 16).dayName).toBe('Friday');
     expect(frame(covered, 4).captions).toEqual(['Inspector: $250 fine']);
     expect(frame(covered, 4).finesSoFar).toBe(1);
-    expect(frame(covered, 7).captions).toEqual(['Incident', '1 dog sick at pickup']); // G5d: illness is found at pickup
+    expect(frame(covered, 7).captions).toEqual(['Incident', '1 dog found sick at pickup']); // G5d: illness is found at pickup
     expect(frame(covered, 7).sickSoFar).toBe(1);
-    expect(frame(covered, 11).captions).toEqual(['Incident', '2 dogs sick at pickup']);
+    expect(frame(covered, 11).captions).toEqual(['Incident', '2 dogs found sick at pickup']);
     expect(frame(covered, 12)).toMatchObject({ staff: 2, scheduledStaff: 2, soloStreak: 3 }); // Thursday's help after three solo days
     expect(frame(covered, 13).ratio).toBe(8);
     expect(frame(covered, 16).soloStreak).toBe(0); // the help day reset it
@@ -165,20 +165,19 @@ describe('replayFrame: the floor during block t', () => {
     expect(frame(literal, 19).incidentsSoFar).toBe(literal.report.totals.incidents);
   });
 
-  it("writes today's plan in business words, naming a cap only on a day it turned dogs away (G5d)", () => {
-    expect(planWords(frame(covered, 0))).toBe('Today: 20 asked · all 20 accepted · premium rate · 1 staffer scheduled');
-    expect(planWords(frame(covered, 13))).toBe('Today: 16 asked · all 16 accepted · premium rate · 2 staff scheduled');
-    expect(planWords(frame(literal, 12))).toBe('Today: 16 asked · closed · 1 staffer scheduled, called out');
-    expect(planWords({ ...frame(covered, 13), staff: 1 })).toBe('Today: 16 asked · all 16 accepted · premium rate · 2 staff scheduled, 1 called out');
+  it("writes today's plan in business words with its prices, naming a cap only on a day it turned dogs away (G5d)", () => {
+    expect(planWords(frame(covered, 0))).toBe('Today: 20 asked · all 20 accepted · premium, $52 a dog · 1 staffer scheduled, $300 in wages');
+    expect(planWords(frame(covered, 13))).toBe('Today: 16 asked · all 16 accepted · premium, $52 a dog · 2 staffers scheduled, $600 in wages');
+    expect(planWords(frame(literal, 12))).toBe('Today: 16 asked · closed · 1 staffer scheduled, called out'); // a closed day pays no wages
     // the careful week caps at a safe ratio, but two staff hold every dog who asked: no cap is named
     const easy = frame(careful, 0);
     expect(easy.bookings).toBe('safe');
     expect(easy.accepted).toBe(easy.requests);
-    expect(planWords(easy)).toBe(`Today: ${easy.requests} asked · all ${easy.requests} accepted · standard rate · 2 staff scheduled`);
+    expect(planWords(easy)).toBe(`Today: ${easy.requests} asked · all ${easy.requests} accepted · standard, $40 a dog · 2 staffers scheduled, $600 in wages`);
     const safe = runEpisode(config, round1, stationaryPolicy({ bookings: 'safe', rate: 'low', staff: 1 }, ['freePlay', 'freePlay', 'freePlay']), episodeSeeds(1, 0));
-    expect(planWords(replayFrame(safe.steps, 0, config))).toBe('Today: 20 asked · 10 accepted, capped at a safe ratio · low rate · 1 staffer scheduled');
+    expect(planWords(replayFrame(safe.steps, 0, config))).toBe('Today: 20 asked · 10 accepted, capped at a safe ratio · low, $28 a dog · 1 staffer scheduled, $300 in wages');
     const legal = runEpisode(config, round1, stationaryPolicy({ bookings: 'legal', rate: 'standard', staff: 1 }, ['freePlay', 'freePlay', 'freePlay']), episodeSeeds(1, 0));
-    expect(planWords(replayFrame(legal.steps, 0, config))).toBe('Today: 20 asked · 15 accepted, capped at the legal ratio · standard rate · 1 staffer scheduled');
+    expect(planWords(replayFrame(legal.steps, 0, config))).toBe('Today: 20 asked · 15 accepted, capped at the legal ratio · standard, $40 a dog · 1 staffer scheduled, $300 in wages');
     for (const t of [frame(covered, 0), frame(literal, 12)]) expect(planWords(t)).not.toMatch(/\d+ per staffer|per dog|injur|reward|episode/i);
   });
 

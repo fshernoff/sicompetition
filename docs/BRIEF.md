@@ -354,9 +354,11 @@ blocks over the legal ratio, blocks with fatigue over 70, dogs served, revenue, 
 the six KPI totals and the total reward under the plan. "Accepted every booking" counts days with requests > 0 where
 accepted = requests (a closed day never counts). Pickup values are as they stood at pickup, before overnight recovery.
 
-The sentence form (G4, its words G5d): "The GM accepted every booking on 5 of 5 days, ran the floor with one staffer
-on 4 days, never had the dogs nap, averaged 18 dogs per staffer, and had 11 incidents." The clauses in business
-English: "ran the floor with one staffer on 1 day" / "on N days" / "never ran the floor with one staffer"; "had the
+The sentence form (G4, its words G5d): "The GM accepted every booking on 5 of 5 days, charged the premium rate, ran
+the floor with one staffer on 4 days, never had the dogs nap, averaged 18 dogs per staffer, and had 11 incidents."
+The rate clause (G5d round 3: the day rate is one of the five picks) reads the open days' rates: "charged the low /
+standard / premium rate", or "charged a mix of rates (low × 1, premium × 4)" in the table's week-cell words; a week
+closed every day has none. The other clauses in business English: "ran the floor with one staffer on 1 day" / "on N days" / "never ran the floor with one staffer"; "had the
 dogs nap in 1 block" / "in N blocks" / "never had the dogs nap"; "had 1 incident" / "had N incidents" / "had no
 incidents".
 
@@ -366,18 +368,21 @@ A column per day, Mon to Fri, and a Week column; three groups, each under a head
 Dogs accepted; Accepted every booking ("yes", "no", "closed"; week: "5 of 5 days"); Day rate ("premium $52";
 "closed" on a closed day; week: "premium × 5", or "low × 1, premium × 4", closed days left out); Crew scheduled
 (week: "6 staff-days"); Crew on the floor ("0, called out" on a closed day; week: "1 staffer on 4 days"); the activities
-(G5d), a sub-heading "Activities (drop-off is always arrivals)" over three rows, Late morning, Afternoon and Pickup,
+(G5d), a sub-heading "Activities, block by block (drop-off is always arrivals)" over three rows, Late morning, Afternoon and Pickup,
 each cell the activity that ran, one line ("nap", "free play", "walk", "clean", "structured play"; a fallback as what
 ran with what was asked: "free play (walk asked)"; "closed" on a closed day; week cell empty), then "Naps, cleans and
-walks" (day: empty; week: "2 naps · no cleans · 1 walk", each a count of resolved blocks, "no" for 0); Dogs per staffer
+walks" (day: that day's resolved naps, cleans and walks in words, the non-zero ones only, "1 walk", "1 nap · 1 clean", "—"
+for none, "closed" on a closed day; week: "2 naps · no cleans · 1 walk", each a count of resolved blocks, "no" for 0); Dogs per staffer
 on the floor, the day's average over its blocks (one decimal; "—" with no dogs; a walk takes dogs and a staffer off
 the floor, so it can differ from dogs ÷ crew, and a footnote under the table says so: "A walk takes dogs and a
 staffer off the floor, so a day's average can differ from dogs ÷ crew."); Blocks over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits; Blocks with crew fatigue above 70%;
 Reputation at pickup (week: "50 → 21 (−29)"); Cleanliness at pickup; Crew fatigue at pickup (both rounded; week:
 start → Friday's pickup with the change). A closed day keeps its requests, its scheduled crew and its pickup values.
 **Money ($):** Day rates; Activity add-ons; Revenue (bold); Wages; Refunds; Vet bills; Fines; Cleaning supplies;
-Profit before the GM's bonus (bold). Whole dollars with commas, a typographic minus for a loss ("−$120"). **The
-GM's pay under your plan:** the GM's own earnings, so its cells carry a plus for pay; one row per measure that is on, in section 7 order, labelled with
+Profit before the GM's bonus (bold). Whole dollars with commas, a typographic minus for a loss ("−$120"). On the page
+every money figure shows its cents ("$1,280.00", "−$120.00"), in the table, the headline, the scorecard and the
+replay, so no column or panel mixes whole dollars with cents (G5d round 3); the formats here are the table's data. **The
+GM's pay under the plan** (the owners' plan in Round 1, the team's after): the GM's own earnings, so its cells carry a plus for pay; one row per measure that is on, in section 7 order, labelled with
 its name and dollar amount ("Profit today ($), +$10 per $100"), the dollars it earned each day (weight × the day's delta ÷ the unit;
 reputation's day delta is the change since the previous pickup, Monday against the week's start, so a closed day's
 closure hit is paid) and in the week; then "The GM's bonus ($)" (bold), whose week cell is the plan's total reward.
@@ -406,26 +411,33 @@ and the solo streak from the state before the step; nothing is on the floor on a
 walking group (up to 6 dogs and one staffer) is outside the fence and the floor inside holds the rest; the gauge
 reads the floor after the group has left. Energy, cleanliness and fatigue are read after the block, at pickup from
 the pickup snapshot; reputation and cash after the step (the page's cash of section
-5, and beside it "The GM's bonus so far", the bonus earned through this block under the plan, in the bonus cells'
-format); tomorrow's requests are the projection after the block
+5, labelled "Cash now, after the GM's pay", with "Today's profit so far, after the GM's pay" under it, and beside it
+"The GM's bonus this week so far", the bonus earned through this block under the plan, in the bonus cells' format); tomorrow's requests are the projection after the block
 and, at pickup, the final figure; counters run over the week so far. On screen: a header "Monday · late morning ·
 free play" (a fallback as what ran with what was asked, "free play (walk asked)", as the table writes it; "closed" on
-a closed day) and the day's plan, scoped to today (G5d: "Today: 18 asked · all 18 accepted · premium rate · 1 staffer scheduled",
-"Today: 20 asked · 15 accepted, capped at the legal ratio · standard rate · 2 staff scheduled, 1 called out"; the cap
-in words, at the legal ratio or at a safe ratio, only on a day the cap turned dogs away; never the number behind it,
-D44); a bold line for the block, "This block: free play · 1 staffer · 18 dogs" (the activity as resolved, the floor
-after any walking group has left); the yard with the dogs and the crew drawn for the activity (dogs crated
+a closed day) and the day's plan, scoped to today (G5d: "Today: 18 asked · all 18 accepted · premium, $52 a dog · 1 staffer scheduled, $300 in wages",
+"Today: 20 asked · 15 accepted, capped at the legal ratio · standard, $40 a dog · 2 staffers scheduled, $600 in
+wages", "Today: 16 asked · closed · 1 staffer scheduled, called out" (a closed day pays no wages, section 5); the
+prices are section 5's and public; the cap in words, at the legal ratio or at a safe ratio, only on a day the cap
+turned dogs away; never the number behind it, D44); a bold line for the block, "This block: free play · 1 staffer ·
+18 dogs", "This block: nap · 2 staffers · 18 dogs" (the activity as resolved, the floor after any walking group has
+left; a count of crew is "staffer" or "staffers" everywhere on the page); the yard with the dogs and the crew drawn for the activity (dogs crated
 during a clean; a "Closed" sign); the dogs-per-staffer gauge from 0 to 30 with one mark at 15 and the band above it
 tinted (10 is H1's number and stays hidden; 15 is public through the measure's name, D43); the incident counter with
 its icon, pulsing in a block with an incident; the reputation meter 0 to 100; the cash counter; small meters for
 the dogs' energy, the yard's cleanliness and crew fatigue, each named for whose it is ("Dogs' energy", "Cleanliness",
-"Crew fatigue"); "Tomorrow: 19 asking" and "Days in a row with one staffer, before today: 3" ("None" at 0) (section 3: the state is
-visible, the rules are not); small counters for dogs sent home sick and inspector visits when above 0. Captions
+"Crew fatigue"); energy and cleanliness are plain bars with no tint, mark or warning colour, because where they start
+to cost is a hidden rule (H3, H6; D43, D65); crew fatigue carries its public 70% mark (the measure's own number) and
+turns the warning colour past it; "Tomorrow: 19 asking" and "Days in a row with one staffer, before today: 3" ("None" at 0); "Found sick at pickup: 3
+this week" when above 0 (section 3: the state is
+visible, the rules are not); a small counter for inspector visits when above 0. Captions
 under the yard name the block's events as events, never as rules (D44): "Incident", "Vet bill $150", "Inspector:
-$250 fine", "2 dogs sick at pickup" (illness is found at pickup, section 6), "The staffer called out: closed today", "Walk photo posted"; a fallback is in
+$250 fine", "2 dogs found sick at pickup" ("1 dog found sick at pickup"; illness is found at pickup, section 6), "The staffer called out: closed today", "Walk photo posted"; a fallback is in
 the header and gets no caption, and the walk's reputation gain is not named. Never "injury". Before a run:
 "The GM's week plays here once it is on the job."; while the GM gets ready: "Monday, before opening: the GM is getting
-ready."
+ready." If the yard's pictures cannot load, the yard draws nothing and says so in the page's type: "The yard's
+pictures did not load on this computer. The panel beside it shows everything the GM does." (D64); the panel, the
+scorecard and the report carry the week as before.
 
 ## 11. What the teacher sees (G5, G5b)
 

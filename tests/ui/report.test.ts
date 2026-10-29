@@ -20,11 +20,11 @@ const soloWalk = runEpisode(
 ).report; // every walk and every class falls back
 
 // G5d: the activities as three one-line rows under a sub-heading, and their week as counts in words
-const ACTIVITIES = 'Activities (drop-off is always arrivals)';
+const ACTIVITIES = 'Activities, block by block (drop-off is always arrivals)';
 const BLOCKS = ['Late morning', 'Afternoon', 'Pickup'] as const;
 const MIX = 'Naps, cleans and walks';
 const FOOTNOTE = "A walk takes dogs and a staffer off the floor, so a day's average can differ from dogs ÷ crew.";
-const PAY = "The GM's pay under your plan";
+const PAY = "The GM's pay under the plan"; // the owners' plan in Round 1, the team's after (round 3)
 const BOTTOM = "The owners' bottom line ($)";
 
 function rows(t: ReportTable): ReportRow[] {
@@ -139,7 +139,7 @@ describe('reportTable: the covered reckless week on seed 1', () => {
     expect(cells(table, 'Crew on the floor')).toEqual(['1', '1', '1', '2', '1', '1 staffer on 4 days']);
     expect(cells(table, ACTIVITIES)).toEqual(['', '', '', '', '', '']);
     for (const block of BLOCKS) expect(cells(table, block), block).toEqual(['free play', 'free play', 'free play', 'free play', 'free play', '']);
-    expect(cells(table, MIX)).toEqual(['', '', '', '', '', 'no naps · no cleans · no walks']);
+    expect(cells(table, MIX)).toEqual(['—', '—', '—', '—', '—', 'no naps · no cleans · no walks']); // round 3: the day cells filled
     expect(cells(table, "Dogs per staffer, the day's average")).toEqual(['20.0', '19.0', '17.0', '8.0', '16.0', '16.0']);
     expect(cells(table, 'Blocks over 15 dogs per staffer')).toEqual(['4', '4', '4', '0', '4', '16']);
     expect(cells(table, 'Incidents')).toEqual(['4', '2', '2', '0', '1', '9']);
@@ -223,6 +223,7 @@ describe('reportTable: other weeks', () => {
     expect(BLOCKS.map((b) => cells(t, b)[0])).toEqual(['free play (walk asked)', 'free play (structured play asked)', 'nap']);
     expect(BLOCKS.map((b) => cells(t, b)[3])).toEqual(['closed', 'closed', 'closed']);
     expect(cells(t, MIX)[5]).toBe('4 naps · no cleans · no walks');
+    expect(cells(t, MIX).slice(0, 5)).toEqual(['1 nap', '1 nap', '1 nap', 'closed', '1 nap']);
     expect(cells(t, 'Cleanliness at pickup')).toEqual(['48', '28', '10', '20', '0', '80 → 0 (−80)']);
   });
 
@@ -234,6 +235,7 @@ describe('reportTable: other weeks', () => {
     expect(BLOCKS.map((b) => cells(t, b)[0])).toEqual(['structured play', 'nap', 'clean']);
     expect(BLOCKS.map((b) => cells(t, b)[4])).toEqual(['structured play', 'nap', 'clean']);
     expect(cells(t, MIX)[5]).toBe('5 naps · 5 cleans · no walks');
+    expect(cells(t, MIX)[0]).toBe('1 nap · 1 clean');
     expect(cells(t, 'Cleaning supplies')).toEqual(['$250', '$250', '$250', '$250', '$250', '$1,250']);
     expect(cells(t, "Dogs per staffer, the day's average")).toEqual(['10.0', '10.0', '10.0', '10.0', '10.0', '10.0']);
     expect(cells(t, "The GM's bonus ($)")[5]).toBe('+$73.50');

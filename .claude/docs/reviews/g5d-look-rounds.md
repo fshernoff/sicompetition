@@ -144,3 +144,44 @@ passed them; the main thread had passed the first two versions, the other reader
 | M2 | Medium | 01, 09 | On load the yard column shows the board at its top and about 380 px of empty grey below it at 1366 × 768 |
 | M3 | Low | 04 | The rail's "Sent home sick: 3 this week, 2 this block" beside the caption "2 dogs sick at pickup": one event, two phrasings |
 | M4 | Low | 07 | The bottom line's cells carry cents always ("$1,152.00") under a profit row in whole dollars ("$1,280") |
+
+### Astra and the Opus critic (unanchored)
+
+Astra: "credible, branded classroom software"; no blocking, 2 high, 8 medium. The critic: clears five seconds, not
+the closer look; no blocking, 4 high, 15 medium, 9 low, and every number on every screen reconciles (the P&L, the
+mid-week counters against the table, both runs). Both rate the identity, the yard (no anatomy defect, adults,
+poses that tell the story, the decals on the ground), the scorecard's balance, the P&L's hierarchy and the tray's
+groups at the bar. Not clean: the stop rule cannot be met inside the budget (round 4 is the last; two clean rounds
+in a row would need a fifth), so after round 4's fixes the owner decides between shipping, the fallback and more
+time (the plan's budget clause).
+
+### Triage (the spec first: BRIEF 10, 10.1, 10.2; D64 to D66; 11 tests written failing)
+
+| # | Sev | From | Finding | Verdict | Owner |
+|---|---|---|---|---|---|
+| 1 | High | C1, A3 | The scorecard's "Your pick" and "The GM did" run together; "No incidents" wraps | Accepted | WP2: 20 px gutters, nowrap values, a fixed left-aligned status column (C16) |
+| 2 | High | A1 | Mid-week does not show what today's choices cost | Accepted | BRIEF 10.2: "premium, $52 a dog", "$300 in wages"; "Cash now, after the GM's pay", "Today's profit so far, after the GM's pay", "The GM's bonus this week so far"; WP2 |
+| 3 | High | A2, C28 | The schematic fallback reads as scaffolding | Accepted (D64) | WP3: a notice in the page's type, nothing drawn |
+| 4 | High | C2, M3 | Two dogs sick "this block" while 18 stay on the floor; one event, two phrasings | Accepted in part | BRIEF 10.2: "2 dogs found sick at pickup", the rail's "Found sick at pickup: 3 this week"; no marked dogs in the yard (the owners collect every dog at pickup) |
+| 5 | High | C3 | The three meters say "bad" three ways | Accepted in part (D65) | WP2: energy and cleanliness plain (their thresholds are hidden rules), fatigue keeps its public 70% mark; even row spacing (C18) |
+| 6 | High | C4, A6, C13 | Round 3's plan sentence and its both-ways note run under the fold at 1366 × 768 | Accepted | WP2: the measure rows tighter, the sentence and the note above the fold |
+| 7 | Med | C5, M4 | Whole dollars beside cents | Accepted (D66) | WP2: cents on every money figure on the page |
+| 8 | Med | C6, C24 | "Wednesday · pickup" then "This block: free play" | Accepted | WP2: "Wednesday · pickup block" in the rail's head |
+| 9 | Med | C7 | The run scrolls the brand bar away; a capture carries no product name | Accepted (reversing round 2's call) | WP2: a slim sticky brand bar on the run; the e2e's status pin moves under it |
+| 10 | Med | M1, A5, C8 | Getting ready: the left column blank; nothing reads as preparing | Accepted | WP2: the picks and the reasons in the left column; WP3 and WP2: the orb's band breathes between its ready and running states (none under reduced motion) |
+| 11 | Med | A4, C9 | The primary after the week is a rerun that repeats the week; the replay note sits far from its button | Accepted | WP2: "Read the weekly P&L" primary, "Make a new prediction" and "Put the GM to work again" secondary; the replay note beside "Watch the week again" |
+| 12 | Med | C10 | Off measures show live amounts | Accepted | WP2: "—" for an off measure's amount |
+| 13 | Med | C11 | Round 3's toggles have no On/Off text | Accepted | WP2 |
+| 14 | Med | C12 | Wrapped lines of the plan sentence align with new clauses | Accepted | WP2: one clause a list item, a hanging indent for its wrap |
+| 15 | Med | C14 | Unequal day columns in the P&L | Accepted | WP2: fixed equal day columns |
+| 16 | Med | A9, C15 | "Naps, cleans and walks": empty day cells; the week cell wraps on a dot | Accepted | BRIEF 10.1: the day's counts, "—", "closed"; WP2: the week cell stacked |
+| 17 | Med | M2, C17 | On load the yard column is half empty; "The GM" label not scaled at 1920 | Accepted | WP2: a "What happens next" card under the yard on load (getting ready, the week in the yard, the scorecard and the P&L); WP3: the label scales with the type |
+| 18 | Med | A7 | No labelled zero on the sliders | Accepted | WP2: "0" under the centre tick |
+| 19 | Med | A8 | The Why reads as required; the button needs only the picks | Accepted | WP2: the helper says what it is for, not that it is required |
+| 20 | Med | A10, C19 | The tray: an editable seed under "This run"; Close and Export styling; the wrap at 1024 | Accepted | WP2: "Next run's seed" with this run's seed read-only; Close centred; Export outlined; the group grid at 1024 |
+| 21 | Low | C20, C21 | Headlines end on a dangling "·"; the status wraps with a long round chip | Accepted | WP2: stacked headline lines; "Round 3" in the run's chip |
+| 22 | Low | C22 | "staff" and "staffers" mixed | Accepted | BRIEF 10.2: "staffer"/"staffers" everywhere; WP2 |
+| 23 | Low | C23 | "None" for a count | Declined | Round 2's critic asked for business English over "0" |
+| 24 | Low | C25 | The same sprite twice in one yard, apart | Accepted | WP3: an unused sprite before any repeat |
+| 25 | Low | C26, C27 | P&L copy; the sentence omits the rate | Accepted | BRIEF 10 and 10.1: the rate clause, "under the plan", the sub-heading; WP2: drop "Monday to Friday, and the week" |
+| 26 | — | C29 | 06-yard-after is byte-identical to 05 | Accepted (the tool) | WP2: `e2e/shots.ts` takes the yard-after state |

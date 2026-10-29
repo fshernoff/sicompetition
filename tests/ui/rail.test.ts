@@ -93,7 +93,7 @@ describe('railModel: the yard in words', () => {
     const closed = Array.from({ length: 20 }, (_, t) => t).find((t) => frame(literal, t).closed) ?? -1;
     expect(rail(literal, closed).thisBlock).toBe('This block: closed');
     const careful2 = rail(careful, 2);
-    expect(careful2.thisBlock).toBe(`This block: nap · 2 staff · ${frame(careful, 2).floorDogs} dogs`);
+    expect(careful2.thisBlock).toBe(`This block: nap · 2 staffers · ${frame(careful, 2).floorDogs} dogs`); // "staffers" everywhere (round 3)
     for (const [, trace] of TRACES) {
       for (let t = 0; t < 20; t++) expect(rail(trace, t).thisBlock).not.toMatch(/→/);
     }

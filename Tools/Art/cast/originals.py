@@ -16,12 +16,19 @@ OUT = os.path.join(ROOT, 'docs', 'art-provenance', 'cast')
 
 # the strips the cast ships from, and the two earlier strips that are now only the locked references of their
 # breeds' retakes (cast-corgi-1 for cast-corgi-2, cast-beagle-1 for cast-beagle-2; both shipped before D58 round 1)
+# (G5d round 2: the crew remade in the dogs' faceted treatment ships from cast-crew-2, cast-crewb-2, cast-crew2-2 and
+# cast-crew2b-1; the smooth first crew, cast-crew-1 and cast-crew2-1, shipped until then and are kept as the record.
+# cast-crewb-1, the woman's first kneel-and-tired strip (its tired pose read sheepish, not worn out), is rejected and,
+# as the rejected Lab strips, stays in Temp/cast/raw/ only)
 SHIPPING = ['cast-golden-1', 'cast-corgi-2', 'cast-collie-1', 'cast-beagle-2', 'cast-poodle-1', 'cast-lab-3',
-            'cast-labyellow-1', 'cast-crew-1', 'cast-crew2-1', 'cast-corgi-1', 'cast-beagle-1']
-REFERENCES = {'key.png': 'reference-key-floor', 'crewref.png': 'reference-crew'}
+            'cast-labyellow-1', 'cast-crew-1', 'cast-crew2-1', 'cast-corgi-1', 'cast-beagle-1',
+            'cast-crew-2', 'cast-crewb-2', 'cast-crew2-2', 'cast-crew2b-1']
+REFERENCES = {'key.png': 'reference-key-floor', 'crewref.png': 'reference-crew', 'dogsref.png': 'reference-dogs'}
 # the second crew call also loaded crew1ref.png (a copy of cast-crew-1.png), the corgi and beagle retakes
 # corgiref.png and beagleref.png (copies of cast-corgi-1.png and cast-beagle-1.png), the yellow Lab labref.png (a copy
-# of cast-lab-3.png): their lossless originals are all here
+# of cast-lab-3.png), the faceted crew's later calls crewfacets.png and crew2facets.png (copies of cast-crew-2.png and
+# cast-crew2-2.png): their lossless originals are all here. dogsref.png (the faceted crew's style reference) is
+# Tools/Art/cast/dogsref.py's sheet of the shipped dogs, kept here at quality 90 as the other references
 
 
 def sha12(path):

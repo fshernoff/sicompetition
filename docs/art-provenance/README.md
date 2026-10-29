@@ -1,6 +1,6 @@
 # Art provenance (D55)
 
-Every image the page ships was generated for this project on 2026-10-28 with GPT image (OpenAI's built-in `image_gen`
+Every image the page ships was generated for this project on 2026-10-28 (the crew remade on 2026-10-29) with GPT image (OpenAI's built-in `image_gen`
 tool, called through the Codex CLI 0.162 as `gpt-6-astra` by `Tools/Agent/mockup.sh`, logged in to the owner's
 ChatGPT account), at the owner's direction ("you can use gpt image through the codex cli for mockups or production
 graphics if used carefully and sparingly", Oct 28, 2026). The concepts are references and do not ship. Nothing else
@@ -23,10 +23,14 @@ grounds for disqualification).
 | `cast/cast-poodle-1.webp` | production (G5d, the cast), one standard poodle in three poses | `cast/poodle-brown-moving`, `cast/poodle-brown-sitting`, `cast/poodle-brown-asleep`, `cast/poodle-black-moving`, `cast/poodle-black-sitting`, `cast/poodle-black-asleep` (`.webp`) | as the golden's; the black coat recoloured (a cream coat was dropped in D58 round 2) |
 | `cast/cast-lab-3.webp` | production (G5d, the cast), one Labrador in three poses (the third Lab call; the first two read as goldens) | `cast/lab-black-moving`, `cast/lab-black-sitting`, `cast/lab-black-asleep`, `cast/lab-chocolate-moving`, `cast/lab-chocolate-sitting`, `cast/lab-chocolate-asleep` (`.webp`) | as the golden's; the chocolate coat recoloured; one recorded repair (the far ear closed against the cheek, asleep) |
 | `cast/cast-labyellow-1.webp` | production (G5d, the cast), the yellow Labrador in three poses, locked to `cast/cast-lab-3.webp` | `cast/lab-yellow-moving`, `cast/lab-yellow-sitting`, `cast/lab-yellow-asleep` (`.webp`) | as the golden's, at the Lab's scale |
-| `cast/cast-crew-1.webp` | production (G5d, the cast), one adult crew member in three poses | `cast/crew-leash`, `cast/crew-ball`, `cast/crew-mop` (`.webp`) | keyed, cut, scaled to 2.2 × a standing golden, graded, sharpened, WebP quality 90 |
-| `cast/cast-crew2-1.webp` | production (G5d, the cast), the second adult crew member (a different person, the same uniform) in three poses | `cast/crew2-leash`, `cast/crew2-ball`, `cast/crew2-mop` (`.webp`) | keyed, cut, scaled to 1.07 × the first crew member, graded, sharpened, WebP quality 90 |
+| `cast/cast-crew-2.webp` | production (G5d round 2, the crew remade in the dogs' faceted treatment, generated 2026-10-29), the first adult crew member in three poses | `cast/crew-leash`, `cast/crew-ball`, `cast/crew-mop` (`.webp`) | keyed, cut, scaled to 2.2 × a standing golden, graded, sharpened, WebP quality 90 |
+| `cast/cast-crewb-2.webp` | production (G5d round 2, 2026-10-29), the same crew member, locked to `cast/cast-crew-2.webp`: the leash pose again (the scale, not shipped), kneeling and tired | `cast/crew-kneel`, `cast/crew-tired` (`.webp`) | as hers, at the scale that makes its leash figure as tall as the first strip's |
+| `cast/cast-crew2-2.webp` | production (G5d round 2, 2026-10-29), the second adult crew member (a different person, the same uniform, matched to `cast/cast-crew-2.webp`) in three poses | `cast/crew2-leash`, `cast/crew2-ball`, `cast/crew2-mop` (`.webp`) | keyed, cut, scaled to 1.07 × the first crew member, graded, sharpened, WebP quality 90 |
+| `cast/cast-crew2b-1.webp` | production (G5d round 2, 2026-10-29), the second crew member, locked to `cast/cast-crew2-2.webp`: the leash pose again (the scale), kneeling and tired | `cast/crew2-kneel`, `cast/crew2-tired` (`.webp`) | as his, at the scale that makes its leash figure as tall as the first strip's |
+| `cast/cast-crew-1.webp`, `cast/cast-crew2-1.webp` | production until G5d round 2 (the first crew, smooth and near-photoreal beside the faceted dogs; row 13 of the round-2 review) | nothing now | kept as the record |
 | `cast/cast-corgi-1.webp`, `cast/cast-beagle-1.webp` | production until D58 round 1, now the locked references of the corgi's and the beagle's retakes | nothing | reference only |
 | `cast/reference-key-floor.webp`, `cast/reference-crew.webp` | references the cast calls loaded (Floor's key frame; spike A's crew) | nothing | reference only |
+| `cast/reference-dogs.webp` | the reference the crew remake's calls loaded: seven of the shipped dogs on one sheet at one scale, made in code from their cut figures (`Tools/Art/cast/dogsref.py`) | nothing | reference only |
 
 The originals here are the generated PNGs re-encoded losslessly (production) or at WebP quality 90 (concepts); the
 untouched PNGs and the full runs (prompt, tool calls, reply) are in `Temp/AgentMockups/` on the owner's Mac

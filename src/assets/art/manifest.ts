@@ -8,7 +8,9 @@ export const CAMERA = { projection: '2:1 isometric', elevationDeg: 30, lightFrom
 
 export type Breed = 'golden' | 'corgi' | 'collie' | 'beagle' | 'poodle' | 'lab';
 export type DogPose = 'moving' | 'sitting' | 'asleep';
-export type CrewPose = 'leash' | 'ball' | 'mop';
+/** A crew member's pose. kneel: crouched at a dog's height, one hand out low as if greeting a dog; tired: standing,
+ * shoulders down, a hand at the back of the neck, worn out (G5d round 2, row 13). Each person has all five. */
+export type CrewPose = 'leash' | 'ball' | 'mop' | 'kneel' | 'tired';
 export type Facing = 'right' | 'left';
 
 /** One cast sprite: a dog of a breed and coat in a pose, or the crew in a pose; drawn with its foot anchor on the ground point. */

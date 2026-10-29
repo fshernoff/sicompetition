@@ -1,7 +1,8 @@
 """Build the shipped cast from the keyed, cut figures: one scale per subject, the coats (recolours of one model), one
 colour grade and a light sharpen, the foot anchors, WebP with real alpha, and src/assets/art/cast.json.
 
-usage: build_cast.py <cutdir>     (the figures key_cut.py wrote: <subject>-01.png .. -03.png)
+usage: build_cast.py <cutdir>     (the figures key_cut.py wrote: <subject>-01.png .. -03.png; the crew's subjects are
+                                  crew, crewb, crew2 and crew2b: each person's two strips)
 Pillow only. Run from anywhere; writes src/assets/art/cast/*.webp and src/assets/art/cast.json.
 
 The scale table (gate 1). Sprites are stored at 2x the yard's CSS scale, on the set's metric camera (spike B: 88 px
@@ -9,7 +10,8 @@ per metre at 1x, so 176 at 2x). A breed's scale is fixed by its moving pose's le
 along the screen): the corgi's is CORGI_LENGTH px, every other breed's a real-world ratio of it, and the sit and the
 sleep share the moving pose's scale (one model, one camera). The crew's height is CREW_TO_GOLDEN x the golden's
 standing height (the head top to the feet in its moving pose); the second crew member's is CREW2_TO_CREW x the
-first one's (their leash poses). Nothing is rescaled afterwards.
+first one's (their leash poses); each person's second strip (kneel, tired) is matched to the first by the leash pose
+it repeats. Nothing is rescaled afterwards.
 
 The steps for every sprite, in order: the recorded repairs (REPAIRS) on the cut figure; the coat (if not the generated
 one) recoloured at full size; the figure padded by PAD transparent px, resized with LANCZOS on premultiplied alpha,
@@ -41,7 +43,8 @@ PINHOLE_MAX = 24          # px: an enclosed translucent group in a sprite up to 
 WEBP_Q = 90
 
 DOG_POSES = ['moving', 'sitting', 'asleep']
-CREW_POSES = ['leash', 'ball', 'mop']
+CREW_POSES = ['leash', 'ball', 'mop']   # a person's first strip, figures 1 to 3
+CREW_POSES_2 = ['kneel', 'tired']       # the second strip's figures 2 and 3 (figure 1, the leash pose, is its scale)
 
 # length of the moving pose relative to the corgi's (real-world ratios, checked on the contact sheet)
 BREEDS = {
@@ -524,28 +527,34 @@ def main(cutdir):
                 sprites.append({'id': sid, 'file': f'cast/{sid}.webp', 'kind': 'dog', 'breed': breed, 'coat': name,
                                 'pose': pose, 'facing': 'right', 'size': list(sp.size), 'anchor': anchor})
                 report.append((sid, sp.size, anchor, os.path.getsize(path), round(s_own, 4)))
-    crew = [load('crew', n) for n in (1, 2, 3)]
-    s_crew = CREW_TO_GOLDEN * golden_stand / crew[0].height
-    for pose, fig in zip(CREW_POSES, crew):
-        sp = finish(resize(fig, s_crew))
-        sid = f'crew-{pose}'
-        path = save(sp, sid)
-        anchor = crew_anchor(sp)
-        sprites.append({'id': sid, 'file': f'cast/{sid}.webp', 'kind': 'crew', 'pose': pose, 'facing': 'right',
-                        'size': list(sp.size), 'anchor': anchor})
-        report.append((sid, sp.size, anchor, os.path.getsize(path), round(s_crew, 4)))
-    # the second crew member (a different adult in the same uniform): CREW2_TO_CREW x the first one's height, from
-    # the two leash poses (both standing straight)
-    crew2 = [load('crew2', n) for n in (1, 2, 3)]
-    s_crew2 = CREW2_TO_CREW * crew[0].height * s_crew / crew2[0].height
-    for pose, fig in zip(CREW_POSES, crew2):
-        sp = finish(resize(fig, s_crew2))
-        sid = f'crew2-{pose}'
-        path = save(sp, sid)
-        anchor = crew_anchor(sp)
-        sprites.append({'id': sid, 'file': f'cast/{sid}.webp', 'kind': 'crew', 'pose': pose, 'facing': 'right',
-                        'size': list(sp.size), 'anchor': anchor})
-        report.append((sid, sp.size, anchor, os.path.getsize(path), round(s_crew2, 4)))
+    # The crew, two people (G5d round 2: remade in the dogs' faceted treatment). Each comes from two strips: the first
+    # (<person>: leash, ball, mop) and the second (<person>b: the leash pose again, kneel, tired), the second locked
+    # to the first. The first crew member's height is CREW_TO_GOLDEN x the golden's standing height, from her leash
+    # pose; the second's is CREW2_TO_CREW x the first one's, from the two leash poses (both standing straight). A
+    # second strip's scale matches its own leash figure's height to the first strip's: that figure is only the
+    # measure, and ships nothing.
+    crew_h = s_crew = None
+    for person in ('crew', 'crew2'):
+        first = [load(person, n) for n in (1, 2, 3)]
+        if crew_h is None:
+            s_first = s_crew = CREW_TO_GOLDEN * golden_stand / first[0].height
+            crew_h = first[0].height * s_first
+        else:
+            s_first = CREW2_TO_CREW * crew_h / first[0].height
+        second = [load(f'{person}b', n) for n in (1, 2, 3)]
+        s_second = s_first * first[0].height / second[0].height
+        for figs, s, poses in ((first, s_first, CREW_POSES), (second[1:], s_second, CREW_POSES_2)):
+            for pose, fig in zip(poses, figs):
+                sp = finish(resize(fig, s))
+                sid = f'{person}-{pose}'
+                path = save(sp, sid)
+                # standing, between the shoes; kneeling, the middle of the ground contact (the back toe, the knee,
+                # the planted foot), by the dogs' rule: the shoe rule finds one shoe or two depending on how far back
+                # the kneeling leg's shoe sits
+                anchor = dog_anchor(sp) if pose == 'kneel' else crew_anchor(sp)
+                sprites.append({'id': sid, 'file': f'cast/{sid}.webp', 'kind': 'crew', 'pose': pose, 'facing': 'right',
+                                'size': list(sp.size), 'anchor': anchor})
+                report.append((sid, sp.size, anchor, os.path.getsize(path), round(s, 4)))
     manifest = {
         'scale': {'corgiLength': CORGI_LENGTH, 'goldenToCorgi': BREEDS['golden'], 'crewToStandingGolden': CREW_TO_GOLDEN},
         'sprites': sprites,
@@ -560,9 +569,12 @@ def main(cutdir):
             'fixed ratio of it (beagle 1.15, collie 1.35, poodle 1.3, Lab 1.55, golden 1.6), and its sit and sleep share '
             'that scale; the crew (crew-*) is crewToStandingGolden x the golden\'s standing height, and the second crew '
             'member (crew2-*: a different adult in the same uniform, so two or three staff on the floor are not one '
-            'person repeated) is 1.07 x the first one\'s height.',
+            'person repeated) is 1.07 x the first one\'s height. Each person has five poses: leash, ball and mop from one '
+            'strip, kneel (crouched at a dog\'s height, a hand out low) and tired (shoulders down, a hand at the back of '
+            'the neck) from a second strip of the same person, scaled to the first by the leash pose both strips show.',
             'anchor: the ground point in the image\'s pixels (a dog: between its near and far feet; the crew: between the '
-            'shoes). facing: every sprite faces right, along the camera-facing diagonal toward the lower right; mirror '
+            'shoes, and kneeling the middle of the ground contact from the back toe to the planted foot). facing: every '
+            'sprite faces right, along the camera-facing diagonal toward the lower right; mirror '
             'for the other diagonal (gate 5). No shadow is drawn in any sprite (gate 3).',
             'coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle '
             'tricolour) and its recolours in code (gate 6: golden red, Lab chocolate, poodle black, corgi mahogany, collie '

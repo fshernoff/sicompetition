@@ -59,6 +59,18 @@ PLACES_SET = [
 ]
 
 
+# the crew's composite on WP4b's board (G5d round 2, row 13: the faceted crew beside the dogs at the yard's scale):
+# each person's five poses in a row, the first crew member behind, with dogs between and after them; a fourth item
+# 'm' draws that figure mirrored (the dog the kneeling staffer greets faces her)
+PLACES_CREW = [
+    ('crew-leash', 860, 760), ('crew-ball', 985, 760), ('crew-mop', 1115, 760), ('crew-tired', 1250, 760),
+    ('crew-kneel', 1380, 760), ('corgi-red-sitting', 1530, 760, 'm'),
+    ('crew2-leash', 860, 1060), ('crew2-ball', 985, 1060), ('crew2-mop', 1120, 1060), ('crew2-tired', 1270, 1060),
+    ('crew2-kneel', 1400, 1060), ('collie-black-sitting', 1545, 1060, 'm'),
+    ('beagle-tricolour-moving', 1200, 1200),
+]
+
+
 def set_world(m, px, py):
     """board pixel -> world metres on the set's map (the inverse of origin + x * ppm * (2, -1) / sqrt5 + y * ppm *
     (-2, -1) / sqrt5)"""
@@ -115,8 +127,8 @@ def compose(cast, board, mirrored, places):
     frame = Image.new('RGBA', (W, H), PAGE)
     frame.alpha_composite(board, (pad, pad))
     items = []
-    for sid, bx, by in places:
-        im, ax, ay = sprite(cast, sid, mirrored)
+    for sid, bx, by, *flag in places:
+        im, ax, ay = sprite(cast, sid, mirrored != bool(flag))
         items.append((by, sid, im, ax, ay, bx + pad, by + pad))
     shade = Image.new('L', (W, H), 0)
     for _, sid, im, ax, ay, X, Y in items:
@@ -152,11 +164,14 @@ def half(im):
 def sheet_all(cast):
     rows = {}
     for sid, s in cast.items():
-        rows.setdefault((s.get('breed', 'crew'), s.get('coat', '')), []).append(s)
+        # a dog's group is its breed and coat; a crew member's is the person (crew, crew2), all five poses
+        key = (s['breed'], s['coat']) if s['kind'] == 'dog' else ('crew', sid.split('-')[0])
+        rows.setdefault(key, []).append(s)
     cw, ch = 270, 320
     keys = list(rows)
     per = 2
-    ncols = 3 * per
+    span = max(3, max(len(v) for v in rows.values()))        # columns a group takes (the crew's five poses)
+    ncols = span * per
     nrows = (len(keys) + per - 1) // per
     W, H = cw * ncols, ch * nrows
     sheet = Image.new('RGBA', (W * 2 + 20, H), (128, 128, 128, 255))
@@ -167,7 +182,7 @@ def sheet_all(cast):
             for j, s in enumerate(rows[key]):
                 im = Image.open(os.path.join(ART, s['file'])).convert('RGBA')
                 ax, ay = s['anchor']
-                X, Y = (c0 * 3 + j) * cw + cw // 2, r * ch + ch - 34
+                X, Y = (c0 * span + j) * cw + cw // 2, r * ch + ch - 34
                 panel.alpha_composite(im, (round(X - ax), round(Y - ay)))
         sheet.paste(panel, (k * (W + 20), 0))
     return sheet
@@ -182,7 +197,8 @@ def main():
         with open(set_json) as f:
             sm = json.load(f)['board']
         boards.append(('-set', os.path.join(ART, sm['file']), PLACES_SET))
-        for sid, bx, by in PLACES_SET:
+        boards.append(('-crew', os.path.join(ART, sm['file']), PLACES_CREW))
+        for sid, bx, by, *_ in PLACES_SET + PLACES_CREW:
             why = off_lawn(sm['map'], bx, by)
             if why:
                 print(f'  {sid}: {why}')

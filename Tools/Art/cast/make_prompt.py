@@ -1,7 +1,10 @@
 """Write the exact prompt text for one subject's image call (the text mockup.sh is given as its description).
 usage: make_prompt.py <subject> [<extra sentence>]  -> prints the prompt
-A subject is a key of subjects.json (a dog breed), 'crew' or 'crew2' (prompts/crew.txt, prompts/crew2.txt). The extra sentence, if given, goes before the background
-paragraph: it is how a retake names its locked reference (the breed's first clean strip)."""
+A subject is a key of subjects.json (a dog breed), or a crew subject: prompts/<subject>.txt. 'crew' and 'crew2' are the
+first crew calls' texts (cast-crew-1, cast-crew2-1: smooth people, superseded in G5d round 2); the '-facets' subjects
+are the remake in the dogs' treatment (round 2, row 13), whose opening paragraph is prompts/pre-facets.txt (the shipped
+dogs, dogsref.png, as the style and camera reference) instead of pre.txt (Floor's key frame). The extra sentence, if
+given, goes before the background paragraph: it is how a retake names its locked reference (the first clean strip)."""
 import json
 import os
 import sys
@@ -16,9 +19,9 @@ def read(name):
 
 
 def prompt(subject, extra=''):
-    pre, post = read('pre.txt'), read('post.txt')
+    pre, post = read('pre-facets.txt' if '-facets' in subject else 'pre.txt'), read('post.txt')
     if subject.startswith('crew'):
-        body = read(f'{subject}.txt')           # crew.txt (the first crew member), crew2.txt (the second)
+        body = read(f'{subject}.txt')           # crew.txt, crew2.txt, crew-facets.txt, crew-facets-2.txt, ...
     else:
         with open(os.path.join(HERE, 'subjects.json')) as f:
             s = json.load(f)[subject]

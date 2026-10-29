@@ -19,7 +19,7 @@ Students can:
 
 ## The Teacher tab
 
-The Teacher tab sits in the bottom-right corner. Students never need it.
+The Teacher button sits at the right of the top bar. Students never need it.
 
 - **Round choice:** Round 1, 2 or 3. Changing it clears the run.
 - **Seed:** "Next run's seed", 0 to 4,294,967,295; "This run" shows the week's. The same plan and seed give the same week. The default is 1.

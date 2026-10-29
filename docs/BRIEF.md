@@ -442,8 +442,8 @@ scorecard and the report carry the week as before.
 ## 11. What the teacher sees (G5, G5b)
 
 A teacher panel, closed by default, holds everything that is not the lesson. It is a tray at the bottom of the
-window, opened by a small "Teacher" tab in the bottom-right corner (the one teacher's control that stays on the
-student's screen, D46) and closed by its Close button; closed, it adds no height to the page, so the fold of D42
+window, opened by a small "Teacher" button at the right of the top bar (G5d; the one teacher's control that stays on
+the student's screen, D46) and closed by its Close button; closed, it adds no height to the page, so the fold of D42
 holds; open, it overlays the bottom of the window and the page gets that much bottom padding, so the report and the
 rules can always scroll clear of it. In it:
 

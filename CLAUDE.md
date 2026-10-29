@@ -42,7 +42,7 @@ npm run sim -- --episodes 200 --seed 1 --reward round1 --policy random   # headl
 npm run calibrate -- --episodes 100 --seed 1   # the Round 1 calibration ranking and margins (G1 acceptance 3)
 npm run pilot -- --seeds 20 --budget 60000     # the 20-seed learner check (G2 acceptance 2); ?pilot=20 on the page is the Chromebook version
 npm run pilot -- --seeds 5 --reward balanced   # any plan headless (a preset or a .json file): episodes to stable, stable, the outcome key
-npm run e2e        # the Playwright smoke against the built page (7 tests, about 35 s)
+npm run e2e        # the Playwright smoke against the built page (10 tests, about 55 s)
 npm run capture    # after a build: a 30-second recording of one Round 1 run in headless Chromium, to Temp/capture/
 ```
 

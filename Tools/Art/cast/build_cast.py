@@ -436,8 +436,57 @@ def crew_anchor(im):
     return [round((xs[0] + xs[-1]) / 2, 1), round(sum(cols.values()) / len(cols), 1)]
 
 
+# A recorded repair (D58 round 3, Sonnet, Oct 29): three small pockets the hole rule above leaves, because each holds a
+# fully transparent core that the soft edge links to the background. In each box, a pixel with alpha 128 or less that
+# cannot reach the image's edge through such pixels is a pocket's core; it and its non-opaque ring (alpha below 255,
+# not touching the background) are filled from their opaque neighbours. A larger gap (between legs, a leash loop)
+# reaches the background and stays open. The boxes are in the sprite's own pixels.
+POCKET_REPAIRS = {
+    'golden-gold-moving': [(130, 81, 145, 96)],  # by the brisket feathering, about (136-138, 87-89)
+    'golden-red-moving': [(130, 81, 145, 96)],
+    'lab-yellow-asleep': [(145, 53, 160, 70)],  # the far ear and the cheek, about (151-153, 59-63)
+}
+
+
+def repair_pockets(im, name):
+    boxes = POCKET_REPAIRS.get(name)
+    if not boxes:
+        return 0
+    W, H = im.size
+    px = im.load()
+    clear = bytearray(W * H)  # reachable from the edge through alpha <= 128
+    q = [(x, y) for x in range(W) for y in (0, H - 1)] + [(x, y) for y in range(H) for x in (0, W - 1)]
+    while q:
+        x, y = q.pop()
+        if clear[y * W + x] or px[x, y][3] > 128:
+            continue
+        clear[y * W + x] = 1
+        q.extend((nx, ny) for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) if 0 <= nx < W and 0 <= ny < H)
+
+    def near_clear(x, y):
+        return any(clear[ny * W + nx] for nx in (x - 1, x, x + 1) for ny in (y - 1, y, y + 1) if 0 <= nx < W and 0 <= ny < H)
+
+    todo = {(x, y) for x0, y0, x1, y1 in boxes for x in range(x0, x1 + 1) for y in range(y0, y1 + 1)
+            if px[x, y][3] < 255 and not clear[y * W + x] and not near_clear(x, y)}
+    filled = len(todo)
+    while todo:
+        done = []
+        for x, y in todo:
+            nb = [px[nx, ny] for nx in (x - 1, x, x + 1) for ny in (y - 1, y, y + 1)
+                  if 0 <= nx < W and 0 <= ny < H and (nx, ny) not in todo and px[nx, ny][3] == 255]
+            if nb:
+                px[x, y] = tuple(sum(c[i] for c in nb) // len(nb) for i in range(3)) + (255,)
+                done.append((x, y))
+        if not done:
+            break
+        todo -= set(done)
+    print(f'  repair {name}: {filled} px filled')
+    return filled
+
+
 def save(im, name):
     path = os.path.join(OUT, f'{name}.webp')
+    repair_pockets(im, name)
     rgb = push_colour(im, rings=6)
     out = rgb.convert('RGBA')
     out.putalpha(im.getchannel('A'))

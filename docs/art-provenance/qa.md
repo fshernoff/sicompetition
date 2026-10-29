@@ -414,3 +414,6 @@ Round 3 of the cast (every sprite re-framed with a 2 px margin; 42 sprites):
 | cast/poodle-brown-sitting.webp | c5cb2c7dd119 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
 | set/gm-done.webp | e12e5f32915d | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
 | set/gm-page-done.webp | d44de11da266 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/golden-gold-moving.webp | 36d3aa00cb2d | main thread | 2026-10-29 | clean | after the pocket repair: at 2× (4× the page) and the repaired spot at 6×, on cream and near-black |
+| cast/golden-red-moving.webp | 6213ec05c958 | main thread | 2026-10-29 | clean | after the pocket repair: at 2× (4× the page) and the repaired spot at 6×, on cream and near-black |
+| cast/lab-yellow-asleep.webp | 30ec72368b93 | main thread | 2026-10-29 | clean | after the pocket repair: at 2× (4× the page) and the repaired spot at 6×, on cream and near-black |

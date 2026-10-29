@@ -21,18 +21,14 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
   the hybrid. The cast (dogs, crew) generated under eight gates; the set and the GM modelled in three.js and rendered
   offline (`.claude/docs/reviews/g5d-directions.md`). The art contract: `src/assets/art/manifest.ts`. Ports for
   parallel worktrees: `E2E_PORT`, `SHOTS_PORT`, `PERF_PORT`.
-- **Phase 2, state at the last update (Oct 28, late):**
-  - Merged on `g5d-look`: WP3 the yard (`c0b039d`, cherry-picked without its placeholder-art commit), WP4a the cast
-    (`197a2bb`: 48 sprites, six breeds, two adult crew), WP4b's first set (`7b3ada6`).
-  - Running: WP4b re-rendering the set from the D58 readers' findings (lawn tone steps, a chopped bush, a cypress
-    sliver, a 24 px margin, the done state, the page orb centred); WP2 the page in its worktree
-    (`.claude/worktrees/agent-ae16041c278544645`, branch `worktree-agent-ae16041c278544645`); Sonnet's D58 pass on
-    the 45 cast sprites. All three were stopped by the account's usage limit and resumed.
-  - D58 ledger: the set's first bytes have Astra and Sonnet defects (being fixed); the cast has the main thread's 48
-    clean, Astra's 41 of 45 clean (four recolour defects: beagle-tan-asleep, lab-yellow x3, for WP4a), Sonnet's to
-    come; crew2 has the main thread's pass only.
-  - Gotcha: an Agent `isolation: worktree` was created from `main`, not the current branch; WP3 reset itself to
-    `35b92bf`. Check a worktree's base before merging it.
+- **State at the last update (Oct 29, early):** on `g5d-look` (last `b06b405`): WP2 the page (`5ce99b1`), WP3 the
+  yard (`c0b039d`), the cast (45 sprites after the readers' fixes; the tan beagle dropped), the set's second render
+  (D58: three clean readers on all seven), G5c's art removed. Review round 1 done and triaged
+  (`.claude/docs/reviews/g5d-look-rounds.md`: 33 rows; BRIEF 10.1 and 10.2 words changed; `tests/ui/report.test.ts`
+  failing for the new P&L row). Dispatched: WP2 and WP3 (their worktrees, reset to `g5d-look`), WP4b (a neutral done
+  band). D58 passes running: Astra and Sonnet on 29 cast sprites (26 changed, 3 crew2). Next: merge the fixes, round 2.
+  - Gotcha: an Agent `isolation: worktree` was created from `main`, not the current branch; check a worktree's base.
+  - Gotcha: zsh does not split `$LIST` in `for x in $LIST`; use an array or a file.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.
 
 ## Session 7 (2026-10-28): the submission thread started

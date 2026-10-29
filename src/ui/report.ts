@@ -137,30 +137,71 @@ const TILE_ICONS: readonly string[] = [
   MEASURE_ICON_PATHS.overRatio,
 ];
 
-/** Renders the headline tiles into the container: value in big tabular numerals, the label under it, an icon. */
+/** The arrow of "50 → 32" drawn as a glyph (U+2192 is outside the bundled Latin face, so a display size draws it). */
+const ARROW_SVG =
+  '<svg class="arrow-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>';
+
+/**
+ * Appends `text` to `el`, each " → " drawn as the arrow glyph with the character itself kept, visually hidden, so the
+ * element's text (and what a screen reader says) is unchanged: "50 → 32".
+ */
+export function appendArrowed(el: HTMLElement, text: string): void {
+  const doc = el.ownerDocument;
+  text.split('→').forEach((part, i) => {
+    if (i > 0) {
+      const arrow = doc.createElement('span');
+      arrow.className = 'arrow';
+      arrow.innerHTML = ARROW_SVG;
+      const word = doc.createElement('span');
+      word.className = 'visually-hidden';
+      word.textContent = '→';
+      arrow.appendChild(word);
+      el.appendChild(arrow);
+    }
+    if (part !== '') el.append(part);
+  });
+}
+
+/** The GM's bonus as the report prints it (G5d): always with cents, "+$128.00", "−$35.00", "$0.00". */
+export function bonusWithCents(text: string): string {
+  return /^[+−]?\$[\d,]+$/.test(text) ? `${text}.00` : text;
+}
+
+/**
+ * Renders the headline: one strip of five cells, profit first on navy with "Before the GM's bonus" under it, then the
+ * GM's bonus (always with cents), then incidents, reputation and the blocks over the limit, each a hurt (a red wash
+ * and figure, with its icon and label as the cue beyond colour) when it went against the business. The cells' values
+ * and labels are headlineTiles' own.
+ */
 export function renderTiles(container: HTMLElement, tiles: HeadlineTile[]): void {
   const doc = container.ownerDocument;
-  const svgNs = 'http://www.w3.org/2000/svg';
   const nodes = tiles.map((tile, i) => {
     const card = doc.createElement('div');
     card.className = 'tile';
-    const icon = doc.createElementNS(svgNs, 'svg');
-    icon.setAttribute('class', 'tile-icon');
-    icon.setAttribute('viewBox', '0 0 24 24');
-    icon.setAttribute('aria-hidden', 'true');
-    icon.setAttribute('fill', 'none');
-    icon.setAttribute('stroke', 'currentColor');
-    icon.setAttribute('stroke-width', '1.8');
-    icon.setAttribute('stroke-linecap', 'round');
-    icon.setAttribute('stroke-linejoin', 'round');
-    icon.innerHTML = TILE_ICONS[i % TILE_ICONS.length] ?? '';
-    const value = doc.createElement('div');
-    value.className = 'tile-value';
-    value.textContent = tile.value;
     const label = doc.createElement('div');
     label.className = 'tile-label';
-    label.textContent = tile.label;
-    card.append(icon, value, label);
+    const icon = doc.createElement('span');
+    icon.className = 'tile-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" focusable="false">${TILE_ICONS[i % TILE_ICONS.length] ?? ''}</svg>`;
+    label.append(icon, tile.label);
+    const value = doc.createElement('div');
+    value.className = 'tile-value';
+    appendArrowed(value, i === 1 ? bonusWithCents(tile.value) : tile.value);
+    card.append(label, value);
+    if (i === 0) {
+      card.classList.add('tile-profit');
+      const sub = doc.createElement('div');
+      sub.className = 'tile-sub';
+      sub.textContent = "Before the GM's bonus";
+      card.appendChild(sub);
+    }
+    if (i === 1) card.classList.add('tile-bonus');
+    const hurt =
+      (i === 2 && Number(tile.value) > 0) ||
+      (i === 3 && /^(\d+) → (\d+)$/.test(tile.value) && Number(tile.value.split(' → ')[1]) < Number(tile.value.split(' → ')[0])) ||
+      (i === 4 && Number(tile.value) > 0);
+    if (hurt) card.classList.add('hurt');
     return card;
   });
   container.replaceChildren(...nodes);
@@ -327,11 +368,17 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
   };
 }
 
+/** A cell that reads as nothing happened ("$0", "0", "$0.00", "—"): set in the muted ink, still at 4.5:1. */
+const ZERO = /^(\$0(\.00)?|0|—)$/;
+
 /**
- * Replaces the table's content: a <thead> row with an empty first cell and the columns; per group a <tbody> whose
- * first row is a heading (<th scope="colgroup" colspan="7"> with the title) followed by one <tr> per row (<th
- * scope="row"> label, five <td> day cells, one <td> week cell); an emphasised row gets class "emphasis". The table
- * gets a <caption> "Monday to Friday, and the week".
+ * Replaces the table's content as a P&L (G5d, Acceptance 5): a <thead> row with an empty first cell and the columns;
+ * then the groups money first, in this order: Money ($), the GM's pay under your plan, Operations. Per group a
+ * <tbody> whose first row is a heading (<th scope="colgroup" colspan="7"> with the title, its parenthesis set as a
+ * note) followed by one <tr> per row (<th scope="row"> label, five <td> day cells, one <td> week cell). Rows: Revenue
+ * and the bonus total "emphasis", Profit "profit" (a ruled band); the GM's pay always with cents ("+$128.00"); a cell
+ * that reads as nothing happened "zero"; a block over the legal limit "warn". The table gets a <caption> "Monday to
+ * Friday, and the week".
  */
 export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   const doc = table.ownerDocument;
@@ -342,7 +389,7 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
     return e;
   };
 
-  // The activities cell: each block a chip, the " · " kept as text so textContent is unchanged.
+  // The activities cell: each block on its own line, the " · " kept (hidden) so textContent is unchanged.
   const chips = (td: HTMLElement, text: string): HTMLElement => {
     text.split(' · ').forEach((part, i) => {
       if (i > 0) td.append(el('span', ' · ', 'sep'));
@@ -357,33 +404,49 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   const headRow = el('tr');
   headRow.append(el('th'));
   for (const c of data.columns) {
-    const th = el('th', c);
+    const th = el('th', c, c === 'Week' ? 'week' : undefined);
     th.setAttribute('scope', 'col');
     headRow.append(th);
   }
   head.append(headRow);
 
-  const bodies = data.groups.map((group) => {
+  // Money first (the P&L), then the GM's pay, then the operations behind them.
+  const ordered = [...data.groups.filter((g) => g.title !== 'Operations'), ...data.groups.filter((g) => g.title === 'Operations')];
+  const bodies = ordered.map((group) => {
+    const pay = group.title.startsWith("The GM's pay");
     const tbody = el('tbody');
     const titleRow = el('tr');
-    const title = el('th', group.title, 'group');
+    const title = el('th', undefined, 'group');
     title.setAttribute('scope', 'colgroup');
     title.setAttribute('colspan', '7');
+    const paren = group.title.indexOf(' (');
+    if (paren > 0) title.append(group.title.slice(0, paren), el('span', group.title.slice(paren), 'group-note'));
+    else title.textContent = group.title;
     titleRow.append(title);
     tbody.append(titleRow);
     for (const r of group.rows) {
       const tr = el('tr');
-      if (r.emphasis === true) tr.className = 'emphasis';
+      if (r.label === 'Profit') tr.className = 'profit';
+      else if (r.emphasis === true) tr.className = 'emphasis';
       const label = el('th', r.label);
       label.setAttribute('scope', 'row');
       tr.append(label);
       const overRatio = /^Blocks over /.test(r.label);
+      const cell = (text: string, cls?: string): HTMLElement => {
+        const shown = pay ? bonusWithCents(text) : text;
+        const td = shown.includes(' · ') ? chips(el('td', undefined, cls), shown) : el('td', undefined, cls);
+        if (!shown.includes(' · ')) appendArrowed(td, shown);
+        if (ZERO.test(shown)) td.classList.add('zero');
+        return td;
+      };
       for (const d of r.days) {
-        const td = d.includes(' · ') ? chips(el('td'), d) : el('td', d);
+        const td = cell(d);
         if (overRatio && Number(d) > 0) td.classList.add('warn');
         tr.append(td);
       }
-      tr.append(el('td', r.week, 'week'));
+      const week = cell(r.week, 'week');
+      if (overRatio && Number(r.week) > 0) week.classList.add('warn');
+      tr.append(week);
       tbody.append(tr);
     }
     return tbody;

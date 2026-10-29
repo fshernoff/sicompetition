@@ -1,7 +1,8 @@
-// The teacher's tray (BRIEF section 11, D39, D46): a small "Teacher" tab in the bottom-right corner opens a tray
-// fixed to the bottom of the window, holding the round radios, the seed, the reveal of the hidden rules, the learning
-// curve (D50: the teacher's view of the AI behind the GM), the export and the learner's check line. The tray overlays the page and never moves the lesson; while it is open
-// the page gets its measured height as bottom padding, so the last rows can still scroll above it.
+// The teacher's tray (BRIEF section 11, D39, D46): the "Teacher" button in the bar opens a panel fixed to the bottom of
+// the window, in three labelled groups (Round; This run: the seed and the export; Behind the curtain: the reveal of the
+// hidden rules and the learning curve, D50: the teacher's view of the AI behind the GM), with the learner's check line
+// at its foot (G5d). The tray overlays the page and never moves the lesson; while it is open the page gets its measured
+// height as bottom padding, so the last rows can still scroll above it.
 // The export builds its file from what the page holds once the run's readout is out (D47, D51): the trace the
 // sentence, the replay and the table show, the setup snapshotted at the click, the run's result and the trainer's
 // curve. It never runs the GM's week again.
@@ -11,6 +12,7 @@ import { redraw, scrollBehavior } from './app.ts';
 import type { Page } from './app.ts';
 import { buildExport, downloadJson, exportFilename } from './export.ts';
 import type { RunExportInput } from './export.ts';
+import { uiIconSvg } from './icons.ts';
 
 const REVEAL = 'Reveal the hidden rules';
 const HIDE = 'Hide the hidden rules';
@@ -26,7 +28,6 @@ function measureTray(page: Page): void {
 export function openTray(page: Page): void {
   page.teacher.hidden = false;
   page.teacherOpen.setAttribute('aria-expanded', 'true');
-  page.teacherOpen.hidden = true; // the tray covers the corner; its own Close button closes it
   document.documentElement.classList.add('teacher-open');
   measureTray(page);
 }
@@ -34,7 +35,6 @@ export function openTray(page: Page): void {
 export function closeTray(page: Page): void {
   page.teacher.hidden = true;
   page.teacherOpen.setAttribute('aria-expanded', 'false');
-  page.teacherOpen.hidden = false;
   document.documentElement.classList.remove('teacher-open');
 }
 
@@ -111,16 +111,18 @@ export function exportInput(page: Page): RunExportInput | null {
   };
 }
 
-/** A mortarboard, beside "Teacher" on the corner tab and in the tray's title (decoration only). */
-const CAP_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6 11.3v4.4c1.6 1.5 3.6 2.3 6 2.3s4.4-.8 6-2.3v-4.4"/><path d="M22 9.5v5"/></svg>';
-
-/** Wires the tab, the tray's close button, the reveal, the learning curve and the export. */
+/**
+ * Wires the Teacher button in the bar (it opens the tray and, pressed again, closes it), the tray's close button, the
+ * reveal, the learning curve and the export. A key beside "Teacher" in the bar and the tray's title (decoration only).
+ */
 export function mountTeacher(page: Page): void {
   for (const el of [page.teacherOpen, page.teacher.querySelector('.teacher-title')]) {
-    if (el) el.insertAdjacentHTML('afterbegin', CAP_ICON);
+    if (el) el.insertAdjacentHTML('afterbegin', uiIconSvg('key', 18, 2));
   }
-  page.teacherOpen.addEventListener('click', () => openTray(page));
+  page.teacherOpen.addEventListener('click', () => {
+    if (page.teacher.hidden) openTray(page);
+    else closeTray(page);
+  });
   page.teacherClose.addEventListener('click', () => {
     closeTray(page);
     page.teacherOpen.focus();

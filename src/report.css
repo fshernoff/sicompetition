@@ -1,111 +1,111 @@
-/* The weekly P&L and operations report: the headline tiles and the table (G5c, WP3). */
+/* The weekly P&L and operations report (G5d, D59): the headline as one strip of five cells (profit first, on navy,
+   before the GM's bonus; the hurt in red washes with their icon and label as the cue beyond colour), then the
+   statement: money first in aligned tabular columns, Profit as a ruled band, the Week column in amber, the GM's pay
+   with cents, then the operations behind them. Rules and zeros stay at 4.5:1 for the projector. */
+
+/* ---------- The headline ---------- */
 #report-tiles {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 16px;
+  grid-template-columns: 1.3fr 1fr 0.8fr 1fr 1.25fr;
+  overflow: hidden;
+  margin: 0 0 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
 }
 #report-tiles:empty { display: none; }
-@media (max-width: 1100px) { #report-tiles { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
-
-.tile {
-  position: relative;
-  background: var(--card, #fff);
-  border: 1px solid var(--line, #E8DFCB);
-  border-radius: var(--radius, 18px);
-  padding: 14px 16px 12px;
-  box-shadow: 0 1px 2px rgba(15, 82, 87, 0.08), 0 6px 16px rgba(15, 82, 87, 0.07);
-  border-top: 4px solid var(--m-profit, #F6C344);
-}
-.tile:nth-child(2) { border-top-color: var(--coral, #F2665A); }
-.tile:nth-child(3) { border-top-color: var(--m-incidents, #E0624F); }
-.tile:nth-child(4) { border-top-color: var(--m-reputation, #F6C344); }
-.tile:nth-child(5) { border-top-color: var(--m-ratio, #0F5257); }
-.tile-icon { position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; color: var(--teal, #0F5257); opacity: 0.8; }
-/* Each tile's icon in its measure's colour, as in the plan's rows and the yard's HUD (one icon, one colour per measure). */
-.tile:nth-child(1) .tile-icon { color: var(--m-profit, #1F9D74); opacity: 1; }
-.tile:nth-child(2) .tile-icon { color: var(--coral, #D2402F); opacity: 1; }
-.tile:nth-child(3) .tile-icon { color: var(--m-incidents, #EC5A4C); opacity: 1; }
-.tile:nth-child(4) .tile-icon { color: var(--m-reputation, #3A7FD5); opacity: 1; }
-.tile:nth-child(5) .tile-icon { color: var(--m-ratio, #F08A3C); opacity: 1; }
+.tile { min-width: 0; padding: 12px 16px 14px; border-left: 1px solid var(--line); }
+.tile:first-child { border-left: 0; }
+.tile-label { display: flex; align-items: center; gap: 6px; font: 600 15px/1.2 var(--font-ui); color: var(--ink-2); }
+.tile-icon { display: grid; flex: none; place-items: center; width: 18px; height: 18px; }
+.tile-icon svg { width: 18px; height: 18px; }
 .tile-value {
-  font-size: 2rem;
-  line-height: 1.1;
-  font-weight: 800;
-  color: var(--teal, #0F5257);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  padding-right: 28px;
+  margin-top: 6px;
+  font: 850 46px/1 var(--font-ui);
+  font-stretch: 68%;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.005em;
+  color: var(--navy);
+  white-space: nowrap;
 }
-.tile-label { margin-top: 4px; font-size: 15px; font-weight: 600; color: var(--ink-soft, #4A5A5C); }
+.tile-sub { margin-top: 6px; font-size: 15px; color: var(--ink-2); }
+.tile-profit { color: #fff; background: var(--navy); }
+.tile-profit .tile-label, .tile-profit .tile-sub { color: #c3ced8; }
+.tile-profit .tile-value { font-size: 56px; color: #fff; }
+.tile.hurt { background: var(--red-wash); }
+.tile.hurt .tile-label, .tile.hurt .tile-value { color: var(--red-ink); }
 
-/* The table: scrolls inside its card below 900 px. */
+/* ---------- The statement ---------- */
+.report-panel { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-3); }
 #report-table {
-  border-collapse: separate;
-  border-spacing: 0;
   width: 100%;
+  border-collapse: collapse;
   font-size: 15px;
-  font-variant-numeric: tabular-nums;
-  background: var(--card, #fff);
-  border: 1px solid var(--line, #E8DFCB);
-  border-radius: var(--radius, 18px);
-  overflow: hidden;
+  font-variant-numeric: tabular-nums lining-nums;
 }
-@media (max-width: 1099px) {
-  #report-table { display: block; overflow-x: auto; max-width: 100%; }
-}
-#report-table caption { font-size: 15px; text-align: left; padding: 0 4px 8px; font-weight: 600; color: var(--ink-soft, #4A5A5C); caption-side: top; }
-#report-table th, #report-table td { padding: 7px 8px; text-align: right; border-bottom: 1px solid var(--line, #EFE7D6); white-space: nowrap; }
+#report-table caption { padding: 10px 14px 0; font-size: 15px; text-align: left; color: var(--ink-2); caption-side: top; }
+#report-table th, #report-table td { height: 28px; padding: 3px 14px; text-align: right; white-space: nowrap; }
 #report-table thead th {
-  background: var(--teal, #0F5257);
-  color: #fff;
-  font-weight: 700;
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  height: 34px;
+  font: 800 15px/1 var(--font-ui);
+  font-stretch: 85%;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--panel-2);
+  border-bottom: 1.5px solid var(--line-strong);
 }
+#report-table thead th.week { color: var(--navy); background: var(--amber); }
 #report-table tbody th[scope='row'] {
-  text-align: left;
-  font-weight: 600;
-  color: var(--ink, #1F2D2E);
   position: sticky;
   left: 0;
   z-index: 1;
-  background: var(--card, #fff);
-  white-space: normal;
-  min-width: 170px;
-  max-width: 220px;
-}
-#report-table tbody tr:nth-child(even) td { background: rgba(246, 195, 68, 0.06); }
-#report-table tbody tr:nth-child(even) th[scope='row'] { background: #FDFAF2; }
-#report-table th.group {
+  min-width: 200px;
+  max-width: 330px;
+  font-weight: 400;
   text-align: left;
-  background: var(--teal-soft, #D9ECEB);
-  color: var(--teal, #0F5257);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  padding: 8px 12px;
-  border-left: 5px solid var(--teal, #0F5257);
-  position: static;
   white-space: normal;
+  color: var(--ink);
+  background: var(--panel);
 }
-#report-table td.week { white-space: normal; }
-#report-table td.week, #report-table thead th:last-child { border-left: 2px solid var(--line, #E8DFCB); }
-#report-table td.week { background: var(--yellow-soft, #FFF3CF) !important; font-weight: 700; }
-#report-table thead th:last-child { background: #0A3C40; box-shadow: inset 0 -4px 0 var(--yellow, #F6C344); }
-#report-table tr.emphasis th, #report-table tr.emphasis td { font-weight: 800; color: var(--teal, #0F5257); border-top: 2px solid var(--teal, #0F5257); }
-#report-table td.warn { background: rgba(242, 102, 90, 0.18) !important; color: #9B2C22; font-weight: 700; }
-#report-table td.chips { white-space: normal; text-align: left; min-width: 160px; vertical-align: top; }
-#report-table td.chips .chip { display: block; width: auto; margin: 0; padding: 2px 0 2px 8px; border-radius: 0; background: none; border-left: 3px solid var(--teal-soft, #BFDCDA); font-size: 15px; line-height: 1.25; white-space: normal; }
-#report-table td.chips .chip.muted { color: var(--ink-soft, #5A6668); border-left-color: var(--line, #E1D6BC); font-weight: 500; }
-#report-table .sep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
-#report-table .chip {
-  display: inline-block;
-  padding: 1px 8px;
-  margin: 1px 0;
-  border-radius: 999px;
-  background: var(--teal-soft, #D9ECEB);
-  color: var(--teal, #0F5257);
-  font-size: 15px;
-  font-weight: 600;
+/* Row rules a projector keeps: dotted in the 4.5:1 tone, so they hold on a washed-out screen without weighing on the figures. */
+#report-table tbody td, #report-table tbody th[scope='row'] { border-bottom: 1px dotted var(--line-strong); }
+#report-table th.group {
+  position: static;
+  height: 34px;
+  padding-top: 10px;
+  font: 800 16px/1 var(--font-ui);
+  font-stretch: 85%;
+  text-align: left;
+  color: var(--navy);
+  background: var(--panel);
+  border-bottom: 1.5px solid var(--line-strong);
+}
+.group-note { margin-left: 4px; font: 400 15px/1 var(--font-ui); font-stretch: 100%; color: var(--ink-2); }
+#report-table td.week { font-weight: 800; background: #fff6e2; }
+#report-table td.zero { color: var(--ink-3); } /* 5.9:1 on white, 5.4:1 on the Week column */
+#report-table tr.emphasis th, #report-table tr.emphasis td { font-weight: 800; color: var(--navy); }
+#report-table tr.profit th, #report-table tr.profit td {
+  height: 34px;
+  font-size: 17px;
+  font-weight: 850;
+  color: var(--navy);
+  border-top: 2px solid var(--navy);
+  border-bottom: 2px solid var(--navy);
+}
+#report-table tr.profit th[scope='row'] { box-shadow: inset 4px 0 0 var(--amber); }
+#report-table td.warn { font-weight: 800; color: var(--red-ink); background: var(--red-wash); }
+#report-table td.chips { min-width: 150px; text-align: left; white-space: normal; vertical-align: top; }
+#report-table td.chips .chip { display: block; font-size: 15px; line-height: 1.3; white-space: normal; }
+#report-table td.chips .chip.muted { color: var(--ink-3); }
+#report-table .sep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  #report-tiles { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .tile { border-left: 0; border-top: 1px solid var(--line); }
+}
+@media (min-width: 1800px) and (min-height: 1000px) {
+  #report-table, #report-table caption, #report-table thead th, .tile-label, .tile-sub { font-size: 17px; }
+  .tile-value { font-size: 56px; }
+  .tile-profit .tile-value { font-size: 66px; }
 }

@@ -1,5 +1,5 @@
-// The bonus plan editor on the page: six rows (a toggle, the name, a slider −10..+10 step 1, the dollar amount, the
-// unit hint), the limit line (#limit), the plan in words (#plan-words) and the signed-delta hint (#plan-note),
+// The bonus plan editor on the page: a labelled table of six rows (the name, a toggle, a slider −10..+10 step 1, the
+// dollar amount and the unit hint), the limit line (#limit), the plan in words (#plan-words) and the signed-delta hint (#plan-note),
 // re-rendered on every input. DOM only: the rules are the pure functions of src/world/bonusPlan.ts. No DOM access at
 // module top level: roundFromSearch is tested under node. WP2 (Opus).
 //
@@ -9,7 +9,7 @@
 import { activeCount, describeBonusPlan, kpiInfo, planLocked, setWeight, signedDollars, signedNote, toggleKpi } from '../world/bonusPlan.ts';
 import type { PresetName, RewardPreset } from '../world/config.ts';
 import type { KpiKey, RewardSpec, WorldConfig } from '../world/types.ts';
-import { BONUS_ICON_PATHS, iconSvg, measureIconSvg } from './icons.ts';
+import { BONUS_ICON_PATHS, iconSvg, measureIconSvg, uiIconSvg } from './icons.ts';
 
 export interface Editor {
   readonly element: HTMLElement;
@@ -61,7 +61,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, t
 function icon(key: KpiKey): HTMLElement {
   const tile = el('span', `kpi-icon kpi-icon-${key}`);
   tile.setAttribute('aria-hidden', 'true');
-  tile.innerHTML = measureIconSvg(key); // one icon per measure everywhere (icons.ts)
+  tile.innerHTML = measureIconSvg(key, 20, 1.9); // one icon per measure everywhere (icons.ts)
   return tile;
 }
 
@@ -97,18 +97,25 @@ function roundName(preset: RewardPreset): string {
  * locked plan (Round 1) has every toggle and slider disabled and #limit reads "Round 1: the plan is set. Predict
  * what the GM will do, then put it to work."; otherwise #limit reads "N of M measures on." with " Turn one off to turn
  * another on." appended when the limit is reached and a measure is still off.
- * The look (G5c): #limit under the card's heading, then a row per measure (its icon, its name as the toggle's label,
- * the dollar amount and its unit, the slider, the toggle: a native checkbox drawn as a switch), then the plan in
- * words in a highlighted strip and the note under it.
+ * The look (G5d, D59): #limit (with a padlock while the plan is set) under the heading, then the plan as a labelled
+ * table, Measure / In the plan / Amount: a row per measure with its icon and its name (the toggle's label), whether
+ * it is in the plan, and its dollar amount and unit. A set plan (Round 1) shows "In the plan" as a lamp and a word
+ * (On, Off) and hides the controls; an editable plan shows the switch (a native checkbox) and the slider beside the
+ * amount. Then the plan in words in a navy band and the note under it.
  */
 export function mountEditor(container: HTMLElement, world: WorldConfig, preset: RewardPreset): Editor {
   let current: RewardPreset = structuredClone(preset);
   let plan: RewardSpec = structuredClone(preset.spec);
   let enabled = true;
 
-  const list = el('div', 'kpi-rows');
-  list.setAttribute('role', 'group');
-  list.setAttribute('aria-label', 'The measures in the bonus plan');
+  const table = el('div', 'plan-table');
+  table.setAttribute('role', 'group');
+  table.setAttribute('aria-label', 'The measures in the bonus plan');
+  // The column heads are for the eye; each control carries its own name for a screen reader.
+  const head = el('div', 'plan-head');
+  head.setAttribute('aria-hidden', 'true');
+  head.append(el('span', 'plan-head-measure', 'Measure'), el('span', 'plan-head-in', 'In the plan'), el('span', 'plan-head-amount', 'Amount'));
+  table.appendChild(head);
   const rows: Row[] = kpiInfo(world).map((info) => {
     const row = el('div', 'kpi-row');
     row.dataset.key = info.key;
@@ -124,19 +131,26 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
     slider.max = '10';
     slider.step = '1';
     slider.setAttribute('aria-label', `Bonus amount for ${info.name}`);
-    const amount = el('span', 'kpi-amount');
     const value = el('span', 'kpi-value');
     value.id = `kpi-${info.key}-value`;
     value.setAttribute('aria-hidden', 'true'); // the slider's own value is what a screen reader announces
     const per = el('span', 'kpi-per', info.per);
     per.setAttribute('aria-hidden', 'true');
-    amount.append(value, ' ', per);
-    // Read-only rounds (Round 1) show the measure's state as a pill and its amount as text; the toggle and the slider
+    const figure = el('span', 'kpi-figure');
+    figure.append(value, ' ', per);
+    const amount = el('span', 'kpi-amount');
+    amount.append(slider, figure);
+    // A set plan (Round 1) shows whether the measure is in the plan as a lamp and a word; the toggle and the slider
     // stay in the page, disabled and visually hidden, so the plan reads as set rather than as a broken form.
     const state = el('span', 'kpi-state');
     state.setAttribute('aria-hidden', 'true'); // the checkbox carries the state for a screen reader
-    row.append(icon(info.key), name, state, amount, slider, toggle);
-    list.appendChild(row);
+    const lamp = el('i', 'lamp');
+    const stateWord = el('span', 'kpi-state-word');
+    state.append(lamp, stateWord);
+    const inPlan = el('span', 'kpi-in');
+    inPlan.append(toggle, state);
+    row.append(icon(info.key), name, inPlan, amount);
+    table.appendChild(row);
 
     toggle.addEventListener('change', () => {
       const next = toggleKpi(plan, info.key, current.maxActive);
@@ -145,17 +159,22 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
       else change(next);
     });
     slider.addEventListener('input', () => change(setWeight(plan, info.key, Number(slider.value))));
-    return { key: info.key, row, toggle, slider, value, state };
+    return { key: info.key, row, toggle, slider, value, state: stateWord };
   });
 
-  const limit = el('p', 'plan-limit');
+  const limitLine = el('p', 'plan-limit');
+  const lock = el('span', 'plan-lock');
+  lock.setAttribute('aria-hidden', 'true');
+  lock.innerHTML = uiIconSvg('lock', 16, 2.2);
+  const limit = el('span');
   limit.id = 'limit';
+  limitLine.append(lock, limit);
   const strip = el('div', 'plan-strip');
   const stripIcon = el('span', 'plan-strip-icon');
   stripIcon.setAttribute('aria-hidden', 'true');
-  stripIcon.innerHTML = iconSvg(BONUS_ICON_PATHS);
+  stripIcon.innerHTML = iconSvg(BONUS_ICON_PATHS, 22, 2);
   const stripText = el('div', 'plan-strip-text');
-  // Shown after the week, when the plan card stands beside the scorecard (G5c).
+  // Shown after the week, when the plan stands under the scorecard (G5c).
   const stripLabel = el('p', 'plan-strip-label', 'The plan it worked to');
   const words = el('p', 'plan-words');
   words.id = 'plan-words';
@@ -164,7 +183,7 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
   strip.append(stripIcon, stripText);
   const note = el('p', 'plan-note');
   note.id = 'plan-note';
-  container.append(limit, list, strip, note);
+  container.append(limitLine, table, strip, note);
 
   function render(): void {
     const locked = planLocked(current);

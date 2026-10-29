@@ -3,110 +3,124 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#FBF6EC" />
+    <meta name="theme-color" content="#13212F" />
     <title>Reward the Pack</title>
   </head>
   <body>
-    <header class="hero">
-      <div class="hero-inner">
-        <h1><svg class="hero-spark hero-spark-left" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M9 5l6 6M4 16h9M9 27l6-6"/></svg>Reward the Pack<svg class="hero-spark hero-spark-right" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M9 5l6 6M4 16h9M9 27l6-6"/></svg></h1>
-        <p class="tagline">Good Dog Daycare. You own it. The GM is an AI: it runs the week, and you write its bonus plan.</p>
-        <p class="round-badge"><span id="round-label">Round 1: profit only</span></p>
-      </div>
+    <header class="topbar">
+      <h1><svg class="wm-mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true" focusable="false"><path d="M16 9 L29 16.5 L16 24 L3 16.5 Z" fill="#6FA544"/><path d="M3 16.5 L16 24 L16 27 L3 19.5 Z" fill="#4E7F2E"/><path d="M16 24 L29 16.5 L29 19.5 L16 27 Z" fill="#3D6A22"/><path d="M3 16.5 L16 9 L16 5.5 L3 13 Z" fill="#E3CFA8"/><path d="M16 9 L29 16.5 L29 13 L16 5.5 Z" fill="#C9B27F"/><circle cx="16" cy="15.5" r="3.6" fill="#F4A51C"/><circle cx="16" cy="15.5" r="1.6" fill="#13212F"/></svg><svg class="wm-word" viewBox="0 -0.5 183.1 17.5" width="183" height="17.5" aria-hidden="true" focusable="false"><path fill="currentColor" d="M1.15 16.46V-0.04H7.56Q9.4 -0.04 10.45 0.63Q11.51 1.3 11.95 2.44Q12.4 3.59 12.4 4.99Q12.4 6.39 12.03 7.56Q11.65 8.73 10.74 9.5L12.92 16.46H8.56L7.01 10.77H5.29V16.46ZM5.29 7.51H6.94Q7.66 7.51 7.95 6.88Q8.23 6.25 8.23 5.34Q8.23 4.74 8.11 4.29Q7.98 3.84 7.7 3.57Q7.42 3.31 6.91 3.31H5.29Z M14.69 16.46V-0.04H24.72V3.46H18.84V6.34H23.81V9.83H18.84V12.96H24.84V16.46Z M28.89 16.46 26.05 -0.04H30.32L31.12 7.64Q31.18 8.1 31.23 8.61Q31.27 9.13 31.32 9.61Q31.36 10.09 31.39 10.47H31.58Q31.6 10.2 31.64 9.81Q31.69 9.43 31.74 9.01Q31.79 8.59 31.83 8.23Q31.88 7.86 31.9 7.64L32.99 -0.04H37.45L38.38 7.64Q38.43 7.96 38.48 8.45Q38.53 8.95 38.58 9.48Q38.64 10.02 38.68 10.47H38.86Q38.87 10.23 38.91 9.85Q38.94 9.48 38.98 9.07Q39.01 8.67 39.06 8.29Q39.1 7.92 39.14 7.64L40.08 -0.04H44.05L41.18 16.46H36.55L35.46 8.69Q35.4 8.2 35.34 7.66Q35.28 7.13 35.23 6.65Q35.19 6.17 35.16 5.86H34.98Q34.95 6.21 34.88 6.75Q34.82 7.3 34.74 7.83Q34.67 8.36 34.62 8.69L33.52 16.46Z M43.88 16.46 47.7 -0.04H53.29L57.11 16.46H52.74L52.23 13.75H48.62L48.13 16.46ZM49.19 10.38H51.67L50.99 6.48Q50.95 6.27 50.9 5.92Q50.85 5.57 50.79 5.15Q50.73 4.73 50.66 4.31Q50.59 3.89 50.53 3.54H50.34Q50.28 3.97 50.2 4.51Q50.12 5.05 50.04 5.57Q49.96 6.1 49.88 6.48Z M58.77 16.46V-0.04H65.19Q67.02 -0.04 68.08 0.63Q69.13 1.3 69.58 2.44Q70.02 3.59 70.02 4.99Q70.02 6.39 69.65 7.56Q69.28 8.73 68.36 9.5L70.54 16.46H66.19L64.63 10.77H62.92V16.46ZM62.92 7.51H64.56Q65.29 7.51 65.57 6.88Q65.86 6.25 65.86 5.34Q65.86 4.74 65.73 4.29Q65.6 3.84 65.32 3.57Q65.04 3.31 64.54 3.31H62.92Z M72.31 16.46V-0.04H77.82Q79.93 -0.04 81.17 0.83Q82.41 1.7 82.95 3.51Q83.5 5.32 83.5 8.16Q83.5 10.97 82.94 12.82Q82.37 14.66 81.12 15.56Q79.86 16.46 77.74 16.46ZM76.45 12.96H77.5Q78.02 12.96 78.37 12.78Q78.71 12.59 78.91 12.18Q79.1 11.78 79.19 11.13Q79.27 10.48 79.27 9.56V7.15Q79.27 6.22 79.19 5.53Q79.1 4.84 78.91 4.38Q78.72 3.92 78.37 3.69Q78.02 3.46 77.5 3.46H76.45Z M131.66 16.46V-0.04H138.18Q139.77 -0.04 140.76 0.64Q141.74 1.32 142.2 2.54Q142.65 3.77 142.65 5.41Q142.65 7.11 142.16 8.39Q141.67 9.67 140.67 10.39Q139.68 11.12 138.14 11.12H135.81V16.46ZM135.81 7.77H137.22Q137.92 7.77 138.19 7.14Q138.47 6.51 138.47 5.54Q138.47 4.84 138.36 4.35Q138.24 3.86 137.96 3.6Q137.68 3.35 137.18 3.35H135.81Z M142.59 16.46 146.42 -0.04H152L155.82 16.46H151.45L150.94 13.75H147.33L146.84 16.46ZM147.91 10.38H150.38L149.7 6.48Q149.67 6.27 149.61 5.92Q149.56 5.57 149.5 5.15Q149.44 4.73 149.37 4.31Q149.3 3.89 149.25 3.54H149.05Q148.99 3.97 148.91 4.51Q148.83 5.05 148.75 5.57Q148.67 6.1 148.59 6.48Z M163.06 16.75Q160.93 16.75 159.58 15.83Q158.23 14.91 157.6 13.02Q156.96 11.12 156.96 8.19Q156.96 3.82 158.52 1.74Q160.08 -0.35 163.2 -0.35Q164.95 -0.35 166.16 0.35Q167.38 1.05 168.02 2.58Q168.66 4.12 168.66 6.63H164.66Q164.66 5.51 164.53 4.73Q164.39 3.95 164.03 3.55Q163.67 3.16 163.01 3.16Q162.31 3.16 161.9 3.56Q161.5 3.97 161.34 4.77Q161.19 5.58 161.19 6.8V9.63Q161.19 10.87 161.35 11.67Q161.51 12.48 161.91 12.87Q162.31 13.26 163.01 13.26Q163.67 13.26 164.05 12.88Q164.44 12.5 164.6 11.75Q164.76 10.99 164.76 9.88H168.65Q168.65 12.31 168.01 13.83Q167.36 15.34 166.12 16.05Q164.87 16.75 163.06 16.75Z M170.97 16.46V-0.04H175.12V6.95L178.5 -0.04H182.94L179.33 7.04L183.07 16.46H178.47L176.53 10.67L175.12 12.43V16.46Z"/><path class="wm-the" d="M92.22 16.46V3.5H88.63V-0.04H99.93V3.5H96.37V16.46Z M101.95 16.46V-0.04H106.09V6.33H108.86V-0.04H113V16.46H108.86V9.86H106.09V16.46Z M115.78 16.46V-0.04H125.81V3.46H119.93V6.34H124.9V9.83H119.93V12.96H125.93V16.46Z"/></svg><span class="visually-hidden">Reward the Pack</span></h1>
+      <span class="wm-sub">Good Dog Daycare</span>
+      <p class="round-badge"><span id="round-label">Round 1: profit only</span></p>
+      <button id="teacher-open" type="button" class="teacher-key" aria-controls="teacher" aria-expanded="false">Teacher</button>
     </header>
 
     <main id="app">
-      <p id="round-note" class="round-note"></p>
-
-      <div class="deck">
-        <section id="editor" class="card plan-card" aria-labelledby="editor-title">
-          <h2 id="editor-title" class="card-title">The GM's bonus plan</h2>
-        </section>
-
-        <section id="predict" class="card predict-card compare" aria-labelledby="predict-title" data-state="picks">
-          <div class="card-head">
-            <h2 id="predict-title" class="card-title">Your team's prediction</h2>
-            <span class="week-over-pill" aria-hidden="true">The week is over</span>
-          </div>
-
-          <div id="picks" class="picks"></div>
-
-          <div id="result" class="result" hidden>
-            <div class="result-head">
-              <img class="gm gm-result" data-art="gm-presenting" alt="" width="302" height="357" />
-              <p id="called-line" class="called-line" tabindex="-1"></p>
+      <section id="watch" data-phase="load" data-gm="idle">
+        <div class="rail">
+          <div class="compare">
+            <div class="rail-head">
+              <span class="orb orb-head" aria-hidden="true">
+                <img class="orb-img" data-orb="ready" data-art="gm-ready" alt="" width="56" height="56" />
+                <img class="orb-img" data-orb="running" data-art="gm-running" alt="" width="56" height="56" />
+                <img class="orb-img" data-orb="done" data-art="gm-done" alt="" width="56" height="56" />
+              </span>
+              <p id="status">Write your prediction, then put the GM to work.</p>
             </div>
-            <div id="scorecard" class="scorecard" hidden></div>
-            <div class="readout-box">
-              <p class="readout-label" id="readout-label">What the GM did</p>
-              <p id="readout" aria-live="polite"></p>
-            </div>
-          </div>
 
-          <div class="predict-foot">
-            <img class="gm gm-idle" data-art="gm-standing" alt="" width="278" height="364" />
-            <div class="predict-why">
-              <label class="why-label" for="prediction">Why? <span class="why-sub">Your team's reasons (write it before you put the GM to work)</span></label>
-              <textarea
-                id="prediction"
-                rows="2"
-                placeholder="What will the GM do with this bonus plan, and why? Think about the dogs, the crew on the floor and the incidents."
-              ></textarea>
-              <div class="actions">
-                <button id="new-prediction" type="button" class="btn btn-quiet" hidden>Make a new prediction</button>
-                <button id="train" type="button" class="btn btn-primary" aria-describedby="picks-hint" disabled>Put the GM to work</button>
+            <div id="result" class="result" hidden>
+              <div class="result-cols">
+                <section class="result-col result-business" aria-labelledby="business-title">
+                  <h2 id="business-title" class="col-title">How the business did</h2>
+                  <dl id="business" class="business"></dl>
+                </section>
+                <section class="result-col result-call" aria-labelledby="call-title">
+                  <h2 id="call-title" class="col-title">What you called</h2>
+                  <p id="called-line" class="called-line" tabindex="-1"></p>
+                  <div id="scorecard" class="scorecard" hidden></div>
+                </section>
               </div>
-              <p id="picks-hint" class="picks-hint">Make all five picks to put the GM to work.</p>
+              <div class="readout-box">
+                <p class="readout-label" id="readout-label">What the GM did</p>
+                <p id="readout" aria-live="polite"></p>
+              </div>
             </div>
           </div>
-        </section>
-      </div>
 
-      <section id="watch" aria-label="Watch the GM at work" data-gm="idle">
-        <div class="stage card">
-          <div class="stage-side">
-            <p id="status">Write your prediction, then put the GM to work.</p>
-            <div class="stage-gm">
-              <img class="gm gm-pose" data-pose="idle" data-art="gm-standing" alt="The GM, waiting for its first week" width="278" height="364" />
-              <img class="gm gm-pose" data-pose="preparing" data-art="gm-thinking" alt="The GM, thinking about Monday" width="247" height="363" />
-              <img class="gm gm-pose" data-pose="playing" data-art="gm-standing" alt="The GM at work in the yard" width="278" height="364" />
-              <img class="gm gm-pose" data-pose="done" data-art="gm-presenting" alt="The GM, presenting its week" width="302" height="357" />
+          <div class="console">
+            <div class="premise">
+              <span class="orb orb-premise" aria-hidden="true">
+                <img class="orb-img" data-orb="ready" data-art="gm-ready" alt="" width="48" height="48" />
+              </span>
+              <div class="premise-text">
+                <p class="tagline">Good Dog Daycare. You own it. The GM is an AI: it runs the week, and you write its bonus plan.</p>
+                <p id="round-note" class="round-note"></p>
+              </div>
             </div>
+
+            <section id="editor" class="plan" aria-labelledby="editor-title">
+              <h2 id="editor-title" class="step-title"><span class="step" aria-hidden="true">1</span>The GM's bonus plan</h2>
+            </section>
+
+            <section id="predict" class="predict" aria-labelledby="predict-title">
+              <h2 id="predict-title" class="step-title"><span class="step" aria-hidden="true">2</span>Your team's prediction</h2>
+              <div id="picks" class="picks"></div>
+              <div class="why">
+                <label class="why-label" for="prediction"><span class="step" aria-hidden="true">3</span><span class="why-word">Why?</span> <span class="why-sub">Your team's reasons (write it before you put the GM to work)</span></label>
+                <textarea
+                  id="prediction"
+                  rows="4"
+                  placeholder="What will the GM do with this bonus plan, and why? Think about the dogs, the crew on the floor and the incidents."
+                ></textarea>
+                <div class="actions">
+                  <button id="new-prediction" type="button" class="btn btn-quiet" hidden>Make a new prediction</button>
+                  <button id="train" type="button" class="btn btn-go" aria-describedby="picks-hint" disabled>Put the GM to work</button>
+                </div>
+                <p id="picks-hint" class="picks-hint"><span class="pick-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="picks-hint-text">Make all five picks to put the GM to work.</span></p>
+              </div>
+            </section>
+          </div>
+
+          <div class="live">
+            <div id="rail-live" class="rail-live"></div>
             <div id="stage-picks" class="stage-picks" hidden>
-              <p class="stage-box-label">Your picks</p>
+              <p class="box-label">Your picks</p>
               <ul id="stage-picks-list" class="stage-picks-list"></ul>
             </div>
             <div id="stage-plan" class="stage-plan" hidden>
-              <p class="stage-box-label">The bonus plan it works to</p>
+              <p class="box-label">The bonus plan it works to</p>
               <p id="stage-plan-words" class="stage-plan-words"></p>
             </div>
           </div>
-          <figure class="replay-figure">
-            <div class="stage-head">
-              <figcaption id="replay-caption">The GM's week</figcaption>
-              <button id="replay-again" type="button" class="btn btn-quiet btn-small" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>Watch the week again</button>
-            </div>
-            <div class="yard-frame">
-              <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
-            </div>
-          </figure>
         </div>
+
+        <figure class="stage">
+          <div class="stage-head">
+            <figcaption id="replay-caption">The GM's week</figcaption>
+            <span id="stage-when" class="stage-when" hidden></span>
+            <button id="replay-again" type="button" class="btn btn-quiet btn-small" hidden>Watch the week again</button>
+          </div>
+          <div class="yard-frame">
+            <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
+          </div>
+        </figure>
       </section>
 
       <section id="report" aria-labelledby="report-title" hidden>
-        <div class="section-head">
+        <div class="report-head">
           <h2 id="report-title">The weekly P&amp;L and operations report</h2>
         </div>
         <div id="report-tiles"></div>
-        <table id="report-table"></table>
+        <div class="report-panel">
+          <table id="report-table"></table>
+        </div>
       </section>
 
-      <section id="rules" class="card sheet" aria-labelledby="rules-title" hidden>
+      <section id="rules" class="sheet" aria-labelledby="rules-title" hidden>
         <h2 id="rules-title">The hidden rules of Good Dog Daycare</h2>
         <ol id="rules-list"></ol>
       </section>
 
-      <section id="learning" class="card sheet" aria-labelledby="learning-title" hidden>
+      <section id="learning" class="sheet" aria-labelledby="learning-title" hidden>
         <h2 id="learning-title">The learning curve (the teacher's view)</h2>
         <figure class="learning-figure">
           <canvas id="curve" width="1100" height="619" aria-label="The bonus of each practice week of the AI behind the GM"></canvas>
@@ -117,28 +131,30 @@
       <section id="pilot"></section>
     </main>
 
-    <button id="teacher-open" type="button" class="teacher-tab" aria-controls="teacher" aria-expanded="false">Teacher</button>
     <aside id="teacher" class="teacher" hidden aria-label="Teacher panel">
       <div class="teacher-inner">
         <div class="teacher-row">
           <p class="teacher-title">Teacher</p>
-          <fieldset id="round" class="rounds">
-            <legend>Round</legend>
-            <label><input type="radio" name="round" id="round-round1" value="round1" checked /> Round 1</label>
-            <label><input type="radio" name="round" id="round-round2" value="round2" /> Round 2</label>
-            <label><input type="radio" name="round" id="round-round3" value="round3" /> Round 3</label>
+          <fieldset id="round" class="t-group rounds">
+            <legend class="t-label">Round</legend>
+            <label><input type="radio" name="round" id="round-round1" value="round1" checked /> 1</label>
+            <label><input type="radio" name="round" id="round-round2" value="round2" /> 2</label>
+            <label><input type="radio" name="round" id="round-round3" value="round3" /> 3</label>
           </fieldset>
-          <span class="teacher-field">
-            <label for="seed">Seed</label>
+          <div class="t-group" role="group" aria-labelledby="t-run">
+            <span class="t-label" id="t-run">This run</span>
+            <label class="t-field" for="seed">Seed</label>
             <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric" />
-          </span>
-          <button id="reveal" type="button">Reveal the hidden rules</button>
-          <button id="show-curve" type="button">Show the learning curve</button>
-          <button id="export" type="button" class="teacher-export" disabled>Export this run</button>
+            <button id="export" type="button" class="teacher-export" disabled>Export this run</button>
+          </div>
+          <div class="t-group" role="group" aria-labelledby="t-curtain">
+            <span class="t-label" id="t-curtain">Behind the curtain</span>
+            <button id="reveal" type="button">Reveal the hidden rules</button>
+            <button id="show-curve" type="button">Show the learning curve</button>
+          </div>
           <button id="teacher-close" type="button" class="teacher-close">Close</button>
         </div>
-        <p id="check" class="check">No run yet.</p>
-        <p class="teacher-hint">The export carries the prediction as it stood when the GM was put to work.</p>
+        <p class="teacher-foot"><span id="check" class="check">No run yet.</span><span class="teacher-hint">The export carries the prediction as it stood when the GM was put to work.</span></p>
       </div>
     </aside>
     <script type="module" src="./src/main.ts"></script>

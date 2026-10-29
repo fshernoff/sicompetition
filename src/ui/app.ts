@@ -1,7 +1,10 @@
 // The page controller: the round line, the bonus plan editor, the prediction, the Put the GM to work button (#train),
-// and under them the watching area (the status line and the yard, the week replay) and the weekly P&L and operations
-// report. The teacher's controls (the round, the seed, the hidden rules, the learning curve, the export, the check
-// line) live in the tray that teacher.ts mounts (BRIEF section 11, D39).
+// the watching area (the status line, the rail of the block's values and the yard, the week replay) and the weekly P&L
+// and operations report. The teacher's controls (the round, the seed, the hidden rules, the learning curve, the
+// export, the check line) live in the tray that teacher.ts mounts (BRIEF section 11, D39).
+// G5d (D59, Floor): one screen in three phases on #watch[data-phase] (syncPhase): the console (the premise, the plan,
+// the picks, the Why and the button) beside the yard; the run (the GM's status and the rail beside a wide yard); and
+// after the week the scorecard beside how the business did, the plan and the Why under them, the yard beside.
 // The GM is an AI the owners put in charge, and how it decides never shows (D50, D53). The click puts the GM to work:
 // the learner trains unpaced in requestAnimationFrame slices, out of sight, while the yard shows the in-world wait; the
 // teacher's check line and, when the teacher shows it, the learning curve are redrawn at most 10 times a second.
@@ -24,14 +27,18 @@ import type { CurveColors } from './curve.ts';
 import { mountEditor, roundFromSearch } from './editor.ts';
 import type { Editor } from './editor.ts';
 import { drawReplay, replayArtReady, replayClock, replayFrame } from './replay.ts';
-import type { ReplayColors } from './replay.ts';
-import { headlineTiles, renderReport, renderTiles, reportTable } from './report.ts';
+import type { ReplayColors, ReplayFonts, ReplayFrame, ReplayOptions } from './replay.ts';
+import { appendArrowed, headlineTiles, renderReport, renderTiles, reportTable } from './report.ts';
 import { PICKS, PICKS_HINT, calledLine, checkPrediction, emptyPicks, picksComplete } from './prediction.ts';
 import type { PickField, PickResult, Picks } from './prediction.ts';
 import { describeBonusPlan } from '../world/bonusPlan.ts';
-import gmPresentingUrl from '../assets/art/gm-presenting.webp';
-import gmStandingUrl from '../assets/art/gm-standing.webp';
-import gmThinkingUrl from '../assets/art/gm-thinking.webp';
+// The GM on the page is the set's orb in its three states (D59), rendered at the page's size (WP4b: 128 px, 64 CSS px).
+import gmDoneUrl from '../assets/art/set/gm-page-done.webp';
+import gmReadyUrl from '../assets/art/set/gm-page-ready.webp';
+import gmRunningUrl from '../assets/art/set/gm-page-running.webp';
+import { MEASURE_ICON_PATHS, UI_ICON_PATHS, iconSvg } from './icons.ts';
+import { mountRail, railModel } from './rail.ts';
+import type { RailIcon, RailView } from './rail.ts';
 import { ROUND_NOTES } from './roundNotes.ts';
 import { studentStatus } from './status.ts';
 import { mountTeacher, rejectSeed } from './teacher.ts';
@@ -138,12 +145,23 @@ export interface Page {
   playback: Promise<boolean> | null;
   /** The replay canvas's size, measured at the 10 Hz redraw and on resize, never every frame. */
   replaySize: CanvasSize | null;
+  /** The rail beside the yard (G5d): the block's values in words, written once per block while a week is on the yard. */
+  railView: RailView;
+  /** The block the rail and the stage's day chip show now; -1 when no week is on the yard. */
+  railStep: number;
+  stageWhen: HTMLElement; // the day and block, over the yard while the week plays
+  business: HTMLElement; // after the week: how the business did, beside what the team called
+  pickDots: HTMLElement[]; // the hint's five dots, one filled per pick made
+  /** The page's canvas font (--font-ui), for the yard's words. */
+  fonts: ReplayFonts;
   /** The current or last run's setup, from the click; null before a run and after a clear. */
   setup: RunSetup | null;
   /** The last run's result, set when it resolves; null before a run, during one and after a clear. */
   result: RunResult | null;
   /** The readout (the sentence, the table, Watch the week again) is out; the export waits for it (D51). */
   readoutShown: boolean;
+  /** True from the week's end until settleYard: the yard keeps the size it played at (G5d, acceptance 7). */
+  keepYardSize: boolean;
 }
 
 export interface RunResult {
@@ -196,20 +214,29 @@ function readColors(get: (name: string, fallback: string) => string): CurveColor
   };
 }
 
+/** The yard's colours, from the canvas tokens (G5d: --c-*, shared with WP3) and the G4 drawing's own. */
 function readReplayColors(get: (name: string, fallback: string) => string): ReplayColors {
   return {
-    background: get('--chart-paper', '#ffffff'),
-    ink: get('--ink', '#1f2a1f'),
-    muted: get('--muted', '#55604f'),
-    grass: get('--grass', '#cfe8b9'),
-    fence: get('--replay-fence', '#8a6a46'),
-    dog: [get('--replay-dog-1', '#c0702f'), get('--replay-dog-2', '#3d3027'), get('--replay-dog-3', '#8a96a0')],
-    crew: get('--replay-crew', '#1d5fbf'),
-    incident: get('--replay-incident', '#d03a1b'),
-    reputation: get('--replay-reputation', '#b8860b'),
-    cash: get('--replay-cash', '#2b8a3e'),
-    gaugeOver: get('--replay-gauge-over', 'rgba(208, 58, 27, 0.2)'),
+    background: get('--c-surface', '#ffffff'),
+    ink: get('--c-ink', '#13212f'),
+    muted: get('--c-muted', '#4e5a66'),
+    grass: get('--grass', '#cfe2b4'),
+    fence: get('--replay-fence', '#a88a5c'),
+    dog: [get('--replay-dog-1', '#c98a3c'), get('--replay-dog-2', '#3b3631'), get('--replay-dog-3', '#8a96a0')],
+    crew: get('--replay-crew', '#1e6f8a'),
+    incident: get('--c-danger', '#c23a26'),
+    reputation: get('--replay-reputation', '#a8740f'),
+    cash: get('--c-ok', '#1e6b41'),
+    gaugeOver: get('--replay-gauge-over', 'rgba(194, 58, 38, 0.2)'),
+    heading: get('--c-ink', '#13212f'),
+    accent: get('--c-amber', '#f4a51c'),
   };
+}
+
+/** The page's own face for the words on the yard (--font-ui). */
+function readFonts(get: (name: string, fallback: string) => string): ReplayFonts {
+  const ui = get('--font-ui', "system-ui, -apple-system, 'Segoe UI', sans-serif");
+  return { display: ui, body: ui };
 }
 
 /** Smooth scrolling, or instant under prefers-reduced-motion: reduce (G5c, acceptance 5). */
@@ -225,17 +252,57 @@ function replayArt(): Promise<void> {
   return replayArtReady();
 }
 
-/** The GM beside the status line (G5c): waiting, thinking while it gets ready, at work in the week, presenting after. */
-function showPose(page: Page): void {
+/**
+ * Where the page is (G5d, D59), on #watch[data-phase]: "load" (the console: the premise, the plan, the picks, the Why
+ * and the button, the yard beside it), "run" (the GM getting ready and running the week: the rail of the block's
+ * values beside a wide yard; a run or the pilot holds the controls) and "done" (the scorecard beside how the business
+ * did, the plan and the Why under them, the yard beside). And the GM's state on #watch[data-gm], which picks the orb:
+ * idle, preparing (getting ready), playing (running the week), done (the week is over). Called before anything is
+ * measured or scrolled, so the layout is the phase's from the first frame.
+ */
+export function syncPhase(page: Page): void {
   const week = page.replay.dataset.week;
-  const pose = page.readoutShown ? 'done' : week === 'preparing' ? 'preparing' : week === 'final' ? 'playing' : 'idle';
-  if (page.watch.dataset.gm !== pose) page.watch.dataset.gm = pose;
+  const phase = page.scorecardShown ? 'done' : !page.controlsEnabled && (week === 'preparing' || week === 'final') ? 'run' : 'load';
+  if (page.watch.dataset.phase !== phase) page.watch.dataset.phase = phase;
+  const gm = page.readoutShown ? 'done' : week === 'preparing' ? 'preparing' : week === 'final' ? 'playing' : 'idle';
+  if (page.watch.dataset.gm !== gm) page.watch.dataset.gm = gm;
 }
 
-const CHECK_ICON =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-const CROSS_ICON =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" focusable="false"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+/**
+ * The status line's kind on #watch[data-status], for the console: on the load screen the line is shown only when it
+ * has something to say beyond the premise (the plan changed after a run, or a run failed).
+ */
+function statusKind(text: string): string {
+  if (text === studentStatus('changed')) return 'changed';
+  if (text === ERROR_LINE) return 'error';
+  return '';
+}
+
+/** The rail's icons, in the measures' shapes (one icon per measure everywhere) and the banknote for cash. */
+function railIcon(name: RailIcon): string {
+  if (name === 'cash') return iconSvg(UI_ICON_PATHS.cash, 18, 1.9);
+  return iconSvg(MEASURE_ICON_PATHS[name], 18, 1.9);
+}
+
+/**
+ * One block of the week in words, beside the yard: the rail, and the day chip over the yard (the block's events are
+ * the yard's own chips, WP3). Written once per block (the playback's frames between blocks write nothing); null
+ * clears them.
+ */
+function showBlock(page: Page, frame: ReplayFrame | null): void {
+  if (frame === null) {
+    page.railView(null);
+    page.stageWhen.hidden = true;
+    return;
+  }
+  const model = railModel(frame, page.world);
+  page.railView(model);
+  page.stageWhen.textContent = model.when;
+  page.stageWhen.hidden = false;
+}
+
+const CHECK_ICON = iconSvg(UI_ICON_PATHS.check, 16, 3);
+const CROSS_ICON = iconSvg(UI_ICON_PATHS.cross, 16, 3);
 
 /**
  * The five picks (D56): a fieldset per pick with its legend (the pick's label) and its options as chips: native
@@ -297,7 +364,10 @@ export function readPicks(page: Page): Picks {
 function syncPicks(page: Page): void {
   const locked = !page.controlsEnabled || page.scorecardShown;
   for (const radio of page.pickRadios) radio.disabled = locked;
-  const complete = picksComplete(readPicks(page));
+  const picks = readPicks(page);
+  const made = PICKS.filter((p) => picks[p.field] !== null).length;
+  page.pickDots.forEach((dot, i) => dot.classList.toggle('on', i < made));
+  const complete = picksComplete(picks);
   page.train.disabled = !page.controlsEnabled || !complete;
   page.picksHint.hidden = complete;
   if (complete) page.train.removeAttribute('aria-describedby');
@@ -346,14 +416,55 @@ function showStagePicks(page: Page, results: readonly PickResult[] | null = null
 }
 
 /**
- * After the week (D56): the prediction card turns into the scorecard of the click's picks (page.setup.picks) against
- * the week the page holds: a row per pick with the team's pick, what the GM did and called or missed (a mark and a
- * word), and the called line. The radios stay locked until a clear.
+ * How the business did (G5d, Acceptance 5): the week's profit (before the GM's bonus), incidents, reputation and the
+ * blocks over the legal limit, in the report's own formats and words, each a hurt (a red figure and its icon) when it
+ * went against the business. Beside the scorecard, with the same weight.
+ */
+function renderBusiness(page: Page, trace: EpisodeTrace): void {
+  const t = trace.report.totals;
+  const tiles = headlineTiles(trace.report, page.spec, page.world);
+  const doc = page.business.ownerDocument;
+  const items: { tile: number; icon: string; sub: string; hurt: boolean }[] = [
+    { tile: 0, icon: MEASURE_ICON_PATHS.profit, sub: "Before the GM's bonus", hurt: t.profit < 0 },
+    { tile: 2, icon: MEASURE_ICON_PATHS.incidents, sub: '', hurt: t.incidents > 0 },
+    { tile: 3, icon: MEASURE_ICON_PATHS.reputation, sub: '', hurt: t.reputationEnd < t.reputationStart },
+    { tile: 4, icon: MEASURE_ICON_PATHS.overRatio, sub: '', hurt: t.blocksOverRatio > 0 },
+  ];
+  const groups = items.map(({ tile, icon, sub, hurt }) => {
+    const data = tiles[tile];
+    const group = doc.createElement('div');
+    group.className = hurt ? 'biz hurt' : 'biz';
+    const dt = doc.createElement('dt');
+    const glyph = doc.createElement('span');
+    glyph.className = 'biz-icon';
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.innerHTML = iconSvg(icon, 18, 1.9);
+    dt.append(glyph, data?.label ?? '');
+    const value = doc.createElement('dd');
+    value.className = 'biz-val';
+    appendArrowed(value, data?.value ?? '');
+    group.append(dt, value);
+    if (sub !== '') {
+      const note = doc.createElement('dd');
+      note.className = 'biz-sub';
+      note.textContent = sub;
+      group.appendChild(note);
+    }
+    return group;
+  });
+  page.business.replaceChildren(...groups);
+}
+
+/**
+ * After the week (D56): the scorecard of the click's picks (page.setup.picks) against the week the page holds: a row
+ * per pick with the team's pick, what the GM did and called or missed (a mark and a word), and the called line, beside
+ * how the business did (G5d). The radios stay locked until a clear.
  */
 function showScorecard(page: Page): void {
   const trace = page.trace;
   const setup = page.setup;
   if (trace === null || setup === null) return;
+  renderBusiness(page, trace);
   const results = checkPrediction(setup.picks, trace.report);
   const table = document.createElement('table');
   table.className = 'score-table';
@@ -414,6 +525,7 @@ function showScorecard(page: Page): void {
   page.compare.dataset.state = 'scorecard';
   page.scorecardShown = true;
   syncPicks(page);
+  syncPhase(page);
 }
 
 /** The scorecard goes (with the run, D37) and the picks come back as they were, unlocked unless a run holds them. */
@@ -425,9 +537,11 @@ function hideScorecard(page: Page): void {
   page.resultBox.hidden = true;
   page.picksBox.hidden = false;
   page.newPrediction.hidden = true;
+  page.business.replaceChildren();
   page.compare.dataset.state = 'picks';
   page.scorecardShown = false;
   syncPicks(page);
+  syncPhase(page);
 }
 
 /** The seed field as an integer 0..4294967295, or null if it is anything else. */
@@ -457,17 +571,21 @@ function sizeCanvas(canvas: HTMLCanvasElement): CanvasSize {
  */
 function paintReplay(page: Page, now: number): boolean {
   const size = page.replaySize ?? (page.replaySize = sizeCanvas(page.replay));
-  const options = {
+  const options: ReplayOptions = {
     pixelRatio: size.ratio,
     colors: page.replayColors,
     progress: 0,
     legalRatio: page.world.bookings.legalRatio,
     gaugeMax: page.world.requests.max,
+    fonts: page.fonts,
+    // The orb on the yard in the status line's state: running while the week plays, done once it is over (WP3).
+    gm: page.readoutShown ? 'done' : 'running',
   };
   const trace = page.trace;
   if (trace === null) {
-    // Before a week and while the GM gets ready, the canvas is clear and the yard art behind it shows through, dimmed
-    // (the stage's CSS): only the placeholder's line is drawn. Cleared here first, so no earlier week stays under it.
+    // Before a week and while the GM gets ready, the canvas is clear and the board behind it shows through (the
+    // stage's CSS): nothing is drawn on the load screen, and only the getting-ready line while the GM gets ready.
+    // Cleared here first, so no earlier week stays under it.
     const ctx = page.replayCtx;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -475,12 +593,21 @@ function paintReplay(page: Page, now: number): boolean {
     ctx.restore();
     const clear = { ...options, colors: { ...page.replayColors, background: CLEAR } };
     const preparing = page.replay.dataset.week === 'preparing';
-    drawReplay(ctx, size.width, size.height, null, preparing ? { ...clear, placeholder: PREPARING_PLACEHOLDER } : clear);
+    drawReplay(ctx, size.width, size.height, null, { ...clear, placeholder: preparing ? PREPARING_PLACEHOLDER : '' });
+    if (page.railStep !== -1) {
+      page.railStep = -1;
+      showBlock(page, null);
+    }
     return true;
   }
   const clock = replayClock(now - page.replayStartedAt);
   options.progress = clock.progress;
-  drawReplay(page.replayCtx, size.width, size.height, replayFrame(trace.steps, clock.step, page.world), options);
+  const frame = replayFrame(trace.steps, clock.step, page.world);
+  drawReplay(page.replayCtx, size.width, size.height, frame, options);
+  if (page.railStep !== clock.step) {
+    page.railStep = clock.step; // the rail's words change once a block, not every frame
+    showBlock(page, frame);
+  }
   return clock.done;
 }
 
@@ -490,8 +617,12 @@ function paintReplay(page: Page, now: number): boolean {
  * when a run starts, ends or is cleared; between redraws the playback's frames paint only the replay.
  */
 export function redraw(page: Page, now: number = performance.now()): void {
-  showPose(page);
-  page.replaySize = sizeCanvas(page.replay);
+  syncPhase(page);
+  // When the week ends the yard first keeps the size it played at (the stage shows that picture fitted to its
+  // narrower box, object-fit in style.css), so the end of the week builds nothing new; settleYard draws it at its own
+  // size once the page is still.
+  const keep = page.keepYardSize && page.trace !== null && page.replaySize !== null;
+  if (!keep) page.replaySize = sizeCanvas(page.replay);
   paintReplay(page, now);
   if (page.learning.hidden) return; // a hidden canvas has no size; the curve waits until it is shown
   const { width, height, ratio } = sizeCanvas(page.canvas);
@@ -502,6 +633,24 @@ export function redraw(page: Page, now: number = performance.now()): void {
     averageWindow: t ? t.config.movingAverageWindow : DEFAULT_LEARNER.movingAverageWindow,
     minEpisodes: 2000,
   });
+}
+
+/**
+ * After the week, once the page is still (the scroll to the scorecard has played out, then idle time): the yard drawn
+ * at its own after-week size, so its labels are their size again (acceptance 6). The yard's caches are built for that
+ * size here, one task, away from the week and its end (acceptance 7). A clear or a new run meanwhile cancels it.
+ */
+function settleYard(page: Page): void {
+  const token = page.token;
+  const settle = (): void => {
+    if (page.token !== token || !page.keepYardSize) return;
+    page.keepYardSize = false;
+    redraw(page);
+  };
+  setTimeout(() => {
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(settle, { timeout: 1000 });
+    else settle();
+  }, 800);
 }
 
 /**
@@ -563,12 +712,17 @@ export function showReadout(page: Page, label = ''): void {
   page.replayCaption.textContent = REPLAY_CAPTION;
   renderReport(page.reportTable, reportTable(trace.report, page.spec, page.world));
   renderTiles(page.reportTiles, headlineTiles(trace.report, page.spec, page.world));
-  page.report.hidden = false;
+  // The report is built now and laid out on the next frame, so the scorecard's layout and the report's are two short
+  // tasks, not one long one (G5d, acceptance 7). A clear in between keeps it hidden.
+  const token = page.token;
+  requestAnimationFrame(() => {
+    if (page.token === token && page.readoutShown) page.report.hidden = false;
+  });
   page.replayAgain.hidden = false;
   page.status.textContent = label + studentStatus('done');
-  page.resultBox.hidden = false; // what the GM did, in the prediction card
+  page.resultBox.hidden = false; // what the GM did, beside the scorecard
   page.readoutShown = true;
-  showPose(page);
+  syncPhase(page);
 }
 
 /**
@@ -656,6 +810,7 @@ export function setControls(page: Page, enabled: boolean): void {
   page.newPrediction.disabled = !enabled;
   syncPicks(page); // the picks and the button: on only with the five picked and no scorecard holding them (D56)
   page.exportButton.disabled = !(enabled && page.readoutShown && page.result !== null && page.trace !== null);
+  syncPhase(page);
 }
 
 /** Checks `name`'s radio and writes the round line (its label and note). Does not touch the editor. */
@@ -684,6 +839,8 @@ export function clearRun(page: Page): void {
   page.replayStartedAt = 0;
   page.playback = null;
   page.readoutShown = false;
+  page.keepYardSize = false;
+  page.watch.style.removeProperty('--yard-aspect');
   page.replay.dataset.week = 'none';
   page.replay.dataset.plays = '0';
   delete page.replay.dataset.key;
@@ -714,15 +871,24 @@ export function mountApp(): Page {
   const picksBox = byId('picks', HTMLElement);
   const pickRadios = renderPicks(picksBox);
   const art: Readonly<Record<string, string>> = {
-    'gm-presenting': gmPresentingUrl,
-    'gm-standing': gmStandingUrl,
-    'gm-thinking': gmThinkingUrl,
+    'gm-ready': gmReadyUrl,
+    'gm-running': gmRunningUrl,
+    'gm-done': gmDoneUrl,
   };
   for (const img of document.querySelectorAll<HTMLImageElement>('img[data-art]')) {
     const url = art[img.dataset.art ?? ''];
-    if (url !== undefined) img.src = url;
+    if (url === undefined) continue;
+    // An image that fails leaves nothing broken: it goes, and its orb is drawn by the stylesheet instead.
+    img.addEventListener('error', () => {
+      img.hidden = true;
+      img.closest('.orb')?.classList.add('art-failed');
+    });
+    img.src = url;
   }
   const css = cssVars();
+  const status = byId('status', HTMLElement);
+  const watch = byId('watch', HTMLElement);
+  const railLive = byId('rail-live', HTMLElement);
   const page: Page = {
     roundLabel: byId('round-label', HTMLElement),
     roundNote: byId('round-note', HTMLElement),
@@ -755,8 +921,8 @@ export function mountApp(): Page {
     exportButton: byId('export', HTMLButtonElement),
     check: byId('check', HTMLElement),
     compare: compareArea(),
-    watch: byId('watch', HTMLElement),
-    status: byId('status', HTMLElement),
+    watch,
+    status,
     canvas,
     ctx: context2d(canvas),
     replay,
@@ -779,14 +945,45 @@ export function mountApp(): Page {
     token: 0,
     playback: null,
     replaySize: null,
+    railView: mountRail(railLive, world.requests.max, railIcon),
+    railStep: -1,
+    stageWhen: byId('stage-when', HTMLElement),
+    business: byId('business', HTMLElement),
+    pickDots: Array.from(document.querySelectorAll<HTMLElement>('#picks-hint .pick-dots i')),
+    fonts: readFonts(css),
     setup: null,
     result: null,
     readoutShown: false,
+    keepYardSize: false,
   };
+  page.railView(null);
   showRound(page, first);
-  page.picksHint.textContent = PICKS_HINT;
+  const hintText = page.picksHint.querySelector('.picks-hint-text');
+  if (hintText) hintText.textContent = PICKS_HINT;
+  else page.picksHint.textContent = PICKS_HINT;
   syncPicks(page);
   void replayArt(); // decode the yard's art while the class makes its picks
+
+  // The status line's kind follows its words wherever they are written (the page, the pilot).
+  const syncStatus = (): void => {
+    const kind = statusKind(status.textContent ?? '');
+    if ((watch.dataset.status ?? '') !== kind) watch.dataset.status = kind;
+  };
+  new MutationObserver(syncStatus).observe(status, { childList: true, characterData: true, subtree: true });
+  syncStatus();
+
+  // The stage changes size with the phase (the console beside a narrow yard, the rail beside a wide one): the yard is
+  // drawn again at its new size, once, on the next frame.
+  let stageQueued = false;
+  const stageResized = (): void => {
+    if (stageQueued) return;
+    stageQueued = true;
+    requestAnimationFrame(() => {
+      stageQueued = false;
+      redraw(page);
+    });
+  };
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(stageResized).observe(replay);
 
   // A pick is part of the prediction, not the plan: it never clears a run; it only lets the button on (D56).
   for (const radio of pickRadios) radio.addEventListener('change', () => syncPicks(page));
@@ -797,7 +994,7 @@ export function mountApp(): Page {
     page.status.textContent = studentStatus('idle');
     const first = pickRadios.find((r) => r.checked) ?? pickRadios[0];
     first?.focus({ preventScroll: true });
-    page.compare.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() }); // the console again, as on the load screen
   });
 
   editor.onChange = () => clearRun(page);
@@ -836,6 +1033,7 @@ export function mountApp(): Page {
     showStagePicks(page);
     page.status.textContent = studentStatus('preparing');
     page.replay.dataset.week = 'preparing';
+    syncPhase(page); // the run's layout (the rail beside a wide yard) before the scroll is measured
     // The class watches the yard without touching anything (D42).
     page.watch.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     let owner = -1;
@@ -854,10 +1052,18 @@ export function mountApp(): Page {
         page.status.textContent = studentStatus('playing');
         const played = await playWeek(page);
         if (!played || page.token !== owner) return;
+        // The yard keeps the picture it played at while the page turns to the scorecard (no new caches at the week's
+        // end), in a box of the same proportions, so nothing moves when settleYard draws it at its own size.
+        page.keepYardSize = true;
+        if (page.replaySize !== null) page.watch.style.setProperty('--yard-aspect', `${page.replaySize.width} / ${page.replaySize.height}`);
         showReadout(page);
         showScorecard(page);
+        // Friday's pickup with the orb in its done state, on the next frame (a redraw draws what the page holds, so it
+        // needs no token).
+        requestAnimationFrame(() => redraw(page));
         page.calledLine.focus({ preventScroll: true }); // the result first, for a keyboard and a screen reader
         page.compare.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); // the box score after the game
+        settleYard(page);
       } catch (err) {
         if (err instanceof RunCancelled) return;
         if (owner !== -1 && page.token !== owner) return; // a newer run owns the page now

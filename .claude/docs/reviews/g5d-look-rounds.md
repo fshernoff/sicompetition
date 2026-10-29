@@ -185,3 +185,18 @@ time (the plan's budget clause).
 | 24 | Low | C25 | The same sprite twice in one yard, apart | Accepted | WP3: an unused sprite before any repeat |
 | 25 | Low | C26, C27 | P&L copy; the sentence omits the rate | Accepted | BRIEF 10 and 10.1: the rate clause, "under the plan", the sub-heading; WP2: drop "Monday to Friday, and the week" |
 | 26 | — | C29 | 06-yard-after is byte-identical to 05 | Accepted (the tool) | WP2: `e2e/shots.ts` takes the yard-after state |
+
+## Round 4 (Oct 29, `g5d-look` at `7fb8d38`: WP2's and WP3's round 3 fixes; the last round inside the budget)
+
+Shots: `Temp/shots/20261029-131943/` (22 states; 05 and 06 now differ). Checks on that build: `npx vitest run` 603
+passed (38 files); `npm run lint` 0; `npm run build` (dist 884 KB); `E2E_PORT=4341 npm run e2e` 10 passed (55.5 s);
+`PERF_PORT=4342 npm run perf` three probes after stopping an orphaned headless browser (load ~5 to 7 from other
+apps): first runs 1,406 / 1,412 / 1,432 ms, reruns 1,169 to 1,201 ms, p95 16.7 to 16.8 ms, 0 long tasks, 5.1 MB.
+
+### The main thread (before reading the others)
+
+| # | Severity | Shot | Finding |
+|---|---|---|---|
+| M1 | Medium | 03 | Getting ready: the lower half of both columns is empty (left below y ≈ 430, right below ≈ 570) |
+| M2 | Low | 04 | "Today's profit so far, after the GM's pay:" wraps with its number on the next line; "The GM's bonus this week so far" wraps to two lines |
+| M3 | Low | 04 | While the week plays, the reasons card's bottom edge is cut at the window's edge |

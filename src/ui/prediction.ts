@@ -53,7 +53,7 @@ export const PICKS: readonly PickInfo[] = [
   },
   {
     field: 'naps',
-    label: 'Nap blocks',
+    label: 'Nap blocks this week',
     options: [
       { value: '0', label: 'None' },
       { value: '1-5', label: '1 to 5' },
@@ -62,7 +62,7 @@ export const PICKS: readonly PickInfo[] = [
   },
   {
     field: 'incidents',
-    label: 'Incidents',
+    label: 'Incidents this week',
     options: [
       { value: '0-2', label: '0 to 2' },
       { value: '3-6', label: '3 to 6' },
@@ -97,9 +97,9 @@ export interface PickResult {
   /** The team's pick, as its chip's words, or null if none was made. */
   picked: string | null;
   /**
-   * What the GM did, as the option's words, with the exact number after a range ("1 to 4 (3)", "6 or more (9)",
-   * "3 or 4 (4)") and alone after an exact option ("None", "All 5"); the rate as "Premium", or "A mix (low × 1,
-   * premium × 4)" in low, standard, premium order; "Closed all week" when no day opened.
+   * What the GM did, in plain words, never the bucket again (D63): "3 days", "Every day", "No days", "1 day";
+   * "Premium", or "A mix: low × 1, premium × 4" in low, standard, premium order; "No naps", "1 nap block", "9 nap
+   * blocks"; "No incidents", "1 incident", "7 incidents"; "Closed all week" for the rate when no day opened.
    */
   actual: string;
   /** The option value the week falls in, or null when it falls in none (the rate on a week closed every day). */
@@ -131,28 +131,31 @@ export function actualValue(field: PickField, report: WeekReport): string | null
   }
 }
 
-const EXACT = new Set(['none', 'all', '0', '5', 'low', 'standard', 'premium']);
-const COUNT: Record<PickField, (t: WeekReport['totals']) => number> = {
-  acceptAll: (t) => t.daysAcceptedAll,
-  rate: () => 0,
-  solo: (t) => t.daysOneStaffer,
-  naps: (t) => t.napBlocks,
-  incidents: (t) => t.incidents,
-};
+const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
 
+/** What the GM did on one pick, in plain words (D63): the count the bucket was drawn from, never the bucket. */
 function actualWords(info: PickInfo, value: string | null, report: WeekReport): string {
-  if (value === null) return 'Closed all week';
-  const label = info.options.find((o) => o.value === value)?.label ?? value;
-  if (info.field === 'rate') {
-    if (value !== 'mix') return label;
-    const open = report.days.filter((d) => !d.closed);
-    const parts = RATES.map((r) => ({ r, n: open.filter((d) => d.rate === r).length }))
-      .filter((x) => x.n > 0)
-      .map((x) => `${x.r} × ${x.n}`);
-    return `${label} (${parts.join(', ')})`;
+  const t = report.totals;
+  switch (info.field) {
+    case 'acceptAll':
+      return t.daysAcceptedAll === 0 ? 'No days' : t.daysAcceptedAll >= report.days.length ? 'Every day' : plural(t.daysAcceptedAll, 'day', 'days');
+    case 'solo':
+      return t.daysOneStaffer === 0 ? 'No days' : t.daysOneStaffer >= report.days.length ? 'Every day' : plural(t.daysOneStaffer, 'day', 'days');
+    case 'naps':
+      return t.napBlocks === 0 ? 'No naps' : plural(t.napBlocks, 'nap block', 'nap blocks');
+    case 'incidents':
+      return t.incidents === 0 ? 'No incidents' : plural(t.incidents, 'incident', 'incidents');
+    case 'rate': {
+      if (value === null) return 'Closed all week';
+      const label = info.options.find((o) => o.value === value)?.label ?? value;
+      if (value !== 'mix') return label;
+      const open = report.days.filter((d) => !d.closed);
+      const parts = RATES.map((r) => ({ r, n: open.filter((d) => d.rate === r).length }))
+        .filter((x) => x.n > 0)
+        .map((x) => `${x.r} × ${x.n}`);
+      return `${label}: ${parts.join(', ')}`;
+    }
   }
-  if (EXACT.has(value)) return label;
-  return `${label} (${COUNT[info.field](report.totals)})`;
 }
 
 /** Each pick beside what the GM did, in PICKS order. */

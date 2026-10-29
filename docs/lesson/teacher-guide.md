@@ -35,13 +35,13 @@ The status line says where the GM is:
 1. "Write your prediction, then put the GM to work." The prediction card asks five picks (days it accepts every booking, day rate, days with 1 staffer, nap blocks, incidents) and a Why. The button waits until all five are made. A closed day never counts as accepting every booking or as a solo day; the rate is over open days.
 2. "The GM is getting ready for Monday." This usually takes a few seconds, up to a minute on a slow Chromebook.
 3. "The GM is running the week." The week plays on the yard in about 8 seconds.
-4. "The week is over: what the GM did is beside your prediction, and the full report is below."
+4. "The week is over."
 
 The prediction card turns into a scorecard: each pick beside what the GM did, ending "You called N of 5." The full weekly P&L and operations report is below it, opening with five big numbers. The GM appears beside the status line.
 
 ## What Round 1 does on seed 1
 
-From this session's engine: "The GM accepted every booking on 5 of 5 days, ran the floor with 1 staffer on 4 days, chose nap 0 times, averaged 16 dogs per staffer, and had 7 incidents." Profit for the week: $5,393. Reputation: 50 → 32.
+From this session's engine: "The GM accepted every booking on 5 of 5 days, ran the floor with one staffer on 4 days, never had the dogs nap, averaged 16 dogs per staffer, and had 7 incidents." Profit for the week: $5,393. Reputation: 50 → 32.
 
 To discuss: every booking, the premium rate, one staffer on four days, no naps, no cleaning. The dogs, the crew and the reputation paid for the bonus.
 

@@ -25,11 +25,31 @@ function measureTray(page: Page): void {
   document.documentElement.style.setProperty('--tray-height', `${page.teacher.offsetHeight}px`);
 }
 
+/**
+ * The page's controls that must never sit under the open tray (G5d round 2, row 4): the buttons a class presses. When
+ * the tray opens over one, the page (which keeps the tray's height as bottom padding) scrolls it clear, at once.
+ */
+const KEEP_CLEAR = ['#train', '#new-prediction', '#replay-again'];
+
+function keepClear(page: Page): void {
+  const trayTop = page.teacher.getBoundingClientRect().top;
+  let overlap = 0;
+  for (const selector of KEEP_CLEAR) {
+    const el = document.querySelector<HTMLElement>(selector);
+    if (el === null || el.hidden || el.getClientRects().length === 0) continue;
+    const box = el.getBoundingClientRect();
+    if (box.bottom <= 0 || box.top >= window.innerHeight) continue; // off screen: not covered by the tray
+    if (box.bottom > trayTop) overlap = Math.max(overlap, box.bottom - trayTop + 12);
+  }
+  if (overlap > 0) window.scrollBy({ top: overlap, behavior: 'auto' });
+}
+
 export function openTray(page: Page): void {
   page.teacher.hidden = false;
   page.teacherOpen.setAttribute('aria-expanded', 'true');
   document.documentElement.classList.add('teacher-open');
   measureTray(page);
+  keepClear(page);
 }
 
 export function closeTray(page: Page): void {

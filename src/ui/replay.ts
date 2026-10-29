@@ -59,7 +59,8 @@ export interface ReplayFrame {
   activity: FloorActivity | null;
   /** What the GM asked for; null at drop-off. */
   requested: FloorActivity | null;
-  /** 'free play', 'structured play', 'nap', 'walk', 'clean', 'closed'; a fallback as 'walk → free play'. */
+  /** 'free play', 'structured play', 'nap', 'walk', 'clean', 'closed'; a fallback as what ran with what was asked,
+   * 'free play (walk asked)', as the table writes it (BRIEF 10.1, 10.2). */
   activityWords: string;
   /** The day's dogs and crew (present today); 0 on a closed day. */
   dogs: number;
@@ -87,7 +88,10 @@ export interface ReplayFrame {
   cleanliness: number;
   fatigue: number;
   reputation: number;
+  /** The engine's cash after the step (display only, BRIEF section 3); the page shows it less bonusSoFar (section 5). */
   cash: number;
+  /** The GM's bonus earned through this block under the plan: the steps' rewards summed over 0..t (G5d, D62). */
+  bonusSoFar: number;
   /** Counters over steps 0..t. */
   incidentsSoFar: number;
   finesSoFar: number;
@@ -97,10 +101,11 @@ export interface ReplayFrame {
   events: WorldEvent[];
   /**
    * The events in business words, in the order they happened, as events and never as rules (BRIEF section 3: the
-   * state is visible, the rules are hidden): 'Incident', 'Vet bill $150', 'Inspector: $250 fine', '2 dogs sent home
-   * sick' ('1 dog sent home sick'), 'The staffer called out: closed today' (for the callOut event; the closed event
-   * adds nothing), 'Walk photo posted'. A fallback (walkFellBack, structuredFellBack) gets no caption: the header's
-   * activityWords already read 'walk → free play'. The dollar amounts come from the event's amount.
+   * state is visible, the rules are hidden): 'Incident', 'Vet bill $150', 'Inspector: $250 fine', '2 dogs sick at
+   * pickup' ('1 dog sick at pickup': illness is found at pickup, BRIEF section 6), 'The staffer called out: closed
+   * today' (for the callOut event; the closed event adds nothing), 'Walk photo posted'. A fallback (walkFellBack,
+   * structuredFellBack) gets no caption: activityWords already read 'free play (walk asked)'. The dollar amounts come
+   * from the event's amount.
    */
   captions: string[];
 }
@@ -123,6 +128,11 @@ function dollars(v: number): string {
   return whole < 0 ? `−${text}` : text;
 }
 
+/** An activity's name on the page: "free play", "structured play", "nap", "walk", "clean". */
+export function activityName(activity: FloorActivity): string {
+  return ACTIVITY_WORDS[activity];
+}
+
 /** One event in business words, or null for the events that get no caption (closed, the two fallbacks). */
 function captionOf(e: WorldEvent): string | null {
   switch (e.type) {
@@ -134,7 +144,7 @@ function captionOf(e: WorldEvent): string | null {
       return `Inspector: ${dollars(e.amount ?? 0)} fine`;
     case 'illness': {
       const n = e.amount ?? 0;
-      return n === 1 ? '1 dog sent home sick' : `${n} dogs sent home sick`;
+      return n === 1 ? '1 dog sick at pickup' : `${n} dogs sick at pickup`;
     }
     case 'callOut':
       return 'The staffer called out: closed today';
@@ -179,7 +189,7 @@ export function replayFrame(steps: readonly StepRecord[], t: number, world: Worl
   if (!closed && activity !== null) {
     activityWords =
       requested !== null && requested !== activity
-        ? `${ACTIVITY_WORDS[requested]} → ${ACTIVITY_WORDS[activity]}`
+        ? `${ACTIVITY_WORDS[activity]} (${ACTIVITY_WORDS[requested]} asked)`
         : ACTIVITY_WORDS[activity];
   }
 
@@ -195,8 +205,11 @@ export function replayFrame(steps: readonly StepRecord[], t: number, world: Worl
   let finesSoFar = 0;
   let sickSoFar = 0;
   let dogsServedSoFar = 0;
+  let bonusSoFar = 0;
   for (let i = 0; i <= t; i++) {
-    const r = (steps[i] as StepRecord).result;
+    const step = steps[i] as StepRecord;
+    bonusSoFar += step.reward;
+    const r = step.result;
     incidentsSoFar += r.deltas.incidents;
     dogsServedSoFar += r.deltas.dogsServed;
     for (const e of r.events) {
@@ -240,6 +253,7 @@ export function replayFrame(steps: readonly StepRecord[], t: number, world: Worl
     fatigue: pickup?.fatigue ?? after.fatigue,
     reputation: after.reputation,
     cash: after.cash,
+    bonusSoFar,
     incidentsSoFar,
     finesSoFar,
     sickSoFar,
@@ -434,26 +448,36 @@ export function drawReplay(
   drawYard(ctx, width, height, frame, opts, art, !still);
 }
 
-/** The booking choice in business words: what the GM did with the day's requests, never the number behind it. */
-const BOOKING_WORDS: Readonly<Record<Bookings, string>> = {
-  all: 'every booking',
-  legal: 'capped at the legal ratio',
-  safe: 'capped at a safe ratio',
+/** The cap in words, named only on a day it turned dogs away (BRIEF 10.2, G5d): never the number behind it (D44). */
+const CAP_WORDS: Readonly<Record<Bookings, string>> = {
+  all: '',
+  legal: ', capped at the legal ratio',
+  safe: ', capped at a safe ratio',
 };
 
+/** "1 staffer" and "2 staff". */
+const staffWords = (n: number): string => `${n} ${n === 1 ? 'staffer' : 'staff'}`;
+
 /**
- * The day's plan in two parts so a narrow line can break before the crew: "20 asked · 20 accepted, every booking ·
- * premium rate" and "crew 1 scheduled, 1 in"; on a closed day "16 asked · closed" and "crew 1 scheduled, nobody in".
+ * Today's plan, scoped to today (BRIEF 10.2, G5d), in two parts so a narrow line can break before the crew:
+ * "Today: 18 asked · all 18 accepted · premium rate" and "1 staffer scheduled" (", 1 called out" when the crew came in
+ * short); a cap is named only on a day it turned dogs away ("Today: 20 asked · 15 accepted, capped at the legal
+ * ratio · standard rate"); a closed day "Today: 16 asked · closed" and "1 staffer scheduled, called out".
  */
 export function planParts(frame: ReplayFrame): { first: string; crew: string } {
-  const crew = `crew ${frame.scheduledStaff} scheduled, ${frame.closed ? 'nobody' : String(frame.staff)} in`;
-  if (frame.closed) return { first: `${frame.requests} asked · closed`, crew };
-  const bookings = frame.bookings === null ? '' : `, ${BOOKING_WORDS[frame.bookings]}`;
+  const scheduled = `${staffWords(frame.scheduledStaff)} scheduled`;
+  if (frame.closed) return { first: `Today: ${frame.requests} asked · closed`, crew: `${scheduled}, called out` };
+  const out = frame.scheduledStaff - frame.staff;
+  const crew = out > 0 ? `${scheduled}, ${out} called out` : scheduled;
+  const turnedAway = frame.accepted < frame.requests;
+  const accepted = turnedAway
+    ? `${frame.accepted} accepted${frame.bookings === null ? '' : CAP_WORDS[frame.bookings]}`
+    : `all ${frame.accepted} accepted`;
   const rate = frame.rate === null ? 'no rate' : RATE_WORDS[frame.rate];
-  return { first: `${frame.requests} asked · ${frame.accepted} accepted${bookings} · ${rate}`, crew };
+  return { first: `Today: ${frame.requests} asked · ${accepted} · ${rate}`, crew };
 }
 
-/** The whole plan line, as the rail shows it on one line. */
+/** The whole plan line, as the rail shows it. */
 export function planWords(frame: ReplayFrame): string {
   const { first, crew } = planParts(frame);
   return `${first} · ${crew}`;

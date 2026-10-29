@@ -23,7 +23,7 @@ const PACKED = { acceptAll: 'all', rate: 'premium', solo: '3-4', naps: '0', inci
 const IDLE = 'Write your prediction, then put the GM to work.';
 const PREPARING = 'The GM is getting ready for Monday.';
 const PLAYING = 'The GM is running the week.';
-const DONE = 'The week is over: what the GM did is beside your prediction, and the full report is below.';
+const DONE = 'The week is over.'; // BRIEF section 1 (G5d round 2, row 26)
 const CHANGED = 'The plan changed. Put the GM to work to see what it does with this one.';
 
 /**
@@ -327,8 +327,8 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   await expect(page.locator('#scorecard [data-field]')).toHaveCount(5);
   await expect(page.locator('#scorecard [data-called="true"]')).toHaveCount(5);
   await expect(page.locator('#called-line')).toHaveText('You called 5 of 5.');
-  expect(readout).toMatch(/ran the floor with 1 staffer on 4 days/);
-  expect(readout).toMatch(/chose nap 0 times/);
+  expect(readout).toMatch(/ran the floor with one staffer on 4 days/); // BRIEF section 10's clauses (G5d round 2, row 23)
+  expect(readout).toMatch(/never had the dogs nap/);
   await expect
     .poll(async () => {
       const g = await geometry();
@@ -348,7 +348,7 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   expect(check).toContain(`Weeks trained ${twinEnd.episodes.toLocaleString('en-US')} ·`);
   await expect(page.locator('#report')).toBeVisible();
   const line = (label: RegExp) => page.locator('#report-table tr').filter({ has: page.locator('th', { hasText: label }) });
-  await expect(line(/^Profit$/).locator('td').last()).toHaveText(formatMoney(week.totals.profit));
+  await expect(line(/^Profit before the GM's bonus$/).locator('td').last()).toHaveText(formatMoney(week.totals.profit)); // BRIEF 10.1 (G5d)
   await expect(line(/^Incidents$/).locator('td').last()).toHaveText(String(week.totals.incidents));
   await expect(line(/^Dogs accepted$/).locator('td').last()).toHaveText(String(week.totals.dogsServed));
   await expect(page.locator('#replay-again')).toBeVisible();

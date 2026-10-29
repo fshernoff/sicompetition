@@ -11,7 +11,7 @@ export type StudentPhase = 'idle' | 'preparing' | 'playing' | 'done' | 'changed'
  *   idle:      "Write your prediction, then put the GM to work."
  *   preparing: "The GM is getting ready for Monday."
  *   playing:   "The GM is running the week."
- *   done:      "The week is over: what the GM did is beside your prediction, and the full report is below."
+ *   done:      "The week is over." (G5d: the line says where the GM is, never narrates the layout)
  *   changed:   "The plan changed. Put the GM to work to see what it does with this one."
  */
 export function studentStatus(phase: StudentPhase): string {
@@ -23,7 +23,7 @@ export function studentStatus(phase: StudentPhase): string {
     case 'playing':
       return 'The GM is running the week.';
     case 'done':
-      return 'The week is over: what the GM did is beside your prediction, and the full report is below.';
+      return 'The week is over.';
     case 'changed':
       return 'The plan changed. Put the GM to work to see what it does with this one.';
   }

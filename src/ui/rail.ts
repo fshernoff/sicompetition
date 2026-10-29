@@ -2,17 +2,20 @@
 // of drawn on the canvas, so a screen reader and the page's word checks read it too. A pure function of one
 // ReplayFrame; WP2 renders it, WP3's canvas draws only the yard.
 import type { WorldConfig } from '../world/types.ts';
-import { planWords } from './replay.ts';
+import { activityName, planWords } from './replay.ts';
 import type { ReplayFrame } from './replay.ts';
-import { formatMoney } from './report.ts';
+import { formatBonus, formatDollars, formatMoney } from './report.ts';
 
 export interface RailModel {
   /** "Wednesday · late morning". */
   when: string;
-  /** The floor's activity as the frame words it ("free play", "walk → free play", "closed"). */
+  /** The floor's activity as the frame words it ("free play", "free play (walk asked)", "closed"). */
   activity: string;
-  /** The GM's choices today, as planWords says them ("18 asked · 18 accepted, every booking · premium rate · crew 1 scheduled, 1 in"). */
+  /** The GM's choices today, as planWords says them ("Today: 18 asked · all 18 accepted · premium rate · 1 staffer scheduled"). */
   choices: string;
+  /** This block in one line: the activity as it ran, the crew and the dogs on the floor ("This block: free play ·
+   * 1 staffer · 18 dogs"; "This block: closed"). */
+  thisBlock: string;
   /** Where the block sits in the week (0..4, 0..3), for the timeline. */
   day: number;
   block: number;
@@ -22,10 +25,13 @@ export interface RailModel {
   /** Incidents this week so far, and in this block. */
   incidents: { week: number; thisBlock: number };
   /**
-   * Cash now and at the week's start, as the report writes dollars ("$5,024", "$2,000"), and today's change so far
-   * ("+$575", "−$120", "$0"; empty when the day's opening cash was not given).
+   * The page's cash now, paying the GM as it earns (BRIEF section 5, D62: the engine's cash less the bonus so far, as
+   * the report writes the bottom line: "$5,045.60"), at the week's start ("$2,000"), and today's change so far
+   * ("+$869.40", "−$120", "$0"; empty when the day's opening cash was not given).
    */
   cash: { now: string; start: string; today: string };
+  /** The GM's bonus earned through this block, in the bonus cells' format ("+$338.40", "−$35", "$0"). */
+  bonusSoFar: string;
   /** Reputation now, and the change since Monday in words: "Down 10 this week", "Up 3 this week", "No change this week". */
   reputation: { now: number; change: string };
   /** The three meters, 0 to 100, whole numbers, and the crew fatigue the bonus plan's measure counts above (70). */
@@ -33,7 +39,7 @@ export interface RailModel {
   cleanliness: number;
   fatigue: number;
   fatigueLimit: number;
-  /** Owners asking for tomorrow; days in a row the crew ran solo, before today; dogs sent home sick this week and in this block. */
+  /** Owners asking for tomorrow; days in a row with one staffer, before today; dogs sent home sick this week and in this block. */
   tomorrow: number;
   soloDays: number;
   sick: { week: number; thisBlock: number };
@@ -48,17 +54,27 @@ function reputationChange(change: number): string {
   return 'No change this week';
 }
 
-/** A change of cash with its sign: "+$575", "−$120", "$0". */
-function signedMoney(dollars: number): string {
-  const text = formatMoney(dollars);
+/** A change of cash with its sign: "+$575", "−$120.40", "$0". */
+function signedDollars(dollars: number): string {
+  const text = formatDollars(dollars);
   return text === '$0' || text.startsWith('−') ? text : `+${text}`;
+}
+
+/** "1 staffer", "2 staff"; "1 dog", "18 dogs". */
+const staffWords = (n: number): string => `${n} ${n === 1 ? 'staffer' : 'staff'}`;
+const dogWords = (n: number): string => `${n} ${n === 1 ? 'dog' : 'dogs'}`;
+
+/** "This block: free play · 1 staffer · 18 dogs" (the activity as it ran, the floor after a walking group left). */
+export function thisBlockWords(frame: ReplayFrame): string {
+  if (frame.closed || frame.activity === null) return 'This block: closed';
+  return `This block: ${activityName(frame.activity)} · ${staffWords(frame.floorStaff)} · ${dogWords(frame.floorDogs)}`;
 }
 
 /**
  * The rail's values for one block (G5d WP2): every count says its scope ("this week", "this block"), the money is
- * written as the report writes it, and the words are the frame's own (activityWords, planWords, captions).
- * `dayStartCash` is the cash when the day opened (the week's start on Monday, the last pickup's after), for today's
- * change; the page reads it from the trace.
+ * written as the report writes it, and the words are the frame's own (activityWords, planWords, captions). The cash
+ * is the page's: the engine's less the GM's bonus so far (D62). `dayStartCash` is the page's cash when the day opened
+ * (the week's start on Monday, the last pickup's after), for today's change; the page reads it from the trace.
  */
 export function railModel(frame: ReplayFrame, world: WorldConfig, dayStartCash?: number): RailModel {
   const reputation = Math.round(frame.reputation);
@@ -67,6 +83,7 @@ export function railModel(frame: ReplayFrame, world: WorldConfig, dayStartCash?:
     when: `${frame.dayName} · ${frame.blockName}`,
     activity: frame.activityWords,
     choices: planWords(frame),
+    thisBlock: thisBlockWords(frame),
     day: frame.day,
     block: frame.block,
     closed: frame.closed,
@@ -79,10 +96,11 @@ export function railModel(frame: ReplayFrame, world: WorldConfig, dayStartCash?:
     },
     incidents: { week: frame.incidentsSoFar, thisBlock: frame.events.filter((e) => e.type === 'incident').length },
     cash: {
-      now: formatMoney(frame.cash),
+      now: formatDollars(frame.cash - frame.bonusSoFar),
       start: formatMoney(world.cash.weekStart),
-      today: dayStartCash === undefined ? '' : signedMoney(frame.cash - dayStartCash),
+      today: dayStartCash === undefined ? '' : signedDollars(frame.cash - frame.bonusSoFar - dayStartCash),
     },
+    bonusSoFar: formatBonus(frame.bonusSoFar),
     reputation: { now: reputation, change: reputationChange(reputation - world.reputation.weekStart) },
     energy: Math.round(frame.energy),
     cleanliness: Math.round(frame.cleanliness),
@@ -106,7 +124,7 @@ export function floorWords(dogs: number, staff: number): string {
 export type RailView = (model: RailModel | null) => void;
 
 /** The rail's icons, by name (icons.ts supplies the markup). */
-export type RailIcon = 'overRatio' | 'incidents' | 'cash' | 'reputation';
+export type RailIcon = 'overRatio' | 'incidents' | 'cash' | 'bonus' | 'reputation';
 
 /**
  * Builds the rail's nodes once inside `container` and returns the function that writes a block's values into them
@@ -142,12 +160,9 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     return { line, num };
   };
 
-  // When: the day and block, the floor's activity, the GM's choices, the week's twenty blocks.
+  // When: the day and block, today's plan ("Today: …", BRIEF 10.2), the week's twenty blocks.
   const whenBox = el('div', 'live-when');
-  const whenLine = el('p', 'when-line');
-  const when = el('span', 'when');
-  const activity = el('span', 'activity');
-  whenLine.append(when, activity);
+  const when = el('p', 'when');
   const choices = el('p', 'choices');
   const timeline = el('div', 'timeline');
   timeline.setAttribute('aria-hidden', 'true');
@@ -166,7 +181,11 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     day.append(blocks, name);
     timeline.appendChild(day);
   }
-  whenBox.append(whenLine, choices, timeline);
+  whenBox.append(when, choices, timeline);
+
+  // This block in one bold line, the most prominent words after the gauge's number (round 2, row 10): the activity as
+  // it ran (a fallback with what was asked, muted), the crew and the dogs on the floor.
+  const blockLine = el('p', 'this-block');
 
   // The crowding: dogs per staffer now against the legal limit, the part over it hatched, the limit's label under
   // its own mark (round 1, row 25).
@@ -186,8 +205,22 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   crowdBody.append(label('overRatio', 'Dogs per staffer now'), gauge, floor);
   crowd.append(big, crowdBody);
 
-  // What it is costing: incidents, cash, reputation, each with its scope.
-  const trio = el('div', 'live-trio');
+  // The money (D62): the page's cash, which pays the GM as it earns, and the GM's bonus so far beside it.
+  const money = el('div', 'live-pair live-money');
+  const cashBox = el('div', 'stat stat-cash');
+  const cashVal = el('p', 'stat-val');
+  const cashToday = fact('Today so far: ', '');
+  cashToday.line.className = 'stat-sub';
+  const cashSub = el('p', 'stat-sub');
+  cashBox.append(label('cash', "Cash, after the GM's pay"), cashVal, cashToday.line, cashSub);
+  const bonusBox = el('div', 'stat stat-bonus');
+  const bonusVal = el('p', 'stat-val');
+  const bonusSub = el('p', 'stat-sub', 'Paid out of the cash as it is earned');
+  bonusBox.append(label('bonus', "The GM's bonus so far"), bonusVal, bonusSub);
+  money.append(cashBox, bonusBox);
+
+  // What else it is costing: incidents and reputation, each with its scope.
+  const pair = el('div', 'live-pair');
   const incBox = el('div', 'stat stat-incidents');
   const incVal = el('p', 'stat-val');
   const incSub = el('p', 'stat-sub');
@@ -197,23 +230,18 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const incQuiet = el('span', 'stat-quiet', 'None this block');
   incSub.append(incBadge, incQuiet);
   incBox.append(label('incidents', 'Incidents this week'), incVal, incSub);
-  const cashBox = el('div', 'stat stat-cash');
-  const cashVal = el('p', 'stat-val');
-  const cashToday = fact('Today so far: ', '');
-  cashToday.line.className = 'stat-sub';
-  const cashSub = el('p', 'stat-sub');
-  cashBox.append(label('cash', 'Cash'), cashVal, cashToday.line, cashSub);
   const repBox = el('div', 'stat stat-rep');
   const repVal = el('p', 'stat-val');
   const repSub = el('p', 'stat-sub');
   repBox.append(label('reputation', 'Reputation'), repVal, repSub);
-  trio.append(incBox, cashBox, repBox);
+  pair.append(incBox, repBox);
 
-  // The meters, each named for whose it is (BRIEF 10.2); the crew's fatigue with the plan's 70% marked and the part
-  // above it hatched (row 22). Then the rest in words, one a line.
+  // The meters, each named for whose it is (BRIEF 10.2), each value in percent, each track tinted toward its bad end
+  // (the dogs wound up, the yard dirty, the crew worn out: round 2, row 22); the crew's fatigue with the plan's 70%
+  // marked, the part above it hatched and the value in the warning colour past it. Then the rest in words.
   const meters = el('div', 'live-meters');
-  const meterRow = (name: string): { track: HTMLElement; bar: HTMLElement; num: HTMLElement } => {
-    const track = el('span', 'meter');
+  const meterRow = (name: string, bad: 'high' | 'low'): { track: HTMLElement; bar: HTMLElement; num: HTMLElement } => {
+    const track = el('span', `meter bad-${bad}`);
     track.setAttribute('aria-hidden', 'true');
     const bar = el('i');
     track.appendChild(bar);
@@ -221,33 +249,32 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     meters.append(el('span', 'meter-name', name), track, num);
     return { track, bar, num };
   };
-  const energy = meterRow("Dogs' energy");
-  const clean = meterRow('Cleanliness');
-  const tired = meterRow('Crew fatigue');
+  const energy = meterRow("Dogs' energy", 'high');
+  const clean = meterRow('Cleanliness', 'low');
+  const tired = meterRow('Crew fatigue', 'high');
   const tiredOver = el('span', 'meter-over');
   const tiredMark = el('span', 'meter-mark');
   const tiredLimit = el('span', 'meter-limit');
   tired.track.append(tiredOver, tiredMark, tiredLimit);
   const facts = el('div', 'live-facts');
   const tomorrow = fact('Tomorrow: ', ' asking');
-  const solo = fact('Days in a row the crew ran solo, before today: ', '');
+  const solo = fact('Days in a row with one staffer, before today: ', '');
   const sickLine = el('p');
   const sickWeek = el('b');
   const sickBlock = el('b');
   sickLine.append('Dogs sent home sick: ', sickWeek, ' this week, ', sickBlock, ' this block');
   facts.append(tomorrow.line, solo.line, sickLine);
 
-  container.replaceChildren(whenBox, crowd, trio, meters, facts);
+  container.replaceChildren(whenBox, blockLine, crowd, money, pair, meters, facts);
 
   const scale = (v: number): number => (Math.max(0, Math.min(gaugeMax, v)) / gaugeMax) * 100;
   return (m) => {
     container.hidden = m === null;
     if (m === null) return;
     when.textContent = m.when;
-    activity.textContent = m.activity;
-    // The crew's part ("crew 1 scheduled, 1 in") on a line of its own, as planParts splits it, so no line ends on half
-    // a choice; the dot between them stays in the text for a screen reader, and the words are the choices line's own.
-    const crewAt = m.choices.lastIndexOf(' · crew ');
+    // Today's plan and its crew on a line of their own, as planParts splits them, so no line ends on half a choice;
+    // the dot between them stays in the text for a screen reader, and the words are the choices line's own.
+    const crewAt = m.choices.lastIndexOf(' · ');
     if (crewAt < 0) choices.textContent = m.choices;
     else choices.replaceChildren(m.choices.slice(0, crewAt), el('span', 'visually-hidden', ' · '), el('span', 'choices-crew', m.choices.slice(crewAt + 3)));
     const now = m.day * 4 + m.block;
@@ -256,6 +283,12 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
       if (cell.className !== cls) cell.className = cls;
     });
     dayNames.forEach((name, d) => name.classList.toggle('now', d === m.day));
+
+    // "This block: free play (walk asked) · 1 staffer · 18 dogs": the model's line, a fallback's ask set in muted ink.
+    const asked = m.activity.indexOf(' (');
+    const cut = m.thisBlock.indexOf(' · ');
+    if (asked < 0 || cut < 0) blockLine.textContent = m.thisBlock;
+    else blockLine.replaceChildren(m.thisBlock.slice(0, cut), el('span', 'asked', m.activity.slice(asked)), m.thisBlock.slice(cut));
 
     const p = m.perStaffer;
     big.textContent = String(p.now);
@@ -270,17 +303,19 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     limitNum.textContent = String(p.limit);
     floor.textContent = floorWords(p.dogs, p.staff);
 
-    incVal.textContent = String(m.incidents.week);
-    incBadgeText.textContent = `${m.incidents.thisBlock} this block`;
-    incBadge.hidden = m.incidents.thisBlock === 0; // the badge only when the block had one (row 18)
-    incQuiet.hidden = m.incidents.thisBlock > 0;
-    incBox.classList.toggle('hurt', m.incidents.week > 0);
     cashVal.textContent = m.cash.now;
     cashToday.num.textContent = m.cash.today;
     cashToday.line.hidden = m.cash.today === '';
     cashToday.line.classList.toggle('loss', m.cash.today.startsWith('−'));
     cashSub.textContent = `Started the week at ${m.cash.start}`;
     cashBox.classList.toggle('loss', m.cash.now.startsWith('−'));
+    bonusVal.textContent = m.bonusSoFar;
+
+    incVal.textContent = String(m.incidents.week);
+    incBadgeText.textContent = `${m.incidents.thisBlock} this block`;
+    incBadge.hidden = m.incidents.thisBlock === 0; // the badge only when the block had one (round 1, row 18)
+    incQuiet.hidden = m.incidents.thisBlock > 0;
+    incBox.classList.toggle('hurt', m.incidents.week > 0);
     repVal.textContent = String(m.reputation.now);
     repSub.textContent = m.reputation.change;
     repBox.classList.toggle('hurt', m.reputation.change.startsWith('Down'));
@@ -291,7 +326,7 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
       [tired, m.fatigue],
     ] as const) {
       meter.bar.style.width = `${Math.max(0, Math.min(100, v))}%`;
-      meter.num.textContent = String(v);
+      meter.num.textContent = `${v}%`;
     }
     const limit = Math.max(0, Math.min(100, m.fatigueLimit));
     const tiredHigh = m.fatigue > limit;
@@ -303,7 +338,7 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     tiredLimit.textContent = `${limit}%`;
     tired.num.classList.toggle('high', tiredHigh);
     tomorrow.num.textContent = String(m.tomorrow);
-    solo.num.textContent = String(m.soloDays);
+    solo.num.textContent = m.soloDays === 0 ? 'None' : String(m.soloDays);
     sickWeek.textContent = String(m.sick.week);
     sickBlock.textContent = String(m.sick.thisBlock);
   };

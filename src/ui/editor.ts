@@ -169,8 +169,16 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
     per.setAttribute('aria-hidden', 'true');
     const figure = el('span', 'kpi-figure');
     figure.append(value, ' ', per);
+    // The slider's range in words at its ends, and its zero marked on the track (round 2, row 16); decoration only,
+    // the slider's aria-valuetext says the amount.
+    const lo = el('span', 'scale-end', '−$10');
+    const hi = el('span', 'scale-end', '+$10');
+    lo.setAttribute('aria-hidden', 'true');
+    hi.setAttribute('aria-hidden', 'true');
+    const scale = el('span', 'kpi-scale');
+    scale.append(lo, slider, hi);
     const amount = el('span', 'kpi-amount');
-    amount.append(slider, figure);
+    amount.append(scale, figure);
     // A set plan (Round 1) shows whether the measure is in the plan as a lamp and a word; the toggle and the slider
     // stay in the page, disabled and visually hidden, so the plan reads as set rather than as a broken form.
     const state = el('span', 'kpi-state');

@@ -12,8 +12,8 @@ In Round 1 you saw what a profit-only plan bought. Now your team writes the plan
 - **Dogs served:** each dog the daycare accepts.
 - **Incidents:** each incident.
 - **Reputation change:** each point of reputation gained. A one-point drop counts the opposite of a one-point rise.
-- **Staff fatigue above 70%:** each block the crew's fatigue ends above 70%.
-- **Blocks over the legal ratio:** each block the floor runs over 15 dogs per staffer.
+- **Blocks with crew fatigue above 70%:** each block the crew's fatigue ends above 70%.
+- **Blocks over 15 dogs per staffer:** each block the floor runs over 15 dogs per staffer.
 
 ## Run the week
 
@@ -31,15 +31,15 @@ In Round 1 you saw what a profit-only plan bought. Now your team writes the plan
 - Days it accepts every booking: None / 1 to 4 / All 5 (circle one)
 - Day rate: Low / Standard / Premium / A mix (circle one)
 - Days with 1 staffer on the floor: None / 1 or 2 / 3 or 4 / All 5 (circle one)
-- Nap blocks: None / 1 to 5 / 6 or more (circle one)
-- Incidents: 0 to 2 / 3 to 6 / 7 or more (circle one)
+- Nap blocks this week: None / 1 to 5 / 6 or more (circle one)
+- Incidents this week: 0 to 2 / 3 to 6 / 7 or more (circle one)
 - Why: → ______________________________
 
 What the picks count:
 
 - A closed day never counts as accepting every booking or as a day with 1 staffer.
 - The day rate is over the days the daycare opened. "A mix" means more than one rate.
-- Nap blocks are the blocks the dogs actually napped. Incidents are the week's incidents.
+- Nap blocks are the blocks the dogs actually napped.
 
 ## After the week
 

@@ -57,19 +57,22 @@ export function isRound1Outcome(report: WeekReport): boolean {
 }
 
 /**
- * The sentence of BRIEF section 10. With no closure:
- *   "The GM accepted every booking on 5 of 5 days, ran the floor with 1 staffer on 4 days, chose nap 0 times,
+ * The sentence of BRIEF section 10, in business English (G5d). With no closure:
+ *   "The GM accepted every booking on 5 of 5 days, ran the floor with one staffer on 4 days, never had the dogs nap,
  *    averaged 16 dogs per staffer, and had 8 incidents."
  * With a closure the last clause moves: "..., averaged 19 dogs per staffer, had 9 incidents, and was closed on 1 day."
- * Numbers from totals: daysAcceptedAll, daysOneStaffer, napBlocks, avgDogsPerStaffer rounded to a whole number
- * (Math.round), incidents, daysClosed. Singulars: "1 time", "1 incident", "1 day"; otherwise "times", "incidents",
- * "days". "1 staffer" is always singular (it counts days with exactly one). WP3 (Sonnet).
+ * The clauses: "ran the floor with one staffer on 1 day" / "on N days" / "never ran the floor with one staffer"; "had
+ * the dogs nap in 1 block" / "in N blocks" / "never had the dogs nap"; "had 1 incident" / "had N incidents" / "had no
+ * incidents". Numbers from totals: daysAcceptedAll, daysOneStaffer, napBlocks, avgDogsPerStaffer rounded to a whole
+ * number (Math.round), incidents, daysClosed.
  */
 export function describeWeek(report: WeekReport): string {
   const t = report.totals;
   const count = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
-  const head = `The GM accepted every booking on ${t.daysAcceptedAll} of 5 days, ran the floor with 1 staffer on ${count(t.daysOneStaffer, 'day', 'days')}, chose nap ${count(t.napBlocks, 'time', 'times')}, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer`;
-  const incidents = count(t.incidents, 'incident', 'incidents');
+  const solo = t.daysOneStaffer === 0 ? 'never ran the floor with one staffer' : `ran the floor with one staffer on ${count(t.daysOneStaffer, 'day', 'days')}`;
+  const naps = t.napBlocks === 0 ? 'never had the dogs nap' : `had the dogs nap in ${count(t.napBlocks, 'block', 'blocks')}`;
+  const head = `The GM accepted every booking on ${t.daysAcceptedAll} of 5 days, ${solo}, ${naps}, averaged ${Math.round(t.avgDogsPerStaffer)} dogs per staffer`;
+  const incidents = t.incidents === 0 ? 'no incidents' : count(t.incidents, 'incident', 'incidents');
   if (t.daysClosed === 0) return `${head}, and had ${incidents}.`;
   return `${head}, had ${incidents}, and was closed on ${count(t.daysClosed, 'day', 'days')}.`;
 }

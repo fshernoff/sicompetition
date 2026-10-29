@@ -63,8 +63,6 @@ const CLEAR = 'rgba(0, 0, 0, 0)';
 const ERROR_LINE = 'The GM stopped because of a problem. Ask your teacher for help.';
 /** Four blocks a day (BRIEF section 2): the denominator of "blocks over the limit" (G5d round 1, row 15). */
 const BLOCKS_PER_DAY = 4;
-/** One line under the plan that says what a block is (G5d round 1, row 15). */
-const BLOCKS_NOTE = 'A day has four blocks: drop-off, late morning, afternoon and pickup.';
 const NO_RUN = 'No run yet.';
 const SEED_MESSAGE = `The seed must be a whole number from 0 to ${MAX_SEED}.`;
 
@@ -271,6 +269,9 @@ export function syncPhase(page: Page): void {
   const week = page.replay.dataset.week;
   const phase = page.scorecardShown ? 'done' : !page.controlsEnabled && (week === 'preparing' || week === 'final') ? 'run' : 'load';
   if (page.watch.dataset.phase !== phase) page.watch.dataset.phase = phase;
+  // The page's own phase too, for the bar: its round tag gives way to the rail's head's on the run and the week's end
+  // (one round on every screen, round 2, row 29).
+  if (document.documentElement.dataset.phase !== phase) document.documentElement.dataset.phase = phase;
   const gm = page.readoutShown ? 'done' : week === 'preparing' ? 'preparing' : week === 'final' ? 'playing' : 'idle';
   if (page.watch.dataset.gm !== gm) page.watch.dataset.gm = gm;
 }
@@ -288,6 +289,7 @@ function statusKind(text: string): string {
 /** The rail's icons, in the measures' shapes (one icon per measure everywhere) and the banknote for cash. */
 function railIcon(name: RailIcon): string {
   if (name === 'cash') return iconSvg(UI_ICON_PATHS.cash, 18, 1.9);
+  if (name === 'bonus') return iconSvg(BONUS_ICON_PATHS, 18, 1.9);
   return iconSvg(MEASURE_ICON_PATHS[name], 18, 1.9);
 }
 
@@ -305,7 +307,8 @@ function showBlock(page: Page, frame: ReplayFrame | null): void {
   // Today's change of cash: from the day's opening cash, the week's start on Monday, the last pickup's after.
   const trace = page.trace;
   const openStep = frame.day * BLOCKS_PER_DAY - 1;
-  const dayStart = openStep < 0 || trace === null ? page.world.cash.weekStart : replayFrame(trace.steps, openStep, page.world).cash;
+  const opened = openStep < 0 || trace === null ? null : replayFrame(trace.steps, openStep, page.world);
+  const dayStart = opened === null ? page.world.cash.weekStart : opened.cash - opened.bonusSoFar;
   const model = railModel(frame, page.world, dayStart);
   page.railView(model);
   page.stageWhen.textContent = model.when;
@@ -426,20 +429,37 @@ function showStagePicks(page: Page, results: readonly PickResult[] | null = null
   page.stagePicks.hidden = false;
 }
 
-/** "Profit $5,393 before the GM's bonus · 7 incidents · reputation down 18": the week in one line (G5d round 1, row 6). */
-export function businessLine(totals: EpisodeTrace['report']['totals']): string {
-  const incidents = `${totals.incidents} ${totals.incidents === 1 ? 'incident' : 'incidents'}`;
-  const change = totals.reputationEnd - totals.reputationStart;
-  const reputation = change < 0 ? `reputation down ${-change}` : change > 0 ? `reputation up ${change}` : 'reputation unchanged';
-  return `Profit ${formatMoney(totals.profit)} before the GM's bonus · ${incidents} · ${reputation}`;
+/** One clause of the business headline: its words, and whether it went against the business (the warning colour). */
+export interface BusinessClause {
+  text: string;
+  hurt: boolean;
 }
 
 /**
- * How the business did (G5d, Acceptance 5; round 1, rows 6 and 15): a factual headline the size of "You called N of
- * 5." (businessLine), then the week's figures as a table beside the picks' table, in the report's own formats and
- * words: the profit before and after the GM's bonus, the bonus, incidents, reputation and the blocks over the legal
- * limit out of the week's twenty. A figure that went against the business is a hurt (red, with its icon and words as
- * the cue beyond colour).
+ * The week in one line, the owners' bottom line first (G5d round 2, row 5; D62): "Profit $4,853.70 after the GM's
+ * bonus · 7 incidents · reputation down 18". Facts only, no verdict. Each clause's spaces are non-breaking (row 24),
+ * so a line never splits a number from its noun.
+ */
+export function businessClauses(totals: EpisodeTrace['report']['totals']): BusinessClause[] {
+  const keep = (text: string): string => text.replace(/ /g, '\u00a0');
+  const after = totals.profit - totals.reward;
+  const incidents = totals.incidents === 0 ? 'no incidents' : `${totals.incidents} ${totals.incidents === 1 ? 'incident' : 'incidents'}`;
+  const change = totals.reputationEnd - totals.reputationStart;
+  const reputation = change < 0 ? `reputation down ${-change}` : change > 0 ? `reputation up ${change}` : 'reputation unchanged';
+  return [
+    { text: keep(`Profit ${formatDollars(after)} after the GM's bonus`), hurt: after < 0 },
+    { text: keep(incidents), hurt: totals.incidents > 0 },
+    { text: keep(reputation), hurt: change < 0 },
+  ];
+}
+
+/**
+ * How the business did (G5d, Acceptance 5; round 1, rows 6 and 15; round 2, rows 1 and 5): a factual headline the
+ * size of "You called N of 5." (businessClauses: incidents and reputation lost in the warning colour), then the week's
+ * figures as a table beside the picks' table, in the report's own formats and words, the owners' bottom line first:
+ * the profit after the GM's bonus, the profit before it, what was paid to the GM (a cost, D62), incidents, reputation
+ * and the blocks over the legal limit out of the week's twenty. A figure that went against the business is a hurt
+ * (red, with its icon and words as the cue beyond colour).
  */
 function renderBusiness(page: Page, trace: EpisodeTrace): void {
   const t = trace.report.totals;
@@ -447,12 +467,19 @@ function renderBusiness(page: Page, trace: EpisodeTrace): void {
   const doc = page.business.ownerDocument;
   const headline = doc.createElement('p');
   headline.className = 'business-line';
-  headline.textContent = businessLine(t);
+  businessClauses(t).forEach((clause, i) => {
+    if (i > 0) headline.append('\u00a0· '); // a line breaks after a dot, never before one
+    const span = doc.createElement('span');
+    span.textContent = clause.text;
+    if (clause.hurt) span.className = 'hurt';
+    headline.append(span);
+  });
   const blocks = trace.report.days.length * BLOCKS_PER_DAY;
+  const after = t.profit - t.reward;
   const rows: { icon: string; label: string; value: string; hurt: boolean; strong?: boolean }[] = [
-    { icon: MEASURE_ICON_PATHS.profit, label: "Profit before the GM's bonus", value: tiles[0]?.value ?? '', hurt: t.profit < 0 },
-    { icon: BONUS_ICON_PATHS, label: "The GM's bonus", value: bonusWithCents(tiles[1]?.value ?? ''), hurt: false },
-    { icon: MEASURE_ICON_PATHS.profit, label: "Profit after the GM's bonus", value: formatDollars(t.profit - t.reward), hurt: t.profit - t.reward < 0, strong: true },
+    { icon: MEASURE_ICON_PATHS.profit, label: "Profit after the GM's bonus", value: formatDollars(after), hurt: after < 0, strong: true },
+    { icon: MEASURE_ICON_PATHS.profit, label: "Profit before the GM's bonus", value: formatMoney(t.profit), hurt: t.profit < 0 },
+    { icon: BONUS_ICON_PATHS, label: tiles[1]?.label ?? 'Paid to the GM', value: bonusWithCents(tiles[1]?.value ?? ''), hurt: false },
     { icon: MEASURE_ICON_PATHS.incidents, label: tiles[2]?.label ?? '', value: tiles[2]?.value ?? '', hurt: t.incidents > 0 },
     { icon: MEASURE_ICON_PATHS.reputation, label: tiles[3]?.label ?? '', value: tiles[3]?.value ?? '', hurt: t.reputationEnd < t.reputationStart },
     { icon: MEASURE_ICON_PATHS.overRatio, label: tiles[4]?.label ?? '', value: `${tiles[4]?.value ?? ''} of ${blocks}`, hurt: t.blocksOverRatio > 0 },
@@ -525,7 +552,7 @@ function showScorecard(page: Page): void {
     picked.textContent = r.picked ?? '—';
     const actual = row.insertCell();
     actual.className = 'score-actual';
-    actual.textContent = r.actual;
+    actual.textContent = r.actual.replace(/(\d) /g, '$1\u00a0'); // "7 incidents" never splits (round 2, row 17)
     const mark = row.insertCell();
     mark.className = 'score-mark';
     const badge = document.createElement('span');
@@ -734,13 +761,9 @@ export function showReadout(page: Page, label = ''): void {
   page.readout.textContent = describeWeek(trace.report);
   page.readoutLabel.textContent = READOUT_LABEL;
   page.replayCaption.textContent = REPLAY_CAPTION;
-  const totals = trace.report.totals;
   const build = (): void => {
     renderReport(page.reportTable, reportTable(trace.report, page.spec, page.world));
-    renderTiles(page.reportTiles, headlineTiles(trace.report, page.spec, page.world), {
-      afterBonus: formatDollars(totals.profit - totals.reward),
-      blocks: trace.report.days.length * BLOCKS_PER_DAY,
-    });
+    renderTiles(page.reportTiles, headlineTiles(trace.report, page.spec, page.world), { blocks: trace.report.days.length * BLOCKS_PER_DAY });
     page.report.hidden = false;
   };
   // A class's week: the report under the scorecard is built and shown on the next frame, so the scorecard's layout
@@ -1000,10 +1023,6 @@ export function mountApp(): Page {
   };
   page.railView(null);
   page.railRound.hidden = false; // shown by the stylesheet only on the run and the week's end, where the bar is gone
-  const blocksNote = document.createElement('p');
-  blocksNote.className = 'blocks-note';
-  blocksNote.textContent = BLOCKS_NOTE;
-  editor.element.appendChild(blocksNote);
   showRound(page, first);
   const hintText = page.picksHint.querySelector('.picks-hint-text');
   if (hintText) hintText.textContent = PICKS_HINT;
@@ -1031,14 +1050,6 @@ export function mountApp(): Page {
     });
   };
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(stageResized).observe(replay);
-
-  // The round in the run's header only when the bar (which has it) is out of view (round 1, row 33).
-  const bar = document.querySelector('.topbar');
-  if (bar !== null && typeof IntersectionObserver !== 'undefined') {
-    new IntersectionObserver(([entry]) => {
-      document.documentElement.classList.toggle('bar-gone', entry !== undefined && !entry.isIntersecting);
-    }).observe(bar);
-  }
 
   // A pick is part of the prediction, not the plan: it never clears a run; it only lets the button on (D56).
   for (const radio of pickRadios) radio.addEventListener('change', () => syncPicks(page));
@@ -1092,7 +1103,9 @@ export function mountApp(): Page {
     page.replay.dataset.week = 'preparing';
     syncPhase(page); // the run's layout (the rail beside a wide yard) before the scroll is measured
     // The class watches the yard without touching anything (D42).
-    page.watch.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+    // At once, not smoothly: the run's layout replaces the console in the same moment, so a smooth scroll would glide
+    // over a page that is changing under it (round 2, row 30).
+    page.watch.scrollIntoView({ behavior: 'auto', block: 'start' });
     let owner = -1;
     // The whole locked lifecycle is one guarded operation; only the run's owner writes an error or unlocks (Astra,
     // G5b diff review: a drawing failure in recovery must not strand the controls, a stale run must not write).
@@ -1118,7 +1131,7 @@ export function mountApp(): Page {
         // needs no token).
         requestAnimationFrame(() => redraw(page));
         page.calledLine.focus({ preventScroll: true }); // the result first, for a keyboard and a screen reader
-        page.compare.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); // the box score after the game
+        page.compare.scrollIntoView({ behavior: 'auto', block: 'start' }); // the box score after the game, at once (row 30)
         settleYard(page);
       } catch (err) {
         if (err instanceof RunCancelled) return;

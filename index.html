@@ -66,7 +66,8 @@
             </section>
 
             <section id="predict" class="predict" aria-labelledby="predict-title">
-              <h2 id="predict-title" class="step-title"><span class="step" aria-hidden="true">2</span>Your team's prediction</h2>
+              <h2 id="predict-title" class="step-title"><span class="step" aria-hidden="true">2</span>Your picks for the week</h2>
+              <p class="week-line">The week is five days of four blocks: 20 blocks.</p>
               <div id="picks" class="picks"></div>
               <div class="why">
                 <label class="why-label" for="prediction"><span class="step" aria-hidden="true">3</span><span class="why-word">Why?</span> <span class="why-sub">Your team's reasons (write it before you put the GM to work)</span></label>
@@ -78,6 +79,7 @@
                 <div class="actions">
                   <button id="new-prediction" type="button" class="btn btn-quiet" hidden>Make a new prediction</button>
                   <button id="train" type="button" class="btn btn-go" aria-describedby="picks-hint" disabled>Put the GM to work</button>
+                  <p class="again-note">Watch the week again replays this week on the yard. The same plan gives the same week.</p>
                 </div>
                 <p id="picks-hint" class="picks-hint"><span class="pick-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="picks-hint-text">Make all five picks to put the GM to work.</span></p>
               </div>
@@ -87,7 +89,7 @@
           <div class="live">
             <div id="rail-live" class="rail-live"></div>
             <div id="stage-picks" class="stage-picks" hidden>
-              <p class="box-label">Your picks</p>
+              <p class="box-label">Your picks for the week</p>
               <ul id="stage-picks-list" class="stage-picks-list"></ul>
             </div>
             <div id="stage-plan" class="stage-plan" hidden>
@@ -132,7 +134,7 @@
         <h2 id="learning-title">The learning curve (the teacher's view)</h2>
         <figure class="learning-figure">
           <canvas id="curve" width="1100" height="619" aria-label="The bonus of each practice week of the AI behind the GM"></canvas>
-          <figcaption id="curve-caption">Behind the curtain, for the debrief if you choose to show it. Before running the week the class watched, the AI behind the GM tried out these weeks: each grey dot is a practice week's bonus, the blue line the average of the last 100, the orange marks a week run its current way. It stopped when that week stopped changing.</figcaption>
+          <figcaption id="curve-caption">Behind the curtain, for the debrief if you choose to show it. Before running the week the class watched, the AI behind the GM tried out these weeks: each grey dot is a practice week's bonus, the navy line the average of the last 100, the orange marks a week run its current way. It stopped when that week stopped changing.</figcaption>
         </figure>
       </section>
 

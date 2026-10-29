@@ -13,12 +13,12 @@ export interface ReportRow {
   days: string[];
   /** The Week column. */
   week: string;
-  /** Revenue, Profit and the bonus total are set in bold. */
+  /** Revenue, the profit before and after the GM's bonus and the bonus total are set in bold. */
   emphasis?: boolean;
 }
 
 export interface ReportGroup {
-  title: string; // 'Operations' | 'Money ($)' | "The GM's pay under your plan (the profit above is before this pay)"
+  title: string; // 'Operations' | 'Money ($)' | "The GM's pay under your plan" | "The owners' bottom line ($)"
   rows: ReportRow[];
 }
 
@@ -26,6 +26,8 @@ export interface ReportTable {
   /** 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Week'. */
   columns: string[];
   groups: ReportGroup[];
+  /** The line under the table (BRIEF 10.1): why a day's average can differ from dogs ÷ crew. */
+  footnote: string;
 }
 
 /** Whole dollars, en-US commas, a typographic minus (U+2212): "$1,234", "−$120", "$0" (−0.2 rounds to "$0"). */
@@ -79,18 +81,26 @@ function meterWeek(from: number, to: number): string {
   return `${from} → ${to} (${sign})`;
 }
 
-/** The activities cell for one day: arrivals, then the three floor blocks. */
-function activitiesCell(d: DayReport): string {
+/**
+ * One floor block of one day (G5d): the activity that ran, one line; a fallback as what ran with what was asked,
+ * "free play (walk asked)"; "closed" on a closed day.
+ */
+function blockCell(d: DayReport, b: number): string {
   if (d.closed) return 'closed';
-  const blocks = ['arrivals'];
-  for (let b = 1; b < 4; b++) {
-    const resolved = d.activities[b];
-    const asked = d.requested[b];
-    const word = resolved === null || resolved === undefined ? '' : ACTIVITY_WORDS[resolved];
-    blocks.push(asked !== null && asked !== undefined && asked !== resolved ? `${ACTIVITY_WORDS[asked]} → ${word}` : word);
-  }
-  return blocks.join(' · ');
+  const resolved = d.activities[b];
+  const asked = d.requested[b];
+  const word = resolved === null || resolved === undefined ? '' : ACTIVITY_WORDS[resolved];
+  return asked !== null && asked !== undefined && asked !== resolved ? `${word} (${ACTIVITY_WORDS[asked]} asked)` : word;
 }
+
+/** The week's naps, cleans and walks in words: "2 naps · no cleans · 1 walk" (resolved blocks; "no" for 0). */
+function mixWords(naps: number, cleans: number, walks: number): string {
+  const n = (count: number, one: string): string => (count === 0 ? `no ${one}s` : `${count} ${count === 1 ? one : `${one}s`}`);
+  return `${n(naps, 'nap')} · ${n(cleans, 'clean')} · ${n(walks, 'walk')}`;
+}
+
+/** The line under the table (BRIEF 10.1, G5d). */
+export const REPORT_FOOTNOTE = "A walk takes dogs and a staffer off the floor, so a day's average can differ from dogs ÷ crew.";
 
 /** The change in one measure on one day, in the measure's own units before the unit divisor. */
 function dayDelta(key: KpiKey, d: DayReport, i: number, report: WeekReport): number {
@@ -117,23 +127,27 @@ export interface HeadlineTile {
   label: string;
   /** The big number, in the table's own formats. */
   value: string;
+  /** A line under the number (the profit before the GM's bonus, under the bottom line). */
+  note?: string;
 }
 
 /**
- * The five numbers the report opens with (G5c), above the table, in this order and these words:
- *   "Profit this week" — formatMoney(totals.profit): "$5,393";
- *   "The GM's bonus" — formatBonus(totals.reward): "+$539.30";
+ * The five numbers the report opens with (G5c; G5d, D62: the owners' bottom line leads), above the table, in this
+ * order and these words:
+ *   "Profit after the GM's bonus" — formatDollars(profit − reward): "$4,853.70", with the note "$5,393 before the
+ *   GM's bonus";
+ *   "Paid to the GM" — the bonus as the owners' cost, its sign turned: "−$539.30";
  *   "Incidents" — String(totals.incidents): "7";
  *   "Reputation" — "50 → 32", reputationStart → reputationEnd (the change is the table's to give);
  *   "Blocks over 15 dogs per staffer" — String(totals.blocksOverRatio): "16" (the 15 is world.bookings.legalRatio).
- * The bonus is the plan's own total (totals.reward); `spec` is accepted for symmetry with reportTable. WP3 (Sonnet).
+ * The bonus is the plan's own total (totals.reward); `spec` is accepted for symmetry with reportTable.
  */
 export function headlineTiles(report: WeekReport, spec: RewardSpec, world: WorldConfig): HeadlineTile[] {
   void spec;
   const t = report.totals;
   return [
-    { label: 'Profit this week', value: formatMoney(t.profit) },
-    { label: "The GM's bonus", value: formatBonus(t.reward) },
+    { label: "Profit after the GM's bonus", value: formatDollars(t.profit - t.reward), note: `${formatMoney(t.profit)} before the GM's bonus` },
+    { label: 'Paid to the GM', value: formatBonus(-t.reward) },
     { label: 'Incidents', value: String(t.incidents) },
     { label: 'Reputation', value: `${t.reputationStart} → ${t.reputationEnd}` },
     { label: `Blocks over ${world.bookings.legalRatio} dogs per staffer`, value: String(t.blocksOverRatio) },
@@ -179,29 +193,20 @@ export function bonusWithCents(text: string): string {
   return /^[+−]?\$[\d,]+$/.test(text) ? `${text}.00` : text;
 }
 
-/** What the headline adds to headlineTiles' five cells (G5d, round 1): the owners' bottom line and a week's blocks. */
+/** What the headline adds to headlineTiles' five cells (G5d): a week's blocks, the denominator of the blocks over the limit ("16 of 20"). */
 export interface TileNotes {
-  /** The week's profit after the GM's bonus, through formatDollars ("$4,853.70"). */
-  afterBonus: string;
-  /** The blocks in a week (five days of four), the denominator of the blocks over the limit ("16 of 20"). */
   blocks: number;
 }
 
 /**
- * Renders the headline: one strip of five cells, profit first on navy with "Before the GM's bonus" and the bottom line
- * ("After the GM's bonus: $4,853.70") under it, then the GM's bonus (always with cents, "Paid to the GM"), then
- * incidents, reputation and the blocks over the limit ("16 of 20"), each a hurt (a red wash and figure, with its icon
- * and label as the cue beyond colour) when it went against the business. The cells' values and labels are
+ * Renders the headline (G5d, D62): one strip of five cells, the owners' bottom line first on navy ("Profit after the
+ * GM's bonus", with the profit before it as its note), then "Paid to the GM" (the bonus as a cost, always with cents),
+ * then incidents, reputation and the blocks over the limit ("16 of 20"), each a hurt (a red wash and figure, with its
+ * icon and label as the cue beyond colour) when it went against the business. The cells' values, labels and notes are
  * headlineTiles' own.
  */
 export function renderTiles(container: HTMLElement, tiles: HeadlineTile[], notes?: TileNotes): void {
   const doc = container.ownerDocument;
-  const sub = (card: HTMLElement, text: string, cls = 'tile-sub'): void => {
-    const line = doc.createElement('div');
-    line.className = cls;
-    line.textContent = text;
-    card.appendChild(line);
-  };
   const nodes = tiles.map((tile, i) => {
     const card = doc.createElement('div');
     card.className = 'tile';
@@ -222,64 +227,66 @@ export function renderTiles(container: HTMLElement, tiles: HeadlineTile[], notes
       value.appendChild(of);
     }
     card.append(label, value);
-    if (i === 0) {
-      card.classList.add('tile-profit');
-      sub(card, "Before the GM's bonus");
-      if (notes !== undefined) sub(card, `After the GM's bonus: ${notes.afterBonus}`, 'tile-sub tile-after');
+    if (tile.note !== undefined) {
+      const line = doc.createElement('div');
+      line.className = 'tile-sub';
+      line.textContent = tile.note;
+      card.appendChild(line);
     }
-    if (i === 1) {
-      card.classList.add('tile-bonus');
-      sub(card, 'Paid to the GM');
-    }
+    if (i === 0) card.classList.add('tile-profit');
+    if (i === 1) card.classList.add('tile-bonus');
     const hurt =
+      (i === 0 && tile.value.startsWith('−')) ||
       (i === 2 && Number(tile.value) > 0) ||
       (i === 3 && /^(\d+) → (\d+)$/.test(tile.value) && Number(tile.value.split(' → ')[1]) < Number(tile.value.split(' → ')[0])) ||
       (i === 4 && Number(tile.value) > 0);
-    if (hurt) card.classList.add('hurt');
+    if (hurt && i !== 0) card.classList.add('hurt');
     return card;
   });
   container.replaceChildren(...nodes);
 }
 
 /**
- * The table of section 10.1 for one week. Three groups:
+ * The table of section 10.1 for one week. Four groups (G5d, D62):
  *
  * Operations: Requests; Dogs accepted; Accepted every booking ("yes" when requests > 0 and accepted = requests,
  * "no" otherwise, "closed" on a closed day; week "5 of 5 days" from totals.daysAcceptedAll); Day rate ("premium
  * $52"; "closed" on a closed day; week "premium × 5" or "low × 1, premium × 4" in low, standard, premium order,
  * rates with 0 open days left out); Crew scheduled (week "6 staff-days", the sum); Crew on the floor ("0, called
- * out" on a closed day; week "1 staffer on 4 days", "1 staffer on 1 day", from totals.daysOneStaffer); Activities (drop-off · late morning
- * · afternoon · pickup) (the four blocks joined with " · ", the drop-off always written "arrivals", a floor block
- * whose resolved activity differs from the requested one as "walk → free play", "closed" on a closed day; week
- * "nap 0, clean 0, walk 0" from the totals); Dogs per staffer, the day's average (on the floor, over the day's
- * blocks: one decimal from DayReport.avgRatio, "—" when 0; week avgDogsPerStaffer); Blocks over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits (fines
+ * out" on a closed day; week "1 staffer on 4 days", "1 staffer on 1 day", from totals.daysOneStaffer); the activities:
+ * a sub-heading "Activities (drop-off is always arrivals)" with empty cells, then Late morning, Afternoon and Pickup,
+ * each day the activity that ran, one line ("free play (walk asked)" for a fallback, "closed" on a closed day; week
+ * empty), then "Naps, cleans and walks" (days empty; week "2 naps · no cleans · 1 walk"); Dogs per staffer, the day's
+ * average (on the floor, over the day's blocks: one decimal from DayReport.avgRatio, "—" when 0; week
+ * avgDogsPerStaffer); Blocks over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits (fines
  * counted); Blocks with crew fatigue above 70%; Reputation at pickup (week "50 → 21 (−29)" from reputationStart to
  * reputationEnd); Cleanliness at pickup (Math.round; week "80 → 0 (−80)" from cleanliness.weekStart to Friday's
  * pickup); Crew fatigue at pickup (Math.round; week "20 → 100 (+80)" from fatigue.weekStart). Counts in the week
  * column are the totals of the report. A closed day keeps its requests, its scheduled crew and its pickup meters.
  *
  * Money ($): Day rates; Activity add-ons; Revenue (bold; day rates + add-ons); Wages; Refunds; Vet bills; Fines;
- * Cleaning supplies; Profit (bold); Cash at close (cash.weekStart plus the profit so far, carried unchanged over a
- * closed day; week: the Friday figure, totals.cashEnd). All through formatMoney.
+ * Cleaning supplies; Profit before the GM's bonus (bold). All through formatMoney.
  *
- * The GM's pay under your plan (the profit above is before this pay; the P&L does not deduct it): one row per
- * measure that is on, in KPI_KEYS order, labelled "<name>, <dollar amount> <per>" with the name and the per-hint of
- * kpiInfo(world) and the weight in dollars as the editor shows it (signedDollars: "+$10", "−$5", "$0"):
- * "Profit today ($), +$10 per $100", "Incidents, −$5 per incident", "Blocks over the legal ratio, −$5 per block". The
- * day cells are the dollars that measure earned that day: weight × (the day's delta ÷ KPI_UNITS[key]), where the
- * day's deltas are DayReport.profit, accepted, incidents, blocksFatigueOver70, blocksOverRatio, and for reputation
- * the change since the previous pickup (reputationAtPickup[d] − reputationAtPickup[d − 1], Monday against
- * totals.reputationStart; a closed day's delta is its closure hit). The week cell is weight × totals.kpi[key] ÷
- * unit. Then "The GM's bonus ($)" (bold): the day cells sum the measures' day cells; the week cell is
- * totals.reward (authoritative; it equals the sum when `spec` is the plan the week was run under). Last, "Profit after
- * the GM's bonus ($)" (bold, G5d): each day's profit less that day's bonus, and the week's profit less the week's
- * reward, through formatDollars ("$4,853.70"). A plan with nothing on has the one row "No measure is on: the GM is
- * paid nothing." with "$0" in every cell. The measures and the bonus through formatBonus ("+$113", "+$97.80",
- * "−$35", "$0").
+ * The GM's pay under your plan: one row per measure that is on, in KPI_KEYS order, labelled "<name>, <dollar amount>
+ * <per>" with the name and the per-hint of kpiInfo(world) and the weight in dollars as the editor shows it
+ * (signedDollars: "+$10", "−$5", "$0"): "Profit today ($), +$10 per $100", "Incidents, −$5 per incident". The day
+ * cells are the dollars that measure earned that day: weight × (the day's delta ÷ KPI_UNITS[key]), where the day's
+ * deltas are DayReport.profit, accepted, incidents, blocksFatigueOver70, blocksOverRatio, and for reputation the
+ * change since the previous pickup (reputationAtPickup[d] − reputationAtPickup[d − 1], Monday against
+ * totals.reputationStart; a closed day's delta is its closure hit). The week cell is weight × totals.kpi[key] ÷ unit.
+ * Then "The GM's bonus ($)" (bold): the day cells sum the measures' day cells; the week cell is totals.reward. A plan
+ * with nothing on has the one row "No measure is on: the GM is paid nothing." with "$0" in every cell. Through
+ * formatBonus ("+$113", "+$97.80", "−$35", "$0").
+ *
+ * The owners' bottom line ($): "Paid to the GM" (each day's bonus with its sign turned, formatBonus: "−$113", "+$81"
+ * for a bonus of −$81, "$0"); "Profit after the GM's bonus" (bold; each day's profit less that day's bonus, and the
+ * week's profit less totals.reward, formatDollars); "Cash at close" (the page's cash, BRIEF section 5: cash.weekStart
+ * plus the profit after the GM's bonus so far, running, carried over a closed day; week: Friday's, totals.cashEnd −
+ * totals.reward; formatDollars).
  *
  * The 15, the 70, the rates' prices and the $2,000 are world.bookings.legalRatio, world.fatigue.kpiThreshold,
  * world.rates and world.cash.weekStart. The rate words are low, standard, premium; the activity words free play,
- * structured play, nap, walk, clean.
+ * structured play, nap, walk, clean. The footnote is REPORT_FOOTNOTE.
  */
 export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldConfig): ReportTable {
   const days = report.days;
@@ -287,17 +294,11 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
   const perDay = (f: (d: DayReport, i: number) => string): string[] => days.map(f);
   const num = (f: (d: DayReport) => number): string[] => days.map((d) => String(f(d)));
   const money = (f: (d: DayReport) => number): string[] => days.map((d) => formatMoney(f(d)));
+  const empty = (): string[] => days.map(() => '');
   const last = days[days.length - 1];
 
   // Day rate week cell: open days per rate, in low, standard, premium order.
   const rateCounts = RATES.map((r) => ({ r, n: days.filter((d) => !d.closed && d.rate === r).length })).filter((x) => x.n > 0);
-
-  // Cash at close: the running sum of profit on top of the week's starting cash.
-  let cash = world.cash.weekStart;
-  const cashCells = days.map((d) => {
-    cash += d.profit;
-    return formatMoney(cash);
-  });
 
   const operations: ReportRow[] = [
     { label: 'Requests', days: num((d) => d.requests), week: String(sum(days.map((d) => d.requests))) },
@@ -318,11 +319,11 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
       days: perDay((d) => (d.closed ? '0, called out' : String(d.floorStaff))),
       week: `1 staffer on ${t.daysOneStaffer} ${t.daysOneStaffer === 1 ? 'day' : 'days'}`,
     },
-    {
-      label: 'Activities (drop-off · late morning · afternoon · pickup)',
-      days: perDay(activitiesCell),
-      week: `nap ${t.napBlocks}, clean ${t.cleanBlocks}, walk ${t.walkBlocks}`,
-    },
+    { label: 'Activities (drop-off is always arrivals)', days: empty(), week: '' },
+    { label: 'Late morning', days: perDay((d) => blockCell(d, 1)), week: '' },
+    { label: 'Afternoon', days: perDay((d) => blockCell(d, 2)), week: '' },
+    { label: 'Pickup', days: perDay((d) => blockCell(d, 3)), week: '' },
+    { label: 'Naps, cleans and walks', days: empty(), week: mixWords(t.napBlocks, t.cleanBlocks, t.walkBlocks) },
     {
       label: "Dogs per staffer, the day's average",
       days: perDay((d) => (d.avgRatio === 0 ? '—' : d.avgRatio.toFixed(1))),
@@ -363,8 +364,7 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
     { label: 'Vet bills', days: money((d) => d.vetCost), week: formatMoney(t.vetCost) },
     { label: 'Fines', days: money((d) => d.fineCost), week: formatMoney(t.fineCost) },
     { label: 'Cleaning supplies', days: money((d) => d.suppliesCost), week: formatMoney(t.supplies) },
-    { label: 'Profit', days: money((d) => d.profit), week: formatMoney(t.profit), emphasis: true },
-    { label: 'Cash at close', days: cashCells, week: formatMoney(t.cashEnd) },
+    { label: "Profit before the GM's bonus", days: money((d) => d.profit), week: formatMoney(t.profit), emphasis: true },
   ];
 
   // The GM's pay: one row per measure that is on, each day's dollars, then the total.
@@ -384,7 +384,8 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
       week: formatBonus((setting.weight * t.kpi[info.key]) / unit),
     });
   }
-  if (bonusRows.length === 0) {
+  const anyOn = bonusRows.length > 0;
+  if (!anyOn) {
     bonusRows.push({
       label: 'No measure is on: the GM is paid nothing.',
       days: days.map(() => formatBonus(0)),
@@ -392,22 +393,35 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
     });
   } else {
     bonusRows.push({ label: "The GM's bonus ($)", days: dayTotals.map(formatBonus), week: formatBonus(t.reward), emphasis: true });
-    // The owners' bottom line (G5d): each day's profit less that day's bonus, and the week's.
-    bonusRows.push({
-      label: "Profit after the GM's bonus ($)",
-      days: days.map((d, i) => formatDollars(d.profit - (dayTotals[i] ?? 0))),
-      week: formatDollars(t.profit - t.reward),
-      emphasis: true,
-    });
   }
+
+  // The owners' bottom line (G5d, D62): the GM's bonus as their cost, the profit after it, and the cash that paid it.
+  const weekBonus = anyOn ? t.reward : 0;
+  let cash = world.cash.weekStart;
+  const cashCells = days.map((d, i) => {
+    cash += d.profit - (dayTotals[i] ?? 0);
+    return formatDollars(cash);
+  });
+  const bottomRows: ReportRow[] = [
+    { label: 'Paid to the GM', days: dayTotals.map((b) => formatBonus(-b)), week: formatBonus(-weekBonus) },
+    {
+      label: "Profit after the GM's bonus",
+      days: days.map((d, i) => formatDollars(d.profit - (dayTotals[i] ?? 0))),
+      week: formatDollars(t.profit - weekBonus),
+      emphasis: true,
+    },
+    { label: 'Cash at close', days: cashCells, week: formatDollars(t.cashEnd - weekBonus) },
+  ];
 
   return {
     columns: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Week'],
     groups: [
       { title: 'Operations', rows: operations },
       { title: 'Money ($)', rows: moneyRows },
-      { title: "The GM's pay under your plan (the profit above is before this pay)", rows: bonusRows },
+      { title: "The GM's pay under your plan", rows: bonusRows },
+      { title: "The owners' bottom line ($)", rows: bottomRows },
     ],
+    footnote: REPORT_FOOTNOTE,
   };
 }
 
@@ -415,14 +429,15 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
 const ZERO = /^(\$0(\.00)?|0|—)$/;
 
 /**
- * Replaces the table's content as a P&L (G5d, Acceptance 5): a <thead> row with an empty first cell and the columns;
- * then the groups money first, in this order: Money ($), the GM's pay under your plan, Operations. Per group a
- * <tbody> whose first row is a heading (<th scope="colgroup" colspan="7"> with the title, its parenthesis set as a
- * note) followed by one <tr> per row (<th scope="row"> label, five <td> day cells, one <td> week cell). Rows: Revenue
- * and the bonus total "emphasis", Profit "profit" (a ruled band), the profit after the GM's bonus "bottom-line"; the
- * GM's pay always with cents ("+$128.00"); the activities with their key ("asked → ran") under the label, each block
- * on its own line; a cell that reads as nothing happened "zero"; a block over the legal limit "warn". The table gets a
- * <caption> "Monday to Friday, and the week".
+ * Replaces the table's content as a P&L (G5d, Acceptance 5; round 2, D62): a <thead> row with an empty first cell and
+ * the columns; then the groups money first, in this order: Money ($), the GM's pay under your plan, the owners'
+ * bottom line ($), Operations. Per group a <tbody> whose first row is a heading (<th scope="colgroup" colspan="7">
+ * with the title, a parenthesis set as a note) followed by one <tr> per row (<th scope="row"> label, five <td> day
+ * cells, one <td> week cell). Rows: Revenue and the bonus total "emphasis", the profit before the GM's bonus "profit"
+ * (a ruled band), the profit after it "bottom-line"; the GM's pay and the bottom line always with cents ("+$128.00",
+ * "−$128.00", "$1,152.00"); the activities' sub-heading "subhead" and its three blocks "activity" (one line each, read
+ * as text); a cell that reads as nothing happened "zero"; a block over the legal limit "warn". The table gets a
+ * <caption> "Monday to Friday, and the week" and the footnote in its <tfoot>.
  */
 export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   const doc = table.ownerDocument;
@@ -431,22 +446,6 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
     if (text !== undefined) e.textContent = text;
     if (cls !== undefined) e.className = cls;
     return e;
-  };
-
-  // The activities cell: each block on its own line, the " · " kept (hidden) so textContent is unchanged; a fallback
-  // ("walk → free play") breaks only at its arrow, never inside an activity's name (G5d round 1, row 16).
-  const chips = (td: HTMLElement, text: string): HTMLElement => {
-    text.split(' · ').forEach((part, i) => {
-      if (i > 0) td.append(el('span', ' · ', 'sep'));
-      const block = el('span', undefined, i === 0 ? 'chip muted' : 'chip');
-      part.split(' → ').forEach((phrase, k) => {
-        if (k > 0) appendArrowed(block, ' → ');
-        block.append(el('span', phrase, 'phrase'));
-      });
-      td.append(block);
-    });
-    td.classList.add('chips');
-    return td;
   };
 
   const caption = el('caption', 'Monday to Friday, and the week');
@@ -460,11 +459,13 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   }
   head.append(headRow);
 
-  // Money first (the P&L), then the GM's pay, then the operations behind them.
+  const BLOCK_ROWS = new Set(['Late morning', 'Afternoon', 'Pickup']);
+  // Money first (the P&L), then the GM's pay, then the owners' bottom line, then the operations behind them.
   const ordered = [...data.groups.filter((g) => g.title !== 'Operations'), ...data.groups.filter((g) => g.title === 'Operations')];
   const bodies = ordered.map((group) => {
-    const pay = group.title.startsWith("The GM's pay");
+    const cents = group.title.startsWith("The GM's pay") || group.title.startsWith("The owners' bottom line");
     const tbody = el('tbody');
+    if (group.title.startsWith("The owners' bottom line")) tbody.className = 'bottom';
     const titleRow = el('tr');
     const title = el('th', undefined, 'group');
     title.setAttribute('scope', 'colgroup');
@@ -476,24 +477,27 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
     tbody.append(titleRow);
     for (const r of group.rows) {
       const tr = el('tr');
-      if (r.label === 'Profit') tr.className = 'profit';
+      if (r.label.startsWith('Profit before')) tr.className = 'profit';
       else if (r.label.startsWith('Profit after')) tr.className = 'bottom-line';
+      else if (r.label.startsWith('Activities')) tr.className = 'subhead';
+      else if (BLOCK_ROWS.has(r.label)) tr.className = 'activity';
+      else if (r.label.startsWith('Naps, cleans')) tr.className = 'mix';
       else if (r.emphasis === true) tr.className = 'emphasis';
       const label = el('th', r.label);
       label.setAttribute('scope', 'row');
-      // The activities' key: a fallback is written as what was asked and what ran.
-      if (r.label.startsWith('Activities')) {
-        const key = el('span', undefined, 'row-key');
-        appendArrowed(key, 'asked → ran');
-        label.append(key);
-        tr.className = 'activities';
-      }
       tr.append(label);
       const overRatio = /^Blocks over /.test(r.label);
+      const activity = BLOCK_ROWS.has(r.label);
       const cell = (text: string, cls?: string): HTMLElement => {
-        const shown = pay ? bonusWithCents(text) : text;
-        const td = shown.includes(' · ') ? chips(el('td', undefined, cls), shown) : el('td', undefined, cls);
-        if (!shown.includes(' · ')) appendArrowed(td, shown);
+        const shown = cents ? bonusWithCents(text) : text;
+        const td = el('td', undefined, cls);
+        const paren = activity ? shown.indexOf(' (') : -1;
+        // A fallback's ask on its own line under what ran, muted: "free play" over "(walk asked)".
+        if (paren > 0) td.append(el('span', shown.slice(0, paren), 'phrase'), ' ', el('span', shown.slice(paren + 1), 'asked'));
+        else if (activity) td.append(el('span', shown, 'phrase'));
+        // The week's mix breaks only after a dot, never inside "1 walk".
+        else if (r.label.startsWith('Naps, cleans')) td.textContent = shown.split(' · ').map((part) => part.replace(/ /g, '\u00a0')).join('\u00a0· ');
+        else appendArrowed(td, shown);
         if (ZERO.test(shown)) td.classList.add('zero');
         return td;
       };
@@ -510,5 +514,11 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
     return tbody;
   });
 
-  table.replaceChildren(caption, head, ...bodies);
+  const foot = el('tfoot');
+  const footRow = el('tr');
+  const note = el('td', data.footnote, 'footnote');
+  note.setAttribute('colspan', '7');
+  footRow.append(note);
+  foot.append(footRow);
+  table.replaceChildren(caption, head, ...bodies, foot);
 }

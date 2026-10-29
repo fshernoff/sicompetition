@@ -16,7 +16,7 @@ Pitch starter: "Pay the GM for ... because ..."
 
 ## COO
 
-**Your measures:** Incidents, Staff fatigue above 70%
+**Your measures:** Incidents, Blocks with crew fatigue above 70%
 
 You speak for the crew and the dogs on the floor.
 
@@ -40,7 +40,7 @@ Pitch starter: "Pay the GM for ... because ..."
 
 ## Compliance officer
 
-**Your measures:** Blocks over the legal ratio
+**Your measures:** Blocks over 15 dogs per staffer
 
 You speak for the inspector and the law of 15 dogs per staffer.
 

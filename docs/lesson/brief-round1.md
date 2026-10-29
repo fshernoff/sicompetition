@@ -37,15 +37,15 @@ Each day, the GM earns $10 per $100 of profit.
 - Days it accepts every booking: None / 1 to 4 / All 5 (circle one)
 - Day rate: Low / Standard / Premium / A mix (circle one)
 - Days with 1 staffer on the floor: None / 1 or 2 / 3 or 4 / All 5 (circle one)
-- Nap blocks: None / 1 to 5 / 6 or more (circle one)
-- Incidents: 0 to 2 / 3 to 6 / 7 or more (circle one)
+- Nap blocks this week: None / 1 to 5 / 6 or more (circle one)
+- Incidents this week: 0 to 2 / 3 to 6 / 7 or more (circle one)
 - Why: → ______________________________
 
 What the picks count:
 
 - A closed day never counts as accepting every booking or as a day with 1 staffer.
 - The day rate is over the days the daycare opened. "A mix" means more than one rate.
-- Nap blocks are the blocks the dogs actually napped. Incidents are the week's incidents.
+- Nap blocks are the blocks the dogs actually napped.
 
 ## After the week
 

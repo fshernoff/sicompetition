@@ -7,7 +7,8 @@ import type { KpiKey, RewardSpec, WorldConfig } from './types.ts';
 
 export interface KpiInfo {
   key: KpiKey;
-  /** The name on the page, section 7. The 70 of "Staff fatigue above 70%" is `fatigue.kpiThreshold`. */
+  /** The name on the page, section 7 (one name on every screen, D61). The 70 of "Blocks with crew fatigue above 70%" is
+   * `fatigue.kpiThreshold`, the 15 of "Blocks over 15 dogs per staffer" `bookings.legalRatio`. */
   name: string;
   /** The unit hint beside the slider: "per $100", "per dog", "per incident", "per point", "per block", "per block". */
   per: string;
@@ -29,8 +30,8 @@ export function kpiInfo(world: WorldConfig): readonly KpiInfo[] {
     dogsServed: 'Dogs served',
     incidents: 'Incidents',
     reputation: 'Reputation change',
-    fatigue: `Staff fatigue above ${world.fatigue.kpiThreshold}%`,
-    overRatio: 'Blocks over the legal ratio',
+    fatigue: `Blocks with crew fatigue above ${world.fatigue.kpiThreshold}%`,
+    overRatio: `Blocks over ${world.bookings.legalRatio} dogs per staffer`,
   };
   return KPI_KEYS.map((key) => ({ key, name: names[key], per: PER[key] }));
 }

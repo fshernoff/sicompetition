@@ -195,3 +195,29 @@ owner's devices; the pixel binding was already built). The changes: severity and
 tested fallback now; a dated schedule; harder states in the sprint and an owner checkpoint; exclusive file ownership
 and the manifest and token seams; throttled performance budgets; minimum sizes; keyboard and runtime-word e2e; more
 shot states; D60 on motion; the full disclosure chain; per-state primary questions; D58 reworded; ornament cut first.
+
+## Result (Oct 29)
+
+Shipped by the owner's call after the review budget (four rounds) was spent without meeting the stop rule
+(`.claude/docs/reviews/g5d-look-rounds.md` has every round, its triage and the call).
+
+- **Acceptance 1 to 6 (the look, the art, the yard, the page):** met as judged by the readers' "at the bar" lists;
+  the last round's blocking and high items fixed and checked by the main thread. The Floor direction (D59): the
+  navy bar, Archivo, the isometric set and the GM modelled in three.js, the cast generated (36 dogs, 10 crew in
+  the dogs' faceted treatment, five poses), three mess decals by cleanliness, the rail in words, the scorecard in
+  plain words, the owners' bottom line (D62), cents on the page (D66).
+- **Acceptance 7 (performance):** heap budget amended to 5.2 MB (the yard's placement rules); final probes on the
+  shipped build: first runs 1,295 to 1,302 ms, reruns 1,116 to 1,152 ms, p95 16.7 to 16.8 ms, 0 long tasks, 5.1 MB
+  (`PERF_PORT=4352 npm run perf`, three probes).
+- **Acceptance 8 (disclosure):** the README discloses both art methods; every shipped image's provenance is in
+  `docs/art-provenance/`; Archivo's OFL ships as `fonts/Archivo-OFL.txt`. The submission checklist's disclosure rows
+  are still to write (WP5, with the submission drafts).
+- **Acceptance 9 (the stop rule):** not met. Counts by round (blocking/high/medium, Astra then the critic): 2: 2/9/6,
+  3/9/16; 3: 0/2/8, 0/4/15; 4: 1/2/7, 1/3/16, its blocking and high items then fixed. The mediums never fell below
+  seven from either reader.
+- **D58:** all 59 images clean from three readers on their exact bytes (`tests/art/qa.test.ts`).
+- **Checks on the merged build:** `npx vitest run` 603 passed; `npm run lint` 0; `E2E_PORT=4351 npm run e2e` 11
+  passed.
+- **Left for G6 (after the pilot):** round 4's mediums (the rounds file lists them); the 1366 × 640 Chromebook window
+  (the critic's inferred high: the button and the rail's lower rows below a real window's fold) is the owner's
+  Chromebook check.

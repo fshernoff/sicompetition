@@ -47,6 +47,13 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
   wages but not the add-ons, so today's profit looks larger than the takings). The stop rule is not met; the
   mediums never fell below seven from either reader. **Waiting on the owner:** ship, the fallback, or more time
   (the plan's budget clause). Nothing is merged or pushed; the live site still shows G5c.
+- **The owner's call (Oct 29): fix round 4's blocking and high items, then ship.** Fixed by WP2 and WP3 and checked
+  (the tray never covers a line; the Today line names the add-on; one name for sickness; the fallback a notice with
+  its chips). README disclosure rewritten for both art methods; Archivo's OFL ships. Plan result written. Merged to
+  `main` (fast-forward) and pushed with the owner's go-ahead; GitHub Pages deploys on the push.
+- **Next:** the owner's gate on his devices (Mac, Chromebook incl. a normal 1366 × 640 window and `?pilot=20` and
+  Round 3, the projector's back row) before the Nov 5 freeze; then WP5's submission rows (the disclosure in the
+  checklist's Approach and References); G6 after the Nov 9 pilot takes round 4's mediums.
   - Gotchas: an Agent `isolation: worktree` starts from `main` (reset it to `g5d-look`); zsh does not split `$LIST`;
     a defect in the ledger closes only by the same reader's later clean pass on the same bytes.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.

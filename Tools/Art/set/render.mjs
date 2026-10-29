@@ -71,6 +71,7 @@ async function renderMess() {
     const file = `set/mess-${d.id}.webp`;
     const bytes = write(path.join(ART, file), d.webp);
     write(path.join(TEMP, `mess-${d.id}.png`), d.png);
+    write(path.join(TEMP, `mess-shadow-${d.id}.png`), d.shadow); // the shadow layer alone, the decal's crop
     console.log(`${file} ${d.size.join(' x ')} at ${d.at} below ${d.below}: ${bytes} B (${d.cleared} px cleared where the mess changes nothing)`);
     return { id: d.id, file, size: d.size, at: d.at, below: d.below, ...(d.blocked.length ? { blocked: d.blocked } : {}) };
   });

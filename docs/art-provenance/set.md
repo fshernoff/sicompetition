@@ -22,7 +22,7 @@ Code agent, package WP4b-r2) to review round 2, row 15 of `.claude/docs/reviews/
 | `set/gm-page-ready.webp`, `set/gm-page-running.webp`, `set/gm-page-done.webp` | the same three at the page's size (64 CSS px), for the status line, the orb centred | 128 × 128 | 2,200; 2,724; 2,512 | `d4b7bfb2b2d9`, `23e8fa0b7bc1`, `d44de11da266` |
 | `set/mess-mud.webp` | the mess under cleanliness 50: flat wet mud, darker and glossier toward its middle, two tracks of paw prints leading out of it | 241 × 373 | 22,358 | `2538e3870c85` |
 | `set/mess-kibble.webp` | under 30: a spill of kibble from a heap, a red rubber ring and a tennis ball | 200 × 149 | 17,308 | `34718d943253` |
-| `set/mess-bowl.webp` | under 10: a steel water bowl knocked over on its side, the puddle flowing out of its mouth, a few drops | 264 × 85 | 7,910 | `e0c927c837bc` |
+| `set/mess-bowl.webp` | under 10: a steel water bowl knocked over on its side, the puddle flowing out of its mouth, a few drops | 264 × 85 | 8,044 | `6d1efd13076e` |
 | `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, `mess`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 5,014 | `f27c751045ab` |
 
 Every image is at 2× the yard's CSS size, lossy WebP with a real alpha channel (the mess decals: lossless WebP). The hashes are this render's; the
@@ -82,6 +82,18 @@ each decal's size shrank to its pieces and shadows, so its `at` moved with its c
 opacity (the mud wearing off them) instead of a colour faded toward a guess at the lawn's, so on the board they fade
 into the lawn itself. Only the three decals and `set.json` (their sizes, places and note) changed; the board, the six
 GM files and the cast are byte-identical (SHA-256 before and after).
+
+**The bowl's fifth render (Oct 29, its contact shadow):** the mud and the kibble came back clean from all three
+readers and keep their bytes. Sonnet marked the bowl (as in the first round): its contact shadow lay straight under
+and to the lower left of the dome, toward the light. Its three contact ellipses ran along the line it rests on, from
+the lip back to the foot, and with the mouth facing right that line runs left, under the dome. Now there is a tight,
+light contact where the lip touches the grass and a softer one under the mouth toward the lower right, none along the
+resting line. Measured on the shadow layer alone, on the grass (where the decal is not the steel or the water, as seen
+on cream), relative to the dome's centroid: before, the shadow's centroid +9.3, +22.7 px, 58% of its mass left of the
+dome's lowest point, peak alpha 0.34 just left of it; now +15.3, +23.4 px, 34% left and 66% right, peak 0.17 at the
+lip, the light-facing side's darkest 0.13 against the far side's 0.17 (the ring +3.3, +7.3 and the ball +4.7, +10.0 by
+the same measure). The bowl, the puddle, the drops, `at`, `below` and `blocked` are as they were; only
+`mess-bowl.webp` changed (`set.json` byte-identical), every other file under `src/assets/art/` byte-identical.
 
 ## The tools
 
@@ -188,7 +200,9 @@ the board again only to take its frame and crop, and stops unless that render's 
      therefore separate where they lie apart (the prints, the drops, the scattered kibble), each with its own edge.
    - *Grounded:* each object has the yard's own contact shadow (`set.json`'s `contactAlpha` 0.42 and `contactBlur`
      2.6, the figures' spec) as soft ellipses on the ground under it, moved toward its lower right; the ring along its
-     circle, the bowl along the line it rests on. No soft occlusion round any object (it showed as a halo on the side
+     circle; the bowl a tight, light one where its lip touches the grass (at 0.6 of the strength) and a softer one under
+     its mouth toward the lower right (0.55), none along the line it rests on, which runs back under the dome toward
+     the light. No soft occlusion round any object (it showed as a halo on the side
      facing the light).
    - *The render* (`render.js`, `renderDecal`): through the board's own frame (the same camera, size and
      supersampling as the board, recomputed from the board and checked by re-rendering it), with the board's lights;
@@ -234,16 +248,16 @@ the board again only to take its frame and crop, and stops unless that render's 
     55, 124; the board rendered with all three in place (and their contact shadows) has the same crop.
   - **Exact against the shipped board:** each decal laid at its `at` on the decoded `board.webp`, against that board.
     In each decal's box, the pixels the mess leaves alone (the lossless renders with and without it agree in every
-    channel): mud 64,365, kibble 23,380, bowl 13,924, of which **0** changed; the mess itself 25,528, 6,420 and 8,516
+    channel): mud 64,365, kibble 23,380, bowl 13,909, of which **0** changed; the mess itself 25,528, 6,420 and 8,531
     pixels (the driver's own count). The same from a separate Pillow script, over each box padded by 30 px: 104,805,
-    47,920 and 38,464 pixels the mess leaves alone, **0** changed. Outside the boxes a decal has no pixels. The maps
+    47,920 and 38,449 pixels the mess leaves alone, **0** changed. Outside the boxes a decal has no pixels. The maps
     (the composite beside |composite − board| × 16, 2×): `Temp/set/mess-exact-{mud,kibble,bowl}.png`: black
     everywhere but the pieces and their shadows.
   - Against the board rendered with the mess in place: on the lossless masters, at most 3, 3 and 2 levels in any
-    channel inside each decal's box (mean 0.044, 0.066, 0.042; 0 pixels over 4; the rounding of the shadows' alpha)
+    channel inside each decal's box (mean 0.044, 0.066, 0.043; 0 pixels over 4; the rounding of the shadows' alpha)
     and 0 outside; on the shipped files, every opaque decal pixel equals that render exactly (21,228, 2,755 and 7,212
     pixels; worst difference 0). The images' borders are clear (nothing cut off). Partly clear pixels (4,300, 3,665
-    and 1,304, the pieces' edges and the shadows) much darker than an opaque neighbour: 0, 30 and 15, the pieces' own
+    and 1,319, the pieces' edges and the shadows) much darker than an opaque neighbour: 0, 30 and 16, the pieces' own
     darker outlines (the bowl's outer rim beside its lit inside, a kibble's shaded facet) and the contact shadow
     against an object's base, not a fringe (`Temp/set/mess-darkedge-{bowl,kibble}.png`, 8×).
   - The depth audit for the decals (`auditMess`: the board's rays from every place a figure may stand, off the
@@ -251,8 +265,11 @@ the board again only to take its frame and crop, and stops unless that render's 
     [0.91, 4.81, 1.27, 1.22]): **0** rays hit anything of a decal higher than 8 cm.
   - Shadow directions, on the shipped board, the grass round each object (luma change, mean): the ring −2.47 to its
     right and −2.69 below against −1.92 left and −1.71 above (the grass inside the ring is in its own shadow); the ball
-    −1.96 right, −1.89 below against −0.70 left, −0.68 above; the bowl −0.77 right, −0.69 below against −0.14 left,
-    −0.14 above. At 6× (`Temp/set/mess-zoom6-{ring,ball,bowl,kibble}.png`) every shadow and contact shadow falls to
+    −1.96 right, −1.89 below against −0.70 left, −0.68 above; the bowl (its fifth render) −0.63 right, −0.47 below
+    against −0.05 left, −0.13 above. The shadow layer alone (`Temp/set/mess-shadow-{mud,kibble,bowl}.png`, written by
+    the driver), on the grass, relative to each object's centroid: the ring's centroid +3.3, +7.3 px, the ball's +4.7,
+    +10.0, the bowl's +15.3, +23.4 (66% of its mass right of its lowest point; its darkest on the light-facing side
+    0.13 against 0.17 on the far side). At 6× (`Temp/set/mess-zoom6-{ring,ball,bowl,kibble}.png`) every shadow and contact shadow falls to
     the object's lower right, its tail smooth (the board's blur), none toward the light.
   - `Tools/Agent/art_qa.py` on the three shipped files (crops at 2× on cream and near-black in `Temp/set/qa-mess/`):
     the mud 2 figures and 14 "specks", the kibble 15 figures, the bowl 1 figure and 4 "specks". With no lawn to join

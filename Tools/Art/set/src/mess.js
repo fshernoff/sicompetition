@@ -314,8 +314,14 @@ function bowl(s) {
   const drops = [[1.1, 0.15, 0.04], [1.2, -0.3, 0.03], [1.28, 0.32, 0.026], [1.36, -0.05, 0.022]].map(([f, v, r]) => [...at(f * L, v * Wd), r]);
   drops.forEach(([x, y, r], k) => flatPoly(flats, outline(x, y, r * 1.15, r, k, 7), FLAT, MC.water, 1 - k * 0.01));
 
-  // grounded: the yard's contact shadow along the line it rests on (from the lip back to the foot), to its lower right
-  const contacts = [-0.01, -0.05, -0.09].map((u) => { const [x, y] = at(u, 0); return { x, y, r: 0.06, dx: 0.4, dy: 0.45 }; });
+  // grounded, its shadow below and to the lower right as the ring's and the ball's: a tight, light contact where the lip
+  // touches the grass, and a softer one under the mouth toward the lower right; none along the line it rests on, which
+  // runs back under the dome toward the light (D58, Oct 29: that read as a smudge on the light-facing side)
+  const lipAt = at(0, 0), mouthAt = at(-0.02, 0);
+  const contacts = [
+    { x: lipAt[0], y: lipAt[1], r: 0.035, dx: 0.4, dy: 0.5, k: 0.6 },
+    { x: mouthAt[0], y: mouthAt[1], r: 0.08, dx: 0.9, dy: 0.9, k: 0.55 },
+  ];
   // the bowl is taller than a paw: its footprint and the lawn behind it are blocked, as the board's props are
   const xs = [], ys = [];
   for (let i = 0; i < P.count; i++) { xs.push(-P.getZ(i)); ys.push(-P.getX(i)); }

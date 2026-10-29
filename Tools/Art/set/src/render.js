@@ -98,15 +98,17 @@ function keyLight(centre, box) {
 
 // The yard's contact shadow under a figure (set.json's shadow.contactAlpha and contactBlur), for the mess's objects:
 // soft ellipses on the ground, each a ground circle of radius r round (x, y) moved toward the lower right by (dx, dy)
-// of its own size, in the shadow's tint; laid with the key light's shadows and kept to the ground with them.
+// of its own size, in the shadow's tint, at k of the full strength (1 when not given); laid with the key light's
+// shadows and kept to the ground with them.
 export const CONTACT = { alpha: 0.42, blur: 2.6 }; // blur in px at the yard's 1x (x2 in these images)
 function contactLayer(F, contacts, w, h) {
   const c = canvas2d(w, h), g = c.getContext('2d');
   g.fillStyle = '#000';
   const s = PPM * SPRITE_SCALE; // a ground circle of radius r is an ellipse r * s across and r * s / 2 high
-  for (const { x, y, r, dx = 0.3, dy = 0.3 } of contacts) {
+  for (const { x, y, r, dx = 0.3, dy = 0.3, k } of contacts) {
     const [px, py] = F.px(W(x, y, 0)).map((v) => v / SS);
     const a = r * s, b = (r * s) / 2;
+    if (k !== undefined) g.fillStyle = `rgba(0, 0, 0, ${k})`;
     g.beginPath();
     g.ellipse(px + dx * a, py + dy * b, a, b, 0, 0, Math.PI * 2);
     g.fill();
@@ -224,7 +226,8 @@ export function renderDecal(group, F, offset, { pad = 2 } = {}) {
   grade(out);
   const box = alphaBox(out, 1);
   const b = { x0: box.x0 - pad, y0: box.y0 - pad, x1: box.x1 + pad, y1: box.y1 + pad };
-  return { canvas: crop(out, b), at: [b.x0 - offset[0], b.y0 - offset[1]] };
+  // (and the shadow layer alone, the same crop: a diagnostic, where the shadows' mass lies)
+  return { canvas: crop(out, b), at: [b.x0 - offset[0], b.y0 - offset[1]], shadow: crop(sh, b) };
 }
 
 // The GM in its three states through one frame. `fit`: null for the yard (the yard's scale, the frame fitted to the

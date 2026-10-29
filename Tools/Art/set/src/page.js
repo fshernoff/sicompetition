@@ -58,7 +58,7 @@ export function mess({ quality = 0.9, boardQuality = 0.9 } = {}) {
   for (const spec of MESS) {
     const m = buildMess(spec.id);
     const d = onlyWhereChanged(renderDecal(decalGroup(m), b.F, b.offset), C, Fd, Wb);
-    out.decals.push({ id: spec.id, below: spec.below, png: png(d.canvas), webp: webp(d.canvas, quality), size: [d.canvas.width, d.canvas.height], at: d.at, blocked: m.blocked ?? [], top: m.top, cleared: d.cleared });
+    out.decals.push({ id: spec.id, below: spec.below, png: png(d.canvas), webp: webp(d.canvas, quality), size: [d.canvas.width, d.canvas.height], at: d.at, blocked: m.blocked ?? [], top: m.top, cleared: d.cleared, shadow: png(d.shadow) });
   }
   out.ms = Math.round(performance.now() - t0);
   return out;
@@ -66,7 +66,7 @@ export function mess({ quality = 0.9, boardQuality = 0.9 } = {}) {
 
 // A decal's alpha set to 0 wherever the board rendered with the mess (Fd) equals the clean board (C), both RGBA in the
 // board image's pixels, W wide; then cropped again to its faintest pixel plus 2 px.
-function onlyWhereChanged({ canvas, at }, C, Fd, W, pad = 2) {
+function onlyWhereChanged({ canvas, at, shadow }, C, Fd, W, pad = 2) {
   const g = canvas.getContext('2d');
   const img = g.getImageData(0, 0, canvas.width, canvas.height);
   const D = img.data;
@@ -79,7 +79,7 @@ function onlyWhereChanged({ canvas, at }, C, Fd, W, pad = 2) {
   g.putImageData(img, 0, 0);
   const box = alphaBox(canvas, 1);
   const bx = { x0: box.x0 - pad, y0: box.y0 - pad, x1: box.x1 + pad, y1: box.y1 + pad };
-  return { canvas: crop(canvas, bx), at: [at[0] + bx.x0, at[1] + bx.y0], cleared };
+  return { canvas: crop(canvas, bx), at: [at[0] + bx.x0, at[1] + bx.y0], cleared, shadow: crop(shadow, bx) };
 }
 
 // The check: the board with the decals laid on it at their `at` (as the yard would, pixel for pixel at the image's

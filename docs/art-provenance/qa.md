@@ -468,3 +468,6 @@ Round 3 of the cast (every sprite re-framed with a 2 px margin; 42 sprites):
 | cast/golden-gold-moving.webp | 36d3aa00cb2d | Astra | 2026-10-29 | clean | after the pocket repair: the spot at 6×, anatomy, coat and margins |
 | cast/golden-red-moving.webp | 6213ec05c958 | Astra | 2026-10-29 | clean | after the pocket repair: the spot at 6×, anatomy, coat and margins |
 | cast/lab-yellow-asleep.webp | 30ec72368b93 | Astra | 2026-10-29 | clean | after the pocket repair: the spot at 6×, anatomy, coat and margins |
+| cast/corgi-mahogany-moving.webp | a9eee0e1b316 | Astra | 2026-10-29 | clean | re-check against the measured 2 px margin on every side: whole, nothing cut; anatomy and coat as before |
+| cast/corgi-mahogany-sitting.webp | ff6812da8f04 | Astra | 2026-10-29 | clean | re-check against the measured 2 px margin on every side: whole, nothing cut; anatomy and coat as before |
+| cast/corgi-mahogany-asleep.webp | 972a0b7bfdf6 | Astra | 2026-10-29 | clean | re-check against the measured 2 px margin on every side: whole, nothing cut; anatomy and coat as before |

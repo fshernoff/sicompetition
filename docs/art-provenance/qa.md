@@ -367,3 +367,50 @@ Round 3 of the cast (every sprite re-framed with a 2 px margin; 42 sprites):
 | cast/poodle-brown-asleep.webp | 4ae73e9fc588 | main thread | 2026-10-29 | clean | breed sheets at 4× the page (the golden sheet 3.7×) on cream and near-black; a script: no pixel in the outer two rings, no enclosed translucent pinhole (the open gaps between legs and in the leash loops are alpha 0) |
 | cast/poodle-brown-moving.webp | 36428e3e4823 | main thread | 2026-10-29 | clean | breed sheets at 4× the page (the golden sheet 3.7×) on cream and near-black; a script: no pixel in the outer two rings, no enclosed translucent pinhole (the open gaps between legs and in the leash loops are alpha 0) |
 | cast/poodle-brown-sitting.webp | c5cb2c7dd119 | main thread | 2026-10-29 | clean | breed sheets at 4× the page (the golden sheet 3.7×) on cream and near-black; a script: no pixel in the outer two rings, no enclosed translucent pinhole (the open gaps between legs and in the leash loops are alpha 0) |
+| cast/corgi-mahogany-moving.webp | a9eee0e1b316 | main thread | 2026-10-29 | clean | the same bytes as corgi-sable-moving (renamed after Astra's round 3: the coat reads as a deep red, so it is named mahogany); read in round 3 |
+| cast/corgi-mahogany-sitting.webp | ff6812da8f04 | main thread | 2026-10-29 | clean | the same bytes as corgi-sable-sitting (renamed after Astra's round 3: the coat reads as a deep red, so it is named mahogany); read in round 3 |
+| cast/corgi-mahogany-asleep.webp | 972a0b7bfdf6 | main thread | 2026-10-29 | clean | the same bytes as corgi-sable-asleep (renamed after Astra's round 3: the coat reads as a deep red, so it is named mahogany); read in round 3 |
+| cast/beagle-tricolour-asleep.webp | 1f68be8e5639 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/beagle-tricolour-moving.webp | 2acbe2488aa4 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/beagle-tricolour-sitting.webp | 3b62276a5f02 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/collie-black-asleep.webp | 47c99bf161cc | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/collie-black-moving.webp | 62a679f04ed9 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/collie-black-sitting.webp | 0428112c6b21 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/collie-red-asleep.webp | c52ff76dc16b | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/collie-red-moving.webp | 6440fe2e0099 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/collie-red-sitting.webp | 322b4d90ee6e | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/corgi-red-asleep.webp | 20b93406a675 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/corgi-red-moving.webp | 85c7d93c615b | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/corgi-red-sitting.webp | 7ff6f0d7d79b | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/corgi-sable-asleep.webp | 972a0b7bfdf6 | Astra | 2026-10-29 | defect: coat reads red-and-white; dark sable markings are absent from the head and back. | round 3; the bytes now ship as cast/corgi-mahogany-asleep.webp (renamed for this finding) |
+| cast/corgi-sable-moving.webp | a9eee0e1b316 | Astra | 2026-10-29 | defect: coat reads red-and-white; dark sable markings are absent from the head and back. | round 3; the bytes now ship as cast/corgi-mahogany-moving.webp (renamed for this finding) |
+| cast/corgi-sable-sitting.webp | ff6812da8f04 | Astra | 2026-10-29 | defect: coat reads red-and-white; dark sable markings are absent from the head and back. | round 3; the bytes now ship as cast/corgi-mahogany-sitting.webp (renamed for this finding) |
+| cast/crew-ball.webp | 4d5c65b8b65b | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/crew-leash.webp | 481960bf1f5b | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/crew-mop.webp | d87c478f5edc | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/crew2-ball.webp | 98891867756b | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/crew2-leash.webp | 16b1bea96a7f | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/crew2-mop.webp | a22d049d3a85 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/golden-gold-asleep.webp | e40f6bb2f856 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/golden-gold-moving.webp | 581e5377962f | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/golden-gold-sitting.webp | bf87645a12c7 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/golden-red-asleep.webp | 3f4de3bd700a | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/golden-red-moving.webp | f01eca4fa3c8 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/golden-red-sitting.webp | 17e75733e10f | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-black-asleep.webp | 71264f8940b8 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-black-moving.webp | 560e53e5a539 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-black-sitting.webp | 697963211828 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-chocolate-asleep.webp | 64fb35c73674 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-chocolate-moving.webp | 24a680b7f8ff | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-chocolate-sitting.webp | fab8c16682e3 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-yellow-asleep.webp | 566cacbe793e | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-yellow-moving.webp | 06fa277ac743 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/lab-yellow-sitting.webp | d4a37288eb54 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/poodle-black-asleep.webp | 28c4ec637909 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/poodle-black-moving.webp | 439e2b57ce1b | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/poodle-black-sitting.webp | b32043e386e9 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/poodle-brown-asleep.webp | 4ae73e9fc588 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/poodle-brown-moving.webp | 36428e3e4823 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| cast/poodle-brown-sitting.webp | c5cb2c7dd119 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| set/gm-done.webp | e12e5f32915d | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |
+| set/gm-page-done.webp | d44de11da266 | Astra | 2026-10-29 | clean | round 3: fresh 2× crops |

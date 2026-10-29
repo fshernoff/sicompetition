@@ -120,7 +120,7 @@ retakes each named the breed's first strip as their locked reference.
    | golden | gold | red: the warm coat (hue 0.03 to 0.15), (190, 112, 58), γ 1.0 |
    | Lab | black (`cast-lab-3`) | chocolate: the charcoal coat (saturation under 0.3), (116, 76, 50), γ 0.75, keeping pixels darker than 0.3 × L0 (the nose, the eyes) fading in over 0.1; yellow: its own strip (`cast-labyellow-1`), as generated |
    | poodle | brown | black: the whole coat, (54, 51, 49), γ 1.25, keeping pixels darker than 0.3 × L0 (the nose, the eyes); the whole coat, edge pixels included, so no brown or olive rim is left (round 1: an olive fringe on the hind leg). No cream: it was dropped in round 2, when the brown model's rim light became a pale fringe on dark (belly, lower legs, pom-pom, ear) and its deepest crease a dark speck in the cream, so one model does not carry that coat |
-   | corgi | red | sable: the red patches (not the white, not the pink inner ears), (172, 98, 48), γ 1.1 |
+   | corgi | red | mahogany (renamed from "sable" after D58 round 3: the coat reads as a deep red, not sable): the red patches (not the white, not the pink inner ears), (172, 98, 48), γ 1.1 |
    | collie | black | red: the black patches, (128, 74, 44), γ 0.85, the nose included (a red border collie's nose is brown; round 1 found the protected black sliver on the red's chest) |
    | beagle | tricolour | none. The tan coat (the saddle recoloured) was dropped in round 1: at every setting tried it left grey or dark borders of the saddle, or turned the grey far paw and the paw creases tan, so one model does not carry it |
 
@@ -143,9 +143,9 @@ Every sprite faces right (the camera-facing diagonal toward the lower right); th
 | `corgi-red-moving` | 135 × 94 | 82.0, 78.0 | 5,004 | 85c7d93c615b |
 | `corgi-red-sitting` | 93 × 104 | 43.0, 93.0 | 4,258 | 7ff6f0d7d79b |
 | `corgi-red-asleep` | 118 × 59 | 61.5, 49.6 | 3,564 | 20b93406a675 |
-| `corgi-sable-moving` | 135 × 94 | 82.0, 78.0 | 5,054 | a9eee0e1b316 |
-| `corgi-sable-sitting` | 93 × 104 | 43.0, 93.0 | 4,236 | ff6812da8f04 |
-| `corgi-sable-asleep` | 118 × 59 | 61.5, 49.6 | 3,534 | 972a0b7bfdf6 |
+| `corgi-mahogany-moving` | 135 × 94 | 82.0, 78.0 | 5,054 | a9eee0e1b316 |
+| `corgi-mahogany-sitting` | 93 × 104 | 43.0, 93.0 | 4,236 | ff6812da8f04 |
+| `corgi-mahogany-asleep` | 118 × 59 | 61.5, 49.6 | 3,534 | 972a0b7bfdf6 |
 | `beagle-tricolour-moving` | 155 × 147 | 73.5, 120.0 | 6,450 | 2acbe2488aa4 |
 | `beagle-tricolour-sitting` | 114 × 113 | 55.0, 96.4 | 5,084 | 3b62276a5f02 |
 | `beagle-tricolour-asleep` | 141 × 83 | 71.5, 68.9 | 4,890 | 1f68be8e5639 |

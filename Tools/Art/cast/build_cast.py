@@ -101,7 +101,7 @@ COATS = {
                'black': dict(mask=whole_coat, target=(54, 51, 49), gamma=1.25, keep_dark=0.3)},
     # the cream poodle was dropped in D58 round 2: the brown model's rim light became a pale fringe on dark and its
     # deepest crease a dark speck in cream, so one model does not carry that coat; the poodle ships brown and black
-    'corgi': {'red': None, 'sable': dict(mask=red_patch, target=(172, 98, 48), gamma=1.1)},
+    'corgi': {'red': None, 'mahogany': dict(mask=red_patch, target=(172, 98, 48), gamma=1.1)},
     'collie': {'black': None, 'red': dict(mask=black_patch, target=(128, 74, 44), gamma=0.85)},
     # the beagle ships in its tricolour only: a tan recolour of the saddle left grey and dark borders, a recoloured
     # far paw and creases at every setting tried (the D58 readers' round 1), so one model cannot carry that coat
@@ -516,7 +516,7 @@ def main(cutdir):
             'shoes). facing: every sprite faces right, along the camera-facing diagonal toward the lower right; mirror '
             'for the other diagonal (gate 5). No shadow is drawn in any sprite (gate 3).',
             'coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle '
-            'tricolour) and its recolours in code (gate 6: golden red, Lab chocolate, poodle black, corgi sable, collie '
+            'tricolour) and its recolours in code (gate 6: golden red, Lab chocolate, poodle black, corgi mahogany, collie '
             'red); the yellow Lab is its own generated strip, at the Lab\'s ratio; the beagle has no second coat and the '
             'poodle no cream (dropped in D58 rounds 1 and 2); docs/art-provenance/cast/README.md has every step.',
         ],

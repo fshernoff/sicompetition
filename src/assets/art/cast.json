@@ -57,11 +57,11 @@
    ]
   },
   {
-   "id": "corgi-sable-moving",
-   "file": "cast/corgi-sable-moving.webp",
+   "id": "corgi-mahogany-moving",
+   "file": "cast/corgi-mahogany-moving.webp",
    "kind": "dog",
    "breed": "corgi",
-   "coat": "sable",
+   "coat": "mahogany",
    "pose": "moving",
    "facing": "right",
    "size": [
@@ -74,11 +74,11 @@
    ]
   },
   {
-   "id": "corgi-sable-sitting",
-   "file": "cast/corgi-sable-sitting.webp",
+   "id": "corgi-mahogany-sitting",
+   "file": "cast/corgi-mahogany-sitting.webp",
    "kind": "dog",
    "breed": "corgi",
-   "coat": "sable",
+   "coat": "mahogany",
    "pose": "sitting",
    "facing": "right",
    "size": [
@@ -91,11 +91,11 @@
    ]
   },
   {
-   "id": "corgi-sable-asleep",
-   "file": "cast/corgi-sable-asleep.webp",
+   "id": "corgi-mahogany-asleep",
+   "file": "cast/corgi-mahogany-asleep.webp",
    "kind": "dog",
    "breed": "corgi",
-   "coat": "sable",
+   "coat": "mahogany",
    "pose": "asleep",
    "facing": "right",
    "size": [
@@ -712,6 +712,6 @@
   "CastManifest (src/assets/art/manifest.ts) plus these notes. Every sprite is stored at 2x the yard's CSS size on the set's camera: 176 px per metre of the orthographic view (a metre straight up is 152.4 px; set.json's map.ppm, 139.14, is a metre along a lawn edge in the same camera), so the yard draws each at 0.5 and never rescales one breed differently.",
   "Every sprite has a clear margin of 2 transparent px round the figure; anchors are in the framed image's pixels. scale: corgiLength is the corgi's moving pose, its cut figure's width, in px at 2x (the sprite adds a soft edge and the margin); each other breed's moving pose is a fixed ratio of it (beagle 1.15, collie 1.35, poodle 1.3, Lab 1.55, golden 1.6), and its sit and sleep share that scale; the crew (crew-*) is crewToStandingGolden x the golden's standing height, and the second crew member (crew2-*: a different adult in the same uniform, so two or three staff on the floor are not one person repeated) is 1.07 x the first one's height.",
   "anchor: the ground point in the image's pixels (a dog: between its near and far feet; the crew: between the shoes). facing: every sprite faces right, along the camera-facing diagonal toward the lower right; mirror for the other diagonal (gate 5). No shadow is drawn in any sprite (gate 3).",
-  "coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle tricolour) and its recolours in code (gate 6: golden red, Lab chocolate, poodle black, corgi sable, collie red); the yellow Lab is its own generated strip, at the Lab's ratio; the beagle has no second coat and the poodle no cream (dropped in D58 rounds 1 and 2); docs/art-provenance/cast/README.md has every step."
+  "coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle tricolour) and its recolours in code (gate 6: golden red, Lab chocolate, poodle black, corgi mahogany, collie red); the yellow Lab is its own generated strip, at the Lab's ratio; the beagle has no second coat and the poodle no cream (dropped in D58 rounds 1 and 2); docs/art-provenance/cast/README.md has every step."
  ]
 }

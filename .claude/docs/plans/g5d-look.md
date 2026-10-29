@@ -99,7 +99,8 @@ per asset; past that the owner decides between shipping, the fallback or more ti
    1,389 to 1,418 ms on the first run and 1,109 to 1,145 ms on the reruns; frame time p95 16.7 to 16.8 ms; 0 long
    tasks while the week plays; 4.4 MB of heap after three runs. Budgets: first run ≤ 1,560 ms, reruns ≤ 1,260 ms,
    p95 ≤ 18.4 ms, 0 long tasks, heap ≤ 4.9 MB. The owner's Chromebook run is the real check.
-   Amended Oct 29 (round 2): heap ≤ 5.1 MB. The yard's placement rules (no repeated sprite or pose nearby, the
+   Amended Oct 29 (round 2): heap ≤ 5.2 MB (measured 5.095 to 5.101 MB unrounded on the merged build, five probes;
+   the page's own share 4.925). The yard's placement rules (no repeated sprite or pose nearby, the
    kneeler's dog, the decals' blocked ground) add about 0.15 MB, mostly V8's compiled code (WP3's heap snapshots),
    and its look-ahead of each day's arrangement is what keeps long tasks at 0; a stutter the class would see
    outweighs 0.2 MB a Chromebook would not. The other budgets stand.

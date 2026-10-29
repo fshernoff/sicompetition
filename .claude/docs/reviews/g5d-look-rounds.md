@@ -125,3 +125,22 @@ picks, the gauge, the reconciled P&L arithmetic, the tray's groups and the yard'
 | 32 | Med | C26 | The Why box does not grow | Accepted | WP2 |
 | 33 | Low | C29 | Blue link and focus ring | Accepted | WP2: navy or amber |
 | 34 | Low | C30 | The tray's round control; "you write its bonus plan" with Round 1 locked | Accepted / declined | WP2 the control; the tagline is the bible's, and the round line says Round 1's plan is set |
+
+## Round 3 (Oct 29, `g5d-look` at `3bf76d7`: WP2's round 2 and its follow-ups, WP3's two batches, the faceted crew, the mess decals)
+
+Shots: `Temp/shots/20261029-093736/` (22 states). Checks on that build: `npx vitest run` 586 passed (38 files, the
+D58 rows for all 59 images included); `npm run lint` 0; `npm run build` (dist 884 KB); `E2E_PORT=4331 npm run e2e` 9
+passed (54.4 s); `PERF_PORT=4332 npm run perf` 1,404 / 1,197 / 1,153 ms, p95 16.7 to 16.8 ms, 0 long tasks, 5.1 MB
+(the heap budget amended to 5.2 MB in the plan, with the reason). D58 this round: the ten faceted crew sprites clean
+from all three readers at once; the mess decals took four rebuilds (a raised rim, a toy that read as a bone, an
+upright-looking bowl, a lawn wash, encoding-level lawn mismatch, a shadow toward the light) before all three readers
+passed them; the main thread had passed the first two versions, the other readers had not.
+
+### The main thread (before reading the others)
+
+| # | Severity | Shot | Finding |
+|---|---|---|---|
+| M1 | Medium | 03 | Getting ready: the left column is blank below the plan sentence (y 135 to 768) while the picks and the reasons sit under the yard: half the screen is empty for the whole phase |
+| M2 | Medium | 01, 09 | On load the yard column shows the board at its top and about 380 px of empty grey below it at 1366 × 768 |
+| M3 | Low | 04 | The rail's "Sent home sick: 3 this week, 2 this block" beside the caption "2 dogs sick at pickup": one event, two phrasings |
+| M4 | Low | 07 | The bottom line's cells carry cents always ("$1,152.00") under a profit row in whole dollars ("$1,280") |

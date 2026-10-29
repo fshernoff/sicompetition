@@ -35,6 +35,11 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
   one camera) resumed in their worktrees; two new art packages: WP4a-r2 (the crew remade faceted, with kneel and
   tired poses) and WP4b-r2 (three mess decals by cleanliness). Next: review and merge them, D58's three passes on
   the new art, WP3 draws the decals and the new poses, then round 3.
+- **Round 2 done, round 3 running (Oct 29, `3bf76d7`):** all four packages merged; D58 green for all 59 images
+  (the decals took four rebuilds, the last exact against the shipped board); the plan's heap budget amended to
+  5.2 MB (measured 5.095 to 5.101; 0 long tasks kept). Checks: 586 tests, lint 0, e2e 9/9, perf 1,404 / 1,197 /
+  1,153 ms. Round 3 shots `Temp/shots/20261029-093736/`; the main thread's notes are in the rounds file (2 medium,
+  2 low); Astra and a fresh Opus critic are reviewing. Then the triage; the stop rule needs rounds 3 and 4 clean.
   - Gotchas: an Agent `isolation: worktree` starts from `main` (reset it to `g5d-look`); zsh does not split `$LIST`;
     a defect in the ledger closes only by the same reader's later clean pass on the same bytes.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.

@@ -72,12 +72,8 @@ export interface MessDecal {
 export interface SetManifest {
   /** The board with its fence, clubhouse and props, as one image; the walk path outside the gate if there is one. */
   board: { file: string; size: [number, number]; map: BoardMap };
-  /**
-   * The GM in its three states (the status line's three), each with the point it hovers over and its orb's opaque box
-   * [x0, y0, x1, y1] in the image as the yard measures it (alpha 96 and up): the yard measures it again on the image;
-   * the recorded box places the GM's label when the image did not load (D64).
-   */
-  gm: Record<'ready' | 'running' | 'done', { file: string; size: [number, number]; anchor: [number, number]; orb?: [number, number, number, number] }>;
+  /** The GM in its three states (the status line's three), each with the point it hovers over. */
+  gm: Record<'ready' | 'running' | 'done', { file: string; size: [number, number]; anchor: [number, number] }>;
   /** Where the GM hovers on the board, in board-image pixels. */
   gmSpot: [number, number];
   /** The GM at the page's size (about 64 CSS px), the same three states, for the page beside the status line. */

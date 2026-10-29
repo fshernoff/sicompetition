@@ -15,7 +15,7 @@
 // every other figure where the lawn has room. D60: nothing moves to show an action the trace does not record. A day's
 // arrangement comes from its own seeded generator (never the engine's) and holds all day; only the GM's hover and the
 // incident's pulse move, and neither under reduced motion. If the pictures cannot load, the yard draws no figures and
-// says so in the page's type, its block's chips and the GM's label kept (D64).
+// says so in the page's type, its block's chips kept (D64).
 import type { Bookings, FloorActivity, Rate, State, StepRecord, WorldConfig, WorldEvent } from '../world/types.ts';
 import { CAMERA } from '../assets/art/manifest.ts';
 import type { BoardMap, CastManifest, CastSprite, CrewPose, DogPose, Facing, MessDecal, SetManifest } from '../assets/art/manifest.ts';
@@ -407,8 +407,8 @@ function newCanvas(w: number, h: number, readBack = false): { canvas: HTMLCanvas
  * Draws one frame into `ctx` (a canvas of `width` × `height` CSS pixels at options.pixelRatio). With a null frame it
  * clears the canvas, so the page's board shows behind it, and draws what options.placeholder asks (see there). With a
  * frame: the yard as the frame has it (see the module's header); without the yard's pictures, the notice with the
- * block's chips and the GM's label if they failed to load (D64), the placeholder line while they decode. Reads the frame; keeps only caches of the drawing (the
- * board at this size, the sprites at this size, a day's arrangement).
+ * block's chips if they failed to load (D64), the placeholder line while they decode. Reads the frame; keeps only
+ * caches of the drawing (the board at this size, the sprites at this size, a day's arrangement).
  */
 export function drawReplay(
   ctx: CanvasRenderingContext2D,
@@ -547,8 +547,8 @@ const uiFont = (tokens: Tokens, px: number, weight: number): string =>
  * label (round 2, finding 18: the first frame has life; nothing else, D60: no dogs or crew before the week); while the
  * GM gets ready the orb breathes, its band crossfading between its ready and running states (round 3, row 10; the ready
  * state held under reduced motion). Never the page's status line, which the page says (round 1, finding 20). The e2e
- * holds these drawn pixels under 2% of the canvas. Without the pictures: the notice and the GM's label if they failed
- * (D64), the default line while they decode. Called without options.placeholder: the default line in the middle.
+ * holds these drawn pixels under 2% of the canvas. Without the pictures: the notice if they failed (D64), the default
+ * line while they decode. Called without options.placeholder: the default line in the middle.
  */
 function drawPlaceholder(ctx: CanvasRenderingContext2D, width: number, height: number, options: ReplayOptions, art: ArtSet | null, zoom: number): void {
   lastIdle = { ctx, width, height, options, zoom };
@@ -622,8 +622,9 @@ function orbRect(s: Stage, ...states: Drawn[]): [number, number, number, number]
 
 // ===============================================================================================================
 // Without the yard's pictures (D64): if they cannot load, the yard draws no figures and says so in the page's type,
-// centred in its box; the block's event chips and the GM's label stay where the yard draws them, and the panel, the
-// scorecard and the report carry the week. While they are still decoding on a normal load, the placeholder line.
+// centred in its box; the block's event chips stay where the yard draws them, and the panel, the scorecard and the
+// report carry the week. No GM label: beside no orb it would name nothing. While the pictures are still decoding on a
+// normal load, the placeholder line.
 
 /** The notice, two sentences (BRIEF 10.2): nothing about where the panel is, which the page's layout decides. */
 const NOTICE: readonly [string, string] = ["The yard's pictures did not load on this computer.", 'Everything the GM does is in the panel and the report.'];
@@ -644,9 +645,8 @@ function wrapWords(ctx: CanvasRenderingContext2D, text: string, maxW: number): s
 }
 
 /**
- * The notice, centred in the canvas: the first sentence in the page's ink and weight, the second muted under it. Then
- * the GM's label, without its line (there is no orb to point at), and while the week plays the block's events on their
- * chips, each where the yard draws it (noticeScene).
+ * The notice, centred in the canvas: the first sentence in the page's ink and weight, the second muted under it; while
+ * the week plays, the block's events on their chips where the yard draws them (the scene's places need no pictures).
  */
 function drawNotice(ctx: CanvasRenderingContext2D, width: number, height: number, options: ReplayOptions, zoom: number, frame: ReplayFrame | null): void {
   ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
@@ -679,9 +679,7 @@ function drawNotice(ctx: CanvasRenderingContext2D, width: number, height: number
     ctx.fillText(line, width / 2, y);
     y += lead;
   }
-  const s = noticeScene(width, height, zoom);
-  drawGmLabel(ctx, tokens, s.fs, s.label, false);
-  if (frame !== null) drawBlockChips(ctx, s, tokens, frame, options.gm ?? 'running');
+  if (frame !== null) drawBlockChips(ctx, plainScene(width, height, zoom), tokens, frame, options.gm ?? 'running');
 }
 
 /** The default line, centred: before the week (the page's own call without a line), and while the pictures decode. */
@@ -1364,32 +1362,13 @@ function world(s: Scene, x: number, y: number): [number, number] {
   return [(dx * s.ey[1] - dy * s.ey[0]) / det, (s.ex[0] * dy - s.ex[1] * dx) / det];
 }
 
-/**
- * The yard's scene without its pictures, for the notice's chips and label: the yard's places at this size and zoom,
- * the orb's box as set.json records it (the yard measures the same box on the image), so the label stands where the
- * yard puts it.
- */
-function noticeScene(width: number, height: number, zoom: number): Scene {
-  const key = `${Math.round(width)}|${Math.round(height)}|${zoom}`;
-  if (noticeCache?.key !== key) {
-    const orbs = {} as Record<GmState, [number, number, number, number]>;
-    for (const state of GM_STATES) {
-      const orb = SET.gm[state].orb;
-      if (orb !== undefined) orbs[state] = orb;
-    }
-    noticeCache = { key, scene: sceneFor(width, height, setData(orbs), castWithoutImages(), zoom) };
-  }
-  return noticeCache.scene;
-}
-let noticeCache: { key: string; scene: Scene } | null = null;
-
 const plainScenes = new Map<string, Scene>();
-/** The scene without images, for the tests (arrangeYard; a few sizes kept). */
-function plainScene(width: number, height: number): Scene {
-  const key = `${Math.round(width)}|${Math.round(height)}`;
+/** The scene without images, for the tests (arrangeYard) and the notice's chips, at the page's zoom (a few sizes kept). */
+function plainScene(width: number, height: number, zoom = 1): Scene {
+  const key = `${Math.round(width)}|${Math.round(height)}|${zoom}`;
   let s = plainScenes.get(key);
   if (s === undefined) {
-    s = sceneFor(width, height, setData(), castWithoutImages());
+    s = sceneFor(width, height, setData(), castWithoutImages(), zoom);
     plainScenes.set(key, s);
     while (plainScenes.size > 4) plainScenes.delete(plainScenes.keys().next().value as string);
   }
@@ -3002,20 +2981,18 @@ function drawGm(ctx: CanvasRenderingContext2D, s: Stage, gm: Drawn, hover: numbe
   ctx.drawImage(gm.img, Math.round(gx * R - gm.ax), Math.round((gy + hover) * R - gm.ay));
 }
 
-/** "The GM" on a navy pill with the amber light, a short line to the orb (Floor's callout; no line without the orb). */
-function drawGmLabel(ctx: CanvasRenderingContext2D, tokens: Tokens, fs: number, label: Label, withLine = true): void {
+/** "The GM" on a navy pill with the amber light, a short line to the orb (Floor's callout). */
+function drawGmLabel(ctx: CanvasRenderingContext2D, tokens: Tokens, fs: number, label: Label): void {
   const { x, y, h, lineFrom, lineTo } = label;
   ctx.font = uiFont(tokens, fs, 800);
   const w = Math.max(label.w, ctx.measureText('The GM').width + fs * 1.9);
   const mid = y + h / 2;
-  if (withLine) {
-    ctx.strokeStyle = tokens.ink;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(lineFrom, mid);
-    ctx.lineTo(lineTo, mid);
-    ctx.stroke();
-  }
+  ctx.strokeStyle = tokens.ink;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(lineFrom, mid);
+  ctx.lineTo(lineTo, mid);
+  ctx.stroke();
   ctx.fillStyle = tokens.ink;
   roundRectPath(ctx, x, y, w, h, h / 2);
   ctx.fill();

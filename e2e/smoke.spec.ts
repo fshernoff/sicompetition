@@ -840,7 +840,7 @@ test('a student runs the week by keyboard alone, and nothing the page shows, the
   expect(hits).toEqual([]);
 });
 
-test('without its pictures the yard draws no figures and says so, keeping its chips and the GM\'s label, in words a student reads (D64)', async ({ page }) => {
+test('without its pictures the yard draws no figures and says so, keeping its chips, in words a student reads (D64)', async ({ page }) => {
   // Every string drawn on a canvas; the strings and the pictures drawn on the yard's.
   await page.addInitScript(() => {
     const seen = { drawn: [] as string[], yard: [] as string[], pictures: 0 };
@@ -864,26 +864,26 @@ test('without its pictures the yard draws no figures and says so, keeping its ch
   const seen = (): Promise<Seen> => page.evaluate(() => (window as unknown as { __seen: Seen }).__seen);
   // The notice (BRIEF 10.2, D64), its lines wrapped to the yard's box; never "beside", which the stacked layout makes wrong.
   const NOTICE = ["The yard's pictures did not load on this computer.", 'Everything the GM does is in the panel and the report.'];
-  // On load: the notice and the GM's label.
+  // On load: the notice, and no label for a GM the yard cannot show (a label beside no orb points at nothing).
   await expect.poll(async () => (await seen()).yard.join(' '), { timeout: 10_000 }).toContain(NOTICE[1]);
-  expect((await seen()).yard).toContain('The GM');
+  expect((await seen()).yard).not.toContain('The GM');
   await makePicks(page);
   await page.click('#train');
   await expect(page.locator('#status')).toHaveText(PLAYING, { timeout: 90_000 });
   await page.evaluate(() => {
     (window as unknown as { __seen: Seen }).__seen.yard.length = 0;
   });
-  // The week's own frames: the notice, the GM's label, and a block's events on their chips under "This block".
+  // The week's own frames: the notice, and a block's events on their chips under "This block"; still no GM label.
   await expect.poll(async () => (await seen()).yard, { timeout: 30_000 }).toContain('This block');
   const { drawn, yard, pictures } = await seen();
   expect(yard.join(' ')).toContain(NOTICE[0]);
   expect(yard.join(' ')).toContain(NOTICE[1]);
-  expect(yard).toContain('The GM');
+  expect(yard).not.toContain('The GM');
   const CHIP = /^(Closed|Incident|Vet bill \$[\d,]+|Inspector: \$[\d,]+ fine|\d+ dogs? found sick at pickup|The staffer called out: closed today|Walk photo posted)$/;
   expect(yard.filter((t) => CHIP.test(t)).length).toBeGreaterThan(0);
-  // Nothing else: no picture (no board, no figure, no orb), and no words but the notice's, the label's and the chips'.
+  // Nothing else: no picture (no board, no figure, no orb), and no words but the notice's and the chips'.
   expect(pictures).toBe(0);
-  expect([...new Set(yard.filter((t) => !NOTICE.some((n) => n.includes(t)) && t !== 'The GM' && t !== 'This block' && !CHIP.test(t)))]).toEqual([]);
+  expect([...new Set(yard.filter((t) => !NOTICE.some((n) => n.includes(t)) && t !== 'This block' && !CHIP.test(t)))]).toEqual([]);
   const text = STUDENT_ALLOWED.reduce((t, phrase) => t.replace(phrase, ' '), `${await studentText(page)}\n${drawn.join('\n')}`);
   const hits = STUDENT_BANS.flatMap((word) => (text.match(new RegExp(`.{0,40}${word.source}.{0,40}`, word.flags.includes('i') ? 'gi' : 'g')) ?? []));
   expect(hits).toEqual([]);

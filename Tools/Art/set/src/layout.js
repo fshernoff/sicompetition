@@ -43,13 +43,13 @@ export const BUSHES = [
 ];
 export const PLANTER = { x: DOOR.x + DOOR.w / 2 + 0.42, y: Y - 0.3, w: 0.44, d: 0.44, h: 0.32, shrub: { r: 0.19, h: 0.78 } };
 export const BOWL = { x: X - 0.32, y: 3.4, r: 0.17, h: 0.07 };
-// Off the lawn, behind the left-back fence: a hedge that shows over it.
+// Off the lawn, behind the left-back fence: a hedge that shows over it. Each one stands clear of the clubhouse's
+// right edge on the screen (x - y above -3.51 by its radius / 0.707 and a little), so none shows as a sliver beside it.
 export const GARDEN = [
-  { kind: 'round', x: 4.4, y: Y + 0.95, r: 0.5, h: 0.95 },
-  { kind: 'cone', x: 5.1, y: Y + 1.6, r: 0.34, h: 1.55 },
-  { kind: 'round', x: 5.65, y: Y + 0.8, r: 0.44, h: 0.85 },
-  { kind: 'round', x: 6.5, y: Y + 1.4, r: 0.5, h: 1.05 },
-  { kind: 'cone', x: 6.95, y: Y + 0.6, r: 0.26, h: 1.2 },
+  { kind: 'round', x: 5.15, y: Y + 0.62, r: 0.42, h: 0.85 },
+  { kind: 'cone', x: 5.95, y: Y + 1.5, r: 0.32, h: 1.5 },
+  { kind: 'round', x: 6.55, y: Y + 1.0, r: 0.5, h: 1.0 },
+  { kind: 'cone', x: 7.05, y: Y + 0.55, r: 0.26, h: 1.2 },
 ];
 
 // The margin a figure's anchor keeps inside the fence lines and the lawn's open edges.

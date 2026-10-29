@@ -9,6 +9,7 @@ import { SLAB } from './layout.js';
 
 // The shadow spec the board uses, which the yard's code shadows for the cast match (D59 gate 3).
 export const SHADOW = { tint: [12, 30, 18], alpha: 0.3, blur: 1.6 }; // blur in px at the yard's 1x (x2 in the image)
+export const MARGIN_PX = 24; // clear transparency round the board image
 
 // Every vertex of an object in world space (a frame fitted to these is tight; a bounding box's corners are not).
 function corners(obj) {
@@ -70,6 +71,9 @@ function pass(group, F, pick, { extra = [], light = null } = {}) {
     if (!o.isMesh) return;
     const m = pick(o);
     if (m === null) o.visible = false; else o.material = m;
+    // a depth-only occluder must be drawn before the ground: drawn after, it cannot take back ground already drawn
+    // behind it, and the mask (and the shadow laid through it) would show through walls and posts
+    o.renderOrder = m && m.colorWrite === false ? -1 : 0;
   });
   scene.add(ghost, ...extra);
   if (light) scene.add(light, light.target);
@@ -93,11 +97,14 @@ function keyLight(centre, box) {
 
 // The board: returns the shipped (2x) canvas and the contract's map. `extra` are world points the image must contain
 // (the GM's room over the roof).
-export function renderBoard(group, { extra = [] } = {}) {
+export function renderBoard(group, { extra = [], layers = null } = {}) {
   const ppm = PPM * SPRITE_SCALE * SS;
   group.updateMatrixWorld(true);
-  const sb = screenBox([...corners(group), ...extra]);
-  const F = frame(sb, ppm, 0.14);
+  // the slab's shadow on the page reaches past the slab: its footprint is part of the frame, with room for its blur
+  const fall = KEY.clone().multiplyScalar(-SLAB.depth / KEY.y);
+  const footprint = [[SLAB.x0, SLAB.y0], [SLAB.x1, SLAB.y0], [SLAB.x1, SLAB.y1], [SLAB.x0, SLAB.y1]].map(([x, y]) => W(x, y, 0).add(fall));
+  const sb = screenBox([...corners(group), ...extra, ...footprint]);
+  const F = frame(sb, ppm, 0.45);
 
   // the colour pass
   const colour = (() => {
@@ -127,6 +134,7 @@ export function renderBoard(group, { extra = [] } = {}) {
   plane.receiveShadow = true;
   const pageMask = pass(group, F, () => null, { extra: [plane, slabCaster()], light: keyLight(centre, 9.5) });
 
+  if (layers) Object.assign(layers, { colour, shadowMask, groundMask, pageMask });
   const out = canvas2d(W2, H2);
   const g = out.getContext('2d');
   g.drawImage(colour, 0, 0);
@@ -142,8 +150,9 @@ export function renderBoard(group, { extra = [] } = {}) {
   g.drawImage(ps, 0, 0);
   g.globalCompositeOperation = 'source-over';
 
+  // at least MARGIN px of clear transparency on every side, the page shadow's faintest pixel included
   const box = alphaBox(out, 1);
-  const pad = 4;
+  const pad = MARGIN_PX;
   const x0 = Math.max(0, box.x0 - pad), y0 = Math.max(0, box.y0 - pad);
   const cropped = crop(out, { x0, y0, x1: Math.min(W2 - 1, box.x1 + pad), y1: Math.min(H2 - 1, box.y1 + pad) });
   const px = (p) => { const [x, y] = F.px(p); return [x / SS - x0, y / SS - y0]; };
@@ -151,11 +160,13 @@ export function renderBoard(group, { extra = [] } = {}) {
 }
 
 // The GM in its three states through one frame. `fit`: null for the yard (the yard's scale, the frame fitted to the
-// three states), or a square size in px for the page (the orb scaled to fill it).
+// three states and their anchor), or a square size in px for the page (the orb scaled to fill it, centred).
 export function renderGM(build, states, { fit = null, pad = 0.05 } = {}) {
   const objs = Object.fromEntries(states.map((s) => [s, build(s)]));
   for (const o of Object.values(objs)) o.updateMatrixWorld(true);
-  const sb = screenBox(Object.values(objs).flatMap(corners).concat([V(0, 0, 0)]));
+  // the yard's frame runs down to the point the GM hovers over (its anchor, inside the image); the page's frame is
+  // the orb alone, centred
+  const sb = screenBox(Object.values(objs).flatMap(corners).concat(fit ? [] : [V(0, 0, 0)]));
   let F, ppmOut;
   if (fit) {
     const span = Math.max(sb.x1 - sb.x0, sb.y1 - sb.y0) + 2 * pad;

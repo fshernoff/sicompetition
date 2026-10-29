@@ -9,13 +9,14 @@ export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 // x is three's -Z and its y is three's -X (a proper rotation, so nothing is mirrored).
 export const W = (x, y, h = 0) => V(-y, h, -x);
 
-// A stable hash in [0, 1) from integers, so the same model rendered twice has the same facets.
+// A stable hash in [0, 1) from integers, so the same model rendered twice has the same facets. (Spike B's version left
+// `h` a signed 32-bit int after the last xor, so it returned (-1, 1) and every jitter leaned negative; kept unsigned.)
 export function hash(...n) {
   let h = 2166136261 >>> 0;
   for (const v of n) {
-    h ^= (v * 2654435761) >>> 0;
+    h = (h ^ ((v * 2654435761) >>> 0)) >>> 0;
     h = Math.imul(h, 16777619) >>> 0;
-    h ^= h >>> 13;
+    h = (h ^ (h >>> 13)) >>> 0;
   }
   return (h % 1000003) / 1000003;
 }

@@ -52,8 +52,10 @@ const roofShade = (p, n) => {
 const sideShade = (p) => 0.84 + 0.16 * sstep(-SLAB.depth, -0.08, p.y);
 
 // --- the parts --------------------------------------------------------------------------------------------------
+const JIT = 0.36; // the in-plane jitter of the ground grids, as a fraction of a cell (plus or minus half of it)
+
 function lawn() {
-  const m = new Mesher({ toneJitter: 0.025, seed: 3, shade: groundShade });
+  const m = new Mesher({ toneJitter: 0.018, seed: 3, shade: groundShade });
   const c = TILE / 8;
   const xs = [], ys = [];
   for (let i = 0; i * c < X - 1e-6; i++) xs.push(i * c);
@@ -61,8 +63,14 @@ function lawn() {
   for (let j = 0; j * c < Y - 1e-6; j++) ys.push(j * c);
   ys.push(Y, LAWN_Y1);
   const onLine = (i, n) => i === 0 || i >= n - 2 || i % 8 === 0;
-  const hgt = (i, j) => (onLine(i, xs.length) || onLine(j, ys.length) ? 0 : (hash(i, j, 9) - 0.5) * 0.02);
-  const P = (i, j) => W(xs[i], ys[j], hgt(i, j));
+  const hgt = (i, j) => (onLine(i, xs.length) || onLine(j, ys.length) ? 0 : (hash(i, j, 9) - 0.5) * 0.014);
+  // Each vertex off the tile lines moves a little in the plane too: a regular grid's diagonals run exactly up the
+  // screen in a 2:1 view, and a column of them reads as a straight, pasted-on step. The tile lines stay straight. At
+  // most 0.18 of a cell along each axis, so every cell stays convex and its two triangles cover it without a gap.
+  const P = (i, j) => W(
+    xs[i] + (onLine(i, xs.length) ? 0 : (hash(i, j, 21) - 0.5) * JIT * c),
+    ys[j] + (onLine(j, ys.length) ? 0 : (hash(i, j, 22) - 0.5) * JIT * c),
+    hgt(i, j));
   const up = V(0, 1, 0);
   for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) {
     const xm = (xs[i] + xs[i + 1]) / 2, ym = (ys[j] + ys[j + 1]) / 2;
@@ -80,7 +88,7 @@ function lawn() {
 // The garden outside the fence: behind the left-back fence round the clubhouse, and beyond the side path's end
 // outside the right-back fence. One darker green, faceted like the lawn.
 function garden() {
-  const m = new Mesher({ toneJitter: 0.035, seed: 5, shade: groundShade });
+  const m = new Mesher({ toneJitter: 0.025, seed: 5, shade: groundShade });
   const c = TILE / 8, up = V(0, 1, 0);
   const area = (x0, x1, y0, y1, seed) => {
     const xs = [], ys = [];
@@ -88,11 +96,14 @@ function garden() {
     xs.push(x1);
     for (let y = y0; y < y1 - 1e-6; y += c) ys.push(y);
     ys.push(y1);
-    const edge = (i, j) => i === 0 || i === xs.length - 1 || j === 0 || j === ys.length - 1;
-    const P = (i, j) => W(xs[i], ys[j], edge(i, j) ? 0 : (hash(seed, i, j, 19) - 0.5) * 0.02);
+    const ei = (i) => i === 0 || i === xs.length - 1, ej = (j) => j === 0 || j === ys.length - 1;
+    const P = (i, j) => W(
+      xs[i] + (ei(i) ? 0 : (hash(seed, i, j, 23) - 0.5) * JIT * c),
+      ys[j] + (ej(j) ? 0 : (hash(seed, i, j, 24) - 0.5) * JIT * c),
+      ei(i) || ej(j) ? 0 : (hash(seed, i, j, 19) - 0.5) * 0.014);
     for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) {
       const xm = (xs[i] + xs[i + 1]) / 2, ym = (ys[j] + ys[j + 1]) / 2;
-      if (xm > CLUB.x0 - 0.02 && xm < CLUB.x1 + 0.02 && ym > CLUB.y0 && ym < CLUB.y1 + 0.02) continue; // under the clubhouse
+      // (the garden runs on under the clubhouse: skipping cells there left slivers of nothing at its edges)
       const clr = C.garden.clone().multiplyScalar(1 + (noise2(xm / 1.2, ym / 1.2, 7) - 0.5) * 0.08);
       const a = P(i, j), b = P(i + 1, j), cc = P(i + 1, j + 1), d = P(i, j + 1);
       if (hash(seed, i, j, 12) > 0.5) { m.tri(a, b, cc, clr, up); m.tri(a, cc, d, clr, up); }
@@ -328,12 +339,9 @@ function plants() {
   const roundBush = (x, y, r, h, seed) => {
     const base = W(x, y, 0);
     const clr = (c) => (c.y > base.y + h * 0.55 ? C.bush : C.bushDark);
-    blob(m, W(x, y, h * 0.48), [r, h * 0.52, r], clr, { detail: 1, jitter: 0.09, seed });
-    // two smaller lobes so the outline is not a sphere
-    for (const [k, f] of [[1, 0.62], [2, 0.5]]) {
-      const a = hash(seed, k) * Math.PI * 2;
-      blob(m, W(x + Math.cos(a) * r * 0.4, y + Math.sin(a) * r * 0.4, h * (0.5 + 0.12 * k)), [r * f, h * 0.36 * f / 0.62, r * f], clr, { detail: 1, jitter: 0.1, seed: seed + k });
-    }
+    // one rounded body and a crown lobe inside its outline: round, never notched
+    blob(m, W(x, y, h * 0.48), [r, h * 0.5, r], clr, { detail: 1, jitter: 0.05, seed });
+    blob(m, W(x, y, h * 0.62), [r * 0.74, h * 0.36, r * 0.74], clr, { detail: 1, jitter: 0.05, seed: seed + 1 });
   };
   const coneBush = (x, y, r, h, h0, seed) => {
     const base = W(x, y, h0);

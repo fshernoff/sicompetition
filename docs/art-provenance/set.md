@@ -13,16 +13,26 @@ generated part: `docs/art-provenance/README.md`).
 
 | File (`src/assets/art/`) | What | Size | Bytes | SHA-256 (first 12) |
 |---|---|---|---|---|
-| `set/board.webp` | the board, with its key-light shadows and its soft shadow on the page | 2317 × 1427 | 126,898 | `aa6b4e08f07f` |
-| `set/gm-ready.webp` | the GM getting ready: the band turned low | 144 × 272 | 2,548 | `b1b8da603706` |
-| `set/gm-running.webp` | the GM running the week: the band lit | 144 × 272 | 3,158 | `29701128ce03` |
-| `set/gm-done.webp` | the week is over: lit, settled lower, a ring of light settled under it | 144 × 272 | 5,370 | `1907734cb8d2` |
-| `set/gm-page-ready.webp`, `set/gm-page-running.webp`, `set/gm-page-done.webp` | the same three at the page's size (64 CSS px), for the status line | 128 × 128 | 2,406; 2,926; 4,392 | `82dc10ba9d63`, `e53d6dbde511`, `41e6d014175c` |
-| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 3,285 | `9110f6b570e4` |
+| `set/board.webp` | the board, with its key-light shadows and its soft shadow on the page; 24 px of clear transparency on every side | 2395 × 1467 | 118,610 | `52b91d3d8813` |
+| `set/gm-ready.webp` | the GM getting ready: the amber band turned low | 114 × 240 | 2,446 | `fe2d83398fc1` |
+| `set/gm-running.webp` | the GM running the week: the amber band lit | 114 × 240 | 3,104 | `17348d3a544a` |
+| `set/gm-done.webp` | the week is over: the band lit green | 114 × 240 | 2,766 | `a45aa92689db` |
+| `set/gm-page-ready.webp`, `set/gm-page-running.webp`, `set/gm-page-done.webp` | the same three at the page's size (64 CSS px), for the status line, the orb centred | 128 × 128 | 2,200; 2,724; 2,520 | `d4b7bfb2b2d9`, `23e8fa0b7bc1`, `50c2056da31a` |
+| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 3,427 | `516b986a9dce` |
 
 Every image is at 2× the yard's CSS size, lossy WebP with a real alpha channel. The hashes are this render's; the
 render is deterministic (two runs on Oct 28 gave byte-identical files), so a rerun on the same tools reproduces them.
 These are not D58 passes: the three readers' passes go in `qa.md`.
+
+**The second render (Oct 28, after the readers' first passes):** the lawn's straight vertical tone steps removed (a
+regular grid's diagonals run exactly up a 2:1 screen; the grid is now jittered within each cell, and a shadow-pass
+ordering bug that could lay the ground's soft shadow over a wall or a post is fixed); the seeded hash inherited from
+spike B fixed (it returned values from -1 to 1, so every jitter, facet tone and noise leaned dark; it now returns
+0 to 1), which changes every facet's tone slightly; the garden runs on under the clubhouse (skipping cells there left
+see-through slivers at its edges); the large hedge bush made round;
+the hedge moved clear of the clubhouse's edge (no cypress sliver); 24 px of clear transparency round the board, its
+page shadow included (the map and `gmSpot` moved with it); the done state made a green band, the orb in the same place
+in every state at both sizes, no ring; the page's orb centred.
 
 ## The tools
 
@@ -58,7 +68,8 @@ node Tools/Art/set/render.mjs cast     # the board with WP4a's cast (src/assets/
    245 px from the foot anchor to the crown at 152.4 px per vertical metre); a hedge
    behind the fence; a flagstone path along the open front-right edge (the walk) that turns the corner to the gate;
    on the lawn, against the back edges only, a bush in the back corner, a cone at the left corner, a bush on the
-   right-back fence, a planter by the door and a water bowl. The slab has square corners, a grass (or stone) lip and
+   right-back fence, a planter by the door and a water bowl. The hedge's every bush stands clear of the clubhouse's
+   edge on the screen, so none shows as a sliver beside it. The slab has square corners, a grass (or stone) lip and
    a soil edge.
 4. **The rule the plan keeps:** the yard draws every figure over the board, so nothing on the board may stand in front
    of a place a figure can stand. The clubhouse and the hedge are behind the lawn; the lawn behind each prop (where a
@@ -66,8 +77,10 @@ node Tools/Art/set/render.mjs cast     # the board with WP4a's cast (src/assets/
    stand (the lawn inside the margin and off `blocked`, every 0.15 m, and the walk strip), 25 rays each toward the
    camera from a figure's volume (to 0.6 m either side on the screen and 0.9 m up for a dog, 0.25 m and 1.8 m for the
    crew): **0 hit** the fence, the clubhouse, the plants or the props.
-5. **The models** (`src/board.js`, `src/gm.js`): flat-shaded, vertex-coloured triangles (10,402 for the board). Denser
-   facets than spike B (lawn cells of 0.15 m, heights jittered ±1 cm), bushes as jittered faceted lobes, the fence
+5. **The models** (`src/board.js`, `src/gm.js`): flat-shaded, vertex-coloured triangles (10,490 for the board). Denser
+   facets than spike B (lawn cells of 0.15 m, heights jittered ±0.7 cm, each vertex off the tile lines moved up to
+   0.18 of a cell in the plane, so no cell diagonal runs straight up the screen and every cell stays convex; the tile
+   lines stay straight), round bushes as one body and a crown lobe inside its outline, the fence
    board by board, the clubhouse plank by plank with a plinth, a parapet roof in panels, a panelled door with a lever
    handle and a step, a two-pane window with a sill. **Soft occlusion is baked** into the vertex colours: the ground
    darkens toward the clubhouse, the fence, the bushes, the planter and the bowl; walls and posts darken where they
@@ -75,30 +88,40 @@ node Tools/Art/set/render.mjs cast     # the board with WP4a's cast (src/assets/
 6. **The board's render** (`src/render.js`): a colour pass; the key light's shadows on the lawn and the path as a
    separate mask, blurred (1.6 px at 1×) and laid on at 30% in a deep green-black, kept to the ground; the grade
    (contrast 0.95, saturation 0.97, a touch warmer); the slab's own shadow on the page under it, softer and lighter
-   (16%), so it reads on a light page and vanishes on a dark one; trimmed to its alpha with 4 px to spare.
+   (16%), so it reads on a light page and vanishes on a dark one; the frame holds that shadow's whole footprint and
+   blur, and the image is trimmed to its faintest pixel with 24 px of clear transparency on every side. In the mask
+   passes every depth-only occluder is drawn before the ground, so no mask (and no shadow) shows through a wall or a
+   post.
 7. **The GM** (`src/gm.js`): a faceted charcoal icosphere cut at its equator. The cut's vertices are put on one exact
    circle, a skirt closes the rim and the band is built on the rim's own polygon, so the band's edges are the shells'
    edges exactly (spike B's band showed notches at 8×); the band is unlit, its light on the nearest facets is baked
-   into their colours, and there is no 2D glow round it (spike B's haze could read as a halo). Ready: the band turned
-   low (`#7C5A26`), a faint warmth beside it. Running: the band lit (`#FFB21E`) with a hot core line. Done: lit as
-   running, the orb settled from 0.85 m to 0.40 m over its spot, and a crisp ring of the band's light flat on the
-   surface under it: no face, no halo above or round it, no arrow or chevron (never "up"). The yard's three share one
-   frame and one anchor (the point it hovers over, on the roof at `gmSpot`); the page's three share one 128 px frame
-   with the orb in the same place, hovering 0.08 m so it fills the frame. The GM's grade is lighter (contrast 0.96).
+   into their colours, and there is no 2D glow round it (spike B's haze could read as a halo). Ready: the amber band
+   turned low (`#7C5A26`), a faint warmth beside it. Running: the amber band lit (`#FFB21E`) with a hot core line.
+   Done: the band lit green (`#34A866`, the page's ok green a little brighter so it reads lit, with a pale core and its
+   light on the nearest facets, the same finish as the amber): the status light's convention, amber working and green
+   done, which also differs from amber in lightness for a colour-blind viewer; no face, no halo, no ring, no arrow or
+   chevron (never "up"). The orb is in the same place in every state, 0.85 m over its spot. The yard's three share one
+   frame and one anchor (the point it hovers over, on the roof at `gmSpot`, inside the image); the page's three share
+   one 128 px frame with the orb centred. The GM's grade is lighter (contrast 0.96).
 8. **The map** (`set.json`): `origin` is the image pixel of the lawn's front corner, measured by projecting it through
    the render's own camera, as are `gmSpot` and the GM's anchors.
 
 ## The checks (the package's own, not D58's)
 
 - `Tools/Agent/art_qa.py` on every shipped image (crops on cream and near-black in `Temp/set/qa/`, and native 2×
-  tiles of the board in `Temp/set/qa/board-tiles/`): the board 1 figure and 0 specks; each GM 1 figure and 0 specks,
-  `gm-done` 2 (the orb and its ring, by design). Partly transparent edge pixels much darker than their opaque
-  neighbour: 0 on the board; 6 to 10 on the GM, where the charcoal orb's own edge meets its lit band, not a halo.
+  tiles of the board in `Temp/set/qa/board-tiles/`): the board 1 figure and 0 specks; each GM 1 figure and 0 specks.
+  Partly transparent edge pixels much darker than their opaque neighbour: 1 of 50,842 on the board (a fence board's
+  antialiased edge); 0 to 9 on the GM, where the charcoal orb's own edge meets its lit band, not a halo.
+- Hard vertical tone steps on the ground (a jump of 3 or more in luma across 2 px, flat on both sides, held for 30
+  rows or more, on the lawn, garden and path only, by the render's own ground mask): **0** (the first render had them
+  on the lawn). See-through pixels inside the slab's top (its projected outline, 3 px in): **0** of 1,263,831. Clear
+  transparency round the board: 24, 24, 24 and 24 px. The page GMs: the orb 16 px from the top and the bottom, 20
+  from each side.
 - The composites with spike A's cast (the hybrid's, scaled by 1.0484 to spike B's corgi), placed **by `set.json`'s map
   alone**, with the hybrid's code shadows: `Temp/set/composite-packed-{1x,2x}.png` (18 dogs, the crew, the GM running;
   2 touching pixels at 1×, antialiasing), `composite-walk-{1x,2x}.png` (12 on the lawn, 6 and the crew in a file on the
   path, the GM done; 0 touching), `composite-ready-{1x,2x}.png` (the crew alone, the GM getting ready), and
-  `composite-page-fit.png` (the board fitted to the page's yard at 1366 × 768: 0.70 of its 1×).
+  `composite-page-fit.png` (the board fitted to the page's yard at 1366 × 768: 0.68 of its 1×).
 - The same with WP4a's cast as it stood on Oct 28 (`cast.json`, the same 176 px per metre, no factor):
   `Temp/set/composite-cast-{1x,2x}.png`, 18 dogs of every breed and the crew, 0 touching pixels.
 - The GM on the page's surfaces: `Temp/set/gm-page-sheet.png` (white, the steel page, the navy bar, at 1× and 2×),

@@ -31,6 +31,13 @@ export function board({ quality = 0.9 } = {}) {
   };
 }
 
+// The board's layers before they are combined (a diagnostic for the art QA).
+export function boardLayers() {
+  const layers = {};
+  renderBoard(buildBoard(), { layers });
+  return Object.fromEntries(Object.entries(layers).map(([k, c]) => [k, png(c)]));
+}
+
 const STATES = ['ready', 'running', 'done'];
 
 // The yard's GM: the yard's scale (2x), one frame for the three states, anchored on the point it hovers over.
@@ -42,10 +49,9 @@ export function gmYard({ quality = 0.92 } = {}) {
   }));
 }
 
-// The page's GM: `fit` px square (2x of the page's size), a lower hover for all three so the orb fills the frame and
-// stays put between states; the done ring under it.
+// The page's GM: `fit` px square (2x of the page's size), the orb centred in it, in the same place in every state.
 export function gmPage({ fit = 128, quality = 0.92 } = {}) {
-  const r = renderGM((s) => buildGM(s, { hover: 0.08 }), STATES, { fit, pad: 0.02 });
+  const r = renderGM((s) => buildGM(s), STATES, { fit, pad: 0.1 });
   return Object.fromEntries(STATES.map((s) => {
     const x = r.states[s];
     return [s, { png: png(x.canvas), webp: webp(x.canvas, quality), size: x.size, anchor: x.anchor.map(r2) }];
@@ -180,7 +186,7 @@ export async function compose({ k = 0.5, boardFile, map, gmSpot, figures, gm, bg
     const rw = GM.r * PPM * SPRITE_SCALE * k * 1.05;
     const e = canvas2d(Wc, Hc), eg = e.getContext('2d');
     eg.filter = `blur(${5 * k * 2}px)`;
-    eg.fillStyle = `rgba(20, 22, 26, ${gm.state === 'done' ? 0.34 : 0.26})`;
+    eg.fillStyle = 'rgba(20, 22, 26, 0.26)';
     eg.beginPath(); eg.ellipse(sx, sy, rw, rw * 0.5, 0, 0, Math.PI * 2); eg.fill();
     g.drawImage(e, 0, 0);
     g.drawImage(img, sx - gm.anchor[0] * k, sy - gm.anchor[1] * k, img.width * k, img.height * k);

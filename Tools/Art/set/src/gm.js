@@ -1,16 +1,19 @@
 // The GM: a faceted charcoal orb split by one band of amber light (D59), from spike B, reworked for G5d's three states
 // (the status line's three; gate 7):
-//   ready   the GM is getting ready: the band turned low, a faint warmth beside it.
-//   running the GM is running the week: the band bright, a hot core line, its light on the shell's nearest facets.
-//   done    the week is over: bright as running, the orb settled lower, a ring of light settled on the surface under it.
-// No face, no limbs, no halo (nothing above or around the head), no chevron or arrow (never "up"). The band's edges
-// are the shell's cut edges: crisp, with no 2D glow laid round them.
+//   ready   the GM is getting ready: the amber band turned low, a faint warmth beside it.
+//   running the GM is running the week: the amber band lit, a hot core line, its light on the shell's nearest facets.
+//   done    the week is over: the band lit steady green, the status light's "done", in the same finish as the amber.
+// The orb is in the same place in every state. No face, no limbs, no halo, no ring, no chevron or arrow (never "up").
+// The band's edges are the shell's cut edges: crisp, with no 2D glow laid round them.
 import * as THREE from 'three';
 import { V, hash, sstep } from './lib.js';
 
-export const GM = { r: 0.27, gap: 0.05, hover: 0.85, hoverDone: 0.4, ring: [0.31, 0.355] };
+export const GM = { r: 0.27, gap: 0.05, hover: 0.85 };
 const AMBER = new THREE.Color('#FFB21E');
 const CORE = new THREE.Color('#FFE2A6');
+// the page's ok green as a light: the band a little brighter than #2E8B57 so it reads lit, its core pale
+const GREEN = new THREE.Color('#34A866');
+const GREEN_CORE = new THREE.Color('#BDF2D0');
 const DIM = new THREE.Color('#7C5A26');
 const SHELL = [new THREE.Color('#3B4047'), new THREE.Color('#4B5159')];
 const CUT = new THREE.Color('#141518');
@@ -77,30 +80,25 @@ function band(ring, scale, half, color) {
   return new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
 }
 
-// The GM in a state, its ground point (the point it hovers over) at the origin. `hover` overrides the state's height.
+// The GM in a state, its ground point (the point it hovers over) at the origin, hovering `hover` metres above it (the
+// same in every state).
 export function buildGM(state = 'running', { hover } = {}) {
   const bright = state !== 'ready';
   const g = new THREE.Group();
   const orb = new THREE.Group();
-  // ready: the band turned low, a faint warmth on the facets beside it; running and done: the band lit
-  const upper = bright ? shell(true, 0.5) : shell(true, 0.14, DIM), lower = bright ? shell(false, 0.42) : shell(false, 0.12, DIM);
+  // ready: the band turned low, a faint warmth beside it; running: amber lit; done: green lit, the same way
+  const light = state === 'done' ? GREEN : AMBER, core = state === 'done' ? GREEN_CORE : CORE;
+  const upper = bright ? shell(true, 0.5, light) : shell(true, 0.14, DIM);
+  const lower = bright ? shell(false, 0.42, light) : shell(false, 0.12, DIM);
   orb.add(upper.mesh, lower.mesh);
   const g2 = GM.gap / 2;
   if (bright) {
-    orb.add(band(upper.ring, 0.997, g2, AMBER));
-    orb.add(band(upper.ring, 0.999, g2 * 0.34, CORE)); // the hot core line in the band's middle
+    orb.add(band(upper.ring, 0.997, g2, light));
+    orb.add(band(upper.ring, 0.999, g2 * 0.34, core)); // the hot core line in the band's middle
   } else {
     orb.add(band(upper.ring, 0.997, g2, DIM));
   }
-  const h = hover ?? (state === 'done' ? GM.hoverDone : GM.hover);
-  orb.position.y = h + GM.r;
+  orb.position.y = (hover ?? GM.hover) + GM.r;
   g.add(orb);
-  if (state === 'done') {
-    // the settled ring: flat on the surface under the orb, the band's colour, crisp
-    const ring = new THREE.Mesh(new THREE.RingGeometry(GM.ring[0], GM.ring[1], 96, 1), new THREE.MeshBasicMaterial({ color: AMBER, side: THREE.DoubleSide }));
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.002;
-    g.add(ring);
-  }
   return g;
 }

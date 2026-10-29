@@ -158,3 +158,60 @@ branch.
 | cast/crew2-leash.webp | 5d9261ba81b5 | main thread | 2026-10-28 | clean | at 2× the image (4× the page) on cream and near-black: an adult man, two arms and hands coherent on the leash, two legs, uniform continuous, no halo, no text |
 | cast/crew2-ball.webp | 5b1feea92c5f | main thread | 2026-10-28 | clean | at 2× the image (4× the page) on cream and near-black: an adult man, two arms and hands coherent on the ball, two legs, uniform continuous, no halo, no text |
 | cast/crew2-mop.webp | 3c066a3eab13 | main thread | 2026-10-28 | clean | at 2× the image (4× the page) on cream and near-black: an adult man, two arms and hands coherent on the mop, two legs, uniform continuous, no halo, no text |
+| cast/corgi-red-moving.webp | 9cf34cbd5a52 | Sonnet | 2026-10-28 | defect: only three legs show (far foreleg missing); tail is a long plume, inconsistent with the stub tail in sitting and asleep | the 2× crops |
+| cast/corgi-red-sitting.webp | 5fec9681b0ab | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/corgi-red-asleep.webp | 75f4ef24b9e1 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/corgi-sable-moving.webp | 033b668205c6 | Sonnet | 2026-10-28 | defect: only three legs show (far foreleg missing); tail is a long plume, inconsistent with the stub tail in sitting and asleep | the 2× crops |
+| cast/corgi-sable-sitting.webp | 598bad029eec | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/corgi-sable-asleep.webp | e8c21402c6f7 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/beagle-tricolour-moving.webp | c51424097ea4 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/beagle-tricolour-sitting.webp | d2f6d4749dcc | Sonnet | 2026-10-28 | defect: far hind paw shows as a grey/orange stub between the front legs (about x70-75, y55-65) | the 2× crops |
+| cast/beagle-tricolour-asleep.webp | de188d479fd7 | Sonnet | 2026-10-28 | defect: small light speck and notch on the back near the hip (about x28, y17) | the 2× crops |
+| cast/beagle-tan-moving.webp | 68a246d3740f | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/beagle-tan-sitting.webp | 389adf871597 | Sonnet | 2026-10-28 | defect: leftover dark grey saddle patch on the shoulder (about x66, y37); far hind paw stub between the front legs | the 2× crops |
+| cast/beagle-tan-asleep.webp | 6bddb4d9ce24 | Sonnet | 2026-10-28 | defect: light/grey speck by the hip (about x28, y17); a leftover dark wedge near the neck (about x70, y8) | the 2× crops |
+| cast/collie-black-moving.webp | c296c9a98938 | Sonnet | 2026-10-28 | defect: pink speck on the underbelly (about x109, y85) | the 2× crops |
+| cast/collie-black-sitting.webp | e276b5c2ba6f | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/collie-black-asleep.webp | 0f9302fe8f61 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/collie-red-moving.webp | 40ee259f6868 | Sonnet | 2026-10-28 | defect: pink speck on the underbelly (about x109, y85) | the 2× crops |
+| cast/collie-red-sitting.webp | b8e3cc5677e2 | Sonnet | 2026-10-28 | defect: black sliver on the right edge of the white chest (about x82, y81) on a red coat | the 2× crops |
+| cast/collie-red-asleep.webp | b68a624cf019 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/poodle-brown-moving.webp | 754c38912cde | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/poodle-brown-sitting.webp | 2eeb7a3b5e92 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/poodle-brown-asleep.webp | a777c5b9cad7 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/poodle-black-moving.webp | 47ff2b2a063e | Sonnet | 2026-10-28 | defect: olive/yellow fringe along the near hind leg on dark (about x65, y91-97) | the 2× crops |
+| cast/poodle-black-sitting.webp | a87ec6d596c6 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/poodle-black-asleep.webp | 33ff501640e6 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/poodle-cream-moving.webp | 2e24cc234ae9 | Sonnet | 2026-10-28 | defect: light halo/rim along the top contour, on cream and dark | the 2× crops |
+| cast/poodle-cream-sitting.webp | 3466b55725fa | Sonnet | 2026-10-28 | defect: light halo/rim along the top contour, on cream and dark | the 2× crops |
+| cast/poodle-cream-asleep.webp | 68a264772b1d | Sonnet | 2026-10-28 | defect: light halo/rim along the top contour, on cream and dark | the 2× crops |
+| cast/lab-black-moving.webp | 5ff67276e9a5 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/lab-black-sitting.webp | 1ce903e286cc | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/lab-black-asleep.webp | 7ab236e055ae | Sonnet | 2026-10-28 | defect: dark hook/drip below the far ear at the right edge (about x156, y64) | the 2× crops |
+| cast/lab-chocolate-moving.webp | daec0ae37f77 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/lab-chocolate-sitting.webp | 5824fd2b65ef | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/lab-chocolate-asleep.webp | 9ed4a79a7d2f | Sonnet | 2026-10-28 | defect: dark hook/drip below the far ear at the right edge (about x156, y64) | the 2× crops |
+| cast/lab-yellow-moving.webp | 99957d42c4ac | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/lab-yellow-sitting.webp | dabb64aacb5c | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/lab-yellow-asleep.webp | 9d38fdc9f769 | Sonnet | 2026-10-28 | defect: dark hook/drip below the far ear at the right edge (about x156, y64) | the 2× crops |
+| cast/golden-gold-moving.webp | be47e00b8ae6 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/golden-gold-sitting.webp | 15d321073c58 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/golden-gold-asleep.webp | b782e45e2977 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/golden-red-moving.webp | ba78d64ebea1 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/golden-red-sitting.webp | 0ec8c1ff2a1d | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/golden-red-asleep.webp | d122851c6ce3 | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/crew-leash.webp | db4af6a5305f | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/crew-ball.webp | 0cdad6f48b5d | Sonnet | 2026-10-28 | clean | the 2× crops |
+| cast/crew-mop.webp | 0e9a69e045e9 | Sonnet | 2026-10-28 | clean | the 2× crops |
+
+Second render of the set (WP4b, after the readers' findings):
+
+| file | sha | reader | date | verdict | notes |
+|---|---|---|---|---|---|
+| set/board.webp | 52b91d3d8813 | main thread | 2026-10-29 | clean | native pixels (2× the page) in four quadrants on cream: no lawn steps, round bushes, both cypresses whole, path, gate, soil edge coherent, 24 px margin |
+| set/gm-ready.webp | fe2d83398fc1 | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
+| set/gm-running.webp | 17348d3a544a | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
+| set/gm-done.webp | a45aa92689db | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
+| set/gm-page-ready.webp | d4b7bfb2b2d9 | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
+| set/gm-page-running.webp | 23e8fa0b7bc1 | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
+| set/gm-page-done.webp | 50c2056da31a | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |

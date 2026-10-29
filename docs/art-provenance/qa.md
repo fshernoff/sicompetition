@@ -215,3 +215,17 @@ Second render of the set (WP4b, after the readers' findings):
 | set/gm-page-ready.webp | d4b7bfb2b2d9 | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
 | set/gm-page-running.webp | 23e8fa0b7bc1 | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
 | set/gm-page-done.webp | 50c2056da31a | main thread | 2026-10-29 | clean | at 2× the image on cream and white: the orb in the same place in all states; dim amber, bright amber, green done; band edge clean; no ring, face or halo |
+| set/board.webp | 52b91d3d8813 | Astra | 2026-10-29 | clean | the second render: full image and the 2× crops |
+| set/gm-ready.webp | fe2d83398fc1 | Astra | 2026-10-29 | clean | the second render: full image and the 2× crops |
+| set/gm-running.webp | 17348d3a544a | Astra | 2026-10-29 | clean | the second render: full image and the 2× crops |
+| set/gm-done.webp | a45aa92689db | Astra | 2026-10-29 | clean | the second render: full image and the 2× crops |
+| set/gm-page-ready.webp | d4b7bfb2b2d9 | Astra | 2026-10-29 | clean | the second render: full image and the 2× crops |
+| set/gm-page-running.webp | 23e8fa0b7bc1 | Astra | 2026-10-29 | clean | the second render: full image and the 2× crops |
+| set/gm-page-done.webp | 50c2056da31a | Astra | 2026-10-29 | clean | the second render: full image and the 2× crops |
+| set/board.webp | 52b91d3d8813 | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks; minor: a 1 px hairline at 87-94% alpha along the path's front curb, visible only on magenta |
+| set/gm-ready.webp | fe2d83398fc1 | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
+| set/gm-running.webp | 17348d3a544a | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
+| set/gm-done.webp | a45aa92689db | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
+| set/gm-page-ready.webp | d4b7bfb2b2d9 | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
+| set/gm-page-running.webp | 23e8fa0b7bc1 | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
+| set/gm-page-done.webp | 50c2056da31a | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |

@@ -1,0 +1,33 @@
+{
+  "_about": "One subject per image call. A dog's prompt is pre.txt + dog.txt with {BREED}, {TAIL_TROT} and {TAIL_SLEEP} filled from here + post.txt + 'Landscape 3:2.'; the crew's is pre.txt + crew.txt + post.txt + 'Landscape 3:2.'. make_prompt.py writes the exact text sent. The Lab's paragraph is the one its shipping call (cast-lab-3) used; the two rejected Lab calls' texts are verbatim in docs/art-provenance/cast/README.md.",
+  "golden": {
+    "breed": "golden retriever, the same breed and finish as the goldens in key.png (a medium warm golden coat, not orange and not cream, soft drop ears, a dark nose, feathering on the chest, the backs of the legs and a long tail)",
+    "tail_trot": ", the feathered tail carried level out behind",
+    "tail_sleep": ", the feathered tail curled along its body"
+  },
+  "corgi": {
+    "breed": "Pembroke Welsh corgi, the same breed and finish as the corgis in key.png (red and white: a warm orange-tan back, head and ears, a white chest, a white muzzle and blaze, white legs and paws; a long low body on short legs, large upright pointed ears, a short fluffy tail), with an adult head in proportion to its body, not oversized",
+    "tail_trot": ", the short tail up",
+    "tail_sleep": ""
+  },
+  "collie": {
+    "breed": "border collie, the same breed and finish as the black-and-white collie in key.png (a black body, head and ears, a white blaze down the middle of the face, a white muzzle, a white ruff round the neck and chest, white legs and paws, a white tail tip; ears half up with the tips folded forward; a medium-length coat; a lean athletic body)",
+    "tail_trot": ", the long feathered tail carried low behind",
+    "tail_sleep": ", the long tail wrapped round its body"
+  },
+  "beagle": {
+    "breed": "beagle, the same breed and finish as the beagle in key.png (tricolour: a black saddle over the back, a tan head, tan ears and tan sides, a white muzzle, a white chest, white legs and paws and a white tail tip; long soft drop ears; a sturdy compact body on straight legs)",
+    "tail_trot": ", the tail carried up with its white tip",
+    "tail_sleep": ", the tail along its body"
+  },
+  "poodle": {
+    "breed": "standard poodle (a large poodle, not a toy), the same breed and finish as the brown poodle in key.png (a medium chocolate-brown curly coat in a lamb clip: the same short length all over the body and legs, a rounded topknot on the head, long curly drop ears, a narrow muzzle, a straight tail carried up with a round pom-pom at its tip; long legs and an elegant square build)",
+    "tail_trot": ", the tail up",
+    "tail_sleep": ""
+  },
+  "lab": {
+    "breed": "Labrador retriever, a black Lab, in the same finish as the dogs in key.png but NOT a golden retriever: a sleek, smooth, short black coat that lies flat, with no feathering or long hair anywhere (none on the tail, the legs, the chest or the ears); a broad blocky head with a clear stop, a wide muzzle and short drop ears; a thick otter tail: wide at the base, short-haired, smooth and rounded, tapering to a point like a rudder, never fluffy or plumed; a sturdy, deep-chested, athletic build. The black coat still shows its flat triangular facets in dark charcoal greys, lit from the upper left as in key.png",
+    "tail_trot": ", the smooth otter tail carried level out behind",
+    "tail_sleep": ", the smooth otter tail lying along its body"
+  }
+}

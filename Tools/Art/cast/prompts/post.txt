@@ -1,0 +1,1 @@
+Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs.

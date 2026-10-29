@@ -1,8 +1,9 @@
 # Art QA ledger (D58)
 
 Every image in `src/assets/art/` ships only with three clean passes on these exact bytes: one by the main thread,
-one by Astra, one by a fresh Sonnet agent. Each reader works from `Tools/Agent/art_qa.py` crops (every figure at 2×
-or more, on cream and on near-black), never from the page or a downscaled view, against the checklist in D58:
+one by Astra, one by a fresh Sonnet agent. Each reader sees every figure at least twice the size the page draws it (the images are made at 2× the page's
+size, so the image's own pixels count; `Tools/Agent/art_qa.py` crops are 2× more), on cream and on near-black,
+never only from the page or a downscaled view, against the checklist in D58:
 
 - every animal: one head, two eyes, two ears, one nose, one mouth, four legs with one paw each, one tail (or none, by
   breed), no merged or doubled parts, the breed readable;
@@ -33,3 +34,127 @@ branch.
 | fallback: hero-yard.webp | cf71a19dc0e0 | Sonnet | 2026-10-28 | clean | no figures; no text; one finish; notes the fence's slight bow and the baked cream fade |
 | fallback: hero-yard.webp | cf71a19dc0e0 | Astra | 2026-10-28 | defect: scenery cut at the left and right edges | the checklist's "nothing cut off" read literally; Astra found the rest clean and proposed the wording now in the checklist; re-run below |
 | fallback: hero-yard.webp | cf71a19dc0e0 | Astra | 2026-10-28 | clean | re-run with the edge rule clarified (scenery may run off the frame); no figures, no text, one finish |
+
+## G5d: the set and the GM (WP4b, modelled in code, rendered offline)
+
+| file | sha | reader | date | verdict | notes |
+|---|---|---|---|---|---|
+| set/board.webp | aa6b4e08f07f | main thread | 2026-10-28 | clean | full image at 0.86×, door, planter and gate at 2× on cream: clubhouse, fence, gate, bushes, bowl, path, soil edge coherent; square corners; no text; no figure; no halo |
+| set/gm-ready.webp | b1b8da603706 | main thread | 2026-10-28 | clean | on cream and navy at 2×: faceted orb, band edge clean, no face, no halo; the state reads |
+| set/gm-running.webp | 29701128ce03 | main thread | 2026-10-28 | clean | on cream and navy at 2×: faceted orb, band edge clean, no face, no halo; the state reads |
+| set/gm-done.webp | 1907734cb8d2 | main thread | 2026-10-28 | clean | on cream and navy at 2×: the orb settled with a ring of light under it; band edge clean; no face, no halo above; low contrast on navy (use on the light rail) |
+| set/gm-page-ready.webp | 82dc10ba9d63 | main thread | 2026-10-28 | clean | on cream and navy at 2×: faceted orb, band edge clean, no face, no halo; the state reads |
+| set/gm-page-running.webp | e53d6dbde511 | main thread | 2026-10-28 | clean | on cream and navy at 2×: faceted orb, band edge clean, no face, no halo; the state reads |
+| set/gm-page-done.webp | 41e6d014175c | main thread | 2026-10-28 | clean | on cream and navy at 2×: the orb settled with a ring of light under it; band edge clean; no face, no halo above; low contrast on navy (use on the light rail) |
+
+## G5d: the cast (WP4a, generated)
+
+| file | sha | reader | date | verdict | notes |
+|---|---|---|---|---|---|
+| cast/corgi-red-moving.webp | 9cf34cbd5a52 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/corgi-red-sitting.webp | 5fec9681b0ab | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/corgi-red-asleep.webp | 75f4ef24b9e1 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/corgi-sable-moving.webp | 033b668205c6 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/corgi-sable-sitting.webp | 598bad029eec | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/corgi-sable-asleep.webp | e8c21402c6f7 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/beagle-tricolour-moving.webp | c51424097ea4 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/beagle-tricolour-sitting.webp | d2f6d4749dcc | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/beagle-tricolour-asleep.webp | de188d479fd7 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/beagle-tan-moving.webp | 68a246d3740f | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/beagle-tan-sitting.webp | 389adf871597 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/beagle-tan-asleep.webp | 6bddb4d9ce24 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/collie-black-moving.webp | c296c9a98938 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/collie-black-sitting.webp | e276b5c2ba6f | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/collie-black-asleep.webp | 0f9302fe8f61 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/collie-red-moving.webp | 40ee259f6868 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/collie-red-sitting.webp | b8e3cc5677e2 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/collie-red-asleep.webp | b68a624cf019 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-brown-moving.webp | 754c38912cde | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-brown-sitting.webp | 2eeb7a3b5e92 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-brown-asleep.webp | a777c5b9cad7 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-black-moving.webp | 47ff2b2a063e | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-black-sitting.webp | a87ec6d596c6 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-black-asleep.webp | 33ff501640e6 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-cream-moving.webp | 2e24cc234ae9 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-cream-sitting.webp | 3466b55725fa | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/poodle-cream-asleep.webp | 68a264772b1d | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-black-moving.webp | 5ff67276e9a5 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-black-sitting.webp | 1ce903e286cc | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-black-asleep.webp | 7ab236e055ae | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-chocolate-moving.webp | daec0ae37f77 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-chocolate-sitting.webp | 5824fd2b65ef | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-chocolate-asleep.webp | 9ed4a79a7d2f | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-yellow-moving.webp | 99957d42c4ac | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-yellow-sitting.webp | dabb64aacb5c | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/lab-yellow-asleep.webp | 9d38fdc9f769 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/golden-gold-moving.webp | be47e00b8ae6 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/golden-gold-sitting.webp | 15d321073c58 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/golden-gold-asleep.webp | b782e45e2977 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/golden-red-moving.webp | ba78d64ebea1 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/golden-red-sitting.webp | 0ec8c1ff2a1d | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/golden-red-asleep.webp | d122851c6ce3 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/crew-leash.webp | db4af6a5305f | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/crew-ball.webp | 0cdad6f48b5d | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| cast/crew-mop.webp | 0e9a69e045e9 | main thread | 2026-10-28 | clean | at the image's own size (2× the page) on cream and near-black, its breed's sheet: one head, the pose's legs and paws, the tail by breed, no halo, no text |
+| set/board.webp | aa6b4e08f07f | Astra | 2026-10-28 | defect: roof apex and left slab edge clipped; a coloured fringe under the lower-right slab | measured by the main thread: no opaque pixel on any edge (content from 5 px in), the "fringe" is the neutral drop shadow; the margin goes to 24 px in the re-render |
+| set/gm-ready.webp | b1b8da603706 | Astra | 2026-10-28 | clean |  |
+| set/gm-running.webp | 29701128ce03 | Astra | 2026-10-28 | clean |  |
+| set/gm-done.webp | 1907734cb8d2 | Astra | 2026-10-28 | defect: reads as running with a flat yellow selection ring underneath |  |
+| set/gm-page-ready.webp | 82dc10ba9d63 | Astra | 2026-10-28 | clean |  |
+| set/gm-page-running.webp | e53d6dbde511 | Astra | 2026-10-28 | clean |  |
+| set/gm-page-done.webp | 41e6d014175c | Astra | 2026-10-28 | defect: ambiguous done state; a flat selection-like ring over the lower orb, placed unlike gm-done |  |
+| set/board.webp | aa6b4e08f07f | Sonnet | 2026-10-28 | defect: hard vertical tone steps in the lawn under the back-right fence posts (x~1331, y~440-663) and beside the small bush (x~1400); the big back bush notched and chopped (x~740-870, y~170-300); a cypress sliver behind the clubhouse; the faint shadow clipped at the right edge | the main thread missed these at 0.86×: confirmed |
+| set/gm-ready.webp | b1b8da603706 | Sonnet | 2026-10-28 | clean |  |
+| set/gm-running.webp | 29701128ce03 | Sonnet | 2026-10-28 | clean |  |
+| set/gm-done.webp | 1907734cb8d2 | Sonnet | 2026-10-28 | defect: a flat unshaded ring (another finish); the orb 69 px lower than ready and running; the ring detached here and wrapping in the page size |  |
+| set/gm-page-ready.webp | 82dc10ba9d63 | Sonnet | 2026-10-28 | clean | layout: the orb sits at the top with 33 px empty below |
+| set/gm-page-running.webp | e53d6dbde511 | Sonnet | 2026-10-28 | clean |  |
+| set/gm-page-done.webp | 41e6d014175c | Sonnet | 2026-10-28 | defect: a flat ring wrapping the orb like a Saturn ring; differs from gm-done; done is only running plus a ring |  |
+| cast/corgi-red-moving.webp | 9cf34cbd5a52 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/corgi-red-sitting.webp | 5fec9681b0ab | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/corgi-red-asleep.webp | 75f4ef24b9e1 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/corgi-sable-moving.webp | 033b668205c6 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/corgi-sable-sitting.webp | 598bad029eec | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/corgi-sable-asleep.webp | e8c21402c6f7 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/beagle-tricolour-moving.webp | c51424097ea4 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/beagle-tricolour-sitting.webp | d2f6d4749dcc | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/beagle-tricolour-asleep.webp | de188d479fd7 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/beagle-tan-moving.webp | 68a246d3740f | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/beagle-tan-sitting.webp | 389adf871597 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/beagle-tan-asleep.webp | 6bddb4d9ce24 | Astra | 2026-10-28 | defect: gray recoloring residue on the upper back and beside the white shoulder collar. | the 2× crops and the breed sheets |
+| cast/collie-black-moving.webp | c296c9a98938 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/collie-black-sitting.webp | e276b5c2ba6f | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/collie-black-asleep.webp | 0f9302fe8f61 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/collie-red-moving.webp | 40ee259f6868 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/collie-red-sitting.webp | b8e3cc5677e2 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/collie-red-asleep.webp | b68a624cf019 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-brown-moving.webp | 754c38912cde | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-brown-sitting.webp | 2eeb7a3b5e92 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-brown-asleep.webp | a777c5b9cad7 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-black-moving.webp | 47ff2b2a063e | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-black-sitting.webp | a87ec6d596c6 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-black-asleep.webp | 33ff501640e6 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-cream-moving.webp | 2e24cc234ae9 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-cream-sitting.webp | 3466b55725fa | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/poodle-cream-asleep.webp | 68a264772b1d | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/lab-black-moving.webp | 5ff67276e9a5 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/lab-black-sitting.webp | 1ce903e286cc | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/lab-black-asleep.webp | 7ab236e055ae | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/lab-chocolate-moving.webp | daec0ae37f77 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/lab-chocolate-sitting.webp | 5824fd2b65ef | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/lab-chocolate-asleep.webp | 9ed4a79a7d2f | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/lab-yellow-moving.webp | 99957d42c4ac | Astra | 2026-10-28 | defect: dark recoloring fleck on the forehead edge; coat-yellow nose blends into the muzzle. | the 2× crops and the breed sheets |
+| cast/lab-yellow-sitting.webp | dabb64aacb5c | Astra | 2026-10-28 | defect: dark recoloring remnants on the forehead and between the legs; coat-yellow nose blends into the muzzle. | the 2× crops and the breed sheets |
+| cast/lab-yellow-asleep.webp | 9d38fdc9f769 | Astra | 2026-10-28 | defect: coat-yellow nose lacks a clear boundary against the muzzle; harsh black remnants along ear and tucked-leg creases. | the 2× crops and the breed sheets |
+| cast/golden-gold-moving.webp | be47e00b8ae6 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/golden-gold-sitting.webp | 15d321073c58 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/golden-gold-asleep.webp | b782e45e2977 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/golden-red-moving.webp | ba78d64ebea1 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/golden-red-sitting.webp | 0ec8c1ff2a1d | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/golden-red-asleep.webp | d122851c6ce3 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/crew-leash.webp | db4af6a5305f | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/crew-ball.webp | 0cdad6f48b5d | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/crew-mop.webp | 0e9a69e045e9 | Astra | 2026-10-28 | clean | the 2× crops and the breed sheets |
+| cast/crew2-leash.webp | 5d9261ba81b5 | main thread | 2026-10-28 | clean | at 2× the image (4× the page) on cream and near-black: an adult man, two arms and hands coherent on the leash, two legs, uniform continuous, no halo, no text |
+| cast/crew2-ball.webp | 5b1feea92c5f | main thread | 2026-10-28 | clean | at 2× the image (4× the page) on cream and near-black: an adult man, two arms and hands coherent on the ball, two legs, uniform continuous, no halo, no text |
+| cast/crew2-mop.webp | 3c066a3eab13 | main thread | 2026-10-28 | clean | at 2× the image (4× the page) on cream and near-black: an adult man, two arms and hands coherent on the mop, two legs, uniform continuous, no halo, no text |

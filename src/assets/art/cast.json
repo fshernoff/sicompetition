@@ -1,0 +1,819 @@
+{
+ "scale": {
+  "corgiLength": 130,
+  "goldenToCorgi": 1.6,
+  "crewToStandingGolden": 2.2
+ },
+ "sprites": [
+  {
+   "id": "corgi-red-moving",
+   "file": "cast/corgi-red-moving.webp",
+   "kind": "dog",
+   "breed": "corgi",
+   "coat": "red",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    130,
+    115
+   ],
+   "anchor": [
+    76.5,
+    94.9
+   ]
+  },
+  {
+   "id": "corgi-red-sitting",
+   "file": "cast/corgi-red-sitting.webp",
+   "kind": "dog",
+   "breed": "corgi",
+   "coat": "red",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    96,
+    106
+   ],
+   "anchor": [
+    46.0,
+    95.6
+   ]
+  },
+  {
+   "id": "corgi-red-asleep",
+   "file": "cast/corgi-red-asleep.webp",
+   "kind": "dog",
+   "breed": "corgi",
+   "coat": "red",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    122,
+    59
+   ],
+   "anchor": [
+    60.5,
+    51.3
+   ]
+  },
+  {
+   "id": "corgi-sable-moving",
+   "file": "cast/corgi-sable-moving.webp",
+   "kind": "dog",
+   "breed": "corgi",
+   "coat": "sable",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    130,
+    115
+   ],
+   "anchor": [
+    76.5,
+    94.9
+   ]
+  },
+  {
+   "id": "corgi-sable-sitting",
+   "file": "cast/corgi-sable-sitting.webp",
+   "kind": "dog",
+   "breed": "corgi",
+   "coat": "sable",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    96,
+    106
+   ],
+   "anchor": [
+    46.0,
+    95.6
+   ]
+  },
+  {
+   "id": "corgi-sable-asleep",
+   "file": "cast/corgi-sable-asleep.webp",
+   "kind": "dog",
+   "breed": "corgi",
+   "coat": "sable",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    122,
+    59
+   ],
+   "anchor": [
+    60.5,
+    51.3
+   ]
+  },
+  {
+   "id": "beagle-tricolour-moving",
+   "file": "cast/beagle-tricolour-moving.webp",
+   "kind": "dog",
+   "breed": "beagle",
+   "coat": "tricolour",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    150,
+    141
+   ],
+   "anchor": [
+    72.0,
+    116.8
+   ]
+  },
+  {
+   "id": "beagle-tricolour-sitting",
+   "file": "cast/beagle-tricolour-sitting.webp",
+   "kind": "dog",
+   "breed": "beagle",
+   "coat": "tricolour",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    112,
+    108
+   ],
+   "anchor": [
+    53.5,
+    93.1
+   ]
+  },
+  {
+   "id": "beagle-tricolour-asleep",
+   "file": "cast/beagle-tricolour-asleep.webp",
+   "kind": "dog",
+   "breed": "beagle",
+   "coat": "tricolour",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    135,
+    77
+   ],
+   "anchor": [
+    68.0,
+    65.8
+   ]
+  },
+  {
+   "id": "beagle-tan-moving",
+   "file": "cast/beagle-tan-moving.webp",
+   "kind": "dog",
+   "breed": "beagle",
+   "coat": "tan",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    150,
+    141
+   ],
+   "anchor": [
+    72.0,
+    116.8
+   ]
+  },
+  {
+   "id": "beagle-tan-sitting",
+   "file": "cast/beagle-tan-sitting.webp",
+   "kind": "dog",
+   "breed": "beagle",
+   "coat": "tan",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    112,
+    108
+   ],
+   "anchor": [
+    53.5,
+    93.1
+   ]
+  },
+  {
+   "id": "beagle-tan-asleep",
+   "file": "cast/beagle-tan-asleep.webp",
+   "kind": "dog",
+   "breed": "beagle",
+   "coat": "tan",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    135,
+    77
+   ],
+   "anchor": [
+    68.0,
+    65.8
+   ]
+  },
+  {
+   "id": "collie-black-moving",
+   "file": "cast/collie-black-moving.webp",
+   "kind": "dog",
+   "breed": "collie",
+   "coat": "black",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    176,
+    123
+   ],
+   "anchor": [
+    124.0,
+    103.4
+   ]
+  },
+  {
+   "id": "collie-black-sitting",
+   "file": "cast/collie-black-sitting.webp",
+   "kind": "dog",
+   "breed": "collie",
+   "coat": "black",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    98,
+    135
+   ],
+   "anchor": [
+    43.5,
+    127.6
+   ]
+  },
+  {
+   "id": "collie-black-asleep",
+   "file": "cast/collie-black-asleep.webp",
+   "kind": "dog",
+   "breed": "collie",
+   "coat": "black",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    135,
+    73
+   ],
+   "anchor": [
+    67.5,
+    66.4
+   ]
+  },
+  {
+   "id": "collie-red-moving",
+   "file": "cast/collie-red-moving.webp",
+   "kind": "dog",
+   "breed": "collie",
+   "coat": "red",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    176,
+    123
+   ],
+   "anchor": [
+    124.0,
+    103.4
+   ]
+  },
+  {
+   "id": "collie-red-sitting",
+   "file": "cast/collie-red-sitting.webp",
+   "kind": "dog",
+   "breed": "collie",
+   "coat": "red",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    98,
+    135
+   ],
+   "anchor": [
+    43.5,
+    127.6
+   ]
+  },
+  {
+   "id": "collie-red-asleep",
+   "file": "cast/collie-red-asleep.webp",
+   "kind": "dog",
+   "breed": "collie",
+   "coat": "red",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    135,
+    73
+   ],
+   "anchor": [
+    67.5,
+    66.4
+   ]
+  },
+  {
+   "id": "poodle-brown-moving",
+   "file": "cast/poodle-brown-moving.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "brown",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    169,
+    161
+   ],
+   "anchor": [
+    84.0,
+    136.7
+   ]
+  },
+  {
+   "id": "poodle-brown-sitting",
+   "file": "cast/poodle-brown-sitting.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "brown",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    101,
+    155
+   ],
+   "anchor": [
+    55.5,
+    144.6
+   ]
+  },
+  {
+   "id": "poodle-brown-asleep",
+   "file": "cast/poodle-brown-asleep.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "brown",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    156,
+    74
+   ],
+   "anchor": [
+    77.5,
+    64.2
+   ]
+  },
+  {
+   "id": "poodle-black-moving",
+   "file": "cast/poodle-black-moving.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "black",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    169,
+    161
+   ],
+   "anchor": [
+    84.0,
+    136.7
+   ]
+  },
+  {
+   "id": "poodle-black-sitting",
+   "file": "cast/poodle-black-sitting.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "black",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    101,
+    155
+   ],
+   "anchor": [
+    55.5,
+    144.6
+   ]
+  },
+  {
+   "id": "poodle-black-asleep",
+   "file": "cast/poodle-black-asleep.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "black",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    156,
+    74
+   ],
+   "anchor": [
+    77.5,
+    64.2
+   ]
+  },
+  {
+   "id": "poodle-cream-moving",
+   "file": "cast/poodle-cream-moving.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "cream",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    169,
+    161
+   ],
+   "anchor": [
+    84.0,
+    136.7
+   ]
+  },
+  {
+   "id": "poodle-cream-sitting",
+   "file": "cast/poodle-cream-sitting.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "cream",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    101,
+    155
+   ],
+   "anchor": [
+    55.5,
+    144.6
+   ]
+  },
+  {
+   "id": "poodle-cream-asleep",
+   "file": "cast/poodle-cream-asleep.webp",
+   "kind": "dog",
+   "breed": "poodle",
+   "coat": "cream",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    156,
+    74
+   ],
+   "anchor": [
+    77.5,
+    64.2
+   ]
+  },
+  {
+   "id": "lab-black-moving",
+   "file": "cast/lab-black-moving.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "black",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    202,
+    144
+   ],
+   "anchor": [
+    102.5,
+    117.0
+   ]
+  },
+  {
+   "id": "lab-black-sitting",
+   "file": "cast/lab-black-sitting.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "black",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    128,
+    155
+   ],
+   "anchor": [
+    61.0,
+    137.6
+   ]
+  },
+  {
+   "id": "lab-black-asleep",
+   "file": "cast/lab-black-asleep.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "black",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    161,
+    84
+   ],
+   "anchor": [
+    80.5,
+    76.3
+   ]
+  },
+  {
+   "id": "lab-chocolate-moving",
+   "file": "cast/lab-chocolate-moving.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "chocolate",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    202,
+    144
+   ],
+   "anchor": [
+    102.5,
+    117.0
+   ]
+  },
+  {
+   "id": "lab-chocolate-sitting",
+   "file": "cast/lab-chocolate-sitting.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "chocolate",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    128,
+    155
+   ],
+   "anchor": [
+    61.0,
+    137.6
+   ]
+  },
+  {
+   "id": "lab-chocolate-asleep",
+   "file": "cast/lab-chocolate-asleep.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "chocolate",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    161,
+    84
+   ],
+   "anchor": [
+    80.5,
+    76.3
+   ]
+  },
+  {
+   "id": "lab-yellow-moving",
+   "file": "cast/lab-yellow-moving.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "yellow",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    202,
+    144
+   ],
+   "anchor": [
+    102.5,
+    117.0
+   ]
+  },
+  {
+   "id": "lab-yellow-sitting",
+   "file": "cast/lab-yellow-sitting.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "yellow",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    128,
+    155
+   ],
+   "anchor": [
+    61.0,
+    137.6
+   ]
+  },
+  {
+   "id": "lab-yellow-asleep",
+   "file": "cast/lab-yellow-asleep.webp",
+   "kind": "dog",
+   "breed": "lab",
+   "coat": "yellow",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    161,
+    84
+   ],
+   "anchor": [
+    80.5,
+    76.3
+   ]
+  },
+  {
+   "id": "golden-gold-moving",
+   "file": "cast/golden-gold-moving.webp",
+   "kind": "dog",
+   "breed": "golden",
+   "coat": "gold",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    208,
+    120
+   ],
+   "anchor": [
+    110.0,
+    101.8
+   ]
+  },
+  {
+   "id": "golden-gold-sitting",
+   "file": "cast/golden-gold-sitting.webp",
+   "kind": "dog",
+   "breed": "golden",
+   "coat": "gold",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    150,
+    134
+   ],
+   "anchor": [
+    67.0,
+    124.5
+   ]
+  },
+  {
+   "id": "golden-gold-asleep",
+   "file": "cast/golden-gold-asleep.webp",
+   "kind": "dog",
+   "breed": "golden",
+   "coat": "gold",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    154,
+    74
+   ],
+   "anchor": [
+    77.0,
+    64.8
+   ]
+  },
+  {
+   "id": "golden-red-moving",
+   "file": "cast/golden-red-moving.webp",
+   "kind": "dog",
+   "breed": "golden",
+   "coat": "red",
+   "pose": "moving",
+   "facing": "right",
+   "size": [
+    208,
+    120
+   ],
+   "anchor": [
+    110.0,
+    101.8
+   ]
+  },
+  {
+   "id": "golden-red-sitting",
+   "file": "cast/golden-red-sitting.webp",
+   "kind": "dog",
+   "breed": "golden",
+   "coat": "red",
+   "pose": "sitting",
+   "facing": "right",
+   "size": [
+    150,
+    134
+   ],
+   "anchor": [
+    67.0,
+    124.5
+   ]
+  },
+  {
+   "id": "golden-red-asleep",
+   "file": "cast/golden-red-asleep.webp",
+   "kind": "dog",
+   "breed": "golden",
+   "coat": "red",
+   "pose": "asleep",
+   "facing": "right",
+   "size": [
+    154,
+    74
+   ],
+   "anchor": [
+    77.0,
+    64.8
+   ]
+  },
+  {
+   "id": "crew-leash",
+   "file": "cast/crew-leash.webp",
+   "kind": "crew",
+   "pose": "leash",
+   "facing": "right",
+   "size": [
+    99,
+    264
+   ],
+   "anchor": [
+    56.5,
+    245.2
+   ]
+  },
+  {
+   "id": "crew-ball",
+   "file": "cast/crew-ball.webp",
+   "kind": "crew",
+   "pose": "ball",
+   "facing": "right",
+   "size": [
+    104,
+    264
+   ],
+   "anchor": [
+    59.0,
+    245.1
+   ]
+  },
+  {
+   "id": "crew-mop",
+   "file": "cast/crew-mop.webp",
+   "kind": "crew",
+   "pose": "mop",
+   "facing": "right",
+   "size": [
+    137,
+    266
+   ],
+   "anchor": [
+    67.5,
+    236.3
+   ]
+  },
+  {
+   "id": "crew2-leash",
+   "file": "cast/crew2-leash.webp",
+   "kind": "crew",
+   "pose": "leash",
+   "facing": "right",
+   "size": [
+    112,
+    282
+   ],
+   "anchor": [
+    61.5,
+    261.9
+   ]
+  },
+  {
+   "id": "crew2-ball",
+   "file": "cast/crew2-ball.webp",
+   "kind": "crew",
+   "pose": "ball",
+   "facing": "right",
+   "size": [
+    116,
+    283
+   ],
+   "anchor": [
+    66.0,
+    262.2
+   ]
+  },
+  {
+   "id": "crew2-mop",
+   "file": "cast/crew2-mop.webp",
+   "kind": "crew",
+   "pose": "mop",
+   "facing": "right",
+   "size": [
+    154,
+    296
+   ],
+   "anchor": [
+    76.0,
+    268.8
+   ]
+  }
+ ],
+ "_notes": [
+  "CastManifest (src/assets/art/manifest.ts) plus these notes. Every sprite is stored at 2x the yard's CSS size on the set's camera: 176 px per metre of the orthographic view (a metre straight up is 152.4 px; set.json's map.ppm, 139.14, is a metre along a lawn edge in the same camera), so the yard draws each at 0.5 and never rescales one breed differently.",
+  "scale: corgiLength is the corgi's moving pose, trimmed width, in px at 2x; each other breed's moving pose is a fixed ratio of it (beagle 1.15, collie 1.35, poodle 1.3, Lab 1.55, golden 1.6), and its sit and sleep share that scale; the crew (crew-*) is crewToStandingGolden x the golden's standing height, and the second crew member (crew2-*: a different adult in the same uniform, so two or three staff on the floor are not one person repeated) is 1.07 x the first one's height.",
+  "anchor: the ground point in the image's pixels (a dog: between its near and far feet; the crew: between the shoes). facing: every sprite faces right, along the camera-facing diagonal toward the lower right; mirror for the other diagonal (gate 5). No shadow is drawn in any sprite (gate 3).",
+  "coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle tricolour) and its recolours in code (gate 6); docs/art-provenance/cast/README.md has every step."
+ ]
+}

@@ -1,6 +1,6 @@
 # The cast: provenance (G5d WP4a, D55, D59)
 
-The yard's dogs and crew: 45 sprites in `src/assets/art/cast/`, listed with their foot anchors in
+The yard's dogs and crew: 42 sprites in `src/assets/art/cast/`, listed with their foot anchors in
 `src/assets/art/cast.json`. Generated for this project on 2026-10-28 with GPT image (the built-in `image_gen` tool of
 the Codex CLI 0.162.0, model `gpt-6-astra`, reasoning effort low, logged in to the owner's ChatGPT account), one call
 per subject through `Tools/Agent/mockup.sh`, then keyed, cut, recoloured, repaired where recorded below, graded and
@@ -99,11 +99,19 @@ retakes each named the breed's first strip as their locked reference.
      (60, 32)–(74, 46) (22 and 29 px) take the median of the box's tan (saturation above 0.5, luminance 120 to
      160): (198, 129, 64) and (206, 126, 61).
 3. **Scale** (gate 1). Stored at 2× the yard's CSS size on spike B's metric camera (176 px per metre at 2×). One
-   scale per strip, from its moving pose's trimmed width: the corgi 130 px, the beagle 1.15 ×, the collie 1.35 ×, the
+   scale per strip, from its moving pose's cut width: the corgi 130 px, the beagle 1.15 ×, the collie 1.35 ×, the
    poodle 1.3 ×, the Lab 1.55 × (both Lab strips, each from its own width), the golden 1.6 × the corgi's. The crew
    2.2 × the golden's standing height (its moving pose from the top of the head to the feet, 119.8 px), so 264 px
    tall; the second crew member 1.07 × the first (their leash poses: a man of about 1.77 m beside a woman of about
-   1.65 m), so 282 px tall. LANCZOS on premultiplied alpha; alpha under 6 dropped; trimmed.
+   1.65 m), so 282 px tall. The cut figure is padded by 8 transparent px first, so the resize draws the soft edge
+   past the cut's own bounds instead of truncating it flat at the canvas (round 2: the sitting beagle's tail tip read
+   as clipped by the left edge); LANCZOS on premultiplied alpha; alpha under 6 dropped and over 245 made 255 (the
+   filter's ringing inside the coat); trimmed; a clear margin of 2 transparent px added round every sprite. Then any
+   group of not-quite-opaque pixels that does not reach the margin and is no bigger than 24 px is closed, coloured as
+   the opaque pixels round it (round 2: a dotted seam between the sitting poodle's legs, a 1 × 2 slit between its
+   pom-pom and hind leg; the same pass closed chinks between the crew's fingers and a sliver between the asleep
+   beagle's tail and hip). Real gaps stay: between a sitting golden's (43 px) or beagle's (32 px) front legs, the
+   crew's arm and body, the gap under the ponytail and the leash's loops (33 px and more).
 4. **Coats** (gate 6), before the resize, at full size: a recoloured pixel becomes target × (L / L0)^γ, L its
    luminance and L0 the coat's median luminance in the breed's moving pose, so every facet keeps its shading.
 
@@ -111,7 +119,7 @@ retakes each named the breed's first strip as their locked reference.
    |---|---|---|
    | golden | gold | red: the warm coat (hue 0.03 to 0.15), (190, 112, 58), γ 1.0 |
    | Lab | black (`cast-lab-3`) | chocolate: the charcoal coat (saturation under 0.3), (116, 76, 50), γ 0.75, keeping pixels darker than 0.3 × L0 (the nose, the eyes) fading in over 0.1; yellow: its own strip (`cast-labyellow-1`), as generated |
-   | poodle | brown | black: the whole coat, (54, 51, 49), γ 1.25; cream: the whole coat, (208, 192, 163), γ 0.4 (so the lit top stays below white: round 1 found it blown to a light rim); both keep pixels darker than 0.3 × L0 (the nose, the eyes). The whole coat, edge pixels included, so no brown or olive rim is left (round 1: an olive fringe on the black's hind leg) |
+   | poodle | brown | black: the whole coat, (54, 51, 49), γ 1.25, keeping pixels darker than 0.3 × L0 (the nose, the eyes); the whole coat, edge pixels included, so no brown or olive rim is left (round 1: an olive fringe on the hind leg). No cream: it was dropped in round 2, when the brown model's rim light became a pale fringe on dark (belly, lower legs, pom-pom, ear) and its deepest crease a dark speck in the cream, so one model does not carry that coat |
    | corgi | red | sable: the red patches (not the white, not the pink inner ears), (172, 98, 48), γ 1.1 |
    | collie | black | red: the black patches, (128, 74, 44), γ 0.85, the nose included (a red border collie's nose is brown; round 1 found the protected black sliver on the red's chest) |
    | beagle | tricolour | none. The tan coat (the saddle recoloured) was dropped in round 1: at every setting tried it left grey or dark borders of the saddle, or turned the grey far paw and the paw creases tan, so one model does not carry it |
@@ -123,7 +131,7 @@ retakes each named the breed's first strip as their locked reference.
    those lowest pixels (between the near and the far feet); the crew's is between the shoes (the white, unsaturated
    pixels in the bottom 22%; the mop's grey head is not counted). Checked drawn on each pose.
 7. **WebP**: quality 90, alpha lossless, method 6, `exact` (the pushed colours stay under the transparent pixels, so
-   no edge darkens). 45 files, 286,946 bytes, every one RGBA with alpha from 0 to 255.
+   no edge darkens). 42 files, 252,586 bytes, every one RGBA with alpha from 0 to 255 and a transparent 2 px margin.
 
 Every sprite faces right (the camera-facing diagonal toward the lower right); the yard mirrors for the other diagonal
 (gate 5) once the mirrored contact sheet passes.
@@ -132,51 +140,48 @@ Every sprite faces right (the camera-facing diagonal toward the lower right); th
 
 | Sprite | Size (px, 2×) | Foot anchor | Bytes | SHA-256 (12) |
 |---|---|---|---|---|
-| `corgi-red-moving` | 130 × 89 | 79.0, 75.0 | 5,438 | b5134e6eb61d |
-| `corgi-red-sitting` | 88 × 100 | 40.0, 90.5 | 4,476 | 713f33476cbd |
-| `corgi-red-asleep` | 114 × 54 | 59.0, 46.9 | 3,632 | 3e595c75e601 |
-| `corgi-sable-moving` | 130 × 89 | 79.0, 75.0 | 5,330 | 4ed78a5f9a73 |
-| `corgi-sable-sitting` | 88 × 100 | 40.0, 90.5 | 4,334 | 08612af0b812 |
-| `corgi-sable-asleep` | 114 × 54 | 59.0, 46.9 | 3,588 | 68f7c6917b02 |
-| `beagle-tricolour-moving` | 150 × 141 | 72.0, 116.5 | 6,912 | 0c67ddc98005 |
-| `beagle-tricolour-sitting` | 109 × 107 | 52.0, 92.8 | 5,166 | 476c8055863d |
-| `beagle-tricolour-asleep` | 135 × 77 | 68.0, 65.7 | 5,188 | beadb9c7cff0 |
-| `collie-black-moving` | 176 × 123 | 124.0, 103.4 | 7,140 | 6037dba489ec |
-| `collie-black-sitting` | 98 × 135 | 43.5, 127.6 | 5,202 | 6a2edcefa454 |
-| `collie-black-asleep` | 135 × 73 | 67.5, 66.4 | 4,168 | 41f46cd4d795 |
-| `collie-red-moving` | 176 × 123 | 124.0, 103.4 | 7,594 | 9b86aae70f7f |
-| `collie-red-sitting` | 98 × 135 | 43.5, 127.6 | 5,554 | aa9cc6d2cc26 |
-| `collie-red-asleep` | 135 × 73 | 67.5, 66.4 | 4,544 | eb90dcd7e185 |
-| `poodle-brown-moving` | 169 × 161 | 84.0, 136.7 | 8,346 | 754c38912cde |
-| `poodle-brown-sitting` | 101 × 155 | 55.5, 144.6 | 5,594 | 2eeb7a3b5e92 |
-| `poodle-brown-asleep` | 156 × 74 | 77.5, 64.2 | 4,534 | a777c5b9cad7 |
-| `poodle-black-moving` | 169 × 161 | 84.0, 136.7 | 6,404 | 453fca12f563 |
-| `poodle-black-sitting` | 101 × 155 | 55.5, 144.6 | 4,216 | ea2cd62b24d8 |
-| `poodle-black-asleep` | 156 × 74 | 77.5, 64.2 | 3,324 | ee6656d11bf2 |
-| `poodle-cream-moving` | 169 × 161 | 84.0, 136.7 | 7,662 | 0a3fbe15795d |
-| `poodle-cream-sitting` | 101 × 155 | 55.5, 144.6 | 5,370 | b2e372942906 |
-| `poodle-cream-asleep` | 156 × 74 | 77.5, 64.2 | 4,184 | 5e3c25399555 |
-| `lab-black-moving` | 202 × 144 | 102.5, 117.0 | 7,038 | 5ff67276e9a5 |
-| `lab-black-sitting` | 128 × 155 | 61.0, 137.6 | 5,028 | 1ce903e286cc |
-| `lab-black-asleep` | 161 × 84 | 80.5, 76.3 | 4,036 | 9d08b8e91c7f |
-| `lab-chocolate-moving` | 202 × 144 | 102.5, 117.0 | 7,868 | daec0ae37f77 |
-| `lab-chocolate-sitting` | 128 × 155 | 61.0, 137.6 | 5,838 | 5824fd2b65ef |
-| `lab-chocolate-asleep` | 161 × 84 | 80.5, 76.3 | 4,670 | 6a8e8f6785ef |
-| `lab-yellow-moving` | 202 × 144 | 102.5, 116.6 | 9,278 | 0c82acb8066a |
-| `lab-yellow-sitting` | 130 × 155 | 61.5, 137.9 | 6,906 | 7719a501385f |
-| `lab-yellow-asleep` | 161 × 84 | 80.5, 75.8 | 5,610 | 4bc6f8b727a2 |
-| `golden-gold-moving` | 208 × 120 | 110.0, 101.8 | 8,214 | be47e00b8ae6 |
-| `golden-gold-sitting` | 150 × 134 | 67.0, 124.5 | 5,986 | 15d321073c58 |
-| `golden-gold-asleep` | 154 × 74 | 77.0, 64.8 | 4,514 | b782e45e2977 |
-| `golden-red-moving` | 208 × 120 | 110.0, 101.8 | 7,224 | ba78d64ebea1 |
-| `golden-red-sitting` | 150 × 134 | 67.0, 124.5 | 5,268 | 0ec8c1ff2a1d |
-| `golden-red-asleep` | 154 × 74 | 77.0, 64.8 | 4,028 | d122851c6ce3 |
-| `crew-leash` | 99 × 264 | 56.5, 245.2 | 11,182 | db4af6a5305f |
-| `crew-ball` | 104 × 264 | 59.0, 245.1 | 10,058 | 0cdad6f48b5d |
-| `crew-mop` | 137 × 266 | 67.5, 236.3 | 11,920 | 0e9a69e045e9 |
-| `crew2-leash` | 112 × 282 | 61.5, 261.9 | 11,256 | 5d9261ba81b5 |
-| `crew2-ball` | 116 × 283 | 66.0, 262.2 | 10,372 | 5b1feea92c5f |
-| `crew2-mop` | 154 × 296 | 76.0, 268.8 | 12,752 | 3c066a3eab13 |
+| `corgi-red-moving` | 135 × 94 | 82.0, 78.0 | 5,004 | 85c7d93c615b |
+| `corgi-red-sitting` | 93 × 104 | 43.0, 93.0 | 4,258 | 7ff6f0d7d79b |
+| `corgi-red-asleep` | 118 × 59 | 61.5, 49.6 | 3,564 | 20b93406a675 |
+| `corgi-sable-moving` | 135 × 94 | 82.0, 78.0 | 5,054 | a9eee0e1b316 |
+| `corgi-sable-sitting` | 93 × 104 | 43.0, 93.0 | 4,236 | ff6812da8f04 |
+| `corgi-sable-asleep` | 118 × 59 | 61.5, 49.6 | 3,534 | 972a0b7bfdf6 |
+| `beagle-tricolour-moving` | 155 × 147 | 73.5, 120.0 | 6,450 | 2acbe2488aa4 |
+| `beagle-tricolour-sitting` | 114 × 113 | 55.0, 96.4 | 5,084 | 3b62276a5f02 |
+| `beagle-tricolour-asleep` | 141 × 83 | 71.5, 68.9 | 4,890 | 1f68be8e5639 |
+| `collie-black-moving` | 181 × 128 | 126.5, 106.0 | 6,268 | 62a679f04ed9 |
+| `collie-black-sitting` | 103 × 140 | 46.0, 130.1 | 4,616 | 0428112c6b21 |
+| `collie-black-asleep` | 140 × 78 | 70.0, 68.8 | 3,902 | 47c99bf161cc |
+| `collie-red-moving` | 181 × 128 | 126.5, 106.0 | 7,030 | 6440fe2e0099 |
+| `collie-red-sitting` | 103 × 140 | 46.0, 130.1 | 5,086 | 322b4d90ee6e |
+| `collie-red-asleep` | 140 × 78 | 70.0, 68.8 | 4,350 | c52ff76dc16b |
+| `poodle-brown-moving` | 175 × 167 | 87.0, 140.4 | 7,732 | 36428e3e4823 |
+| `poodle-brown-sitting` | 106 × 160 | 58.0, 146.9 | 5,210 | c5cb2c7dd119 |
+| `poodle-brown-asleep` | 161 × 80 | 80.0, 67.4 | 4,446 | 4ae73e9fc588 |
+| `poodle-black-moving` | 175 × 167 | 87.0, 140.4 | 5,722 | 439e2b57ce1b |
+| `poodle-black-sitting` | 106 × 160 | 58.0, 146.9 | 3,708 | b32043e386e9 |
+| `poodle-black-asleep` | 161 × 80 | 80.0, 67.4 | 3,124 | 28c4ec637909 |
+| `lab-black-moving` | 206 × 150 | 105.0, 119.9 | 6,604 | 560e53e5a539 |
+| `lab-black-sitting` | 133 × 161 | 63.0, 140.7 | 4,666 | 697963211828 |
+| `lab-black-asleep` | 167 × 90 | 83.5, 79.2 | 3,930 | 71264f8940b8 |
+| `lab-chocolate-moving` | 206 × 150 | 105.0, 119.9 | 7,380 | 24a680b7f8ff |
+| `lab-chocolate-sitting` | 133 × 161 | 63.0, 140.7 | 5,374 | fab8c16682e3 |
+| `lab-chocolate-asleep` | 167 × 90 | 83.5, 79.2 | 4,628 | 64fb35c73674 |
+| `lab-yellow-moving` | 206 × 149 | 105.0, 119.6 | 8,600 | 06fa277ac743 |
+| `lab-yellow-sitting` | 135 × 161 | 63.5, 141.0 | 6,694 | d4a37288eb54 |
+| `lab-yellow-asleep` | 167 × 89 | 83.5, 77.9 | 5,420 | 566cacbe793e |
+| `golden-gold-moving` | 212 × 124 | 112.0, 104.0 | 7,688 | 581e5377962f |
+| `golden-gold-sitting` | 154 × 138 | 69.5, 126.5 | 5,572 | bf87645a12c7 |
+| `golden-gold-asleep` | 159 × 78 | 79.0, 66.8 | 4,396 | e40f6bb2f856 |
+| `golden-red-moving` | 212 × 124 | 112.0, 104.0 | 6,852 | f01eca4fa3c8 |
+| `golden-red-sitting` | 154 × 138 | 69.5, 126.5 | 4,772 | 17e75733e10f |
+| `golden-red-asleep` | 159 × 78 | 79.0, 66.8 | 3,844 | 3f4de3bd700a |
+| `crew-leash` | 105 × 269 | 59.5, 248.0 | 10,170 | 481960bf1f5b |
+| `crew-ball` | 110 × 269 | 62.5, 247.5 | 9,620 | 4d5c65b8b65b |
+| `crew-mop` | 143 × 272 | 70.5, 239.7 | 11,164 | d87c478f5edc |
+| `crew2-leash` | 117 × 288 | 64.5, 264.9 | 10,598 | 16b1bea96a7f |
+| `crew2-ball` | 121 × 287 | 68.0, 264.3 | 9,644 | 98891867756b |
+| `crew2-mop` | 158 × 300 | 78.0, 271.4 | 11,702 | a22d049d3a85 |
 
 These hashes are for the bytes as built here; D58's passes are recorded against them in `docs/art-provenance/qa.md`.
 The package's own figure-by-figure check (not one of D58's three) is in the package's hand-back.

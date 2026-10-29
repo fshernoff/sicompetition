@@ -14,12 +14,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    130,
-    89
+    135,
+    94
    ],
    "anchor": [
-    79.0,
-    75.0
+    82.0,
+    78.0
    ]
   },
   {
@@ -31,12 +31,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    88,
-    100
+    93,
+    104
    ],
    "anchor": [
-    40.0,
-    90.5
+    43.0,
+    93.0
    ]
   },
   {
@@ -48,12 +48,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    114,
-    54
+    118,
+    59
    ],
    "anchor": [
-    59.0,
-    46.9
+    61.5,
+    49.6
    ]
   },
   {
@@ -65,12 +65,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    130,
-    89
+    135,
+    94
    ],
    "anchor": [
-    79.0,
-    75.0
+    82.0,
+    78.0
    ]
   },
   {
@@ -82,12 +82,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    88,
-    100
+    93,
+    104
    ],
    "anchor": [
-    40.0,
-    90.5
+    43.0,
+    93.0
    ]
   },
   {
@@ -99,12 +99,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    114,
-    54
+    118,
+    59
    ],
    "anchor": [
-    59.0,
-    46.9
+    61.5,
+    49.6
    ]
   },
   {
@@ -116,12 +116,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    150,
-    141
+    155,
+    147
    ],
    "anchor": [
-    72.0,
-    116.5
+    73.5,
+    120.0
    ]
   },
   {
@@ -133,12 +133,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    109,
-    107
+    114,
+    113
    ],
    "anchor": [
-    52.0,
-    92.8
+    55.0,
+    96.4
    ]
   },
   {
@@ -150,12 +150,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    135,
-    77
+    141,
+    83
    ],
    "anchor": [
-    68.0,
-    65.7
+    71.5,
+    68.9
    ]
   },
   {
@@ -167,12 +167,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    176,
-    123
+    181,
+    128
    ],
    "anchor": [
-    124.0,
-    103.4
+    126.5,
+    106.0
    ]
   },
   {
@@ -184,12 +184,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    98,
-    135
+    103,
+    140
    ],
    "anchor": [
-    43.5,
-    127.6
+    46.0,
+    130.1
    ]
   },
   {
@@ -201,12 +201,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    135,
-    73
+    140,
+    78
    ],
    "anchor": [
-    67.5,
-    66.4
+    70.0,
+    68.8
    ]
   },
   {
@@ -218,12 +218,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    176,
-    123
+    181,
+    128
    ],
    "anchor": [
-    124.0,
-    103.4
+    126.5,
+    106.0
    ]
   },
   {
@@ -235,12 +235,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    98,
-    135
+    103,
+    140
    ],
    "anchor": [
-    43.5,
-    127.6
+    46.0,
+    130.1
    ]
   },
   {
@@ -252,12 +252,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    135,
-    73
+    140,
+    78
    ],
    "anchor": [
-    67.5,
-    66.4
+    70.0,
+    68.8
    ]
   },
   {
@@ -269,12 +269,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    169,
-    161
+    175,
+    167
    ],
    "anchor": [
-    84.0,
-    136.7
+    87.0,
+    140.4
    ]
   },
   {
@@ -286,12 +286,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    101,
-    155
+    106,
+    160
    ],
    "anchor": [
-    55.5,
-    144.6
+    58.0,
+    146.9
    ]
   },
   {
@@ -303,12 +303,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    156,
-    74
+    161,
+    80
    ],
    "anchor": [
-    77.5,
-    64.2
+    80.0,
+    67.4
    ]
   },
   {
@@ -320,12 +320,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    169,
-    161
+    175,
+    167
    ],
    "anchor": [
-    84.0,
-    136.7
+    87.0,
+    140.4
    ]
   },
   {
@@ -337,12 +337,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    101,
-    155
+    106,
+    160
    ],
    "anchor": [
-    55.5,
-    144.6
+    58.0,
+    146.9
    ]
   },
   {
@@ -354,63 +354,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    156,
-    74
+    161,
+    80
    ],
    "anchor": [
-    77.5,
-    64.2
-   ]
-  },
-  {
-   "id": "poodle-cream-moving",
-   "file": "cast/poodle-cream-moving.webp",
-   "kind": "dog",
-   "breed": "poodle",
-   "coat": "cream",
-   "pose": "moving",
-   "facing": "right",
-   "size": [
-    169,
-    161
-   ],
-   "anchor": [
-    84.0,
-    136.7
-   ]
-  },
-  {
-   "id": "poodle-cream-sitting",
-   "file": "cast/poodle-cream-sitting.webp",
-   "kind": "dog",
-   "breed": "poodle",
-   "coat": "cream",
-   "pose": "sitting",
-   "facing": "right",
-   "size": [
-    101,
-    155
-   ],
-   "anchor": [
-    55.5,
-    144.6
-   ]
-  },
-  {
-   "id": "poodle-cream-asleep",
-   "file": "cast/poodle-cream-asleep.webp",
-   "kind": "dog",
-   "breed": "poodle",
-   "coat": "cream",
-   "pose": "asleep",
-   "facing": "right",
-   "size": [
-    156,
-    74
-   ],
-   "anchor": [
-    77.5,
-    64.2
+    80.0,
+    67.4
    ]
   },
   {
@@ -422,12 +371,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    202,
-    144
+    206,
+    150
    ],
    "anchor": [
-    102.5,
-    117.0
+    105.0,
+    119.9
    ]
   },
   {
@@ -439,12 +388,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    128,
-    155
+    133,
+    161
    ],
    "anchor": [
-    61.0,
-    137.6
+    63.0,
+    140.7
    ]
   },
   {
@@ -456,12 +405,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    161,
-    84
+    167,
+    90
    ],
    "anchor": [
-    80.5,
-    76.3
+    83.5,
+    79.2
    ]
   },
   {
@@ -473,12 +422,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    202,
-    144
+    206,
+    150
    ],
    "anchor": [
-    102.5,
-    117.0
+    105.0,
+    119.9
    ]
   },
   {
@@ -490,12 +439,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    128,
-    155
+    133,
+    161
    ],
    "anchor": [
-    61.0,
-    137.6
+    63.0,
+    140.7
    ]
   },
   {
@@ -507,12 +456,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    161,
-    84
+    167,
+    90
    ],
    "anchor": [
-    80.5,
-    76.3
+    83.5,
+    79.2
    ]
   },
   {
@@ -524,12 +473,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    202,
-    144
+    206,
+    149
    ],
    "anchor": [
-    102.5,
-    116.6
+    105.0,
+    119.6
    ]
   },
   {
@@ -541,12 +490,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    130,
-    155
+    135,
+    161
    ],
    "anchor": [
-    61.5,
-    137.9
+    63.5,
+    141.0
    ]
   },
   {
@@ -558,12 +507,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    161,
-    84
+    167,
+    89
    ],
    "anchor": [
-    80.5,
-    75.8
+    83.5,
+    77.9
    ]
   },
   {
@@ -575,12 +524,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    208,
-    120
+    212,
+    124
    ],
    "anchor": [
-    110.0,
-    101.8
+    112.0,
+    104.0
    ]
   },
   {
@@ -592,12 +541,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    150,
-    134
+    154,
+    138
    ],
    "anchor": [
-    67.0,
-    124.5
+    69.5,
+    126.5
    ]
   },
   {
@@ -609,12 +558,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    154,
-    74
+    159,
+    78
    ],
    "anchor": [
-    77.0,
-    64.8
+    79.0,
+    66.8
    ]
   },
   {
@@ -626,12 +575,12 @@
    "pose": "moving",
    "facing": "right",
    "size": [
-    208,
-    120
+    212,
+    124
    ],
    "anchor": [
-    110.0,
-    101.8
+    112.0,
+    104.0
    ]
   },
   {
@@ -643,12 +592,12 @@
    "pose": "sitting",
    "facing": "right",
    "size": [
-    150,
-    134
+    154,
+    138
    ],
    "anchor": [
-    67.0,
-    124.5
+    69.5,
+    126.5
    ]
   },
   {
@@ -660,12 +609,12 @@
    "pose": "asleep",
    "facing": "right",
    "size": [
-    154,
-    74
+    159,
+    78
    ],
    "anchor": [
-    77.0,
-    64.8
+    79.0,
+    66.8
    ]
   },
   {
@@ -675,12 +624,12 @@
    "pose": "leash",
    "facing": "right",
    "size": [
-    99,
-    264
+    105,
+    269
    ],
    "anchor": [
-    56.5,
-    245.2
+    59.5,
+    248.0
    ]
   },
   {
@@ -690,12 +639,12 @@
    "pose": "ball",
    "facing": "right",
    "size": [
-    104,
-    264
+    110,
+    269
    ],
    "anchor": [
-    59.0,
-    245.1
+    62.5,
+    247.5
    ]
   },
   {
@@ -705,12 +654,12 @@
    "pose": "mop",
    "facing": "right",
    "size": [
-    137,
-    266
+    143,
+    272
    ],
    "anchor": [
-    67.5,
-    236.3
+    70.5,
+    239.7
    ]
   },
   {
@@ -720,12 +669,12 @@
    "pose": "leash",
    "facing": "right",
    "size": [
-    112,
-    282
+    117,
+    288
    ],
    "anchor": [
-    61.5,
-    261.9
+    64.5,
+    264.9
    ]
   },
   {
@@ -735,12 +684,12 @@
    "pose": "ball",
    "facing": "right",
    "size": [
-    116,
-    283
+    121,
+    287
    ],
    "anchor": [
-    66.0,
-    262.2
+    68.0,
+    264.3
    ]
   },
   {
@@ -750,19 +699,19 @@
    "pose": "mop",
    "facing": "right",
    "size": [
-    154,
-    296
+    158,
+    300
    ],
    "anchor": [
-    76.0,
-    268.8
+    78.0,
+    271.4
    ]
   }
  ],
  "_notes": [
   "CastManifest (src/assets/art/manifest.ts) plus these notes. Every sprite is stored at 2x the yard's CSS size on the set's camera: 176 px per metre of the orthographic view (a metre straight up is 152.4 px; set.json's map.ppm, 139.14, is a metre along a lawn edge in the same camera), so the yard draws each at 0.5 and never rescales one breed differently.",
-  "scale: corgiLength is the corgi's moving pose, trimmed width, in px at 2x; each other breed's moving pose is a fixed ratio of it (beagle 1.15, collie 1.35, poodle 1.3, Lab 1.55, golden 1.6), and its sit and sleep share that scale; the crew (crew-*) is crewToStandingGolden x the golden's standing height, and the second crew member (crew2-*: a different adult in the same uniform, so two or three staff on the floor are not one person repeated) is 1.07 x the first one's height.",
+  "Every sprite has a clear margin of 2 transparent px round the figure; anchors are in the framed image's pixels. scale: corgiLength is the corgi's moving pose, its cut figure's width, in px at 2x (the sprite adds a soft edge and the margin); each other breed's moving pose is a fixed ratio of it (beagle 1.15, collie 1.35, poodle 1.3, Lab 1.55, golden 1.6), and its sit and sleep share that scale; the crew (crew-*) is crewToStandingGolden x the golden's standing height, and the second crew member (crew2-*: a different adult in the same uniform, so two or three staff on the floor are not one person repeated) is 1.07 x the first one's height.",
   "anchor: the ground point in the image's pixels (a dog: between its near and far feet; the crew: between the shoes). facing: every sprite faces right, along the camera-facing diagonal toward the lower right; mirror for the other diagonal (gate 5). No shadow is drawn in any sprite (gate 3).",
-  "coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle tricolour) and its recolours in code (gate 6); the yellow Lab is its own generated strip, at the Lab's ratio; docs/art-provenance/cast/README.md has every step."
+  "coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle tricolour) and its recolours in code (gate 6: golden red, Lab chocolate, poodle black, corgi sable, collie red); the yellow Lab is its own generated strip, at the Lab's ratio; the beagle has no second coat and the poodle no cream (dropped in D58 rounds 1 and 2); docs/art-provenance/cast/README.md has every step."
  ]
 }

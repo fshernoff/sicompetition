@@ -11,8 +11,10 @@ sleep share the moving pose's scale (one model, one camera). The crew's height i
 standing height (the head top to the feet in its moving pose); the second crew member's is CREW2_TO_CREW x the
 first one's (their leash poses). Nothing is rescaled afterwards.
 
-The steps for every sprite, in order: the coat (if not the generated one) recoloured at full size; resized with
-LANCZOS on premultiplied alpha; faint alpha (below 6) dropped; the grade (saturation x GRADE_SAT, contrast x
+The steps for every sprite, in order: the recorded repairs (REPAIRS) on the cut figure; the coat (if not the generated
+one) recoloured at full size; the figure padded by PAD transparent px, resized with LANCZOS on premultiplied alpha,
+faint alpha (below 6) dropped, trimmed and framed with MARGIN transparent px (every sprite has a clear margin, and no
+edge is cut flat by the canvas); alpha over 245 made 255; enclosed pin holes up to PINHOLE_MAX px closed; the grade (saturation x GRADE_SAT, contrast x
 GRADE_CONTRAST about mid grey, red x 1.01 and blue x 0.985: the set's warm key light); the colours pushed four
 pixels out under the transparent edge (so the sharpen and the encoder see the figure's own colour there, never black);
 an unsharp mask (radius 0.8, 35%, threshold 2) on the colour only; alpha kept as it was; WebP quality WEBP_Q, alpha
@@ -34,6 +36,8 @@ CORGI_LENGTH = 130        # px, the corgi's moving pose at 2x (spike B's metric 
 CREW_TO_GOLDEN = 2.2      # the crew's height over a standing golden's
 CREW2_TO_CREW = 1.07      # the second crew member (a man) over the first (a woman): about 1.77 m against 1.65 m
 GRADE_SAT, GRADE_CONTRAST = 0.93, 0.96
+PAD, MARGIN = 8, 2         # px round the cut figure before the resize; px of clear margin round every sprite
+PINHOLE_MAX = 24          # px: an enclosed translucent group in a sprite up to this size is closed (close_pinholes)
 WEBP_Q = 90
 
 DOG_POSES = ['moving', 'sitting', 'asleep']
@@ -94,8 +98,9 @@ COATS = {
             'chocolate': dict(mask=grey_coat, target=(116, 76, 50), gamma=0.75, keep_dark=0.3),
             'yellow': 'labyellow'},
     'poodle': {'brown': None,
-               'black': dict(mask=whole_coat, target=(54, 51, 49), gamma=1.25, keep_dark=0.3),
-               'cream': dict(mask=whole_coat, target=(208, 192, 163), gamma=0.4, keep_dark=0.3)},
+               'black': dict(mask=whole_coat, target=(54, 51, 49), gamma=1.25, keep_dark=0.3)},
+    # the cream poodle was dropped in D58 round 2: the brown model's rim light became a pale fringe on dark and its
+    # deepest crease a dark speck in cream, so one model does not carry that coat; the poodle ships brown and black
     'corgi': {'red': None, 'sable': dict(mask=red_patch, target=(172, 98, 48), gamma=1.1)},
     'collie': {'black': None, 'red': dict(mask=black_patch, target=(128, 74, 44), gamma=0.85)},
     # the beagle ships in its tricolour only: a tan recolour of the saddle left grey and dark borders, a recoloured
@@ -279,10 +284,68 @@ def coat_l0(im, spec):
 
 
 def resize(im, s):
-    w, h = max(1, round(im.width * s)), max(1, round(im.height * s))
-    out = im.convert('RGBa').resize((w, h), Image.Resampling.LANCZOS).convert('RGBA')
-    out.putalpha(out.getchannel('A').point(lambda v: 0 if v < 6 else v))
-    return out.crop(out.getbbox())
+    """the figure at scale s: padded by PAD transparent px first (so the resize can draw the soft edge past the cut's
+    own bounds instead of truncating it flat at the canvas edge), LANCZOS on premultiplied alpha, alpha under 6
+    dropped and alpha over 245 made 255 (the filter's ringing inside the coat), trimmed, then MARGIN transparent px
+    added round it (every sprite has a clear margin)"""
+    padded = Image.new('RGBA', (im.width + 2 * PAD, im.height + 2 * PAD), (0, 0, 0, 0))
+    padded.paste(im, (PAD, PAD))
+    w, h = max(1, round(padded.width * s)), max(1, round(padded.height * s))
+    out = padded.convert('RGBa').resize((w, h), Image.Resampling.LANCZOS).convert('RGBA')
+    out.putalpha(out.getchannel('A').point(lambda v: 0 if v < 6 else 255 if v > 245 else v))
+    out = out.crop(out.getbbox())
+    framed = Image.new('RGBA', (out.width + 2 * MARGIN, out.height + 2 * MARGIN), (0, 0, 0, 0))
+    framed.paste(out, (MARGIN, MARGIN))
+    return close_pinholes(framed)
+
+
+def close_pinholes(im):
+    """a group of not-quite-opaque pixels (alpha under 255) that does not reach the canvas's edge and is no bigger than
+    PINHOLE_MAX px is a pin hole or a seam the resize left in the coat (a 1 x 2 slit between a pom-pom and a leg, a
+    dotted seam between a sitting poodle's legs, a chink between the crew's fingers): it becomes opaque, coloured as
+    the opaque pixels round it. Real gaps (between a sitting golden's or beagle's front legs, the crew's arm and body,
+    the leash's loops: 32 px and more) stay."""
+    from collections import deque
+    W, H = im.size
+    px = im.load()
+    seen = bytearray(W * H)
+    closed = []
+    for start in range(W * H):
+        y, x = divmod(start, W)
+        if seen[start] or px[x, y][3] == 255:
+            continue
+        seen[start] = 1
+        q, group, outside = deque([start]), [], False
+        while q:
+            i = q.popleft()
+            group.append(i)
+            yy, xx = divmod(i, W)
+            if xx in (0, W - 1) or yy in (0, H - 1):
+                outside = True
+            for nx, ny in ((xx + 1, yy), (xx - 1, yy), (xx, yy + 1), (xx, yy - 1)):
+                j = ny * W + nx
+                if 0 <= nx < W and 0 <= ny < H and not seen[j] and px[nx, ny][3] < 255:
+                    seen[j] = 1
+                    q.append(j)
+        if not outside and len(group) <= PINHOLE_MAX:
+            closed.append(group)
+    for group in closed:
+        for i in group:
+            y, x = divmod(i, W)
+            acc = [0, 0, 0, 0]
+            for yy in range(max(0, y - 1), min(H, y + 2)):
+                for xx in range(max(0, x - 1), min(W, x + 2)):
+                    r, g, b, a = px[xx, yy]
+                    if a == 255:
+                        acc[0] += r
+                        acc[1] += g
+                        acc[2] += b
+                        acc[3] += 1
+            if acc[3]:
+                px[x, y] = (acc[0] // acc[3], acc[1] // acc[3], acc[2] // acc[3], 255)
+            else:
+                px[x, y] = px[x, y][:3] + (255,)
+    return im
 
 
 def push_colour(im, rings=4):
@@ -442,7 +505,9 @@ def main(cutdir):
             'the set\'s camera: 176 px per metre of the orthographic view (a metre straight up is 152.4 px; set.json\'s '
             'map.ppm, 139.14, is a metre along a lawn edge in the same camera), so the yard draws each at 0.5 and never '
             'rescales one breed differently.',
-            'scale: corgiLength is the corgi\'s moving pose, trimmed width, in px at 2x; each other breed\'s moving pose is a '
+            'Every sprite has a clear margin of 2 transparent px round the figure; anchors are in the framed image\'s pixels. '
+            'scale: corgiLength is the corgi\'s moving pose, its cut figure\'s width, in px at 2x (the sprite adds a soft '
+            'edge and the margin); each other breed\'s moving pose is a '
             'fixed ratio of it (beagle 1.15, collie 1.35, poodle 1.3, Lab 1.55, golden 1.6), and its sit and sleep share '
             'that scale; the crew (crew-*) is crewToStandingGolden x the golden\'s standing height, and the second crew '
             'member (crew2-*: a different adult in the same uniform, so two or three staff on the floor are not one '
@@ -451,8 +516,9 @@ def main(cutdir):
             'shoes). facing: every sprite faces right, along the camera-facing diagonal toward the lower right; mirror '
             'for the other diagonal (gate 5). No shadow is drawn in any sprite (gate 3).',
             'coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle '
-            'tricolour) and its recolours in code (gate 6); the yellow Lab is its own generated strip, at the Lab\'s '
-            'ratio; docs/art-provenance/cast/README.md has every step.',
+            'tricolour) and its recolours in code (gate 6: golden red, Lab chocolate, poodle black, corgi sable, collie '
+            'red); the yellow Lab is its own generated strip, at the Lab\'s ratio; the beagle has no second coat and the '
+            'poodle no cream (dropped in D58 rounds 1 and 2); docs/art-provenance/cast/README.md has every step.',
         ],
     }
     with open(MANIFEST, 'w') as f:

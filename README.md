@@ -56,10 +56,16 @@ The page is live at **https://fshernoff.github.io/sicompetition/**. Every push t
 Claude Code (Anthropic) assisted the build as a coding agent, and the Codex CLI (OpenAI, GPT-6-Astra) reviewed plans
 and diffs. The simulator rules and the lesson design are the author's. Claude Code drafted the lesson materials in
 `docs/lesson/` from the author's unit design; the author reviews, edits as needed and approves every sheet before it reaches a class.
-The page's illustrations (the yard, the dogs, the crew and the AI GM) were generated with GPT image through the Codex CLI for this project and edited by the author; docs/art-provenance/ records each prompt and step.
+The page's art was made for this project in two ways (D59). The dogs and the crew were generated with GPT image
+through the Codex CLI, from prompts written in this project, then cut, colour-checked and repaired by the scripts in
+`Tools/Art/cast/`. The yard's set, its mess details and the AI GM were modelled in three.js with code written by
+Claude Code and rendered offline at build time (`Tools/Art/set/`); nothing from three.js ships in the page. Every
+shipped image passed three independent figure-by-figure checks on its exact bytes (D58). `docs/art-provenance/`
+records each tool, model, date, prompt and step.
 Nothing in this repository was copied from any earlier project.
 
 ## License
 
-MIT. See [LICENSE](LICENSE). The bundled typefaces, Fredoka and Nunito (from the `@fontsource` packages), are under the
-SIL Open Font License 1.1.
+MIT. See [LICENSE](LICENSE). The one bundled typeface, Archivo (The Archivo Project Authors, from the
+`@fontsource-variable/archivo` package), is under the SIL Open Font License 1.1; its licence ships with the page as
+`fonts/Archivo-OFL.txt` (`public/fonts/` in the repository).

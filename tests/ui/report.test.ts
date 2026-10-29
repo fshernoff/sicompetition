@@ -82,7 +82,7 @@ describe('reportTable: shape', () => {
       "Dogs per staffer, the day's average",
       'Blocks over 15 dogs per staffer',
       'Incidents',
-      'Dogs sent home sick',
+      'Dogs found sick at pickup',
       'Inspector visits',
       'Blocks with crew fatigue above 70%',
       'Reputation at pickup',
@@ -143,7 +143,7 @@ describe('reportTable: the covered reckless week on seed 1', () => {
     expect(cells(table, "Dogs per staffer, the day's average")).toEqual(['20.0', '19.0', '17.0', '8.0', '16.0', '16.0']);
     expect(cells(table, 'Blocks over 15 dogs per staffer')).toEqual(['4', '4', '4', '0', '4', '16']);
     expect(cells(table, 'Incidents')).toEqual(['4', '2', '2', '0', '1', '9']);
-    expect(cells(table, 'Dogs sent home sick')).toEqual(['0', '1', '2', '2', '1', '6']);
+    expect(cells(table, 'Dogs found sick at pickup')).toEqual(['0', '1', '2', '2', '1', '6']);
     expect(cells(table, 'Inspector visits')).toEqual(['0', '1', '0', '0', '0', '1']);
     expect(cells(table, 'Blocks with crew fatigue above 70%')).toEqual(['0', '1', '3', '4', '4', '12']);
     expect(cells(table, 'Reputation at pickup')).toEqual(['42', '32', '26', '24', '21', '50 → 21 (−29)']);

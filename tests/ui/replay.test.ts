@@ -166,18 +166,18 @@ describe('replayFrame: the floor during block t', () => {
   });
 
   it("writes today's plan in business words with its prices, naming a cap only on a day it turned dogs away (G5d)", () => {
-    expect(planWords(frame(covered, 0))).toBe('Today: 20 asked · all 20 accepted · premium, $52 a dog · 1 staffer scheduled, $300 in wages');
-    expect(planWords(frame(covered, 13))).toBe('Today: 16 asked · all 16 accepted · premium, $52 a dog · 2 staffers scheduled, $600 in wages');
+    expect(planWords(frame(covered, 0))).toBe('Today: 20 asked · all 20 accepted · premium, $52 a dog + $10 a dog per play block · 1 staffer scheduled, $300 in wages');
+    expect(planWords(frame(covered, 13))).toBe('Today: 16 asked · all 16 accepted · premium, $52 a dog + $10 a dog per play block · 2 staffers scheduled, $600 in wages');
     expect(planWords(frame(literal, 12))).toBe('Today: 16 asked · closed · 1 staffer scheduled, called out'); // a closed day pays no wages
     // the careful week caps at a safe ratio, but two staff hold every dog who asked: no cap is named
     const easy = frame(careful, 0);
     expect(easy.bookings).toBe('safe');
     expect(easy.accepted).toBe(easy.requests);
-    expect(planWords(easy)).toBe(`Today: ${easy.requests} asked · all ${easy.requests} accepted · standard, $40 a dog · 2 staffers scheduled, $600 in wages`);
+    expect(planWords(easy)).toBe(`Today: ${easy.requests} asked · all ${easy.requests} accepted · standard, $40 a dog + $10 a dog per play block · 2 staffers scheduled, $600 in wages`);
     const safe = runEpisode(config, round1, stationaryPolicy({ bookings: 'safe', rate: 'low', staff: 1 }, ['freePlay', 'freePlay', 'freePlay']), episodeSeeds(1, 0));
-    expect(planWords(replayFrame(safe.steps, 0, config))).toBe('Today: 20 asked · 10 accepted, capped at a safe ratio · low, $28 a dog · 1 staffer scheduled, $300 in wages');
+    expect(planWords(replayFrame(safe.steps, 0, config))).toBe('Today: 20 asked · 10 accepted, capped at a safe ratio · low, $28 a dog + $10 a dog per play block · 1 staffer scheduled, $300 in wages');
     const legal = runEpisode(config, round1, stationaryPolicy({ bookings: 'legal', rate: 'standard', staff: 1 }, ['freePlay', 'freePlay', 'freePlay']), episodeSeeds(1, 0));
-    expect(planWords(replayFrame(legal.steps, 0, config))).toBe('Today: 20 asked · 15 accepted, capped at the legal ratio · standard, $40 a dog · 1 staffer scheduled, $300 in wages');
+    expect(planWords(replayFrame(legal.steps, 0, config))).toBe('Today: 20 asked · 15 accepted, capped at the legal ratio · standard, $40 a dog + $10 a dog per play block · 1 staffer scheduled, $300 in wages');
     for (const t of [frame(covered, 0), frame(literal, 12)]) expect(planWords(t)).not.toMatch(/\d+ per staffer|per dog|injur|reward|episode/i);
   });
 

@@ -229,3 +229,11 @@ critic): round 2: 2/9/6 and 3/9/16; round 3: 0/2/8 and 0/4/15; round 4: 1/2/7 an
 two of its highs are regressions from round 3's own fixes; the rest are new, finer findings. The mediums have not
 fallen below seven from either reader in any round, so "no more than three mediums" looks out of reach with these
 readers at this bar. By the plan's budget clause the owner decides: ship, the fallback, or more time.
+
+### The owner's call (Oct 29): fix round 4's blocking and high items, the main thread checks them, then ship
+
+The fixes, the spec first (BRIEF 10.1, 10.2; 3 tests failing): (1) the tray never covers text at any width (WP2);
+(2) the Today line names the add-on, "+ $10 a dog per play block", so the takings reconcile (WP2); (3) the fallback
+keeps the block's event chips and the GM's label, and its notice no longer says "beside" (WP3); (4) sickness has
+one name, "found sick at pickup", in the chip, the rail ("(not incidents)") and the report's row (WP2). The 640 px
+Chromebook window (C4) goes to the owner's Chromebook check. The mediums wait for G6 after the pilot.

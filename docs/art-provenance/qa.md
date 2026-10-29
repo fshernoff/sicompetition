@@ -465,3 +465,6 @@ Round 3 of the cast (every sprite re-framed with a 2 px margin; 42 sprites):
 | set/gm-done.webp | e12e5f32915d | Sonnet | 2026-10-29 | clean | the third render: the same object and place as ready and running; a neutral warm-white band |
 | set/gm-page-done.webp | d44de11da266 | Sonnet | 2026-10-29 | clean | the third render: the same object and place as ready and running; a neutral warm-white band |
 | cast/golden-gold-moving.webp, cast/golden-red-moving.webp, cast/lab-yellow-asleep.webp | (round 3 bytes) | Sonnet | 2026-10-29 | defect: an enclosed translucent pocket (the brisket; the ear and cheek) | repaired: POCKET_REPAIRS; the new bytes' rows are above |
+| cast/golden-gold-moving.webp | 36d3aa00cb2d | Astra | 2026-10-29 | clean | after the pocket repair: the spot at 6×, anatomy, coat and margins |
+| cast/golden-red-moving.webp | 6213ec05c958 | Astra | 2026-10-29 | clean | after the pocket repair: the spot at 6×, anatomy, coat and margins |
+| cast/lab-yellow-asleep.webp | 30ec72368b93 | Astra | 2026-10-29 | clean | after the pocket repair: the spot at 6×, anatomy, coat and margins |

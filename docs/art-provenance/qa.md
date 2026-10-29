@@ -229,3 +229,34 @@ Second render of the set (WP4b, after the readers' findings):
 | set/gm-page-ready.webp | d4b7bfb2b2d9 | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
 | set/gm-page-running.webp | 23e8fa0b7bc1 | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
 | set/gm-page-done.webp | 50c2056da31a | Sonnet | 2026-10-29 | clean | the second render: full image, the crops, 2× to 14× zooms on cream, near-black, white and magenta; alpha and flood-fill checks |
+
+Round 2 of the cast (WP4a's fixes):
+
+| file | sha | reader | date | verdict | notes |
+|---|---|---|---|---|---|
+| cast/beagle-tricolour-moving.webp | 0c67ddc98005 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/beagle-tricolour-sitting.webp | 476c8055863d | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/beagle-tricolour-asleep.webp | beadb9c7cff0 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/collie-black-moving.webp | 6037dba489ec | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/collie-black-sitting.webp | 6a2edcefa454 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/collie-black-asleep.webp | 41f46cd4d795 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/collie-red-moving.webp | 9b86aae70f7f | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/collie-red-sitting.webp | aa9cc6d2cc26 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/collie-red-asleep.webp | eb90dcd7e185 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/corgi-red-moving.webp | b5134e6eb61d | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/corgi-red-sitting.webp | 713f33476cbd | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/corgi-red-asleep.webp | 3e595c75e601 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/corgi-sable-moving.webp | 4ed78a5f9a73 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/corgi-sable-sitting.webp | 08612af0b812 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/corgi-sable-asleep.webp | 68f7c6917b02 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/lab-black-asleep.webp | 9d08b8e91c7f | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/lab-chocolate-asleep.webp | 6a8e8f6785ef | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/lab-yellow-moving.webp | 0c82acb8066a | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/lab-yellow-sitting.webp | 7719a501385f | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/lab-yellow-asleep.webp | 4bc6f8b727a2 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/poodle-black-moving.webp | 453fca12f563 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/poodle-black-sitting.webp | ea2cd62b24d8 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/poodle-black-asleep.webp | ee6656d11bf2 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/poodle-cream-moving.webp | 0a3fbe15795d | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/poodle-cream-sitting.webp | b2e372942906 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/poodle-cream-asleep.webp | 5e3c25399555 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |

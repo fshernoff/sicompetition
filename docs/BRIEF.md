@@ -361,7 +361,8 @@ Dogs accepted; Accepted every booking ("yes", "no", "closed"; week: "5 of 5 days
 (week: "6 staff-days"); Crew on the floor ("0, called out" on a closed day; week: "1 staffer on 4 days"); Activities
 (drop-off · late morning · afternoon · pickup), the four blocks as resolved, the drop-off written "arrivals" (always
 free play, not a choice, section 2), a fallback written as what was asked and what ran ("walk → free play"),
-"closed" on a closed day (week: "nap 0, clean 0, walk 0"); Dogs per staffer (one decimal; "—" with no dogs); Blocks
+"closed" on a closed day (week: "nap 0, clean 0, walk 0"); Dogs per staffer on the floor, the day's average over its
+blocks (one decimal; "—" with no dogs; a walk takes dogs and a staffer off the floor, so it can differ from dogs ÷ crew); Blocks
 over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits; Blocks with crew fatigue above 70%;
 Reputation at pickup (week: "50 → 21 (−29)"); Cleanliness at pickup; Crew fatigue at pickup (both rounded; week:
 start → Friday's pickup with the change). A closed day keeps its requests, its scheduled crew and its pickup values.
@@ -372,7 +373,9 @@ GM's pay under your plan (the profit above is before this pay):** the P&L above 
 heading says so and the arithmetic is unchanged; one row per measure that is on, in section 7 order, labelled with
 its name and dollar amount ("Profit today ($), +$10 per $100"), the dollars it earned each day (weight × the day's delta ÷ the unit;
 reputation's day delta is the change since the previous pickup, Monday against the week's start, so a closed day's
-closure hit is paid) and in the week; then "Bonus this week ($)" (bold), whose week cell is the plan's total reward.
+closure hit is paid) and in the week; then "The GM's bonus ($)" (bold), whose week cell is the plan's total reward; then "Profit after the GM's bonus ($)"
+(bold): each day's profit less that day's bonus, and the week's (the owners' bottom line, G5d: $5,393 − $539.30 =
+$4,853.70 on Round 1, seed 1), in the bonus cells' format.
 Bonus cells carry a sign and a dollar sign, and cents only when there are cents ("+$123.50", "+$9.78", "+$113",
 "−$35", "$0"; profit is whole dollars ÷ 100 × an integer weight, so cents are exact and the days sum to the week).
 Nothing on: one row, "No measure is on: the GM is paid nothing." The six KPI totals are readable unweighted whatever the
@@ -399,7 +402,8 @@ words: every booking, capped at the legal ratio, capped at a safe ratio; never t
 during a clean; a "Closed" sign); the dogs-per-staffer gauge from 0 to 30 with one mark at 15 and the band above it
 tinted (10 is H1's number and stays hidden; 15 is public through the measure's name, D43); the incident counter with
 its icon, pulsing in a block with an incident; the reputation meter 0 to 100; the cash counter; small meters for
-energy, cleanliness and crew fatigue; "Tomorrow: 19 asking" and "Days the crew ran solo: 3" (section 3: the state is
+the dogs' energy, the yard's cleanliness and crew fatigue, each named for whose it is ("Dogs' energy", "Cleanliness",
+"Crew fatigue"); "Tomorrow: 19 asking" and "Days in a row the crew ran solo, before today: 3" (section 3: the state is
 visible, the rules are not); small counters for dogs sent home sick and inspector visits when above 0. Captions
 under the yard name the block's events as events, never as rules (D44): "Incident", "Vet bill $150", "Inspector:
 $250 fine", "2 dogs sent home sick", "The staffer called out: closed today", "Walk photo posted"; a fallback is in

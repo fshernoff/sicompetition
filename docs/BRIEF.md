@@ -437,7 +437,7 @@ the header and gets no caption, and the walk's reputation gain is not named. Nev
 "The GM's week plays here once it is on the job."; while the GM gets ready: "Monday, before opening: the GM is getting
 ready." If the yard's pictures cannot load, the yard draws no figures and says so in the page's type: "The yard's
 pictures did not load on this computer. Everything the GM does is in the panel and the report." (D64); the block's
-event chips and the GM's label stay; the panel, the scorecard and the report carry the week as before.
+event chips stay (no GM label without its orb); the panel, the scorecard and the report carry the week as before.
 
 ## 11. What the teacher sees (G5, G5b)
 

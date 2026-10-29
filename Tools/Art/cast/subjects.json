@@ -6,8 +6,8 @@
     "tail_sleep": ", the feathered tail curled along its body"
   },
   "corgi": {
-    "breed": "Pembroke Welsh corgi, the same breed and finish as the corgis in key.png (red and white: a warm orange-tan back, head and ears, a white chest, a white muzzle and blaze, white legs and paws; a long low body on short legs, large upright pointed ears, a short fluffy tail), with an adult head in proportion to its body, not oversized",
-    "tail_trot": ", the short tail up",
+    "breed": "Pembroke Welsh corgi, the same breed and finish as the corgis in key.png (red and white: a warm orange-tan back, head and ears, a white chest, a white muzzle and blaze, white legs and paws; a long low body on short legs, large upright pointed ears, a short docked stub tail), with an adult head in proportion to its body, not oversized",
+    "tail_trot": ", the short stub tail",
     "tail_sleep": ""
   },
   "collie": {
@@ -27,6 +27,11 @@
   },
   "lab": {
     "breed": "Labrador retriever, a black Lab, in the same finish as the dogs in key.png but NOT a golden retriever: a sleek, smooth, short black coat that lies flat, with no feathering or long hair anywhere (none on the tail, the legs, the chest or the ears); a broad blocky head with a clear stop, a wide muzzle and short drop ears; a thick otter tail: wide at the base, short-haired, smooth and rounded, tapering to a point like a rudder, never fluffy or plumed; a sturdy, deep-chested, athletic build. The black coat still shows its flat triangular facets in dark charcoal greys, lit from the upper left as in key.png",
+    "tail_trot": ", the smooth otter tail carried level out behind",
+    "tail_sleep": ", the smooth otter tail lying along its body"
+  },
+  "labyellow": {
+    "breed": "Labrador retriever, a yellow Lab: the same dog as in labref.png (load it from the current working directory with view_image too; keep its blocky head, its smooth short coat with no feathering, its thick smooth otter tail, its build and its three poses) but with a pale cream-yellow coat instead of a black one, a black nose and dark brown eyes; NOT a golden retriever: no feathering anywhere, no plumed or fluffy tail",
     "tail_trot": ", the smooth otter tail carried level out behind",
     "tail_sleep": ", the smooth otter tail lying along its body"
   }

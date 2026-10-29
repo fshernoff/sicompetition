@@ -159,57 +159,6 @@
    ]
   },
   {
-   "id": "beagle-tan-moving",
-   "file": "cast/beagle-tan-moving.webp",
-   "kind": "dog",
-   "breed": "beagle",
-   "coat": "tan",
-   "pose": "moving",
-   "facing": "right",
-   "size": [
-    150,
-    141
-   ],
-   "anchor": [
-    72.0,
-    116.5
-   ]
-  },
-  {
-   "id": "beagle-tan-sitting",
-   "file": "cast/beagle-tan-sitting.webp",
-   "kind": "dog",
-   "breed": "beagle",
-   "coat": "tan",
-   "pose": "sitting",
-   "facing": "right",
-   "size": [
-    109,
-    107
-   ],
-   "anchor": [
-    52.0,
-    92.8
-   ]
-  },
-  {
-   "id": "beagle-tan-asleep",
-   "file": "cast/beagle-tan-asleep.webp",
-   "kind": "dog",
-   "breed": "beagle",
-   "coat": "tan",
-   "pose": "asleep",
-   "facing": "right",
-   "size": [
-    135,
-    77
-   ],
-   "anchor": [
-    68.0,
-    65.7
-   ]
-  },
-  {
    "id": "collie-black-moving",
    "file": "cast/collie-black-moving.webp",
    "kind": "dog",

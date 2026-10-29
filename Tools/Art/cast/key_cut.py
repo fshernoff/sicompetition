@@ -1,6 +1,6 @@
 """Key a flat magenta strip to real alpha and cut it into one trimmed RGBA PNG per figure (Pillow only).
 
-usage: key_cut.py <strip.png> <outdir> <prefix> [--no-pink]    (figures are numbered left to right)
+usage: key_cut.py <strip.png> <outdir> <prefix> [--no-pink] [--no-green]    (figures are numbered left to right)
 Writes <outdir>/<prefix>-keyed.png and <outdir>/<prefix>-NN.png and prints what it did. KEY_VERBOSE=1 lists every
 closed gap.
 
@@ -46,8 +46,13 @@ The steps, in order:
    the crew, whose skin, lips and leash sit in that hue), any visible pixel (saturation above 0.12, value above 0.3)
    redder or pinker than its surface's wide colour (a hue 0.025 to 0.3 short of it) takes that hue at its own value,
    no more saturated than it was; on a near-neutral surface (white, black) a pink or lavender pixel (hue 0.80 to
-   0.05, saturation above 0.05) goes neutral. The last of the key bled into a crease sits a little redward of the
-   coat (salmon on a yellow Lab).
+   0.05, saturation above 0.05) goes neutral; and a pale pixel within SPILL px of the key that is pink or lavender
+   (hue 0.80 to 0.035, saturation under 0.35, value above 0.5) becomes a warm near-white at its own value, whatever
+   its surface (the bounce light reaches the wide colour too, under a white belly). The last of the key bled into a
+   crease sits a little redward of the coat (salmon on a yellow Lab).
+8d. With --no-green (a dog; never the crew, whose shirt is teal), any visible pixel greener than its red and blue
+   (hue 0.17 to 0.55, saturation above 0.05: the model's complement fringe on a nose or a black coat beside the
+   magenta) becomes a warm grey at its own value.
 9. Alpha below 10 becomes 0.
 10. Figures are connected opaque groups (alpha >= 40), grouped by overlapping columns, specks under 0.4% of the
     biggest dropped, each cut and trimmed.
@@ -77,7 +82,7 @@ WIDE_COS = 0.8       # the wide sweep: a pixel this closely in the key's directi
 WIDE_MIN = 0.05      # ... carrying at least this share of the key is unmixed
 
 
-def main(src, outdir, prefix, no_pink=False):
+def main(src, outdir, prefix, no_pink=False, no_green=False):
     verbose = bool(os.environ.get('KEY_VERBOSE'))
     os.makedirs(outdir, exist_ok=True)
     im = Image.open(src).convert('RGB')
@@ -362,6 +367,13 @@ def main(src, outdir, prefix, no_pink=False):
             h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
             if s_ <= 0.05 or v <= 0.3:
                 continue
+            if spillzone[i] and (h >= 0.80 or h <= 0.035) and s_ < 0.35 and v > 0.5:
+                # a pale surface by the edge lit pink or lavender by the key (its wide colour may carry the same
+                # light): a warm near-white at its own value
+                nr, ng, nb = colorsys.hsv_to_rgb(0.08, min(s_, 0.08), v)
+                px[i] = (round(nr * 255), round(ng * 255), round(nb * 255), a)
+                repinked += 1
+                continue
             wh, ws, wv = colorsys.rgb_to_hsv(*(c / 255 for c in wide[i]))
             if ws < 0.12:
                 if not (h >= 0.80 or h <= 0.05):
@@ -374,6 +386,18 @@ def main(src, outdir, prefix, no_pink=False):
             px[i] = (round(nr * 255), round(ng * 255), round(nb * 255), a)
             repinked += 1
         print(f'pink taken out of the coat: {repinked} px')
+    # 8d: no green in a dog (see the docstring)
+    if no_green:
+        degreened = 0
+        for i, (r, g, b, a) in enumerate(px):
+            if a == 0 or g <= max(r, b):
+                continue
+            h, s_, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if 0.17 <= h <= 0.55 and s_ > 0.05:
+                nr, ng, nb = colorsys.hsv_to_rgb(0.08, min(s_, 0.1), v)
+                px[i] = (round(nr * 255), round(ng * 255), round(nb * 255), a)
+                degreened += 1
+        print(f'green taken out: {degreened} px')
     # 9
     px = [(r, g, b, 0 if a < 10 else a) for (r, g, b, a) in px]
 
@@ -431,4 +455,4 @@ def main(src, outdir, prefix, no_pink=False):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:4], no_pink='--no-pink' in sys.argv[4:])
+    main(*sys.argv[1:4], no_pink='--no-pink' in sys.argv[4:], no_green='--no-green' in sys.argv[4:])

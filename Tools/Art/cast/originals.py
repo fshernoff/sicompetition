@@ -14,10 +14,14 @@ RAW = os.path.join(ROOT, 'Temp', 'cast', 'raw')
 REF = os.path.join(ROOT, 'Temp', 'AgentMockups')
 OUT = os.path.join(ROOT, 'docs', 'art-provenance', 'cast')
 
-SHIPPING = ['cast-golden-1', 'cast-corgi-1', 'cast-collie-1', 'cast-beagle-1', 'cast-poodle-1', 'cast-lab-3',
-            'cast-crew-1', 'cast-crew2-1']
+# the strips the cast ships from, and the two earlier strips that are now only the locked references of their
+# breeds' retakes (cast-corgi-1 for cast-corgi-2, cast-beagle-1 for cast-beagle-2; both shipped before D58 round 1)
+SHIPPING = ['cast-golden-1', 'cast-corgi-2', 'cast-collie-1', 'cast-beagle-2', 'cast-poodle-1', 'cast-lab-3',
+            'cast-labyellow-1', 'cast-crew-1', 'cast-crew2-1', 'cast-corgi-1', 'cast-beagle-1']
 REFERENCES = {'key.png': 'reference-key-floor', 'crewref.png': 'reference-crew'}
-# the second crew call also loaded crew1ref.png, a copy of cast-crew-1.png, whose lossless original is already here
+# the second crew call also loaded crew1ref.png (a copy of cast-crew-1.png), the corgi and beagle retakes
+# corgiref.png and beagleref.png (copies of cast-corgi-1.png and cast-beagle-1.png), the yellow Lab labref.png (a copy
+# of cast-lab-3.png): their lossless originals are all here
 
 
 def sha12(path):

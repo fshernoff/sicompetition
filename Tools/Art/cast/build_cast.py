@@ -76,23 +76,47 @@ def grey_coat(h, s, v):          # the Lab, generated black: its whole charcoal 
     return s < 0.3
 
 
-# Each breed's coats: the generated one (None) or a recolour: (mask, target colour, gamma, protect small parts, keep
-# darks). A recoloured pixel becomes target x (L / L0) ** gamma, L its luminance and L0 the median luminance of the
-# mask in the breed's moving pose, so the facets keep their shading. "protect" leaves a small connected part of the
-# mask in the head end alone (an eye or a nose inside a black patch; see protect_small). "keep darks" (a ratio r) keeps a
-# pixel darker than r x L0 as it was, fading in over the 0.1 above it (the nose, the eyes and the lip line of a dog
-# whose whole coat is recoloured).
+def whole_coat(h, s, v):         # a dog whose whole coat is one colour (the poodle): every pixel, the nose and eyes
+    return True                  # kept by keep_dark
+
+
+# Each breed's coats: the generated one (None), another subject's generated strip (its name: the Lab's yellow coat is
+# its own call, cast-labyellow-1, since a recolour of the black Lab lost the nose and kept black in the creases), or a
+# recolour of the generated strip. A recolour: mask (which pixels are coat), target colour, gamma, and options. A
+# recoloured pixel becomes target x (L / L0) ** gamma, L its luminance and L0 the median luminance of the mask in the
+# breed's moving pose, so the facets keep their shading. Options: "protect" leaves the nose, the eyes and the lip line
+# inside a patch alone (see protect_small); "keep_dark" (a ratio r) keeps a pixel darker than r x L0 as it was,
+# fading in over the 0.1 above it (the nose and the eyes of a dog whose whole coat is recoloured); "band" also takes
+# the patch's anti-aliased border (see recolour), so no grey or dark rim of the old patch survives in the new coat.
 COATS = {
-    'golden': {'gold': None, 'red': (warm_coat, (190, 112, 58), 1.0, False, None)},
+    'golden': {'gold': None, 'red': dict(mask=warm_coat, target=(190, 112, 58), gamma=1.0)},
     'lab': {'black': None,
-            'chocolate': (grey_coat, (116, 76, 50), 0.75, False, 0.3),
-            'yellow': (grey_coat, (212, 180, 124), 0.45, False, 0.3)},
+            'chocolate': dict(mask=grey_coat, target=(116, 76, 50), gamma=0.75, keep_dark=0.3),
+            'yellow': 'labyellow'},
     'poodle': {'brown': None,
-               'black': (poodle_coat, (54, 51, 49), 1.25, False, None),
-               'cream': (poodle_coat, (232, 214, 182), 0.85, False, None)},
-    'corgi': {'red': None, 'sable': (red_patch, (172, 98, 48), 1.1, False, None)},
-    'collie': {'black': None, 'red': (black_patch, (128, 74, 44), 0.85, True, None)},
-    'beagle': {'tricolour': None, 'tan': (black_patch, (182, 112, 56), 0.85, True, None)},
+               'black': dict(mask=whole_coat, target=(54, 51, 49), gamma=1.25, keep_dark=0.3),
+               'cream': dict(mask=whole_coat, target=(208, 192, 163), gamma=0.4, keep_dark=0.3)},
+    'corgi': {'red': None, 'sable': dict(mask=red_patch, target=(172, 98, 48), gamma=1.1)},
+    'collie': {'black': None, 'red': dict(mask=black_patch, target=(128, 74, 44), gamma=0.85)},
+    # the beagle ships in its tricolour only: a tan recolour of the saddle left grey and dark borders, a recoloured
+    # far paw and creases at every setting tried (the D58 readers' round 1), so one model cannot carry that coat
+    'beagle': {'tricolour': None},
+}
+
+# Controlled repairs on a cut figure, before any recolour or scaling (each recorded in the provenance):
+# ('close', box): the transparent pixels between the opaque ones on each row of the box are filled with the colour
+# of the opaque pixels round them (pushed in ring by ring), alpha 255.
+# ('flatten', box, lo, hi): every pixel in the box brighter (luminance) than hi takes the median colour of the box's
+# coloured pixels (saturation above 0.5: the coat, not a grey border) between lo and hi (a facet the model lit far brighter than the coat round
+# it, a speck at the sprite's size).
+REPAIRS = {
+    # the black Lab asleep: the far ear's tip hangs right of the cheek with a sliver of background between, which
+    # reads as a detached hook at the sprite's size; the gap is closed so the ear lies against the cheek
+    ('lab', 3): [('close', (398, 148, 420, 174))],
+    # the beagle (cast-beagle-2): a small pale facet (luminance about 200 in tan of about 145) at the tip of the tan
+    # wedge that meets the black saddle by the hip, trotting and asleep, a light speck at the sprite's size
+    ('beagle', 1): [('flatten', (112, 117, 126, 128), 120, 160)],
+    ('beagle', 3): [('flatten', (60, 32, 74, 46), 120, 160)],
 }
 
 
@@ -105,13 +129,9 @@ def coat_mask(im, test):
     return [p[3] > 0 and test(*hsv(p)) for p in im.get_flattened_data()]
 
 
-def protect_small(mask, W, H, total):
-    """drop the connected parts of the mask smaller than 1.5% of the figure whose middle is in the head end (the
-    front 28% of the width, the dog facing right): the eyes, the nose, the lip line; a small piece of a saddle or a
-    tail band elsewhere is coat and is recoloured"""
+def components(mask, W, H):
     from collections import deque
     seen = bytearray(W * H)
-    out = list(mask)
     for s in range(W * H):
         if not mask[s] or seen[s]:
             continue
@@ -125,20 +145,69 @@ def protect_small(mask, W, H, total):
                 if 0 <= j < W * H and mask[j] and not seen[j]:
                     seen[j] = 1
                     q.append(j)
+        yield part
+
+
+def protect_small(mask, px, W, H, total):
+    """the mask without the nose, the eyes and the lip line: connected parts smaller than 1% of the figure, darker
+    than a saddle (median value under 0.30) and in the front of the figure (their middle beyond 60% of the width, the
+    dog facing right); a small piece of a saddle or a tail band is lighter or further back and is recoloured. Returns
+    the mask and the protected pixels."""
+    out, kept = list(mask), []
+    for part in components(mask, W, H):
         xs = [i % W for i in part]
-        if len(part) < 0.015 * total and (min(xs) + max(xs)) / 2 > 0.72 * W:
+        vs = sorted(max(px[i][:3]) for i in part)
+        if len(part) < 0.01 * total and vs[len(vs) // 2] < 0.30 * 255 and (min(xs) + max(xs)) / 2 > 0.6 * W:
             for i in part:
                 out[i] = False
-    return out
+            kept += part
+    return out, kept
+
+
+def dilate(mask, W, H, r):
+    m = Image.new('L', (W, H))
+    m.putdata([255 if v else 0 for v in mask])
+    return [v > 0 for v in m.filter(ImageFilter.MaxFilter(2 * r + 1)).get_flattened_data()]
 
 
 def recolour(im, spec, L0):
-    test, target, gamma, protect, keep_dark = spec
+    """spec: a COATS recolour. With band (a patch on a white and tan dog: the beagle's saddle), only the patch's own
+    parts are recoloured: its connected parts of at least 0.15% of the figure, and any smaller part within 4 px of
+    those (a fragment of the saddle); a small dark part elsewhere is shading in the white (a crease in a paw) and
+    stays. Then the pixels within 3 px of the recoloured parts that are grey or dark (saturation under 0.3 and value
+    under 0.75, or value under 0.5: the anti-aliased border between the patch and the white or the tan) are recoloured
+    with them, except next to a protected nose or eye."""
     W, H = im.size
+    N = W * H
     px = list(im.get_flattened_data())
-    mask = coat_mask(im, test)
-    if protect:
-        mask = protect_small(mask, W, H, sum(1 for p in px if p[3] > 128))
+    total = sum(1 for p in px if p[3] > 128)
+    mask = coat_mask(im, spec['mask'])
+    kept = []
+    if spec.get('protect'):
+        mask, kept = protect_small(mask, px, W, H, total)
+    if spec.get('band'):
+        parts = list(components(mask, W, H))
+        core = [False] * N
+        for part in parts:
+            if len(part) >= 0.0015 * total:
+                for i in part:
+                    core[i] = True
+        near_core = dilate(core, W, H, 4)
+        mask = list(core)
+        for part in parts:
+            if len(part) < 0.0015 * total and any(near_core[i] for i in part):
+                for i in part:
+                    mask[i] = True
+        near = dilate(mask, W, H, 3)
+        kept_set = set(kept)
+        keep_away = dilate([i in kept_set for i in range(N)], W, H, 3) if kept else [False] * N
+        for i, p in enumerate(px):
+            if mask[i] or not near[i] or keep_away[i] or p[3] == 0:
+                continue
+            h, s_, v = hsv(p)
+            if (s_ < 0.3 and v < 0.75) or v < 0.5:
+                mask[i] = True
+    target, gamma, keep_dark = spec['target'], spec['gamma'], spec.get('keep_dark')
     out = []
     for p, m in zip(px, mask):
         if not m:
@@ -156,8 +225,56 @@ def recolour(im, spec, L0):
     return res
 
 
-def coat_l0(im, test):
-    vals = sorted(lum(p) for p, m in zip(im.get_flattened_data(), coat_mask(im, test)) if m and p[3] == 255)
+def repair(im, steps):
+    """REPAIRS' steps on a cut figure"""
+    im = im.copy()
+    W, H = im.size
+    px = im.load()
+    for kind, (x0, y0, x1, y1), *extra in steps:
+        if kind == 'flatten':
+            lo, hi = extra
+            box = [(x, y) for y in range(y0, y1) for x in range(x0, x1) if px[x, y][3] == 255]
+            mid = sorted((px[q] for q in box if lo <= lum(px[q]) <= hi and hsv(px[q])[1] > 0.5), key=lum)
+            ref = mid[len(mid) // 2]
+            hot = [q for q in box if lum(px[q]) > hi]
+            for q in hot:
+                px[q] = ref
+            print(f'  repair: flattened {len(hot)} px in {(x0, y0, x1, y1)} to {ref[:3]}')
+            continue
+        assert kind == 'close'
+        fill = []
+        for y in range(y0, y1):
+            xs = [x for x in range(x0, x1) if px[x, y][3] >= 128]
+            if len(xs) >= 2:
+                fill += [(x, y) for x in range(xs[0], xs[-1] + 1) if px[x, y][3] < 255]
+        todo = set(fill)
+        while todo:
+            done = {}
+            for x, y in todo:
+                acc = [0, 0, 0, 0]
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        q = (x + dx, y + dy)
+                        if q in todo or not (0 <= q[0] < W and 0 <= q[1] < H) or px[q][3] < 255:
+                            continue
+                        r, g, b, a = px[q]
+                        acc[0] += r
+                        acc[1] += g
+                        acc[2] += b
+                        acc[3] += 1
+                if acc[3]:
+                    done[(x, y)] = (acc[0] // acc[3], acc[1] // acc[3], acc[2] // acc[3], 255)
+            if not done:
+                break
+            for q, c in done.items():
+                px[q] = c
+            todo -= set(done)
+        print(f'  repair: closed {len(fill)} px in {(x0, y0, x1, y1)}')
+    return im
+
+
+def coat_l0(im, spec):
+    vals = sorted(lum(p) for p, m in zip(im.get_flattened_data(), coat_mask(im, spec['mask'])) if m and p[3] == 255)
     return vals[len(vals) // 2]
 
 
@@ -270,23 +387,31 @@ def main(cutdir):
     load = lambda s, n: Image.open(os.path.join(cutdir, f'{s}-0{n}.png')).convert('RGBA')
     sprites, report = [], []
     golden_scale = golden_stand = None
+    def figures(subject):
+        return [repair(load(subject, n), REPAIRS[(subject, n)]) if (subject, n) in REPAIRS else load(subject, n)
+                for n in (1, 2, 3)]
+
     for breed, ratio in BREEDS.items():
-        figs = [load(breed, n) for n in (1, 2, 3)]
+        figs = figures(breed)
         s = ratio * CORGI_LENGTH / figs[0].width
         if breed == 'golden':
             golden_scale = s
             golden_stand = (figs[0].height - head_top(figs[0])) * s
-        L0 = {name: coat_l0(figs[0], spec[0]) for name, spec in COATS[breed].items() if spec}
+        L0 = {name: coat_l0(figs[0], spec) for name, spec in COATS[breed].items() if isinstance(spec, dict)}
         for name, spec in COATS[breed].items():
-            for pose, fig in zip(DOG_POSES, figs):
-                src = recolour(fig, spec, L0[name]) if spec else fig
-                sp = finish(resize(src, s))
+            own, s_own = figs, s
+            if isinstance(spec, str):          # another generated strip of the breed, at the breed's own ratio
+                own = figures(spec)
+                s_own = ratio * CORGI_LENGTH / own[0].width
+            for pose, fig in zip(DOG_POSES, own):
+                src = recolour(fig, spec, L0[name]) if isinstance(spec, dict) else fig
+                sp = finish(resize(src, s_own))
                 sid = f'{breed}-{name}-{pose}'
                 path = save(sp, sid)
                 anchor = dog_anchor(sp)
                 sprites.append({'id': sid, 'file': f'cast/{sid}.webp', 'kind': 'dog', 'breed': breed, 'coat': name,
                                 'pose': pose, 'facing': 'right', 'size': list(sp.size), 'anchor': anchor})
-                report.append((sid, sp.size, anchor, os.path.getsize(path), round(s, 4)))
+                report.append((sid, sp.size, anchor, os.path.getsize(path), round(s_own, 4)))
     crew = [load('crew', n) for n in (1, 2, 3)]
     s_crew = CREW_TO_GOLDEN * golden_stand / crew[0].height
     for pose, fig in zip(CREW_POSES, crew):
@@ -326,7 +451,8 @@ def main(cutdir):
             'shoes). facing: every sprite faces right, along the camera-facing diagonal toward the lower right; mirror '
             'for the other diagonal (gate 5). No shadow is drawn in any sprite (gate 3).',
             'coat: the generated coat of each breed (golden gold, Lab black, poodle brown, corgi red, collie black, beagle '
-            'tricolour) and its recolours in code (gate 6); docs/art-provenance/cast/README.md has every step.',
+            'tricolour) and its recolours in code (gate 6); the yellow Lab is its own generated strip, at the Lab\'s '
+            'ratio; docs/art-provenance/cast/README.md has every step.',
         ],
     }
     with open(MANIFEST, 'w') as f:

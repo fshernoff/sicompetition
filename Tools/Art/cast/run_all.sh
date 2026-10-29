@@ -11,11 +11,19 @@ RAW=Temp/cast/raw
 CUT=Temp/cast/cut
 mkdir -p "$CUT"
 # the strip each subject ships from (the call that came back clean; see docs/art-provenance/cast/README.md)
-STRIPS="golden:cast-golden-1 corgi:cast-corgi-1 collie:cast-collie-1 beagle:cast-beagle-1 poodle:cast-poodle-1 lab:cast-lab-3 crew:cast-crew-1 crew2:cast-crew2-1"
+STRIPS="golden:cast-golden-1 corgi:cast-corgi-2 collie:cast-collie-1 beagle:cast-beagle-2 poodle:cast-poodle-1 lab:cast-lab-3 labyellow:cast-labyellow-1 crew:cast-crew-1 crew2:cast-crew2-1"
 for pair in $STRIPS; do
   subject=${pair%%:*}; strip=${pair#*:}
-  if [ "$subject" = corgi ] || [ "$subject" = crew ] || [ "$subject" = crew2 ]; then flag=; else flag=--no-pink; fi
-  $PY -I $T/key_cut.py "$RAW/$strip.png" "$CUT" "$subject" $flag > "$CUT/$subject.txt" &
+  # --no-pink: every dog but the corgi (pink inner ears); --no-green: the dogs whose green fringe the D58 readers
+  # found or whose strip was remade in that round (beagle, collie, corgi, the yellow Lab), so the passed golden, black
+  # Lab and brown poodle keep their bytes; the crew neither (skin, a teal shirt)
+  case "$subject" in
+    crew|crew2) flags= ;;
+    corgi) flags=--no-green ;;
+    beagle|collie|labyellow) flags="--no-pink --no-green" ;;
+    *) flags=--no-pink ;;
+  esac
+  $PY -I $T/key_cut.py "$RAW/$strip.png" "$CUT" "$subject" $flags > "$CUT/$subject.txt" &
 done
 wait
 $PY -I $T/build_cast.py "$CUT"

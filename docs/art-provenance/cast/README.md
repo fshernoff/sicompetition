@@ -1,106 +1,129 @@
 # The cast: provenance (G5d WP4a, D55, D59)
 
-The yard's dogs and crew: 48 sprites in `src/assets/art/cast/`, listed with their foot anchors in
+The yard's dogs and crew: 45 sprites in `src/assets/art/cast/`, listed with their foot anchors in
 `src/assets/art/cast.json`. Generated for this project on 2026-10-28 with GPT image (the built-in `image_gen` tool of
 the Codex CLI 0.162.0, model `gpt-6-astra`, reasoning effort low, logged in to the owner's ChatGPT account), one call
-per subject through `Tools/Agent/mockup.sh`, then keyed, cut, recoloured, graded and encoded in code by the scripts in
-`Tools/Art/cast/` (Pillow only). Nothing here is bought, traced or taken from another work. D59's method: the cast
-generated, the set and the GM modelled in code (`docs/art-provenance/set.md`).
+per subject through `Tools/Agent/mockup.sh`, then keyed, cut, recoloured, repaired where recorded below, graded and
+encoded in code by the scripts in `Tools/Art/cast/` (Pillow only). Nothing here is bought, traced or taken from
+another work. D59's method: the cast generated, the set and the GM modelled in code (`docs/art-provenance/set.md`).
 
 ## What is in this folder
 
 | File | What it is |
 |---|---|
-| `cast-golden-1.webp`, `cast-corgi-1.webp`, `cast-collie-1.webp`, `cast-beagle-1.webp`, `cast-poodle-1.webp`, `cast-lab-3.webp`, `cast-crew-1.webp`, `cast-crew2-1.webp` | The eight generated strips the cast ships from, exactly as they came back (1536 × 1024 PNG), re-encoded as lossless WebP and checked pixel for pixel against the PNG (`Tools/Art/cast/originals.py`) |
+| `cast-golden-1.webp`, `cast-corgi-2.webp`, `cast-collie-1.webp`, `cast-beagle-2.webp`, `cast-poodle-1.webp`, `cast-lab-3.webp`, `cast-labyellow-1.webp`, `cast-crew-1.webp`, `cast-crew2-1.webp` | The nine generated strips the cast ships from, exactly as they came back (1536 × 1024 PNG), re-encoded as lossless WebP and checked pixel for pixel against the PNG (`Tools/Art/cast/originals.py`) |
+| `cast-corgi-1.webp`, `cast-beagle-1.webp` | The corgi's and the beagle's first strips, lossless as above. They shipped until D58 round 1 found anatomy in them (a three-legged trotting corgi with a plume where its sit and sleep have a stub; a stub between the sitting beagle's front legs); they are now only the locked references their retakes loaded (gate 2), and ship nothing |
 | `reference-key-floor.webp` | The style and camera reference every call loaded: WP1's Floor key frame (`Temp/AgentMockups/wp1-floor-key2.png`, copied as `key.png`, PNG SHA-256 `13d35a627ebd`), itself generated on Oct 28 for the direction sprint. WebP quality 90, as the G5c concepts; a reference, never shipped |
 | `reference-crew.webp` | The identity reference the first crew call loaded: spike A's crew figure (`Temp/spike-a/raw/crew-v1.png`, copied as `crewref.png`, PNG SHA-256 `bd6b350db2b4`; its prompt is `Temp/spike-a/work/crew.txt`). WebP quality 90; never shipped |
 
-The second crew call loaded `crew1ref.png`, a copy of `cast-crew-1.png` (PNG SHA-256 `0214e8fa556d`), for the uniform
-and the finish only (the prompt asks for a different person); its lossless original is `cast-crew-1.webp` above.
+The other references were copies of strips already here, loaded under another name: `crew1ref.png` (the second crew
+call; `cast-crew-1`, PNG `0214e8fa556d`, for the uniform and the finish only: the prompt asks for a different
+person), `corgiref.png` (`cast-corgi-1`, PNG `56ac4d496b28`), `beagleref.png` (`cast-beagle-1`, PNG `cec11821a4e5`)
+and `labref.png` (the yellow Lab's call; `cast-lab-3`, PNG `6c18251a67a1`).
 
 The untouched PNGs, the two unused Lab strips and each call's log and reply are in `Temp/cast/raw/` and
 `Temp/AgentMockups/cast-*.{png,log,reply.md}` on the owner's Mac (git-ignored); Codex's own copies are under
 `~/.codex/generated_images/` (paths below).
 
-## The calls (ten; the budget was about twenty)
+## The calls (thirteen; the budget was about twenty, and about ten more for the round-1 fixes)
 
-`Tools/Art/cast/gen.sh <call> <subject>` builds the prompt (`Tools/Art/cast/make_prompt.py` from `prompts/pre.txt`,
-the subject's paragraph, `prompts/post.txt`), saves the exact text to `Temp/cast/work/<call>.prompt.txt`, calls
-`mockup.sh` and logs the call. No usage limit and no login error. The times are local (EDT).
+`Tools/Art/cast/gen.sh <call> <subject> [<extra>]` builds the prompt (`Tools/Art/cast/make_prompt.py` from
+`prompts/pre.txt`, the subject's paragraph, an optional sentence naming a locked reference, `prompts/post.txt`),
+saves the exact text to `Temp/cast/work/<call>.prompt.txt`, calls `mockup.sh` and logs the call. No usage limit and no
+login error. The times are local (EDT).
 
 | Call | Subject | Time, length | Codex's copy (`~/.codex/generated_images/`) | Used? |
 |---|---|---|---|---|
 | `cast-golden-1` | golden | 17:57:35, 51 s | `01a18483-fc50-7a41-a12f-c0d11498acdb/exec-90dc98b3-fe83-44db-b327-f547d3012382.png` | ships |
 | `cast-collie-1` | collie | 17:57:39, 51 s | `01a18484-09cf-73b1-a34c-413bec8b8368/exec-4beed9b6-d811-404b-bdaf-ae7f944cb763.png` | ships |
-| `cast-beagle-1` | beagle | 17:57:41, 51 s | `01a18484-11a4-7bc1-b58a-e9f78a6dc4c2/exec-c0eb0633-7a11-4064-a6e6-db1b978bcc1d.png` | ships |
-| `cast-corgi-1` | corgi | 17:57:41, 55 s | `01a18484-023f-7441-a0da-c00223bbac38/exec-bdcf50df-bd51-4732-a11d-b4f4b36f2852.png` | ships |
+| `cast-beagle-1` | beagle | 17:57:41, 51 s | `01a18484-11a4-7bc1-b58a-e9f78a6dc4c2/exec-c0eb0633-7a11-4064-a6e6-db1b978bcc1d.png` | superseded by `cast-beagle-2` (round 1: the sitting beagle's far hind paw a grey and orange stub between its front legs); its locked reference |
+| `cast-corgi-1` | corgi | 17:57:41, 55 s | `01a18484-023f-7441-a0da-c00223bbac38/exec-bdcf50df-bd51-4732-a11d-b4f4b36f2852.png` | superseded by `cast-corgi-2` (round 1: three legs in the trot, a plume tail there and a stub in the sit and sleep); its locked reference |
 | `cast-poodle-1` | poodle | 17:57:41, 49 s | `01a18484-1978-7ba3-9ac8-9bb97b7062ea/exec-5aa42e46-8c68-486f-a247-72e67d0d3104.png` | ships |
 | `cast-lab-1` | Lab (yellow) | 17:57:44, 50 s | `01a18484-215a-7e51-b622-3a5018db8cce/exec-d66804f6-acf0-447b-855c-974433203791.png` | rejected: a feathered, plumed tail; read as a golden retriever |
 | `cast-crew-1` | crew | 17:58:01, 65 s | `01a18484-2993-72b1-8b15-a2b7181b0760/exec-2563a264-d200-4f58-aaa4-a14740b1178b.png` | ships |
 | `cast-lab-2` | Lab (yellow, "no feathering") | 20:05:37, 63 s | `01a184f9-0534-7a42-b28c-ffafa7b38fc5/exec-de2a2b92-1116-4269-a8dc-815788b14eb8.png` | rejected: still a golden's feathered tail and coat |
-| `cast-lab-3` | Lab (black, "NOT a golden retriever", otter tail) | 20:07:00, 65 s | `01a184fa-41a7-7202-bc83-0f699e98fbf0/exec-93f93af3-dcb7-4904-8a56-65dd5aa105c8.png` | ships |
-| `cast-crew2-1` | the second crew member (a different adult, the same uniform), asked for after the first hand-back so that two or three staff on the floor are not one person repeated | 20:25:12, 54 s | `01a1850b-14f9-7da3-85cb-79f352f0397f/exec-b14bf567-0fcd-46c6-b1f7-318d07a7b97d.png` | ships |
+| `cast-lab-3` | Lab (black, "NOT a golden retriever", otter tail) | 20:07:00, 65 s | `01a184fa-41a7-7202-bc83-0f699e98fbf0/exec-93f93af3-dcb7-4904-8a56-65dd5aa105c8.png` | ships (black, and chocolate by recolour) |
+| `cast-crew2-1` | the second crew member (a different adult, the same uniform), so that two or three staff on the floor are not one person repeated | 20:25:12, 54 s | `01a1850b-14f9-7da3-85cb-79f352f0397f/exec-b14bf567-0fcd-46c6-b1f7-318d07a7b97d.png` | ships |
+| `cast-corgi-2` | corgi, locked to `cast-corgi-1`: four legs in the trot, the same stub tail in all three poses | 22:27:05, 63 s | `01a1857a-8a11-7110-85e4-8e48829b83b0/exec-bd06e0e9-e4ed-41a0-b179-3a0e54e204ce.png` | ships |
+| `cast-labyellow-1` | the yellow Lab, locked to `cast-lab-3` (the same dog, a pale coat, a black nose) | 22:27:10, 64 s | `01a1857a-9950-7141-9413-af66450373d5/exec-72fba1b7-e93d-41df-ae94-b9985ba59ee7.png` | ships (round 1: the yellow recolour of the black Lab lost its nose to the coat and kept black in the creases) |
+| `cast-beagle-2` | beagle, locked to `cast-beagle-1`: the sit's far hind paw behind the body | 22:27:11, 67 s | `01a1857a-9172-7883-adc9-15fc3dea666b/exec-718ed2c9-8e78-43e7-82bd-22229670d420.png` | ships (the trot and the sleep came back almost pixel for pixel the reference's: 0.6% and 1.1% of their pixels differ by more than 30; the sit 3.1%) |
 
-Every prompt tells the model to load `key.png` (and the crew's also `crewref.png`, the second crew's `crew1ref.png`)
-with its `view_image` tool. The CLI
-log records shell commands but not the built-in tool calls, so the loads are inferred from the results (the Floor
-finish in every strip; the same woman as the reference, face, hair and uniform; the second crew member in the same
-uniform and finish as the first).
+Every prompt tells the model to load `key.png`, and the crew's, the retakes' and the yellow Lab's also their reference
+(above), with its `view_image` tool. The CLI log records shell commands but not the built-in tool calls, so the loads
+are inferred from the results (the Floor finish in every strip; the same woman as the reference; the second crew
+member in the first one's uniform and finish; the retakes close to their references).
 
-**Locked references (gate 2).** Each breed's three poses come from one call, so the poses are one dog; its coats are
-recolours of that strip in code (gate 6), never new generations. No breed needed a second call for a pose, so no
-locked-reference retake was made; a retake would have named the breed's first clean strip as its reference.
+**Locked references (gate 2).** Each breed's three poses come from one call, so the poses are one dog. A breed's other
+coats are recolours of that strip in code (gate 6), except the yellow Lab: its own call, locked to the black Lab's
+strip, because no recolour of a black dog kept the nose dark and the creases clean. The corgi's and the beagle's
+retakes each named the breed's first strip as their locked reference.
 
 ## From strip to sprite (`Tools/Art/cast/run_all.sh` reruns all of it in about 45 s and reproduces the shipped bytes)
 
-1. **Key and cut** (`key_cut.py`, one run per strip; `--no-pink` for every breed but the corgi, whose inner ears are
-   pink, and never for either crew member). The key colour measured from the border; the key mask (magenta strength, and the key
-   darkened in a crevice); each pixel compared with the figure-only 9 × 9 median round it: key-mixed pixels (salmon
-   on a golden) and bounce-lit ones (a lavender rim on white fur) found; small sealed gaps closed (a group of
-   key-mixed pixels up to 64 px with no pure key, or a pin hole up to 12 px; real gaps such as the leash loops stay
-   open); key-mixed pixels unmixed, bounce taken out; the 3 px edge band matted against the figure colour that best
-   explains each pixel; key haze faded; a narrowed despill; a wide sweep against a 20 px surface colour; with
-   `--no-pink` the last pink or salmon in a coat with none returned to the coat's hue (pink or lavender on white or
-   black goes neutral); alpha under 10 dropped; three figures cut per strip, 0 specks in every strip. The counts
-   from the final run (`Temp/cast/cut/<subject>.txt`):
+1. **Key and cut** (`key_cut.py`, one run per strip). The flags: `--no-pink` for every breed but the corgi (pink
+   inner ears); `--no-green` for the beagle, the collie, the corgi and the yellow Lab (the dogs whose green fringe or
+   pink speck D58 round 1 found, or whose strip was remade then; the passed golden, black Lab and brown poodle keep
+   their bytes); neither for the crew (skin, lips, a red leash, a teal shirt). The key colour measured from the
+   border; the key mask (magenta strength, and the key darkened in a crevice); each pixel compared with the
+   figure-only 9 × 9 median round it: key-mixed pixels (salmon on a golden) and bounce-lit ones (a lavender rim on
+   white fur) found; small sealed gaps closed (a group of key-mixed pixels up to 64 px with no pure key, or a pin
+   hole up to 12 px; real gaps such as the leash loops stay open); key-mixed pixels unmixed, bounce taken out; the
+   3 px edge band matted against the figure colour that best explains each pixel; key haze faded; a narrowed
+   despill; a wide sweep against a 20 px surface colour; with `--no-pink`, the last pink or salmon in a coat with
+   none returned to the coat's hue, pink or lavender on white or black made neutral, and a pale pink or lavender
+   pixel within 12 px of the key made a warm near-white (round 1: the collie's belly); with `--no-green`, a green-cast
+   pixel made a warm grey (round 1: the rim of the beagle's nose); alpha under 10 dropped; three figures cut per
+   strip, 0 specks in every strip. The counts from the final run (`Temp/cast/cut/<subject>.txt`):
 
-   | Strip | Gaps closed | Unmixed | Bounce out | Edge band matted | Haze | Despilled | Wide sweep | Coat pink out |
-   |---|---|---|---|---|---|---|---|---|
-   | golden | 16 (43 px) | 377 | 1,237 | 6,141 | 5 | 2 | 140 | 525 |
-   | corgi | 12 (15 px) | 146 | 1,257 | 5,289 | 25 | 57 | 207 | (off) |
-   | collie | 17 (24 px) | 203 | 1,299 | 5,571 | 192 | 250 | 124 | 4,865 |
-   | beagle | 18 (31 px) | 184 | 1,439 | 5,384 | 118 | 205 | 34 | 4,742 |
-   | poodle | 17 (26 px) | 129 | 2,016 | 5,863 | 21 | 12 | 133 | 627 |
-   | Lab | 23 (31 px) | 107 | 1,502 | 4,584 | 808 | 174 | 139 | 757 |
-   | crew | 57 (80 px) | 688 | 3,514 | 12,653 | 31 | 185 | 223 | (off) |
-   | crew2 | 55 (93 px) | 554 | 3,976 | 11,795 | 22 | 267 | 234 | (off) |
+   | Strip | Gaps closed | Unmixed | Bounce out | Edge band matted | Haze | Despilled | Wide sweep | Coat pink out | Green out |
+   |---|---|---|---|---|---|---|---|---|---|
+   | golden (`cast-golden-1`) | 16 (43 px) | 377 | 1,237 | 6,141 | 5 | 2 | 140 | 525 | (off) |
+   | corgi (`cast-corgi-2`) | 14 (22 px) | 93 | 1,281 | 5,245 | 22 | 92 | 242 | (off) | 644 |
+   | collie (`cast-collie-1`) | 17 (24 px) | 203 | 1,299 | 5,571 | 192 | 250 | 124 | 5,012 | 2,314 |
+   | beagle (`cast-beagle-2`) | 7 (7 px) | 201 | 1,480 | 5,399 | 90 | 210 | 40 | 4,225 | 2,324 |
+   | poodle (`cast-poodle-1`) | 17 (26 px) | 129 | 2,016 | 5,863 | 21 | 12 | 133 | 627 | (off) |
+   | Lab, black (`cast-lab-3`) | 23 (31 px) | 107 | 1,502 | 4,584 | 808 | 174 | 139 | 757 | (off) |
+   | Lab, yellow (`cast-labyellow-1`) | 21 (30 px) | 215 | 2,169 | 6,297 | 13 | 10 | 111 | 835 | 222 |
+   | crew (`cast-crew-1`) | 57 (80 px) | 688 | 3,514 | 12,653 | 31 | 185 | 223 | (off) | (off) |
+   | crew2 (`cast-crew2-1`) | 55 (93 px) | 554 | 3,976 | 11,795 | 22 | 267 | 234 | (off) | (off) |
 
-2. **Scale** (`build_cast.py`; gate 1). Stored at 2× the yard's CSS size on spike B's metric camera (176 px per metre
-   at 2×). One scale per strip, from its moving pose's trimmed width: the corgi 130 px, the beagle 1.15 ×, the collie
-   1.35 ×, the poodle 1.3 ×, the Lab 1.55 ×, the golden 1.6 × the corgi's. The crew 2.2 × the golden's standing height
-   (its moving pose from the top of the head to the feet, 119.8 px), so 264 px tall; the second crew member 1.07 ×
-   the first (their leash poses: a man of about 1.77 m beside a woman of about 1.65 m), so 282 px tall. LANCZOS on premultiplied alpha;
-   alpha under 6 dropped; trimmed.
-3. **Coats** (gate 6), before the resize, at full size: a recoloured pixel becomes target × (L / L0)^γ, L its
+2. **Controlled repairs** (`REPAIRS` in `build_cast.py`; on the cut figure, before any recolour or scaling; each one
+   checked at 8× on cream and on dark after the rebuild):
+   - The black Lab asleep (`cast-lab-3`, figure 3): the far ear's tip hung right of the cheek with a sliver of
+     background between, a detached hook at the sprite's size (round 1). The 124 transparent pixels between the ear
+     and the cheek in the box (398, 148)–(420, 174) are filled with the colour of the opaque pixels round them,
+     pushed in ring by ring, alpha 255: the ear lies against the cheek. It carries into the chocolate coat.
+   - The beagle (`cast-beagle-2`), trotting (figure 1) and asleep (figure 3): a small pale facet (luminance about
+     200 in a tan of about 145) at the tip of the tan wedge that meets the black saddle by the hip, a light speck and
+     notch at the sprite's size (round 1). The pixels brighter than 160 in the boxes (112, 117)–(126, 128) and
+     (60, 32)–(74, 46) (22 and 29 px) take the median of the box's tan (saturation above 0.5, luminance 120 to
+     160): (198, 129, 64) and (206, 126, 61).
+3. **Scale** (gate 1). Stored at 2× the yard's CSS size on spike B's metric camera (176 px per metre at 2×). One
+   scale per strip, from its moving pose's trimmed width: the corgi 130 px, the beagle 1.15 ×, the collie 1.35 ×, the
+   poodle 1.3 ×, the Lab 1.55 × (both Lab strips, each from its own width), the golden 1.6 × the corgi's. The crew
+   2.2 × the golden's standing height (its moving pose from the top of the head to the feet, 119.8 px), so 264 px
+   tall; the second crew member 1.07 × the first (their leash poses: a man of about 1.77 m beside a woman of about
+   1.65 m), so 282 px tall. LANCZOS on premultiplied alpha; alpha under 6 dropped; trimmed.
+4. **Coats** (gate 6), before the resize, at full size: a recoloured pixel becomes target × (L / L0)^γ, L its
    luminance and L0 the coat's median luminance in the breed's moving pose, so every facet keeps its shading.
 
-   | Breed | Generated coat | Recolours: mask, target RGB, γ |
+   | Breed | Generated coat | Other coats |
    |---|---|---|
-   | golden | gold | red: the warm coat (hue 0.03 to 0.15), (190, 112, 58), 1.0 |
-   | Lab | black | chocolate: the charcoal coat (saturation under 0.3), (116, 76, 50), 0.75; yellow: the same, (212, 180, 124), 0.45; both keep pixels darker than 0.3 × L0 (the nose, the eyes, the lip line), fading in over 0.1 |
-   | poodle | brown | black: the coat, (54, 51, 49), 1.25; cream: the coat, (232, 214, 182), 0.85 |
-   | corgi | red | sable: the red patches (not the white, not the pink inner ears), (172, 98, 48), 1.1 |
-   | collie | black | red: the black patches, (128, 74, 44), 0.85; a small patch in the head end (the nose) stays |
-   | beagle | tricolour | tan: the black saddle and tail band, (182, 112, 56), 0.85; the nose and the eyes stay |
+   | golden | gold | red: the warm coat (hue 0.03 to 0.15), (190, 112, 58), γ 1.0 |
+   | Lab | black (`cast-lab-3`) | chocolate: the charcoal coat (saturation under 0.3), (116, 76, 50), γ 0.75, keeping pixels darker than 0.3 × L0 (the nose, the eyes) fading in over 0.1; yellow: its own strip (`cast-labyellow-1`), as generated |
+   | poodle | brown | black: the whole coat, (54, 51, 49), γ 1.25; cream: the whole coat, (208, 192, 163), γ 0.4 (so the lit top stays below white: round 1 found it blown to a light rim); both keep pixels darker than 0.3 × L0 (the nose, the eyes). The whole coat, edge pixels included, so no brown or olive rim is left (round 1: an olive fringe on the black's hind leg) |
+   | corgi | red | sable: the red patches (not the white, not the pink inner ears), (172, 98, 48), γ 1.1 |
+   | collie | black | red: the black patches, (128, 74, 44), γ 0.85, the nose included (a red border collie's nose is brown; round 1 found the protected black sliver on the red's chest) |
+   | beagle | tricolour | none. The tan coat (the saddle recoloured) was dropped in round 1: at every setting tried it left grey or dark borders of the saddle, or turned the grey far paw and the paw creases tan, so one model does not carry it |
 
-4. **One finish** (gate 4): the colours pushed four pixels out under the transparent edge; saturation × 0.93,
+5. **One finish** (gate 4): the colours pushed four pixels out under the transparent edge; saturation × 0.93,
    contrast × 0.96, red × 1.01 and blue × 0.985 (the set's warm key light); an unsharp mask (radius 0.8, 35%,
    threshold 2) on the colour only; alpha untouched. No shadow anywhere in a sprite (gate 3): the yard draws them.
-5. **Foot anchors**: a dog's is the middle of the opaque columns whose lowest pixel is in the bottom 30%, at the mean of
+6. **Foot anchors**: a dog's is the middle of the opaque columns whose lowest pixel is in the bottom 30%, at the mean of
    those lowest pixels (between the near and the far feet); the crew's is between the shoes (the white, unsaturated
    pixels in the bottom 22%; the mop's grey head is not counted). Checked drawn on each pose.
-6. **WebP**: quality 90, alpha lossless, method 6, `exact` (the pushed colours stay under the transparent pixels, so
-   no edge darkens). 48 files, 308,452 bytes, every one RGBA with alpha from 0 to 255.
+7. **WebP**: quality 90, alpha lossless, method 6, `exact` (the pushed colours stay under the transparent pixels, so
+   no edge darkens). 45 files, 286,946 bytes, every one RGBA with alpha from 0 to 255.
 
 Every sprite faces right (the camera-facing diagonal toward the lower right); the yard mirrors for the other diagonal
 (gate 5) once the mirrored contact sheet passes.
@@ -109,42 +132,39 @@ Every sprite faces right (the camera-facing diagonal toward the lower right); th
 
 | Sprite | Size (px, 2×) | Foot anchor | Bytes | SHA-256 (12) |
 |---|---|---|---|---|
-| `corgi-red-moving` | 130 × 115 | 76.5, 94.9 | 5,708 | 9cf34cbd5a52 |
-| `corgi-red-sitting` | 96 × 106 | 46.0, 95.6 | 4,612 | 5fec9681b0ab |
-| `corgi-red-asleep` | 122 × 59 | 60.5, 51.3 | 3,812 | 75f4ef24b9e1 |
-| `corgi-sable-moving` | 130 × 115 | 76.5, 94.9 | 5,650 | 033b668205c6 |
-| `corgi-sable-sitting` | 96 × 106 | 46.0, 95.6 | 4,532 | 598bad029eec |
-| `corgi-sable-asleep` | 122 × 59 | 60.5, 51.3 | 3,800 | e8c21402c6f7 |
-| `beagle-tricolour-moving` | 150 × 141 | 72.0, 116.8 | 6,710 | c51424097ea4 |
-| `beagle-tricolour-sitting` | 112 × 108 | 53.5, 93.1 | 5,288 | d2f6d4749dcc |
-| `beagle-tricolour-asleep` | 135 × 77 | 68.0, 65.8 | 5,122 | de188d479fd7 |
-| `beagle-tan-moving` | 150 × 141 | 72.0, 116.8 | 6,796 | 68a246d3740f |
-| `beagle-tan-sitting` | 112 × 108 | 53.5, 93.1 | 5,256 | 389adf871597 |
-| `beagle-tan-asleep` | 135 × 77 | 68.0, 65.8 | 5,152 | 6bddb4d9ce24 |
-| `collie-black-moving` | 176 × 123 | 124.0, 103.4 | 7,172 | c296c9a98938 |
-| `collie-black-sitting` | 98 × 135 | 43.5, 127.6 | 5,214 | e276b5c2ba6f |
-| `collie-black-asleep` | 135 × 73 | 67.5, 66.4 | 4,164 | 0f9302fe8f61 |
-| `collie-red-moving` | 176 × 123 | 124.0, 103.4 | 7,600 | 40ee259f6868 |
-| `collie-red-sitting` | 98 × 135 | 43.5, 127.6 | 5,508 | b8e3cc5677e2 |
-| `collie-red-asleep` | 135 × 73 | 67.5, 66.4 | 4,536 | b68a624cf019 |
+| `corgi-red-moving` | 130 × 89 | 79.0, 75.0 | 5,438 | b5134e6eb61d |
+| `corgi-red-sitting` | 88 × 100 | 40.0, 90.5 | 4,476 | 713f33476cbd |
+| `corgi-red-asleep` | 114 × 54 | 59.0, 46.9 | 3,632 | 3e595c75e601 |
+| `corgi-sable-moving` | 130 × 89 | 79.0, 75.0 | 5,330 | 4ed78a5f9a73 |
+| `corgi-sable-sitting` | 88 × 100 | 40.0, 90.5 | 4,334 | 08612af0b812 |
+| `corgi-sable-asleep` | 114 × 54 | 59.0, 46.9 | 3,588 | 68f7c6917b02 |
+| `beagle-tricolour-moving` | 150 × 141 | 72.0, 116.5 | 6,912 | 0c67ddc98005 |
+| `beagle-tricolour-sitting` | 109 × 107 | 52.0, 92.8 | 5,166 | 476c8055863d |
+| `beagle-tricolour-asleep` | 135 × 77 | 68.0, 65.7 | 5,188 | beadb9c7cff0 |
+| `collie-black-moving` | 176 × 123 | 124.0, 103.4 | 7,140 | 6037dba489ec |
+| `collie-black-sitting` | 98 × 135 | 43.5, 127.6 | 5,202 | 6a2edcefa454 |
+| `collie-black-asleep` | 135 × 73 | 67.5, 66.4 | 4,168 | 41f46cd4d795 |
+| `collie-red-moving` | 176 × 123 | 124.0, 103.4 | 7,594 | 9b86aae70f7f |
+| `collie-red-sitting` | 98 × 135 | 43.5, 127.6 | 5,554 | aa9cc6d2cc26 |
+| `collie-red-asleep` | 135 × 73 | 67.5, 66.4 | 4,544 | eb90dcd7e185 |
 | `poodle-brown-moving` | 169 × 161 | 84.0, 136.7 | 8,346 | 754c38912cde |
 | `poodle-brown-sitting` | 101 × 155 | 55.5, 144.6 | 5,594 | 2eeb7a3b5e92 |
 | `poodle-brown-asleep` | 156 × 74 | 77.5, 64.2 | 4,534 | a777c5b9cad7 |
-| `poodle-black-moving` | 169 × 161 | 84.0, 136.7 | 6,586 | 47ff2b2a063e |
-| `poodle-black-sitting` | 101 × 155 | 55.5, 144.6 | 4,212 | a87ec6d596c6 |
-| `poodle-black-asleep` | 156 × 74 | 77.5, 64.2 | 3,346 | 33ff501640e6 |
-| `poodle-cream-moving` | 169 × 161 | 84.0, 136.7 | 9,046 | 2e24cc234ae9 |
-| `poodle-cream-sitting` | 101 × 155 | 55.5, 144.6 | 6,230 | 3466b55725fa |
-| `poodle-cream-asleep` | 156 × 74 | 77.5, 64.2 | 4,810 | 68a264772b1d |
+| `poodle-black-moving` | 169 × 161 | 84.0, 136.7 | 6,404 | 453fca12f563 |
+| `poodle-black-sitting` | 101 × 155 | 55.5, 144.6 | 4,216 | ea2cd62b24d8 |
+| `poodle-black-asleep` | 156 × 74 | 77.5, 64.2 | 3,324 | ee6656d11bf2 |
+| `poodle-cream-moving` | 169 × 161 | 84.0, 136.7 | 7,662 | 0a3fbe15795d |
+| `poodle-cream-sitting` | 101 × 155 | 55.5, 144.6 | 5,370 | b2e372942906 |
+| `poodle-cream-asleep` | 156 × 74 | 77.5, 64.2 | 4,184 | 5e3c25399555 |
 | `lab-black-moving` | 202 × 144 | 102.5, 117.0 | 7,038 | 5ff67276e9a5 |
 | `lab-black-sitting` | 128 × 155 | 61.0, 137.6 | 5,028 | 1ce903e286cc |
-| `lab-black-asleep` | 161 × 84 | 80.5, 76.3 | 4,066 | 7ab236e055ae |
+| `lab-black-asleep` | 161 × 84 | 80.5, 76.3 | 4,036 | 9d08b8e91c7f |
 | `lab-chocolate-moving` | 202 × 144 | 102.5, 117.0 | 7,868 | daec0ae37f77 |
 | `lab-chocolate-sitting` | 128 × 155 | 61.0, 137.6 | 5,838 | 5824fd2b65ef |
-| `lab-chocolate-asleep` | 161 × 84 | 80.5, 76.3 | 4,708 | 9ed4a79a7d2f |
-| `lab-yellow-moving` | 202 × 144 | 102.5, 117.0 | 9,120 | 99957d42c4ac |
-| `lab-yellow-sitting` | 128 × 155 | 61.0, 137.6 | 6,950 | dabb64aacb5c |
-| `lab-yellow-asleep` | 161 × 84 | 80.5, 76.3 | 5,726 | 9d38fdc9f769 |
+| `lab-chocolate-asleep` | 161 × 84 | 80.5, 76.3 | 4,670 | 6a8e8f6785ef |
+| `lab-yellow-moving` | 202 × 144 | 102.5, 116.6 | 9,278 | 0c82acb8066a |
+| `lab-yellow-sitting` | 130 × 155 | 61.5, 137.9 | 6,906 | 7719a501385f |
+| `lab-yellow-asleep` | 161 × 84 | 80.5, 75.8 | 5,610 | 4bc6f8b727a2 |
 | `golden-gold-moving` | 208 × 120 | 110.0, 101.8 | 8,214 | be47e00b8ae6 |
 | `golden-gold-sitting` | 150 × 134 | 67.0, 124.5 | 5,986 | 15d321073c58 |
 | `golden-gold-asleep` | 154 × 74 | 77.0, 64.8 | 4,514 | b782e45e2977 |
@@ -171,7 +191,7 @@ exactly as sent (`Temp/cast/work/<call>.prompt.txt`).
 
 First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. The new image: a sprite strip of one adult golden retriever, the same breed and finish as the goldens in key.png (a medium warm golden coat, not orange and not cream, soft drop ears, a dark nose, feathering on the chest, the backs of the legs and a long tail), never a puppy, shown three times in one row from left to right, each well apart with wide empty background between them: 1) trotting mid-stride, one front leg and the opposite hind leg reaching forward, the feathered tail carried level out behind; 2) sitting upright on its haunches, front legs straight; 3) asleep, lying down curled with its eyes closed and its chin resting on its front paws, the feathered tail curled along its body. All three face toward the right of the image, each body turned along the yard's diagonal and heading toward the lower right, seen from above so the top of the back and the top of the head show; all at exactly the same scale and from the same camera, the same dog with the same coat and markings in all three, each one whole with nothing cropped by the image edges. Mouth closed, no tongue showing. No collar, no harness, no tag. Every dog has exactly one head, two ears, two eyes, one nose, one tail, the legs and paws the pose shows and no more, correct canine proportions, nothing merged or doubled. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.
 
-### cast-corgi-1
+### cast-corgi-1 (superseded by cast-corgi-2)
 
 First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. The new image: a sprite strip of one adult Pembroke Welsh corgi, the same breed and finish as the corgis in key.png (red and white: a warm orange-tan back, head and ears, a white chest, a white muzzle and blaze, white legs and paws; a long low body on short legs, large upright pointed ears, a short fluffy tail), with an adult head in proportion to its body, not oversized, never a puppy, shown three times in one row from left to right, each well apart with wide empty background between them: 1) trotting mid-stride, one front leg and the opposite hind leg reaching forward, the short tail up; 2) sitting upright on its haunches, front legs straight; 3) asleep, lying down curled with its eyes closed and its chin resting on its front paws. All three face toward the right of the image, each body turned along the yard's diagonal and heading toward the lower right, seen from above so the top of the back and the top of the head show; all at exactly the same scale and from the same camera, the same dog with the same coat and markings in all three, each one whole with nothing cropped by the image edges. Mouth closed, no tongue showing. No collar, no harness, no tag. Every dog has exactly one head, two ears, two eyes, one nose, one tail, the legs and paws the pose shows and no more, correct canine proportions, nothing merged or doubled. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.
 
@@ -179,7 +199,7 @@ First load key.png from the current working directory with your view_image tool 
 
 First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. The new image: a sprite strip of one adult border collie, the same breed and finish as the black-and-white collie in key.png (a black body, head and ears, a white blaze down the middle of the face, a white muzzle, a white ruff round the neck and chest, white legs and paws, a white tail tip; ears half up with the tips folded forward; a medium-length coat; a lean athletic body), never a puppy, shown three times in one row from left to right, each well apart with wide empty background between them: 1) trotting mid-stride, one front leg and the opposite hind leg reaching forward, the long feathered tail carried low behind; 2) sitting upright on its haunches, front legs straight; 3) asleep, lying down curled with its eyes closed and its chin resting on its front paws, the long tail wrapped round its body. All three face toward the right of the image, each body turned along the yard's diagonal and heading toward the lower right, seen from above so the top of the back and the top of the head show; all at exactly the same scale and from the same camera, the same dog with the same coat and markings in all three, each one whole with nothing cropped by the image edges. Mouth closed, no tongue showing. No collar, no harness, no tag. Every dog has exactly one head, two ears, two eyes, one nose, one tail, the legs and paws the pose shows and no more, correct canine proportions, nothing merged or doubled. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.
 
-### cast-beagle-1
+### cast-beagle-1 (superseded by cast-beagle-2)
 
 First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. The new image: a sprite strip of one adult beagle, the same breed and finish as the beagle in key.png (tricolour: a black saddle over the back, a tan head, tan ears and tan sides, a white muzzle, a white chest, white legs and paws and a white tail tip; long soft drop ears; a sturdy compact body on straight legs), never a puppy, shown three times in one row from left to right, each well apart with wide empty background between them: 1) trotting mid-stride, one front leg and the opposite hind leg reaching forward, the tail carried up with its white tip; 2) sitting upright on its haunches, front legs straight; 3) asleep, lying down curled with its eyes closed and its chin resting on its front paws, the tail along its body. All three face toward the right of the image, each body turned along the yard's diagonal and heading toward the lower right, seen from above so the top of the back and the top of the head show; all at exactly the same scale and from the same camera, the same dog with the same coat and markings in all three, each one whole with nothing cropped by the image edges. Mouth closed, no tongue showing. No collar, no harness, no tag. Every dog has exactly one head, two ears, two eyes, one nose, one tail, the legs and paws the pose shows and no more, correct canine proportions, nothing merged or doubled. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.
 
@@ -206,3 +226,15 @@ First load key.png from the current working directory with your view_image tool 
 ### cast-crew2-1
 
 First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. Then load crew1ref.png from the current working directory with view_image too: it shows the daycare's first staff member, a woman, in the uniform and the finish to match. Draw a DIFFERENT person in the same uniform, the same finish and the same camera as key.png; do not draw the woman from crew1ref.png. The new image: a sprite strip of one adult staff member, shown three times in one row from left to right, each well apart with wide empty background between them: a grown man with adult proportions (his head about one seventh of his height, broad shoulders, a sturdy build, an adult face), deep brown skin, short black hair cut close to the head, a short neat black beard, wearing the same uniform as in crew1ref.png: a plain teal polo shirt with no logo, no badge and no print, dark khaki-olive trousers with a black belt, white sneakers. 1) standing relaxed with his weight on both feet, holding a coiled red leash in his right hand, his left arm relaxed at his side; 2) standing, holding one yellow-green tennis ball up in his right hand at shoulder height, about to toss it, his left arm relaxed at his side; 3) mopping: both hands on the long wooden handle of a mop, the grey cotton mop head flat on the ground in front of his feet. All three turned three-quarters toward the right of the image, seen from above as in key.png so the top of his head and his shoulders show; all at exactly the same scale, each whole from the top of his head to his shoes, nothing cropped by the image edges. In each: exactly two arms, two hands, two legs, two shoes; the leash one continuous red cord; the mop one straight handle. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.
+
+### cast-corgi-2
+
+First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. The new image: a sprite strip of one adult Pembroke Welsh corgi, the same breed and finish as the corgis in key.png (red and white: a warm orange-tan back, head and ears, a white chest, a white muzzle and blaze, white legs and paws; a long low body on short legs, large upright pointed ears, a short docked stub tail), with an adult head in proportion to its body, not oversized, never a puppy, shown three times in one row from left to right, each well apart with wide empty background between them: 1) trotting mid-stride, one front leg and the opposite hind leg reaching forward, the short stub tail; 2) sitting upright on its haunches, front legs straight; 3) asleep, lying down curled with its eyes closed and its chin resting on its front paws. All three face toward the right of the image, each body turned along the yard's diagonal and heading toward the lower right, seen from above so the top of the back and the top of the head show; all at exactly the same scale and from the same camera, the same dog with the same coat and markings in all three, each one whole with nothing cropped by the image edges. Mouth closed, no tongue showing. No collar, no harness, no tag. Every dog has exactly one head, two ears, two eyes, one nose, one tail, the legs and paws the pose shows and no more, correct canine proportions, nothing merged or doubled. Also load corgiref.png from the current working directory with view_image: it is this dog's locked reference, the same corgi; keep its coat, markings, head and finish exactly. Two things must differ from it: in the trot all four legs show (both front legs and both hind legs, the far legs partly behind the near ones), and the tail is the same short docked stub in all three poses, never a long plume. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.
+
+### cast-labyellow-1
+
+First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. The new image: a sprite strip of one adult Labrador retriever, a yellow Lab: the same dog as in labref.png (load it from the current working directory with view_image too; keep its blocky head, its smooth short coat with no feathering, its thick smooth otter tail, its build and its three poses) but with a pale cream-yellow coat instead of a black one, a black nose and dark brown eyes; NOT a golden retriever: no feathering anywhere, no plumed or fluffy tail, never a puppy, shown three times in one row from left to right, each well apart with wide empty background between them: 1) trotting mid-stride, one front leg and the opposite hind leg reaching forward, the smooth otter tail carried level out behind; 2) sitting upright on its haunches, front legs straight; 3) asleep, lying down curled with its eyes closed and its chin resting on its front paws, the smooth otter tail lying along its body. All three face toward the right of the image, each body turned along the yard's diagonal and heading toward the lower right, seen from above so the top of the back and the top of the head show; all at exactly the same scale and from the same camera, the same dog with the same coat and markings in all three, each one whole with nothing cropped by the image edges. Mouth closed, no tongue showing. No collar, no harness, no tag. Every dog has exactly one head, two ears, two eyes, one nose, one tail, the legs and paws the pose shows and no more, correct canine proportions, nothing merged or doubled. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.
+
+### cast-beagle-2
+
+First load key.png from the current working directory with your view_image tool and study it. It is the style AND camera reference for this image. Match its camera: the same high isometric view looking DOWN at about 30 degrees from above the front-left, orthographic, no perspective distortion, as if from a first-floor balcony. Not a side view, not eye level and not straight down: as in key.png, the whole top of each figure's back, head and shoulders is visible and its feet stand on an imagined ground plane that recedes at the isometric angle. Match its light (soft even daylight from the upper left: lit faces upper left, shaded faces lower right) and its finish (every form built from visible flat triangular facets of the same size and density as the dogs in key.png, matte, flat-shaded, no outlines, no texture, no fur strands, no gradients, no gloss, no painterly brushwork, no cartoon big eyes, adult proportions with an adult-sized head, never a puppy or a child). Do not edit key.png and do not copy its yard; generate a new image with your image generation tool, giving it key.png as the reference. The new image: a sprite strip of one adult beagle, the same breed and finish as the beagle in key.png (tricolour: a black saddle over the back, a tan head, tan ears and tan sides, a white muzzle, a white chest, white legs and paws and a white tail tip; long soft drop ears; a sturdy compact body on straight legs), never a puppy, shown three times in one row from left to right, each well apart with wide empty background between them: 1) trotting mid-stride, one front leg and the opposite hind leg reaching forward, the tail carried up with its white tip; 2) sitting upright on its haunches, front legs straight; 3) asleep, lying down curled with its eyes closed and its chin resting on its front paws, the tail along its body. All three face toward the right of the image, each body turned along the yard's diagonal and heading toward the lower right, seen from above so the top of the back and the top of the head show; all at exactly the same scale and from the same camera, the same dog with the same coat and markings in all three, each one whole with nothing cropped by the image edges. Mouth closed, no tongue showing. No collar, no harness, no tag. Every dog has exactly one head, two ears, two eyes, one nose, one tail, the legs and paws the pose shows and no more, correct canine proportions, nothing merged or doubled. Also load beagleref.png from the current working directory with view_image: it is this dog's locked reference, the same beagle; keep its coat, markings, head and finish exactly. One thing must differ from it: in the sit, the hind legs fold under the body at the back, the near hind paw flat on the ground beside the haunch and the far hind paw hidden behind the body; between the two straight front legs there is only empty background, no paw and no stub. Background: one perfectly flat, solid, pure magenta (#FF00FF) everywhere, with no ground, no floor, no grass, no shadows of any kind (no contact shadows, no drop shadows, no cast shadows), no glow, no vignette, no props, no frames. No magenta or pink anywhere on the figures. No text, no letters, no numbers, no labels, no logos, no signs. Landscape 3:2.

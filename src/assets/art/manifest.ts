@@ -47,6 +47,24 @@ export interface BoardMap {
   blocked: [number, number, number, number][];
 }
 
+/**
+ * A mess decal (review round 2, row 15; D60: the frame's cleanliness is state, so the yard may show it): a patch of the
+ * lawn as the board's own render shows it with the mess on it (mud and tracks, spilled kibble and toys, a tipped bowl
+ * and its puddle), transparent wherever the board shows through unchanged. Drawn over the board at the board's own
+ * scale and offset, under every figure; nothing in one stands higher than 8 cm, so a figure is never wrongly over it.
+ */
+export interface MessDecal {
+  id: string; // 'mud', 'kibble', 'bowl'
+  file: string; // relative to src/assets/art/, e.g. 'set/mess-mud.webp'
+  /** [width, height] of the image, in board-image pixels (it is drawn at the board's scale). */
+  size: [number, number];
+  /** The board-image pixel where the image's top-left corner goes: then it lands exactly in the board's light and
+   * perspective. */
+  at: [number, number];
+  /** Shown while the frame's cleanliness (0 to 100) is under this: 50, 30, 10, so the yard gets messier as it falls. */
+  below: number;
+}
+
 export interface SetManifest {
   /** The board with its fence, clubhouse and props, as one image; the walk path outside the gate if there is one. */
   board: { file: string; size: [number, number]; map: BoardMap };
@@ -61,4 +79,6 @@ export interface SetManifest {
   /** The set's own shadow, so the yard's code shadows match it (gate 3): tint RGB, alpha and blur of the cast
    * shadow, the contact ellipse's alpha and blur, and the key light's throw on the ground per pixel of height. */
   shadow: { tint: [number, number, number]; alpha: number; blur: number; contactAlpha: number; contactBlur: number; throw: [number, number] };
+  /** The mess decals, the mildest first; each shows while cleanliness is under its `below` (they never overlap). */
+  mess: MessDecal[];
 }

@@ -4,22 +4,28 @@
 import * as THREE from 'three';
 import { W } from './lib.js';
 import { VIEW, KEY, PPM, SPRITE_SCALE } from './stage.js';
-import { buildBoard } from './board.js';
+import { buildBoard, decalGroup } from './board.js';
 import { buildGM, GM } from './gm.js';
-import { renderBoard, renderGM, SHADOW } from './render.js';
-import { GM_SPOT, CLUB, LAWN, MARGIN, WALK, blocked } from './layout.js';
+import { renderBoard, renderGM, renderDecal, SHADOW } from './render.js';
+import { buildMess, combineMess } from './mess.js';
+import { GM_SPOT, CLUB, LAWN, MARGIN, WALK, MESS, blocked } from './layout.js';
 
 const png = (c) => c.toDataURL('image/png');
 const webp = (c, q) => c.toDataURL('image/webp', q);
 const r2 = (v) => Math.round(v * 100) / 100;
 
-export function board({ quality = 0.9 } = {}) {
-  const t0 = performance.now();
-  const g = buildBoard();
-  // room over the roof for the GM at its highest, so the board image holds everything the yard draws on it
+// Room over the roof for the GM at its highest, so the board image holds everything the yard draws on it.
+function gmRoom() {
   const top = GM_SPOT.h + GM.hover + 2 * GM.r + 0.08;
   const extra = [];
   for (const dx of [-0.4, 0.4]) for (const dy of [-0.4, 0.4]) extra.push(W(GM_SPOT.x + dx, GM_SPOT.y + dy, top));
+  return extra;
+}
+
+export function board({ quality = 0.9 } = {}) {
+  const t0 = performance.now();
+  const g = buildBoard();
+  const extra = gmRoom();
   const r = renderBoard(g, { extra });
   const o = r.px(W(0, 0, 0)), ex = r.px(W(1, 0, 0)), ey = r.px(W(0, 1, 0)), eh = r.px(W(0, 0, 1));
   const spot = r.px(W(GM_SPOT.x, GM_SPOT.y, GM_SPOT.h));
@@ -29,6 +35,82 @@ export function board({ quality = 0.9 } = {}) {
     axes: { x: [ex[0] - o[0], ex[1] - o[1]].map(r2), y: [ey[0] - o[0], ey[1] - o[1]].map(r2), h: [eh[0] - o[0], eh[1] - o[1]].map(r2) },
     gmSpot: spot.map(r2), ms: Math.round(performance.now() - t0),
   };
+}
+
+// The mess decals (review round 2, row 15). The clean board is rendered again for its frame and its crop, and its WebP
+// is returned so the driver can prove it is byte for byte the shipped board (the decals are only right on that board);
+// then each decal through that frame: its image, its size and `at`, the board-image pixel of its top-left corner. With
+// `check`: the board rendered with all three in place, to compare with the board and the decals laid on it.
+export function mess({ quality = 0.9, boardQuality = 0.9, check = true } = {}) {
+  const t0 = performance.now();
+  const extra = gmRoom();
+  const b = renderBoard(buildBoard(), { extra });
+  const out = { board: { png: png(b.canvas), webp: webp(b.canvas, boardQuality), size: [b.canvas.width, b.canvas.height], offset: b.offset }, decals: [] };
+  for (const spec of MESS) {
+    const d = renderDecal(decalGroup(buildMess(spec.id)), b.F, b.offset);
+    out.decals.push({ id: spec.id, below: spec.below, png: png(d.canvas), webp: webp(d.canvas, quality), size: [d.canvas.width, d.canvas.height], at: d.at });
+  }
+  if (check) {
+    const f = renderBoard(buildBoard({ mess: combineMess(MESS.map((s) => buildMess(s.id))) }), { extra });
+    out.full = { png: png(f.canvas), size: [f.canvas.width, f.canvas.height], offset: f.offset };
+  }
+  out.ms = Math.round(performance.now() - t0);
+  return out;
+}
+
+// The check: the board with the decals laid on it at their `at` (as the yard would, pixel for pixel at the image's
+// scale) against the board rendered with the mess in place. Inside each decal's box and outside every box, the largest
+// and the mean difference per channel, and how many pixels differ by more than 4; a heat map of the difference (x8).
+export async function checkMess({ boardFile, decals, fullFile }) {
+  const [bimg, fimg, ...dimgs] = await Promise.all([load(boardFile), load(fullFile), ...decals.map((d) => load(d.file))]);
+  const w = bimg.width, h = bimg.height;
+  const comp = canvas2d(w, h), cg = comp.getContext('2d');
+  cg.drawImage(bimg, 0, 0);
+  dimgs.forEach((im, i) => cg.drawImage(im, decals[i].at[0], decals[i].at[1]));
+  const full = canvas2d(w, h), fg = full.getContext('2d');
+  fg.drawImage(fimg, 0, 0);
+  const A = cg.getImageData(0, 0, w, h).data, B = fg.getImageData(0, 0, w, h).data;
+  const boxes = decals.map((d) => [d.at[0], d.at[1], d.at[0] + d.size[0], d.at[1] + d.size[1]]);
+  const zone = (x, y) => boxes.findIndex(([x0, y0, x1, y1]) => x >= x0 && x < x1 && y >= y0 && y < y1);
+  const stats = [...decals.map((d) => ({ zone: d.file })), { zone: 'outside the decals' }].map((z) => ({ ...z, max: 0, sum: 0, n: 0, over4: 0 }));
+  const heat = cg.createImageData(w, h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4;
+    let m = 0;
+    for (let c = 0; c < 4; c++) m = Math.max(m, Math.abs(A[i + c] - B[i + c]));
+    const z = zone(x, y);
+    const st = stats[z < 0 ? stats.length - 1 : z];
+    st.max = Math.max(st.max, m); st.sum += m; st.n++; if (m > 4) st.over4++;
+    heat.data[i] = Math.min(255, m * 8); heat.data[i + 1] = Math.min(255, m * 8); heat.data[i + 2] = Math.min(255, m * 8); heat.data[i + 3] = 255;
+  }
+  const hc = canvas2d(w, h);
+  hc.getContext('2d').putImageData(heat, 0, 0);
+  // each decal on its own: its border clear (nothing cut off); its opaque pixels against the full render; its partly
+  // clear pixels much darker than an opaque neighbour (a dark fringe)
+  const edges = dimgs.map((im, i) => {
+    const c = canvas2d(im.width, im.height), g = c.getContext('2d');
+    g.drawImage(im, 0, 0);
+    const D = g.getImageData(0, 0, im.width, im.height).data, iw = im.width, ih = im.height;
+    const [ox, oy] = decals[i].at;
+    const luma = (k) => 0.299 * D[k] + 0.587 * D[k + 1] + 0.114 * D[k + 2];
+    let border = 0, opaque = 0, worst = 0, partial = 0, dark = 0;
+    for (let y = 0; y < ih; y++) for (let x = 0; x < iw; x++) {
+      const k = (y * iw + x) * 4, a = D[k + 3];
+      if (x === 0 || y === 0 || x === iw - 1 || y === ih - 1) border = Math.max(border, a);
+      if (!a) continue;
+      if (a === 255) {
+        opaque++;
+        const f = ((y + oy) * w + x + ox) * 4;
+        for (let ch = 0; ch < 3; ch++) worst = Math.max(worst, Math.abs(D[k + ch] - B[f + ch]));
+        continue;
+      }
+      partial++;
+      const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy]).filter(([u, v]) => u >= 0 && v >= 0 && u < iw && v < ih && D[(v * iw + u) * 4 + 3] === 255);
+      if (nb.length && Math.min(...nb.map(([u, v]) => luma((v * iw + u) * 4))) - luma(k) > 40) dark++;
+    }
+    return { file: decals[i].file, border, opaque, worstOpaque: worst, partial, darkFringe: dark };
+  });
+  return { stats: stats.map(({ zone, max, sum, n, over4 }) => ({ zone, max, mean: Math.round((sum / n) * 1000) / 1000, over4 })), edges, heat: png(hc), composite: png(comp) };
 }
 
 // The board's layers before they are combined (a diagnostic for the art QA).
@@ -141,7 +223,8 @@ function projectedShadow(img, ax, ay, s) {
 
 // The board and a cast placed by the contract's map only (origin, ppm, the 2:1 axes), as the yard would place them.
 // k: 0.5 draws the yard's 1x, 1 the 2x. figures: {file, anchor, scale, mirror, world: [x, y]}. gm: {file, anchor}.
-export async function compose({ k = 0.5, boardFile, map, gmSpot, figures, gm, bg = '#E9EDF0', margin = 24 }) {
+// decals: the mess, {file, at, size}, drawn over the board at its scale and under every figure.
+export async function compose({ k = 0.5, boardFile, map, gmSpot, figures, gm, decals = [], bg = '#E9EDF0', margin = 24 }) {
   const bimg = await load(boardFile);
   const Wc = Math.round(bimg.width * k) + 2 * margin, Hc = Math.round(bimg.height * k) + 2 * margin;
   const c = canvas2d(Wc, Hc);
@@ -149,6 +232,7 @@ export async function compose({ k = 0.5, boardFile, map, gmSpot, figures, gm, bg
   g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
   g.fillStyle = bg; g.fillRect(0, 0, Wc, Hc);
   g.drawImage(bimg, margin, margin, bimg.width * k, bimg.height * k);
+  for (const d of decals) g.drawImage(await load(d.file), margin + d.at[0] * k, margin + d.at[1] * k, d.size[0] * k, d.size[1] * k);
   const ax = (map.ppm * 2) / Math.sqrt(5), ay = map.ppm / Math.sqrt(5);
   const toPx = ([x, y]) => [margin + (map.origin[0] + (x - y) * ax) * k, margin + (map.origin[1] - (x + y) * ay) * k];
   const placed = [];

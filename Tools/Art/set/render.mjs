@@ -2,9 +2,13 @@
 // the repo's devDependencies), renders the board and the GM through the one camera, and writes:
 //   src/assets/art/set/board.webp, gm-{ready,running,done}.webp, gm-page-{ready,running,done}.webp
 //   src/assets/art/set.json (the contract's SetManifest, src/assets/art/manifest.ts, plus documented extras)
+//   src/assets/art/set/mess-{mud,kibble,bowl}.webp (the mess decals, review round 2, row 15)
 //   Temp/set/: the lossless PNG masters, the composites with spike A's cast at 1x and 2x, the page-fit preview, the
 //   page GM sheet.
-// Run from the repo root:  node Tools/Art/set/render.mjs [all|compose|cast]
+// Run from the repo root:  node Tools/Art/set/render.mjs [all|compose|cast|mess]
+//   mess: only the decals, through the board's frame, after proving the board it renders is byte for byte the shipped
+//   board.webp (never rewritten in this mode); set.json's `mess` list and its note patched in place; the check against
+//   the board rendered with the mess in place; the composites in Temp/set/mess-*.
 import { chromium } from '@playwright/test';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -49,6 +53,31 @@ const STATES = ['ready', 'running', 'done'];
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const setFile = path.join(ART, 'set.json');
 
+// --- the mess (review round 2, row 15) ------------------------------------------------------------------------------
+const MESS_Q = 1; // the decals' WebP: Chromium encodes quality 1 losslessly (lossy put a grey fringe on their soft edges)
+const MESS_NOTE = "mess: the decals the yard lays on the board by the frame's cleanliness (D60: state, nothing invented), each shown while cleanliness is under `below` (so under 10 all three show): drawn with its top-left corner on the board-image pixel `at`, at the board's own scale, over the board and under every figure. Each is the board's own render of that patch of lawn with the mess on it (the same frame, light, shadows and grade; the lawn's own facets, tinted), transparent wherever the board shows through unchanged, so it is only right on this board.webp. Nothing in one stands higher than 8 cm.";
+async function renderMess() {
+  const r = await call('mess', { quality: MESS_Q, boardQuality: 0.9, check: true });
+  const shipped = fs.readFileSync(path.join(OUT, 'board.webp'));
+  const mine = Buffer.from(r.board.webp.split(',')[1], 'base64');
+  if (!mine.equals(shipped)) throw new Error(`the board rendered for the decals is not the shipped board.webp (${mine.length} B against ${shipped.length} B): the decals would not match it`);
+  console.log(`mess: the board rendered again is byte for byte the shipped board.webp (${shipped.length} B), its crop offset ${r.board.offset}`);
+  write(path.join(TEMP, 'mess-board.png'), r.board.png);
+  if (r.full) {
+    if (r.full.offset.join() !== r.board.offset.join()) throw new Error(`the board with the mess in place has another crop (${r.full.offset} against ${r.board.offset})`);
+    write(path.join(TEMP, 'mess-full.png'), r.full.png);
+  }
+  const list = r.decals.map((d) => {
+    const file = `set/mess-${d.id}.webp`;
+    const bytes = write(path.join(ART, file), d.webp);
+    write(path.join(TEMP, `mess-${d.id}.png`), d.png);
+    console.log(`${file} ${d.size.join(' x ')} at ${d.at} below ${d.below}: ${bytes} B`);
+    return { id: d.id, file, size: d.size, at: d.at, below: d.below };
+  });
+  console.log(`mess renders ${r.ms} ms in the page`);
+  return list;
+}
+
 if (mode === 'all') {
   let t0 = Date.now();
   const b = await call('board', { quality: 0.9 });
@@ -82,6 +111,7 @@ if (mode === 'all') {
     gmPage: Object.fromEntries(STATES.map((s) => [s, { file: `set/gm-page-${s}.webp`, size: gp[s].size }])),
     walk: WALK.map(r3),
     shadow: { tint: [12, 30, 18], alpha: 0.3, blur: 1.6, contactAlpha: 0.42, contactBlur: 2.6, throw: light.throw },
+    mess: await renderMess(),
     _notes: [
       'SetManifest (src/assets/art/manifest.ts) plus three extras: gmPage, walk, shadow. Every pixel value is in the image\'s own pixels, at 2x the yard\'s CSS size. The board keeps at least 24 px of clear transparency on every side, its shadow on the page included.',
       `The map: world (x, y) in metres lands at origin + x * ppm * (2, -1) / sqrt(5) + y * ppm * (-2, -1) / sqrt(5); a metre along x is ${JSON.stringify(b.axes.x)} px, along y ${JSON.stringify(b.axes.y)} px, a metre straight up ${JSON.stringify(b.axes.h)} px.`,
@@ -89,12 +119,70 @@ if (mode === 'all') {
       `walk: [x, y, w, h], where the walking group stands: the flagstone path along the lawn's front-right edge (y from -${PATH} to 0), outside the lawn.`,
       'gm: drawn with its anchor (the point it hovers over, inside the image) on gmSpot; the three states share one size, one anchor and one place for the orb: ready is the amber band turned low, running the amber band lit, done the band lit a pale warm white (neutral: finished, not good or bad). gmPage: the same three at 128 px square (64 CSS px), the orb centred and in the same place in each.',
       'shadow: the board\'s cast shadows, for the cast\'s code shadows: tint rgb, alpha, blur in px at the yard\'s 1x (x2 in these images); a contact ellipse at contactAlpha and contactBlur; throw: the screen offset (dx, dy) of a shadow point per px of height above the anchor (the key light from the upper left, shadows to the right).',
+      MESS_NOTE,
     ],
   };
   fs.writeFileSync(setFile, JSON.stringify(manifest, null, 2) + '\n');
   console.log(`wrote ${rel(setFile)}`);
   const a = await call('audit', { step: 0.15 });
   console.log(`depth audit: ${a.spots} places a figure may stand x ${a.rays} rays toward the camera: ${a.faults} faults${a.faults ? ` ${JSON.stringify(a.first)}` : ''} (${a.ms} ms)`);
+}
+
+// `node Tools/Art/set/render.mjs mess`: the decals alone (the board and the GM are never rewritten), then the checks
+if (mode === 'mess') {
+  const list = await renderMess();
+  // set.json's `mess` list and its note, in place (before _notes), everything else as it was
+  const old = JSON.parse(fs.readFileSync(setFile, 'utf8'));
+  const next = {};
+  for (const [k, v] of Object.entries(old)) {
+    if (k === 'mess') continue;
+    if (k === '_notes') next.mess = list;
+    next[k] = k === '_notes' ? [...v.filter((n) => !n.startsWith('mess: ')), MESS_NOTE] : v;
+  }
+  fs.writeFileSync(setFile, JSON.stringify(next, null, 2) + '\n');
+  console.log(`patched ${rel(setFile)}: mess and its note`);
+  const set = next;
+  const decals = (ext) => set.mess.map((d) => ({ ...d, file: ext === 'png' ? `/Temp/set/mess-${d.id}.png` : `/src/assets/art/${d.file}` }));
+  // the check: the board with the decals laid on it against the board rendered with the mess in place, as shipped
+  // (both WebPs) and as rendered (the lossless masters)
+  for (const [tag, boardFile, ds] of [['shipped', `/src/assets/art/${set.board.file}`, decals('webp')], ['masters', '/Temp/set/mess-board.png', decals('png')]]) {
+    const c = await call('checkMess', { boardFile, decals: ds, fullFile: '/Temp/set/mess-full.png' });
+    write(path.join(TEMP, `mess-check-${tag}-heat.png`), c.heat);
+    console.log(`check (${tag}): ${c.stats.map((z) => `${z.zone}: max ${z.max}, mean ${z.mean}, ${z.over4} px over 4`).join('; ')}`);
+    if (tag === 'shipped') for (const e of c.edges) console.log(`  ${e.file}: border alpha max ${e.border}; ${e.opaque} opaque px, worst against the full render ${e.worstOpaque}; ${e.partial} partly clear px, ${e.darkFringe} much darker than an opaque neighbour`);
+  }
+  // the yard at four levels of cleanliness (none, one, two, three decals) at about the size the yard draws the board
+  const gm = { file: `/src/assets/art/${set.gm.running.file}`, anchor: set.gm.running.anchor };
+  for (let n = 0; n <= 3; n++) {
+    const r = await call('compose', { k: 0.48, boardFile: `/src/assets/art/${set.board.file}`, map: set.board.map, gmSpot: set.gmSpot, figures: [], gm, decals: decals('webp').slice(0, n) });
+    write(path.join(TEMP, `mess-level-${n}.png`), r.png);
+  }
+  console.log('Temp/set/mess-level-{0,1,2,3}.png: the board at 0.48 of its 2x (about 1,150 px wide) with 0 to 3 decals');
+  // with WP4a's cast: 18 dogs and the crew over all three, at the yard's 1x and fitted to the page at 1366 x 768
+  const cast = JSON.parse(fs.readFileSync(path.join(ART, 'cast.json'), 'utf8'));
+  const dogs = cast.sprites.filter((c) => c.kind === 'dog');
+  const crew = cast.sprites.find((c) => c.kind === 'crew' && c.pose === 'leash') ?? cast.sprites.find((c) => c.kind === 'crew');
+  const B = set.board.map.blocked, [X, Y] = set.board.map.lawn, M = set.board.map.margin;
+  const inB = ([x, y]) => B.some(([bx, by, bw, bh]) => x >= bx && x <= bx + bw && y >= by && y <= by + bh);
+  let seed = 11;
+  const rnd = () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const spots = [[2.6, 4.4]];
+  for (let tries = 0; spots.length < 19 && tries < 20000; tries++) {
+    const p = [M + rnd() * (X - 2 * M), M + rnd() * (Y - 2 * M)];
+    if (inB(p) || spots.some((q) => Math.abs((p[0] - q[0]) - (p[1] - q[1])) * Math.SQRT1_2 < 1.05 && (Math.abs((p[0] - q[0]) + (p[1] - q[1])) * Math.SQRT1_2) / 2 < 0.58)) continue;
+    spots.push(p);
+  }
+  const order = dogs.map((d, i) => [d, (i * 7) % dogs.length]).sort((p, q) => p[1] - q[1]).map(([d]) => d);
+  const fig = (c, world, mirror, name) => ({ file: `/src/assets/art/${c.file}`, anchor: c.anchor, scale: 1, mirror, world, name });
+  const figs = [fig(crew, spots[0], false, 'crew'), ...spots.slice(1).map((p, i) => fig(order[i % order.length], p, i % 3 === 1, `${order[i % order.length].id}#${i}`))];
+  const withCast = await call('compose', { k: 0.5, boardFile: `/src/assets/art/${set.board.file}`, map: set.board.map, gmSpot: set.gmSpot, figures: figs, gm, decals: decals('webp') });
+  write(path.join(TEMP, 'mess-cast-1x.png'), withCast.png);
+  const fit = await call('pageFit', { compositeFile: '/Temp/set/mess-cast-1x.png', boardSize: set.board.size });
+  write(path.join(TEMP, 'mess-cast-page-fit.png'), fit.png);
+  console.log(`Temp/set/mess-cast-1x.png (${figs.length} figures), Temp/set/mess-cast-page-fit.png (the board at ${fit.scale.toFixed(3)} of its 1x)`);
+  await browser.close();
+  server.close();
+  process.exit(0);
 }
 
 // --- the composites: spike A's cast (the hybrid's) placed by the map alone ------------------------------------------

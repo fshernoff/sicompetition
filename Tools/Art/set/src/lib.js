@@ -36,13 +36,16 @@ export const deg = (d) => (d * Math.PI) / 180;
 
 export class Mesher {
   // shade(p, n) -> a multiplier for the vertex at world point p on a face with normal n (the baked occlusion).
-  constructor({ toneJitter = 0.06, seed = 1, shade = null } = {}) {
+  // tint(p, color) -> the colour at the vertex at p instead of the face's (the mess's trampled and wet grass, a soft
+  // field like the occlusion); none keeps the face's colour at every vertex.
+  constructor({ toneJitter = 0.06, seed = 1, shade = null, tint = null } = {}) {
     this.pos = [];
     this.col = [];
     this.n = 0;
     this.toneJitter = toneJitter;
     this.seed = seed;
     this.shade = shade;
+    this.tint = tint;
   }
   // One triangle. `out` is a direction the face should point along, or null to keep the winding.
   tri(a, b, c, color, out = null, tone = null) {
@@ -55,7 +58,8 @@ export class Mesher {
     const j = tone ?? 1 + (hash(this.seed, this.n++, 31) - 0.5) * 2 * this.toneJitter;
     for (const p of [A, B, C]) {
       const k = j * (this.shade ? this.shade(p, n) : 1);
-      this.col.push(color.r * k, color.g * k, color.b * k);
+      const c = this.tint ? this.tint(p, color) : color;
+      this.col.push(c.r * k, c.g * k, c.b * k);
     }
   }
   quad(a, b, c, d, color, out = null, tone = null) {

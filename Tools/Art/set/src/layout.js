@@ -79,6 +79,23 @@ export function blocked(pad = 0.2) {
   return out;
 }
 
+// The mess (review round 2, row 15; D60: the frame's cleanliness is state, so the yard may show it): three decals the
+// yard lays on the board, each from a cleanliness under `below` on. Each lies flat on open lawn where dogs stand (inside
+// the margin, off every blocked footprint, clear of the clubhouse, the fence and the walk), the three spread over the
+// lawn's front, its right and its left so the yard reads as getting messier; nothing in one is higher than 8 cm (the
+// depth audit's rule: lower is stood on, not hidden behind), so the yard draws them over the board and under every
+// figure. The shapes are in mess.js.
+export const MESS = [
+  // a trampled muddy patch, two tracks of paw prints leading out of it (each fading as the mud wears off the paws)
+  { id: 'mud', below: 50, x: 2.0, y: 2.3, a: 0.8, b: 0.55, rot: 0.35,
+    trails: [{ p: [[2.72, 2.78], [3.25, 3.3], [4.25, 3.52]], n: 8 }, { p: [[1.5, 1.78], [1.3, 1.4], [0.98, 1.06]], n: 4 }] },
+  // a spill of kibble fanning out from a heap where it landed, a chewed rope toy and a ball
+  { id: 'kibble', below: 30, x: 5.0, y: 1.3, dir: 2.1, len: 0.8, n: 44, heap: 12, seed: 7,
+    toy: { x: 5.42, y: 1.8, ang: -0.62 }, ball: { x: 4.52, y: 1.02 } },
+  // a water bowl knocked upside down, its puddle spreading toward the front, a few drops beyond it
+  { id: 'bowl', below: 10, x: 1.15, y: 5.2, puddle: { x: 1.6, y: 4.75, rx: 0.62, ry: 0.4, rot: -0.85 } },
+];
+
 // The walkers' strip on the front path: [x, y, w, h] for their anchors (the path's middle, clear of the slab's lip),
 // from near the front corner to past the lawn's right corner: room for six dogs and the crew in a file.
 export const WALK = [0.4, -PATH + 0.35, PATH_X + SIDE - 0.8, PATH - 0.7];

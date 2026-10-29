@@ -53,9 +53,30 @@ const sideShade = (p) => 0.84 + 0.16 * sstep(-SLAB.depth, -0.08, p.y);
 
 // --- the parts --------------------------------------------------------------------------------------------------
 const JIT = 0.36; // the in-plane jitter of the ground grids, as a fraction of a cell (plus or minus half of it)
+const LAWN_JITTER = 0.018; // the lawn's per-facet tone jitter (its Mesher's toneJitter)
 
-function lawn() {
-  const m = new Mesher({ toneJitter: 0.018, seed: 3, shade: groundShade });
+// The lawn's colour at a point: its tile's green and its two tones, before a facet's jitter and the baked occlusion
+// (the same sum as lawn() below; the mess's paw prints fade toward it).
+export function lawnColour(x, y) {
+  const ti = Math.min(Math.floor(x / TILE), 5), tj = Math.min(Math.floor(y / TILE), 5);
+  const base = (ti + tj) % 2 ? C.lawnB : C.lawnA;
+  return base.clone().multiplyScalar(1 + (noise2(x / 1.6, y / 1.6, 5) - 0.5) * 0.08 + (noise2(x / 0.55, y / 0.55, 6) - 0.5) * 0.03);
+}
+
+// The lawn. With a `mess` (mess.js: tintAt(p, colour) -> the colour at a vertex or null, shadeAt(p) -> its baked
+// occlusion), the cells it touches are tinted vertex by vertex: in place (`inPlace`, the whole board with the mess, for
+// the check), or else copied alone, with the lawn's own vertices, facet tones and occlusion, into a mesh of their own,
+// which is returned (the decal's cells). Without one, the lawn is exactly as it was (the shipped board's bytes depend
+// on it).
+function lawn(mess = null, { inPlace = false } = {}) {
+  const messShade = mess ? (p) => groundShade(p) * mess.shadeAt(p) : null;
+  const messTint = mess ? (p, c) => mess.tintAt(p, c) ?? c : null;
+  const m = mess && inPlace
+    ? new Mesher({ toneJitter: LAWN_JITTER, seed: 3, shade: messShade, tint: messTint })
+    : new Mesher({ toneJitter: LAWN_JITTER, seed: 3, shade: groundShade });
+  const cells = mess && !inPlace ? new Mesher({ seed: 3, shade: messShade, tint: messTint }) : null;
+  // the tone Mesher.tri gives its k-th triangle when none is passed
+  const toneOf = (k) => 1 + (hash(3, k, 31) - 0.5) * 2 * LAWN_JITTER;
   const c = TILE / 8;
   const xs = [], ys = [];
   for (let i = 0; i * c < X - 1e-6; i++) xs.push(i * c);
@@ -79,10 +100,17 @@ function lawn() {
     const tone = 1 + (noise2(xm / 1.6, ym / 1.6, 5) - 0.5) * 0.08 + (noise2(xm / 0.55, ym / 0.55, 6) - 0.5) * 0.03;
     const clr = base.clone().multiplyScalar(tone);
     const a = P(i, j), b = P(i + 1, j), cc = P(i + 1, j + 1), d = P(i, j + 1);
+    const k0 = m.n;
     if (hash(i, j, 2) > 0.5) { m.tri(a, b, cc, clr, up); m.tri(a, cc, d, clr, up); }
     else { m.tri(a, b, d, clr, up); m.tri(b, cc, d, clr, up); }
+    if (cells && [a, b, cc, d].some((p) => mess.tintAt(p, clr) !== null || mess.shadeAt(p) < 1)) {
+      if (m.n - k0 !== 2) throw new Error(`lawn: cell ${i},${j} has a degenerate facet`);
+      const t0 = toneOf(k0), t1 = toneOf(k0 + 1);
+      if (hash(i, j, 2) > 0.5) { cells.tri(a, b, cc, clr, up, t0); cells.tri(a, cc, d, clr, up, t1); }
+      else { cells.tri(a, b, d, clr, up, t0); cells.tri(b, cc, d, clr, up, t1); }
+    }
   }
-  return m;
+  return cells ?? m;
 }
 
 // The garden outside the fence: behind the left-back fence round the clubhouse, and beyond the side path's end
@@ -379,7 +407,9 @@ function planterAndBowl() {
 }
 
 // The board as a group of meshes, each tagged: `ground` (the lawn and the path receive the cast shadows) or not.
-export function buildBoard() {
+// With a `mess` (mess.js, the check of the decals only): the lawn's cells tinted in place, the mess's flat pieces as
+// ground and its objects as casters, exactly as the decals are rendered.
+export function buildBoard({ mess = null } = {}) {
   const mat = () => new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   const grp = new THREE.Group();
   const mk = (m, { ground = false, cast = true, double = false, name = '' } = {}) => {
@@ -392,7 +422,7 @@ export function buildBoard() {
     return m.tris;
   };
   let tris = 0;
-  tris += mk(lawn(), { ground: true, cast: false, name: 'lawn' });
+  tris += mk(lawn(mess, { inPlace: true }), { ground: true, cast: false, name: 'lawn' });
   tris += mk(garden(), { ground: true, cast: false, name: 'garden' });
   tris += mk(path(), { ground: true, cast: false, name: 'path' });
   tris += mk(slabSides(), { cast: false, name: 'slab' });
@@ -400,7 +430,35 @@ export function buildBoard() {
   clubhouse().forEach((part, i) => { tris += mk(part, { name: ['walls', 'roof', 'door, step, window'][i] }); });
   tris += mk(plants(), { name: 'plants' });
   tris += mk(planterAndBowl(), { double: true, name: 'planter, bowl' }); // the lathed bowl is seen from inside and out
+  if (mess) {
+    if (mess.flats.tris) tris += mk(mess.flats, { ground: true, cast: false, name: 'mess flats' });
+    if (mess.objects.tris) tris += mk(mess.objects, { double: true, name: 'mess objects' });
+  }
   grp.userData.tris = tris;
+  return grp;
+}
+
+// The decal's own meshes, tagged by role for its passes (render.js, renderDecal): the clean lawn (an occluder and the
+// shadow's receiver), the tinted cells, the flat pieces (ground: they take shadows) and the objects (casters).
+export function decalGroup(mess) {
+  const mat = (double = false) => {
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    if (double) m.side = THREE.DoubleSide;
+    return m;
+  };
+  const grp = new THREE.Group();
+  const add = (m, role, { receive = false, cast = false, double = false } = {}) => {
+    if (!m.tris) return;
+    const o = new THREE.Mesh(m.geometry(), mat(double));
+    o.name = role;
+    o.userData.role = role;
+    o.castShadow = cast; o.receiveShadow = receive;
+    grp.add(o);
+  };
+  add(lawn(), 'lawn', { receive: true });
+  add(lawn(mess), 'cells');
+  add(mess.flats, 'flats', { receive: true });
+  add(mess.objects, 'objects', { cast: true, double: true });
   return grp;
 }
 

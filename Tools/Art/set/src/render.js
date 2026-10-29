@@ -61,11 +61,12 @@ export function grade(canvas, { contrast = 0.95, saturation = 0.97, warm = 0.012
 
 // One pass with every mesh's material swapped by `pick(mesh) -> material | null` (null hides it), plus `extra` objects
 // and an optional shadow-casting key light.
-function pass(group, F, pick, { extra = [], light = null } = {}) {
+function pass(group, F, pick, { extra = [], light = null, lit = false } = {}) {
   const renderer = makeRenderer(F.w, F.h);
   renderer.shadowMap.enabled = !!light;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
+  if (lit) addLights(scene); // a colour pass (the decals'): the board's own lights
   const ghost = group.clone(true);
   ghost.traverse((o) => {
     if (!o.isMesh) return;
@@ -156,7 +157,45 @@ export function renderBoard(group, { extra = [], layers = null } = {}) {
   const x0 = Math.max(0, box.x0 - pad), y0 = Math.max(0, box.y0 - pad);
   const cropped = crop(out, { x0, y0, x1: Math.min(W2 - 1, box.x1 + pad), y1: Math.min(H2 - 1, box.y1 + pad) });
   const px = (p) => { const [x, y] = F.px(p); return [x / SS - x0, y / SS - y0]; };
-  return { canvas: cropped, px, tris: group.userData.tris };
+  // F and the crop's offset: the frame a decal is rendered through, and where its pixels land in the board image
+  return { canvas: cropped, px, tris: group.userData.tris, F, offset: [x0, y0] };
+}
+
+// A mess decal (review round 2, row 15) through the board's own frame `F` and lights, so it lands exactly in the board's
+// light and perspective; `offset` is the board's crop (renderBoard's). `group` is board.js's decalGroup: the clean lawn
+// hides what sinks below it and takes the objects' shadows, the tinted cells and the flat pieces lie on it, the
+// objects stand on it. The same passes as the board's: colour; the key light's shadows on the ground as a mask, blurred
+// and laid at 30% in the deep green-black, kept to the ground; the grade. Only the decal's own pixels are drawn (the
+// lawn writes depth, never colour), so the result is transparent wherever the board shows through unchanged.
+// Returns the decal cropped to its faintest pixel plus `pad`, and `at`: the board-image pixel of its top-left corner.
+export function renderDecal(group, F, offset, { pad = 2 } = {}) {
+  group.updateMatrixWorld(true);
+  const role = (o) => o.userData.role;
+  const hidden = (o = {}) => new THREE.MeshBasicMaterial({ colorWrite: false, ...o });
+  // the lawn is pushed back a hair in depth, so the cells that lie exactly on it are drawn and anything below it is not
+  const behind = () => hidden({ polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  const colour = pass(group, F, (o) => (role(o) === 'lawn' ? behind() : o.material), { lit: true });
+  const centre = W((SLAB.x0 + SLAB.x1) / 2, (SLAB.y0 + SLAB.y1) / 2, 0);
+  const shadowMask = pass(group, F, (o) => ({
+    lawn: new THREE.ShadowMaterial({ color: 0x000000, opacity: 1 }),
+    flats: new THREE.ShadowMaterial({ color: 0x000000, opacity: 1 }),
+    cells: null, // they lie exactly on the lawn, which takes the shadow for them
+    objects: hidden(),
+  })[role(o)], { light: keyLight(centre, 8.5) });
+  const groundMask = pass(group, F, (o) => (role(o) === 'objects' ? hidden() : role(o) === 'cells' ? null : new THREE.MeshBasicMaterial({ color: 0xffffff })));
+
+  const out = canvas2d(colour.width, colour.height);
+  const g = out.getContext('2d');
+  g.drawImage(colour, 0, 0);
+  const sh = tinted(shadowMask, SHADOW.blur * SPRITE_SCALE, SHADOW.tint, SHADOW.alpha);
+  const sg = sh.getContext('2d');
+  sg.globalCompositeOperation = 'destination-in';
+  sg.drawImage(groundMask, 0, 0);
+  g.drawImage(sh, 0, 0);
+  grade(out);
+  const box = alphaBox(out, 1);
+  const b = { x0: box.x0 - pad, y0: box.y0 - pad, x1: box.x1 + pad, y1: box.y1 + pad };
+  return { canvas: crop(out, b), at: [b.x0 - offset[0], b.y0 - offset[1]] };
 }
 
 // The GM in its three states through one frame. `fit`: null for the yard (the yard's scale, the frame fitted to the

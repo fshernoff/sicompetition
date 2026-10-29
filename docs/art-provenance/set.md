@@ -1,13 +1,15 @@
 # The set and the GM: provenance (G5d, D59)
 
 The board (the lawn, the slab, the path, the fence and the gate, the clubhouse, the bushes, the planter, the water
-bowl) and the GM orb in its three states are **modelled in code and rendered offline**. No image model made any of
+bowl), the GM orb in its three states and the three mess decals are **modelled in code and rendered offline**. No image model made any of
 them, and no outside model, texture, photo, font or asset pack went in: every vertex and colour is written in
 `Tools/Art/set/src/`. The code is **AI-assisted**: written on 2026-10-28 by Claude (Anthropic's Opus model, running
 as a Claude Code agent, package WP4b of G5d) at the owner's direction, from spike B's pipeline (`Temp/spike-b/`,
 written the same day by another Claude agent for the D59 spike). The brief it was written to is "WP4b the set and the
-GM" in `.claude/docs/plans/g5d-packages.md`. Disclose it as "the set modelled with AI-assisted code" (the cast is the
-generated part: `docs/art-provenance/README.md`).
+GM" in `.claude/docs/plans/g5d-packages.md`. The mess decals' code (`Tools/Art/set/src/mess.js` and its hooks in
+`board.js`, `render.js`, `page.js` and `render.mjs`) was written on 2026-10-29 by Claude (the same model, as a Claude
+Code agent, package WP4b-r2) to review round 2, row 15 of `.claude/docs/reviews/g5d-look-rounds.md`. Disclose it as
+"the set modelled with AI-assisted code" (the cast is the generated part: `docs/art-provenance/README.md`).
 
 ## What ships
 
@@ -18,9 +20,12 @@ generated part: `docs/art-provenance/README.md`).
 | `set/gm-running.webp` | the GM running the week: the amber band lit | 114 × 240 | 3,104 | `17348d3a544a` |
 | `set/gm-done.webp` | the week is over: the band lit a pale warm white | 114 × 240 | 2,834 | `e12e5f32915d` |
 | `set/gm-page-ready.webp`, `set/gm-page-running.webp`, `set/gm-page-done.webp` | the same three at the page's size (64 CSS px), for the status line, the orb centred | 128 × 128 | 2,200; 2,724; 2,512 | `d4b7bfb2b2d9`, `23e8fa0b7bc1`, `d44de11da266` |
-| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 3,476 | `3597b0a6bb20` |
+| `set/mess-mud.webp` | the mess under cleanliness 50: a trampled muddy patch, two tracks of paw prints leading out of it | 434 × 425 | 45,440 | `b93bbc4988fc` |
+| `set/mess-kibble.webp` | under 30: a spill of kibble from a heap, a chewed rope toy and a tennis ball, on trampled grass | 341 × 183 | 27,086 | `76eac86b1116` |
+| `set/mess-bowl.webp` | under 10: a steel water bowl knocked upside down, its puddle and a few drops on wet grass | 432 × 135 | 17,854 | `d27b7ea710b2` |
+| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, `mess`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 4,647 | `0de75f06fbf4` |
 
-Every image is at 2× the yard's CSS size, lossy WebP with a real alpha channel. The hashes are this render's; the
+Every image is at 2× the yard's CSS size, lossy WebP with a real alpha channel (the mess decals: lossless WebP). The hashes are this render's; the
 render is deterministic (two runs on Oct 28 gave byte-identical files), so a rerun on the same tools reproduces them.
 These are not D58 passes: the three readers' passes go in `qa.md`.
 
@@ -39,6 +44,11 @@ scorecard must never read as a win), so done is now a neutral band: a steady pal
 `gm-page-done.webp` changed; the board and the other four GM files are byte-identical to the second render, and
 `set.json` changed only in its `_notes` line describing done.
 
+**The mess decals (Oct 29, review round 2, row 15):** at cleanliness 0 the lawn stayed immaculate beside the number.
+Three decals were added, new files only: the board and the six GM files are byte-identical to the third render (their
+SHA-256 before and after, in full, unchanged), and `set.json` gained its `mess` list and one `_notes` line. The yard
+(WP3) shows each while the frame's cleanliness is under its `below` (D60: the frame's state, nothing invented).
+
 ## The tools
 
 - three.js **0.186.1** (MIT), installed in `Tools/Art/set/` only (its own `package.json` and lockfile; never in the
@@ -46,7 +56,7 @@ scorecard must never read as a win), so done is now a neutral band: a steady pal
 - The renderer: three.js's `WebGLRenderer` in **Chromium 156.0.8078.4** (Playwright 1.64.1, the repo's
   devDependency), headless, WebGL through ANGLE and SwiftShader; Node 24.21.0 drives it.
 - The WebP encoder: Chromium's own (`canvas.toDataURL('image/webp', q)`), quality 0.90 for the board and 0.92 for the
-  GM.
+  GM; quality 1 for the mess decals, which Chromium encodes losslessly (each decodes to exactly its PNG master).
 - The checks: `Tools/Agent/art_qa.py` (Pillow 13.0.0 in a scratch venv) and the depth audit in `src/page.js`.
 
 Reproduce, from the repo root (about 22 s):
@@ -56,7 +66,12 @@ Reproduce, from the repo root (about 22 s):
 node Tools/Art/set/render.mjs          # the set, the GM, set.json, the depth audit, the composites in Temp/set/
 node Tools/Art/set/render.mjs compose  # only the composites, from the files already written
 node Tools/Art/set/render.mjs cast     # the board with WP4a's cast (src/assets/art/cast.json): Temp/set/composite-cast-*
+node Tools/Art/set/render.mjs mess     # only the mess decals, set.json's `mess` patched in place, the checks, Temp/set/mess-*
 ```
+
+`all` renders the decals too (after the board, through its frame). `mess` never writes the board or the GM: it renders
+the board again only to take its frame and crop, and stops unless that render's WebP is byte for byte the shipped
+`board.webp` (the decals are only right on that board). About 15 s.
 
 ## The steps
 
@@ -110,6 +125,38 @@ node Tools/Art/set/render.mjs cast     # the board with WP4a's cast (src/assets/
    one 128 px frame with the orb centred. The GM's grade is lighter (contrast 0.96).
 8. **The map** (`set.json`): `origin` is the image pixel of the lawn's front corner, measured by projecting it through
    the render's own camera, as are `gmSpot` and the GM's anchors.
+9. **The mess** (`src/mess.js`, the places in `layout.js`'s `MESS`). Each decal is the board's own render of a patch
+   of lawn with the mess on it, so it lands in the board's camera, light, shadows and grade by construction:
+   - *Where:* on open lawn where dogs stand, inside the margin, off every blocked footprint, clear of the clubhouse,
+     the fence and the walk, the three spread over the lawn's front (the mud), its right (the kibble) and its left
+     (the bowl). Nothing in one stands higher than 8 cm (measured: the rope's knots 7.8 cm, the bowl 6.5 cm, the flat
+     pieces 1.1 to 1.2 cm), the depth audit's own rule, so the yard draws them over the board and under every figure.
+   - *The pieces,* in the board's language and palette (flat-shaded, vertex-coloured facets; the slab's soil, the
+     fence's tan, the bowl's steel, the gate's iron, the water; new: a golden kibble brown, the rope's cream, a slate
+     stripe a touch deeper than the window glass, a tennis-ball yellow): flat pieces 1.1 cm over the lawn (the mud as
+     a ragged pool in three bands, drier at its edge and wettest in the middle; paw prints, a pad and four toes, in a
+     trot's left and right, fading as the mud wears off; the puddle in two rings with a streak of sky; drops; the
+     rope's frayed ends) and small objects that cast the key light's shadow (44 kibble pieces fanning from a heap,
+     three on top; a twisted rope toy with a knot at each end and two slate stripes; a tennis ball with a pale seam;
+     a steel dog bowl upside down with the black non-slip ring on its base). Each piece is a little larger than life
+     so the mess reads where the yard draws the board at about a third of its pixels.
+   - *The grass round them* is tinted vertex by vertex as a soft field that fades to nothing (mud smeared in and
+     trampled grass round the pool and along the tracks; trampled grass under the spill; wet grass round the puddle,
+     the bowl and the drops), the way the board bakes its soft occlusion, so there is no edge where it meets the
+     board's lawn. The tinted cells are the lawn's own cells (its vertices, facet tones and occlusion, copied), so
+     they match the board's lawn exactly; they also join each decal's pieces into one patch (no loose specks). The
+     objects bake a little soft occlusion into the grass round them, as the board's bowl does.
+   - *The render* (`render.js`, `renderDecal`): through the board's own frame (the same camera, size and
+     supersampling as the board, recomputed from the board and checked by re-rendering it), with the board's lights;
+     the clean lawn drawn only into depth (pushed back a hair, so the tinted cells on it are drawn and anything below
+     it is not); the objects' key-light shadows on the lawn and the flat pieces as a mask, blurred and laid at 30% in
+     the deep green-black, kept to the ground, exactly as the board's; the board's grade. Only the decal's own pixels
+     are drawn, so it is transparent wherever the board shows through unchanged; cropped to its faintest pixel plus
+     2 px, and `at` is where that crop's top-left corner falls in the board image.
+   - *The encoding:* lossless. Lossy WebP at the board's 0.90 put a faint grey fringe on the decals' soft outer edge
+     (the encoder blends the colour of a partly clear edge pixel with the black under the clear ones: a master pixel
+     (128, 159, 69) at alpha 48 came back (138, 152, 92)); Chromium encodes quality 1 losslessly, and each decal now
+     decodes to exactly its PNG master. 90 KB for the three.
 
 ## The checks (the package's own, not D58's)
 
@@ -131,3 +178,21 @@ node Tools/Art/set/render.mjs cast     # the board with WP4a's cast (src/assets/
   `Temp/set/composite-cast-{1x,2x}.png`, 18 dogs of every breed and the crew, 0 touching pixels.
 - The GM on the page's surfaces: `Temp/set/gm-page-sheet.png` (white, the steel page, the navy bar, at 1× and 2×),
   `Temp/set/gm-yard-sheet.png`.
+- **The mess decals** (Oct 29, `node Tools/Art/set/render.mjs mess`, run twice: byte-identical files):
+  - The board rendered again for their frame is byte for byte the shipped `board.webp` (118,610 B), its crop offset
+    55, 124; the board rendered with all three in place has the same crop.
+  - The decals laid on the board against the board rendered with the mess in place: on the lossless masters, at most
+    4 levels in any channel inside each decal's box (mean 0.012 to 0.017; 0 pixels over 4) and 0 outside. On the
+    shipped files, every opaque decal pixel equals that render exactly (86,160, 36,584 and 34,318 pixels; worst
+    difference 0); inside the decals' boxes the shipped board with the decals on it differs from it by a mean of 0.39
+    to 0.56 levels, below the shipped board's own lossy error outside them (mean 1.05). The images' borders are clear
+    (nothing cut off); partly clear edge pixels (1,954, 1,036 and 944) much darker than an opaque neighbour: 0.
+  - `Tools/Agent/art_qa.py` on the three shipped files (crops at 2× on cream and near-black in
+    `Temp/set/qa-mess/`): each 1 figure and 0 specks. On cream and black each shows the patch of lawn it carries
+    round its mess; on the board that lawn is the board's own, so it does not show.
+  - The composites: `Temp/set/mess-level-{0,1,2,3}.png` (the board at 0.48 of its 2×, about 1,150 px wide, with
+    none, one, two and three decals, the GM running);
+    `Temp/set/mess-cast-1x.png` and `mess-cast-page-fit.png` (all three under WP4a's cast, 18 dogs and the crew, at
+    the yard's 1× and fitted to the 1366 × 768 page at 0.68 of its 1×). From a scratch Pillow script (not kept): the
+    sheet of the four levels, `Temp/set/mess-levels.png`, and the decals on the shipped board at 2× of the image
+    beside the clean board, for seams, `Temp/set/mess-zoom-{mud,kibble,bowl}.png`.

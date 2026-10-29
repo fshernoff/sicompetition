@@ -246,6 +246,7 @@ describe('reportTable: the bonus group follows the plan', () => {
       'Incidents, −$5 per incident',
       'Blocks over the legal ratio, −$5 per block',
       "The GM's bonus ($)",
+      "Profit after the GM's bonus ($)",
     ]);
     expect(cells(t, 'Incidents, −$5 per incident')).toEqual(['−$20', '−$10', '−$10', '$0', '−$5', '−$45']);
     expect(cells(t, 'Blocks over the legal ratio, −$5 per block')).toEqual(['−$20', '−$20', '−$20', '$0', '−$20', '−$80']);
@@ -262,6 +263,7 @@ describe('reportTable: the bonus group follows the plan', () => {
       'Reputation change, +$5 per point',
       'Staff fatigue above 70%, −$2 per block',
       "The GM's bonus ($)",
+      "Profit after the GM's bonus ($)",
     ]);
     expect(cells(t, 'Reputation change, +$5 per point')).toEqual(['−$40', '−$50', '−$30', '−$10', '−$15', '−$145']);
     expect(cells(t, 'Dogs served, +$1 per dog')).toEqual(['+$20', '+$19', '+$17', '+$16', '+$16', '+$88']);
@@ -282,7 +284,7 @@ describe('reportTable: the bonus group follows the plan', () => {
     plan.kpis.dogsServed = { on: false, weight: 7 };
     const report = runEpisode(config, plan, recklessCoveredPolicy, episodeSeeds(1, 0)).report;
     const t = reportTable(report, plan, config);
-    expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$1 per $100', 'Incidents, $0 per incident', "The GM's bonus ($)"]);
+    expect(t.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$1 per $100', 'Incidents, $0 per incident', "The GM's bonus ($)", "Profit after the GM's bonus ($)"]);
     expect(cells(t, 'Incidents, $0 per incident')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
     expect(cells(t, 'Profit today ($), +$1 per $100')).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);
     expect(cells(t, "The GM's bonus ($)")).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);

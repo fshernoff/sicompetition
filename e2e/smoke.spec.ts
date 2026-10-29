@@ -286,6 +286,14 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
         compareTop: Math.round(box('.compare').top),
         compareBottom: Math.round(box('.compare').bottom),
         trayTop: tray && !tray.hidden ? Math.round(tray.getBoundingClientRect().top) : window.innerHeight,
+        // The rail's last line while the week plays: the whole rail fits the window (G5d round 2 follow-up; the status
+        // is pinned to the top then, so the rail cannot scroll).
+        railLast: Math.round(
+          Array.from(document.querySelectorAll('#rail-live p, #rail-live .meter-name, #rail-live .meter-num'))
+            .filter((el) => el.getClientRects().length > 0)
+            .reduce((bottom, el) => Math.max(bottom, el.getBoundingClientRect().bottom), 0),
+        ),
+        innerHeight: window.innerHeight,
         scrollWidth: document.documentElement.scrollWidth,
         status: document.querySelector('#status')?.textContent ?? '',
       };
@@ -299,6 +307,8 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   const during = await geometry();
   console.log(`[e2e] while the week plays: ${JSON.stringify(during)}`);
   expect(during.replayWidth).toBeGreaterThanOrEqual(560); // the yard is big now, even above an open tray (G4's question)
+  expect(during.railLast).toBeGreaterThan(0);
+  expect(during.railLast).toBeLessThanOrEqual(during.innerHeight); // the rail's last line in the window at 1366 × 768
   // The week is over: the readout is out and the page has scrolled back to the prediction beside what the GM did.
   await weekOver(page);
   const ms = Date.now() - started;

@@ -78,7 +78,7 @@
   --vw: calc(1vw / var(--zoom));
   --view-height: calc(100vh / var(--zoom));
   --console-w: min(940px, max(800px, calc(64 * var(--vw))));
-  --live-w: clamp(420px, calc(40 * var(--vw)), 560px);
+  --live-w: clamp(480px, calc(40 * var(--vw)), 560px); /* at 1024 the rail keeps 480 px, so it fits the window */
   --done-w: min(900px, max(760px, calc(60 * var(--vw)))); /* the week's end: the scorecard's rail, the yard beside it */
 
   /* The teacher's learning curve: dark ink on a pale chart, navy for the average, orange for the weeks run the
@@ -271,16 +271,19 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   border-right: 1px solid var(--line);
 }
 .stage {
-  position: sticky;
-  top: 0;
+  /* The room for the yard's box under the stage's head: the window less the bar (on the load screen) or the open
+     tray (on the run and the week's end), the stage's padding and its head. */
+  --yard-room: calc(var(--view-height) - var(--bar-h) - 82px);
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: calc(var(--view-height) - var(--bar-h));
   margin: 0;
   padding: 14px 18px 18px;
 }
-#watch[data-phase='run'] .stage, #watch[data-phase='done'] .stage { height: calc(var(--view-height) - var(--tray-pad, 0px)); }
+#watch[data-phase='run'] .stage, #watch[data-phase='done'] .stage { --yard-room: calc(var(--view-height) - var(--tray-pad, 0px) - 82px); }
+/* On the run the yard stays in the window while the rail scrolls (the page is pinned there while the week plays). */
+#watch[data-phase='run'] .stage { position: sticky; top: 0; }
 
 /* What each phase shows. The load screen and the week's end lay the rail out as a grid: on the load screen the premise
    across the top, then step 1 (the plan) beside steps 2 and 3 (the picks, the Why and the button), their headings
@@ -295,7 +298,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 }
 #watch[data-phase='load'] .rail { grid-template-areas: 'premise premise' 'plan predict'; }
 #watch[data-phase='done'] .rail {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   grid-template-rows: auto auto auto 1fr;
   grid-template-areas: 'compare compare' 'plan actions' 'whyl actions' 'why actions';
 }
@@ -355,8 +358,8 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .rail-head {
   align-items: center;
   gap: 14px;
-  min-height: 76px;
-  padding: 12px 22px;
+  min-height: 66px;
+  padding: 7px 22px;
   border-bottom: 1px solid var(--line);
 }
 /* The line's own box is the orb's height, its words centred in it: the line starts at the rail's top edge. */
@@ -590,7 +593,8 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .plan-strip-label { display: none; margin: 0 0 2px; font-size: var(--text-sm); color: #c3ced8; }
 #watch[data-phase='done'] .plan-strip-label { display: block; }
 .plan-words { font: 400 16px/1.35 var(--font-ui); }
-.plan-line { display: block; padding-left: 1em; text-indent: -1em; } /* a clause a line, one hanging indent (row 31) */
+.plan-line { display: block; } /* a clause a line; a wrapped clause continues flush with its own first line */
+.plan-line + .plan-line { padding-left: 1em; } /* the indent is between clauses: each after the first sits in by 1em */
 .plan-words b { font-weight: 800; color: #fff; }
 .plan-note { margin: 6px 0 0; font-size: var(--text-sm); color: var(--ink-3); }
 .plan-note:empty { display: none; }
@@ -718,7 +722,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .pick-dots i.on { background: var(--navy); border-color: var(--navy); }
 
 /* ---------- After the week: how the business did, beside what the team called, with equal weight ---------- */
-.result-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+.result-cols { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); border-bottom: 1px solid var(--line); }
 .result-col { min-width: 0; padding: 14px 22px 16px; }
 .result-business { border-right: 1px solid var(--line); }
 .col-title {
@@ -751,10 +755,10 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .called-line:focus { outline: none; }
 .called-line:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .score-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); }
-.score-table .score-h-label { width: 34%; }
-.score-table .score-h-pick { width: 19%; }
-.score-table .score-h-actual { width: 27%; }
-.score-table .score-h-mark { width: 20%; }
+.score-table .score-h-label { width: 41%; }
+.score-table .score-h-pick { width: 17%; }
+.score-table .score-h-actual { width: 23%; }
+.score-table .score-h-mark { width: 19%; }
 .score-table thead th {
   white-space: nowrap;
   padding: 0 10px 5px 0;
@@ -787,15 +791,18 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 
 /* ---------- The run: the rail of the block's values ---------- */
 .live { padding: 0; }
-.rail-live > * { padding: 12px 22px; border-bottom: 1px solid var(--line); }
+#rail-live { contain: layout paint; } /* a block's update lays out the rail alone (acceptance 7) */
+/* While the week plays the whole rail fits the window at 1366 × 768, 1024 × 768 and 1920 × 1080 (the status is
+   pinned to the top then, so the rail cannot scroll): the type as elsewhere, a tight rhythm between the blocks. */
+.rail-live > * { padding: 8px 22px; border-bottom: 1px solid var(--line); }
 .when { font: 850 27px/1.05 var(--font-ui); font-stretch: 70%; color: var(--navy); }
-.choices { margin-top: 5px; font-size: var(--text-sm); line-height: 1.35; color: var(--ink-2); }
+.choices { margin-top: 3px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink-2); }
 /* This block, in one bold line: the most prominent words after the gauge's number (round 2, row 10). */
-.rail-live > .this-block { padding-top: 11px; padding-bottom: 11px; font: 800 20px/1.25 var(--font-ui); font-stretch: 86%; color: var(--navy); background: var(--panel-2); }
+.rail-live > .this-block { padding-top: 7px; padding-bottom: 7px; font: 800 20px/1.25 var(--font-ui); font-stretch: 86%; color: var(--navy); background: var(--panel-2); }
 .this-block .asked { font-weight: 500; color: var(--ink-2); }
 .choices-crew { display: block; }
-.timeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
-.tl-day { display: grid; gap: 5px; }
+.timeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 7px; }
+.tl-day { display: grid; gap: 4px; }
 .tl-blocks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; }
 .tl-blocks i { height: 7px; background: var(--line-2); border-radius: 2px; }
 .tl-blocks i.done { background: var(--navy); }
@@ -815,18 +822,19 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .stat-lab { display: flex; align-items: center; gap: 6px; font: 600 15px/1.2 var(--font-ui); color: var(--ink-2); }
 .stat-icon { display: grid; flex: none; place-items: center; }
 .live-crowd.over .stat-lab { color: var(--red-ink); }
-.gauge { position: relative; height: 16px; margin-top: 9px; background: var(--line-2); border-radius: 3px; }
+.gauge { position: relative; height: 16px; margin-top: 7px; background: var(--line-2); border-radius: 3px; }
 .gauge-fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--navy); border-radius: 3px 0 0 3px; }
 .gauge-over { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red) 0 4px, #ee8c7c 4px 8px); }
 .gauge-mark { position: absolute; top: -6px; bottom: -6px; width: 3px; margin-left: -1px; background: var(--navy); }
 /* The limit's label under its own mark (round 1, row 25). */
 .gauge-limit { position: absolute; top: calc(100% + 8px); transform: translateX(-50%); font-size: var(--text-sm); line-height: 1; color: var(--ink-2); white-space: nowrap; }
 .gauge-limit b { color: var(--ink); }
-.gauge-floor { margin-top: 30px; font-size: var(--text-sm); color: var(--ink-2); }
+.gauge-floor { margin-top: 26px; font-size: var(--text-sm); color: var(--ink-2); }
 
-.live-pair { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
-.live-pair .stat { min-width: 0; padding: 0 14px; border-left: 1px solid var(--line); }
-.live-pair .stat:first-child { padding-left: 0; border-left: 0; }
+.live-stats { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+.live-stats .stat { min-width: 0; padding: 0 0 0 14px; border-left: 1px solid var(--line); }
+.live-stats .stat:nth-child(odd) { padding: 0 14px 0 0; border-left: 0; }
+.live-stats .stat:nth-child(n + 3) { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-2); }
 .stat-bonus .stat-val { color: var(--navy); }
 .stat-val {
   margin-top: 5px;
@@ -835,7 +843,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   font-variant-numeric: tabular-nums lining-nums;
   color: var(--navy);
 }
-.stat-sub { margin-top: 5px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink-2); }
+.stat-sub { margin-top: 3px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink-2); }
 .stat.hurt .stat-val { color: var(--red-ink); }
 .stat-cash .stat-val { color: var(--green-ink); }
 .stat-cash.loss .stat-val { color: var(--red-ink); }
@@ -853,7 +861,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 .stat-quiet { color: var(--ink-3); }
 .stat-sub.loss b { color: var(--red-ink); }
 .stat-cash .stat-sub b { color: var(--ink); }
-.live-meters { display: grid; grid-template-columns: 112px minmax(0, 1fr) 44px; gap: 9px 10px; align-items: center; font-size: var(--text-sm); }
+.live-meters { display: grid; grid-template-columns: 112px minmax(0, 1fr) 44px; gap: 5px 10px; align-items: center; font-size: var(--text-sm); }
 .live-meters .meter { position: relative; height: 8px; background: var(--line-2); border-radius: 3px; }
 .live-meters .meter.bad-high { background: linear-gradient(to right, var(--line-2) 50%, #f5cfc8); }
 .live-meters .meter.bad-low { background: linear-gradient(to left, var(--line-2) 50%, #f5cfc8); }
@@ -861,20 +869,23 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
 /* The crew's fatigue: the plan's 70% marked on the track, the part above it hatched, the number red past it. */
 .meter-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--navy); }
 .meter-over { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red) 0 3px, #ee8c7c 3px 6px); border-radius: 0 3px 3px 0; }
-.meter-limit { position: absolute; bottom: calc(100% + 5px); transform: translateX(-50%); font-size: 15px; line-height: 1; color: var(--ink-3); }
-.live-meters .meter:has(.meter-mark) { margin-top: 18px; }
-.live-meters .meter-name:nth-last-child(3) { margin-top: 18px; }
-.live-meters b.meter-num:last-child { margin-top: 18px; }
+.meter-limit { position: absolute; bottom: calc(100% + 3px); transform: translateX(-50%); font-size: 15px; line-height: 1; color: var(--ink-3); }
+.live-meters .meter:has(.meter-mark) { margin-top: 13px; }
+.live-meters .meter-name:nth-last-child(3) { margin-top: 13px; }
+.live-meters b.meter-num:last-child { margin-top: 13px; }
 .meter-num { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .meter-num.high { color: var(--red-ink); }
-.rail-live > .live-meters { padding-bottom: 6px; border-bottom: 0; }
-.live-facts { display: grid; gap: 3px; font-size: var(--text-sm); color: var(--ink-2); }
+.rail-live > .live-meters { padding-bottom: 5px; border-bottom: 0; }
+/* The facts under the meters, in the same block: they share a line where it has room (Tomorrow and the sick dogs at
+   1366), each fact whole. */
+.live-facts { display: flex; flex-wrap: wrap; gap: 2px 18px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink-2); }
+.live-facts > p { white-space: nowrap; }
 .live-facts b { color: var(--ink); }
-.rail-live > .live-facts { padding-top: 6px; }
+.rail-live > .live-facts { padding-top: 3px; padding-bottom: 8px; }
 
 /* While the GM gets ready: the picks the class made, the plan it works to and the team's reasons, in the rail; while
    the week plays, the block's values first, then the picks and the reasons under them (round 1, row 20). */
-.stage-picks, .stage-plan, .stage-why { padding: 12px 22px; border-bottom: 1px solid var(--line); }
+.stage-plan { padding: 12px 22px; border-bottom: 1px solid var(--line); }
 #watch[data-gm='playing'] .stage-plan { display: none; }
 .stage-why-text { padding-left: 10px; font-size: var(--text-sm); line-height: 1.4; color: var(--ink); border-left: 3px solid var(--amber); white-space: pre-line; }
 .box-label { margin: 0 0 6px; font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
@@ -908,11 +919,33 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { visi
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12a8 8 0 1 0 2.4-5.7'/%3E%3Cpath d='M4 4v4.5h4.5'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12a8 8 0 1 0 2.4-5.7'/%3E%3Cpath d='M4 4v4.5h4.5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
-.yard-frame { position: relative; flex: 1 1 auto; min-height: 0; isolation: isolate; }
+/* The yard's box has the board's shape in every state (round 2, rows 18 and 30): the board fills it, with no band of
+   surround above or below; the column's leftover height goes to the stage's foot, or the column ends. */
+.yard-frame {
+  position: relative;
+  flex: none;
+  width: min(100%, calc(var(--yard-room) * var(--yard-aspect, 1.633)));
+  aspect-ratio: var(--yard-aspect, 1.633);
+  margin: 0 auto;
+  isolation: isolate;
+}
 #replay { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; }
 /* The canvas fills the yard's column in every state (round 1, row 19). At the week's end the page keeps the picture
    the week played at, fitted to the narrower column (object-fit), until settleYard draws it at the column's size. */
 #watch[data-phase='done'] #replay { object-fit: contain; object-position: center top; }
+
+/* Under the yard: on the run, the class's picks and reasons, to watch the week against (they were under the fold in
+   the rail); after the week, what the GM did, beside its week. Each a white card on the stage. */
+.stage-foot { display: grid; gap: 10px; margin-top: 12px; contain: layout paint; } /* its layout never redone by the rail's block updates */
+.stage-foot > * { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-3); }
+.stage-foot > .stage-picks, .stage-foot > .stage-why { padding: 10px 16px 12px; }
+#watch:not([data-phase='run']) .stage-foot > .stage-picks, #watch:not([data-phase='run']) .stage-foot > .stage-why { display: none; }
+.stage-foot > .readout-box { display: none; padding: 12px 16px 14px; }
+#watch[data-phase='done'] .stage-foot > .readout-box { display: block; }
+.stage-foot .stage-picks-list { grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 6px 0; }
+.stage-foot .stage-pick { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 2px; min-height: 0; padding: 0 12px; border-top: 0; border-left: 1px solid var(--line-2); }
+.stage-foot .stage-pick:first-child { padding-left: 0; border-left: 0; }
+.stage-foot .stage-pick-label { line-height: 1.25; }
 /* Before the week and while the GM gets ready, the canvas is clear and the board shows behind it: the yard before
    opening (the set's board, WP4b). */
 #watch[data-gm='idle'] .yard-frame::before, #watch[data-gm='preparing'] .yard-frame::before {
@@ -1043,11 +1076,11 @@ html.teacher-open #app { padding-bottom: calc(var(--tray-height, 120px) + 16px);
 @media (max-width: 1199px) {
   #watch[data-phase='load'], #watch[data-phase='done'] { grid-template-columns: minmax(0, 1fr); }
   #watch[data-phase='load'] .rail, #watch[data-phase='done'] .rail { border-right: 0; border-bottom: 1px solid var(--line); }
-  #watch[data-phase='load'] .stage, #watch[data-phase='done'] .stage { position: relative; height: min(70vh, 640px); }
+  #watch[data-phase='load'] .stage, #watch[data-phase='done'] .stage { position: relative; }
 }
 @media (max-width: 899px) {
   #watch[data-phase='run'] { grid-template-columns: minmax(0, 1fr); }
-  #watch[data-phase='run'] .stage { position: relative; height: min(70vh, 600px); }
+  #watch[data-phase='run'] .stage { position: relative; }
   .live-trio { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .live-trio .stat { padding: 0; border-left: 0; }
 }

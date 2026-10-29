@@ -205,8 +205,9 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   crowdBody.append(label('overRatio', 'Dogs per staffer now'), gauge, floor);
   crowd.append(big, crowdBody);
 
-  // The money (D62): the page's cash, which pays the GM as it earns, and the GM's bonus so far beside it.
-  const money = el('div', 'live-pair live-money');
+  // The money and the costs in one block of four: the page's cash, which pays the GM as it earns (D62), and the GM's
+  // bonus so far beside it; then incidents and reputation, each with its scope.
+  const stats = el('div', 'live-stats');
   const cashBox = el('div', 'stat stat-cash');
   const cashVal = el('p', 'stat-val');
   const cashToday = fact('Today so far: ', '');
@@ -217,10 +218,6 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const bonusVal = el('p', 'stat-val');
   const bonusSub = el('p', 'stat-sub', 'Paid out of the cash as it is earned');
   bonusBox.append(label('bonus', "The GM's bonus so far"), bonusVal, bonusSub);
-  money.append(cashBox, bonusBox);
-
-  // What else it is costing: incidents and reputation, each with its scope.
-  const pair = el('div', 'live-pair');
   const incBox = el('div', 'stat stat-incidents');
   const incVal = el('p', 'stat-val');
   const incSub = el('p', 'stat-sub');
@@ -234,7 +231,7 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const repVal = el('p', 'stat-val');
   const repSub = el('p', 'stat-sub');
   repBox.append(label('reputation', 'Reputation'), repVal, repSub);
-  pair.append(incBox, repBox);
+  stats.append(cashBox, bonusBox, incBox, repBox);
 
   // The meters, each named for whose it is (BRIEF 10.2), each value in percent, each track tinted toward its bad end
   // (the dogs wound up, the yard dirty, the crew worn out: round 2, row 22); the crew's fatigue with the plan's 70%
@@ -262,10 +259,10 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const sickLine = el('p');
   const sickWeek = el('b');
   const sickBlock = el('b');
-  sickLine.append('Dogs sent home sick: ', sickWeek, ' this week, ', sickBlock, ' this block');
-  facts.append(tomorrow.line, solo.line, sickLine);
+  sickLine.append('Sent home sick: ', sickWeek, ' this week, ', sickBlock, ' this block');
+  facts.append(tomorrow.line, sickLine, solo.line); // Tomorrow and the sick dogs share a line where there is room
 
-  container.replaceChildren(whenBox, blockLine, crowd, money, pair, meters, facts);
+  container.replaceChildren(whenBox, blockLine, crowd, stats, meters, facts);
 
   const scale = (v: number): number => (Math.max(0, Math.min(gaugeMax, v)) / gaugeMax) * 100;
   return (m) => {

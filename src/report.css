@@ -106,7 +106,7 @@
   border-top: 3px double var(--navy);
   border-bottom: 2px solid var(--navy);
 }
-#report-table tr.bottom-line th[scope='row'] { white-space: nowrap; }
+#report-table tr.profit th[scope='row'], #report-table tr.bottom-line th[scope='row'] { white-space: nowrap; }
 /* The owners' bottom line ($): the GM's bonus as their cost and the cash that paid it (D62). */
 #report-table tbody.bottom th.group { color: var(--navy); border-bottom-color: var(--navy); }
 #report-table td.warn { font-weight: 800; color: var(--red-ink); background: var(--red-wash); }

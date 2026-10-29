@@ -486,6 +486,12 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
       const label = el('th', r.label);
       label.setAttribute('scope', 'row');
       tr.append(label);
+      if (r.label.startsWith('Activities')) {
+        // The activities' sub-heading spans the table, so it never wraps in the label column; it has no figures.
+        label.setAttribute('colspan', '7');
+        tbody.append(tr);
+        continue;
+      }
       const overRatio = /^Blocks over /.test(r.label);
       const activity = BLOCK_ROWS.has(r.label);
       const cell = (text: string, cls?: string): HTMLElement => {

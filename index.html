@@ -40,13 +40,6 @@
                   <div id="scorecard" class="scorecard" hidden></div>
                 </section>
               </div>
-              <div class="readout-box">
-                <div class="readout-head">
-                  <p class="readout-label" id="readout-label">What the GM did</p>
-                  <a class="to-report" href="#report">See the weekly P&amp;L</a>
-                </div>
-                <p id="readout" aria-live="polite"></p>
-              </div>
             </div>
           </div>
 
@@ -88,17 +81,9 @@
 
           <div class="live">
             <div id="rail-live" class="rail-live"></div>
-            <div id="stage-picks" class="stage-picks" hidden>
-              <p class="box-label">Your picks for the week</p>
-              <ul id="stage-picks-list" class="stage-picks-list"></ul>
-            </div>
             <div id="stage-plan" class="stage-plan" hidden>
               <p class="box-label">The bonus plan it works to</p>
               <p id="stage-plan-words" class="stage-plan-words"></p>
-            </div>
-            <div id="stage-why" class="stage-why" hidden>
-              <p class="box-label">Your team's reasons</p>
-              <p id="stage-why-text" class="stage-why-text"></p>
             </div>
           </div>
         </div>
@@ -111,6 +96,23 @@
           </div>
           <div class="yard-frame">
             <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
+          </div>
+          <div class="stage-foot">
+            <div id="stage-picks" class="stage-picks" hidden>
+              <p class="box-label">Your picks for the week</p>
+              <ul id="stage-picks-list" class="stage-picks-list"></ul>
+            </div>
+            <div id="stage-why" class="stage-why" hidden>
+              <p class="box-label">Your team's reasons</p>
+              <p id="stage-why-text" class="stage-why-text"></p>
+            </div>
+            <div class="readout-box">
+              <div class="readout-head">
+                <p class="readout-label" id="readout-label">What the GM did</p>
+                <a class="to-report" href="#report">See the weekly P&amp;L</a>
+              </div>
+              <p id="readout" aria-live="polite"></p>
+            </div>
           </div>
         </figure>
       </section>

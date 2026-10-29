@@ -24,9 +24,9 @@ import type { EpisodeTrace, RewardSpec, WorldConfig } from '../world/types.ts';
 import { checkLine } from './check.ts';
 import { drawCurve } from './curve.ts';
 import type { CurveColors } from './curve.ts';
-import { mountEditor, roundFromSearch } from './editor.ts';
+import { mountEditor, planLines, roundFromSearch } from './editor.ts';
 import type { Editor } from './editor.ts';
-import { drawReplay, replayArtReady, replayClock, replayFrame } from './replay.ts';
+import { YARD_ASPECT, drawReplay, replayArtReady, replayClock, replayFrame } from './replay.ts';
 import type { ReplayColors, ReplayFonts, ReplayFrame, ReplayOptions } from './replay.ts';
 import { appendArrowed, bonusWithCents, formatDollars, formatMoney, headlineTiles, renderReport, renderTiles, reportTable } from './report.ts';
 import { PICKS, PICKS_HINT, calledLine, checkPrediction, emptyPicks, picksComplete } from './prediction.ts';
@@ -437,11 +437,12 @@ export interface BusinessClause {
 
 /**
  * The week in one line, the owners' bottom line first (G5d round 2, row 5; D62): "Profit $4,853.70 after the GM's
- * bonus · 7 incidents · reputation down 18". Facts only, no verdict. Each clause's spaces are non-breaking (row 24),
- * so a line never splits a number from its noun.
+ * bonus · 7 incidents · reputation down 18". Facts only, no verdict. A number is tied to its neighbours by
+ * non-breaking spaces (row 24), so a line never splits a number from its noun.
  */
 export function businessClauses(totals: EpisodeTrace['report']['totals']): BusinessClause[] {
-  const keep = (text: string): string => text.replace(/ /g, '\u00a0');
+  // A number keeps its neighbours ("$4,853.70 after", "7 incidents", "down 18"); the words may wrap between them.
+  const keep = (text: string): string => text.replace(/(\d) /g, '$1\u00a0').replace(/ (?=[$−\d])/g, '\u00a0');
   const after = totals.profit - totals.reward;
   const incidents = totals.incidents === 0 ? 'no incidents' : `${totals.incidents} ${totals.incidents === 1 ? 'incident' : 'incidents'}`;
   const change = totals.reputationEnd - totals.reputationStart;
@@ -1022,6 +1023,8 @@ export function mountApp(): Page {
     keepYardSize: false,
   };
   page.railView(null);
+  // The yard's box has the board's shape in every state (WP3's YARD_ASPECT; round 2, rows 18 and 30).
+  page.watch.style.setProperty('--yard-aspect', String(YARD_ASPECT));
   page.railRound.hidden = false; // shown by the stylesheet only on the run and the week's end, where the bar is gone
   showRound(page, first);
   const hintText = page.picksHint.querySelector('.picks-hint-text');
@@ -1094,7 +1097,7 @@ export function mountApp(): Page {
       prediction: page.prediction.value, // read here and nowhere else (D2, D47)
       picks: readPicks(page), // a fresh copy at the click: the scorecard and the export read this (D47, D56)
     };
-    page.stagePlanWords.textContent = describeBonusPlan(page.spec, page.world);
+    planLines(page.stagePlanWords, describeBonusPlan(page.spec, page.world)); // a clause a line, as the plan shows it
     page.stagePlan.hidden = false;
     page.stageWhyText.textContent = page.setup.prediction.trim();
     page.stageWhy.hidden = page.stageWhyText.textContent === '';

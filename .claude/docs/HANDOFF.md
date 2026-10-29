@@ -40,6 +40,13 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
   5.2 MB (measured 5.095 to 5.101; 0 long tasks kept). Checks: 586 tests, lint 0, e2e 9/9, perf 1,404 / 1,197 /
   1,153 ms. Round 3 shots `Temp/shots/20261029-093736/`; the main thread's notes are in the rounds file (2 medium,
   2 low); Astra and a fresh Opus critic are reviewing. Then the triage; the stop rule needs rounds 3 and 4 clean.
+- **Rounds 3 and 4 done; the budget is spent (Oct 29, `ac86f85`):** round 3 triaged (26 rows; BRIEF 10, 10.1, 10.2;
+  D64 to D66) and fixed by WP2 and WP3; round 4's checks: 603 tests, lint 0, e2e 10/10, perf 1,406 to 1,432 /
+  1,169 to 1,201 ms, 0 long tasks, 5.1 MB. Round 4's reads: Astra 1/2/7, the critic 1/3/16 (blocking/high/medium);
+  the blockers are round 3 regressions (the tray at 1024 over the replay note; the Today line names the rate and
+  wages but not the add-ons, so today's profit looks larger than the takings). The stop rule is not met; the
+  mediums never fell below seven from either reader. **Waiting on the owner:** ship, the fallback, or more time
+  (the plan's budget clause). Nothing is merged or pushed; the live site still shows G5c.
   - Gotchas: an Agent `isolation: worktree` starts from `main` (reset it to `g5d-look`); zsh does not split `$LIST`;
     a defect in the ledger closes only by the same reader's later clean pass on the same bytes.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.

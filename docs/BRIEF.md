@@ -444,8 +444,9 @@ event chips stay (no GM label without its orb); the panel, the scorecard and the
 A teacher panel, closed by default, holds everything that is not the lesson. It is a tray at the bottom of the
 window, opened by a small "Teacher" button at the right of the top bar (G5d; the one teacher's control that stays on
 the student's screen, D46) and closed by its Close button; closed, it adds no height to the page, so the fold of D42
-holds; open, it overlays the bottom of the window and the page gets that much bottom padding, so the report and the
-rules can always scroll clear of it. In it:
+holds; open, it sits at the bottom of the window and the page scrolls in the space above it (G5d round 4: the page's
+box ends at the tray's top, so no line of the page is ever under the tray), and the report and the rules can always
+scroll clear of it. In it:
 
 - **The round presets** as three radio buttons, Round 1, 2 and 3 (the selector of D34). Choosing one loads the
   preset into the editor, rewrites the round line above the plan ("Round 1: profit only" and its note) and clears

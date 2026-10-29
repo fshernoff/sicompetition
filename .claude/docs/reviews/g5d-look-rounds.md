@@ -237,3 +237,14 @@ The fixes, the spec first (BRIEF 10.1, 10.2; 3 tests failing): (1) the tray neve
 keeps the block's event chips and the GM's label, and its notice no longer says "beside" (WP3); (4) sickness has
 one name, "found sick at pickup", in the chip, the rail ("(not incidents)") and the report's row (WP2). The 640 px
 Chromebook window (C4) goes to the owner's Chromebook check. The mediums wait for G6 after the pilot.
+
+### The fixes, checked by the main thread (Oct 29, `g5d-look` after `d67bc94`)
+
+Shots `Temp/shots/20261029-140126/`. (1) 21: at 1024 with the tray open no line sits under it; the page scrolls in
+the box above the tray's top, and a new e2e checks every visible text box against the tray at 1024 and 1366 at the
+top, middle and end of the page. (2) 04: "premium, $52 a dog + $10 a dog per play block · 1 staffer scheduled, $300
+in wages" with 18 dogs: up to $1,476 in, so +$1,031.40 after the GM's pay reconciles. (3) 20: the notice and the
+block's chip, no figures and no lone label. (4) 04, 07: "found sick at pickup" in the chip, the rail ("(not
+incidents)") and the report's row. Checks: `npx vitest run` 603 passed; `npm run lint` 0; `npm run build`;
+`E2E_PORT=4351 npm run e2e` 11 passed (1.2 min); `PERF_PORT=4352 npm run perf` three probes: first runs 1,295 to
+1,302 ms, reruns 1,116 to 1,152 ms, p95 16.7 to 16.8 ms, 0 long tasks, 5.1 MB.

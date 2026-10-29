@@ -89,8 +89,7 @@ async function main(): Promise<void> {
       await shot(page, '02-picks-made');
       await page.click('#train');
       await statusSays(page, 'getting ready');
-      await pause(600);
-      await shot(page, '03-getting-ready');
+      await shot(page, '03-getting-ready'); // at once: getting ready can take under 600 ms
       await statusSays(page, 'running the week');
       await pause(3500);
       await shot(page, '04-mid-week');

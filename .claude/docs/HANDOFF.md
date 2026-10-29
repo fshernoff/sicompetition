@@ -28,6 +28,13 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
   and the fresh critic's (3 blocking, 9 high, 16 medium) are in; Astra's round 2 running; then the triage and the
   fixes (BRIEF words first: the booking rule's words, the cash and profit labels, the status line when the week is
   over, the picks' scope "this week"). The budget allows rounds 3 and 4.
+- **Round 2 triaged (Oct 29, `99f0096`):** Astra 2 blocking, 9 high, 6 medium; the critic 3, 9, 16, 2 low; 34 rows in
+  `.claude/docs/reviews/g5d-look-rounds.md`. The bible changed first (BRIEF 1, 1.1, 5, 7, 10; D60 to D63: one name
+  per measure, the page's cash pays the GM, the scorecard in plain words) with 29 tests failing on purpose. Out:
+  WP2 (the page, the report, the words, the sheets) and WP3 (placement, the schematic fallback, the load framing,
+  one camera) resumed in their worktrees; two new art packages: WP4a-r2 (the crew remade faceted, with kneel and
+  tired poses) and WP4b-r2 (three mess decals by cleanliness). Next: review and merge them, D58's three passes on
+  the new art, WP3 draws the decals and the new poses, then round 3.
   - Gotchas: an Agent `isolation: worktree` starts from `main` (reset it to `g5d-look`); zsh does not split `$LIST`;
     a defect in the ledger closes only by the same reader's later clean pass on the same bytes.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.

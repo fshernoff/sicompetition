@@ -1,35 +1,23 @@
-// The week replay: one greedy week played block by block on a canvas (the yard, the dogs, the crew, the
-// dogs-per-staffer gauge, the incident counter, the reputation meter, the cash counter). An incident is an icon
-// and a counter, never an injury. `replayFrame` and `replayClock` are pure functions from the 20 StepRecords and the
-// elapsed time; `drawReplay` is a pure drawing function. The replay keeps no state: the page holds the trace and
-// the start time (G4 plan, "What a frame shows for step t"; BRIEF section 10.2). No DOM access at module top level.
-// Seam written by the main thread; WP1 (Opus) builds it.
+// The week replay: one greedy week played block by block on a canvas. An incident is an icon and a counter, never an
+// injury. `replayFrame` and `replayClock` are pure functions from the 20 StepRecords and the elapsed time; `drawReplay`
+// draws one frame. The replay keeps no state of the week: the page holds the trace and the start time (G4 plan, "What a
+// frame shows for step t"; BRIEF section 10.2). No DOM access at module top level.
 //
-// G5c (WP2): the yard is drawn on the illustrated art (src/assets/art/, D55): the empty yard, four breeds playing or
-// asleep, the crew with a ball or a mop. `replayArtReady` loads and decodes the images once; until they are ready,
-// or if any fails, the G4 vector drawing below is the fallback. The static parts of a frame (the yard art, the cards
-// and their labels) are drawn once per size into an offscreen canvas and blitted each frame; the sprites are scaled
-// once per size. The drawing's state is that cache only: the frame is still a function of the trace and the time.
-import type {
-  Bookings,
-  FloorActivity,
-  Rate,
-  State,
-  StepRecord,
-  WorldConfig,
-  WorldEvent,
-} from '../world/types.ts';
-import crewBallUrl from '../assets/art/crew-ball.webp';
-import crewMopUrl from '../assets/art/crew-mop.webp';
-import collieNapUrl from '../assets/art/dog-collie-nap.webp';
-import collieUrl from '../assets/art/dog-collie.webp';
-import corgiNapUrl from '../assets/art/dog-corgi-nap.webp';
-import corgiUrl from '../assets/art/dog-corgi.webp';
-import goldenNapUrl from '../assets/art/dog-golden-nap.webp';
-import goldenUrl from '../assets/art/dog-golden.webp';
-import poodleNapUrl from '../assets/art/dog-poodle-nap.webp';
-import poodleUrl from '../assets/art/dog-poodle.webp';
-import yardUrl from '../assets/art/yard.webp';
+// G5d (WP3; D59, D60): the canvas draws only the yard, in Floor's one camera. The set's board (src/assets/art/set.json)
+// with a walk path beside its front-left edge; the cast (cast.json) standing on the board's world map as the frame has
+// them: the floor's dogs and crew, the walking group on the path, the naps, a clean, a closed day; the GM orb in its
+// state over the clubhouse; an incident as a pulse on the floor, never on a dog; the block's events as chips in the top
+// left corner (the Incident chip is the badge). The numbers are the page's rail (src/ui/rail.ts), not the canvas's.
+// Every figure stands on its foot anchor at the set's one scale, drawn in the order of its ground point with a contact
+// shadow drawn in code (one spec: the silhouette thrown along the key light, and a contact ellipse), and kept clear of
+// every other figure where the lawn has room. D60: nothing moves to show an action the trace does not record. A day's
+// arrangement comes from its own seeded generator (never the engine's) and holds all day; only the GM's hover and the
+// incident's pulse move, and neither under reduced motion. If any image fails, the G4 vector drawing is the fallback.
+import type { Bookings, FloorActivity, Rate, State, StepRecord, WorldConfig, WorldEvent } from '../world/types.ts';
+import { CAMERA } from '../assets/art/manifest.ts';
+import type { BoardMap, CastManifest, CastSprite, CrewPose, DogPose, Facing, SetManifest } from '../assets/art/manifest.ts';
+import castJson from '../assets/art/cast.json' with { type: 'json' };
+import setJson from '../assets/art/set.json' with { type: 'json' };
 
 /** One block of the week on screen. 20 blocks: 6 s a week. */
 export const STEP_MS = 300;
@@ -271,15 +259,12 @@ export interface ReplayColors {
   reputation: string;
   cash: string;
   gaugeOver: string; // the band above the legal ratio
-  /** G5c, the illustrated yard's palette (defaults in ART_COLORS): headings and the gauge (deep teal). */
+  /** G5c's illustrated palette; the G5d yard reads the page's canvas tokens (--c-ink and the rest) instead. */
   heading?: string;
-  /** The cards on the canvas (white) and their shadow. */
   card?: string;
   shadow?: string;
-  /** Coral, for the incident icon and the band's marker over the legal ratio; sunny yellow for the highlights. */
   accent?: string;
   highlight?: string;
-  /** The path outside the fence. */
   path?: string;
 }
 
@@ -289,44 +274,49 @@ export interface ReplayFonts {
   body: string;
 }
 
+/** The GM's three states, as the status line says them: getting ready, running the week, the week is over. */
+export type GmState = 'ready' | 'running' | 'done';
+
 export interface ReplayOptions {
   pixelRatio: number;
   colors: ReplayColors;
   /** 0..1 inside the step, for the incident pulse. */
   progress: number;
-  /** The legal ratio mark on the gauge (world.bookings.legalRatio) and the gauge's top (world.requests.max). */
+  /** The legal ratio (world.bookings.legalRatio) and the most dogs a day can hold (world.requests.max). */
   legalRatio: number;
   gaugeMax: number;
   /** The line drawn without a frame, in place of the default placeholder (the page's "getting ready" line, D50). */
   placeholder?: string;
-  /** The page's fonts; DEFAULT_FONTS when omitted. Load them (document.fonts) before the first frame. */
+  /** The page's fonts; when omitted the yard uses the page's --font-ui. Load them (document.fonts) before the first frame. */
   fonts?: ReplayFonts;
   /**
-   * No pulse, hop or walking tween (prefers-reduced-motion: reduce); the same frame block by block. When omitted,
-   * read from matchMedia('(prefers-reduced-motion: reduce)').
+   * No pulse and no hover (prefers-reduced-motion: reduce); the same frame block by block. When omitted, read from
+   * matchMedia('(prefers-reduced-motion: reduce)').
    */
   reducedMotion?: boolean;
+  /** The GM orb's state on the yard; 'running' when omitted (the page passes 'done' once the week is over). */
+  gm?: GmState;
 }
 
+/** The page's face when it passes none and has no --font-ui: Archivo as WP2 bundles it, then the system's. */
+export const DEFAULT_FONTS: ReplayFonts = {
+  display: "'Archivo Variable', 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif",
+  body: "'Archivo Variable', 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif",
+};
+
 // ---------------------------------------------------------------------------------------------------------------
-// Drawing. Everything is measured in `fs`, the body text size, which scales with the canvas so the back row of a
-// classroom can read it, and shrinks when the HUD would not fit. Nothing is kept between calls.
+// Shared helpers.
 
 const FONT_FAMILY = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 const PLACEHOLDER = "The GM's week plays here once it is on the job.";
-/** The widest plan line, measured once per layout so the header does not jump from frame to frame. */
-const PLAN_TEMPLATE = '30 asked · 30 accepted, capped at the legal ratio · standard rate · crew 3 scheduled, 3 in';
-/** The widest HUD lines, for the same reason. */
-const HUD_TEMPLATES = ['Days the crew ran solo: 5', 'Tomorrow: 30 asking', 'Inspector visits 10', 'Sent home sick 10'];
-const CASH_TEMPLATE = 'Cash −$10,000';
-/** The meters' scale (BRIEF section 3: reputation, energy, cleanliness and fatigue run 0 to 100). */
-const METER_MAX = 100;
+/** Canvas text is never smaller than this at 1366 × 768 (G5d acceptance 6). */
+const MIN_LABEL_PX = 16;
 
 const fontOf = (px: number, bold = false): string =>
   `${bold ? '600 ' : ''}${Math.max(1, Math.round(px * 10) / 10)}px ${FONT_FAMILY}`;
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
-/** A small integer hash to [0, 1): the jitter and the coat of dog i, the same on every frame. No randomness. */
+/** A small integer hash to [0, 1): the vector yard's jitter and coats, the same on every frame. No randomness. */
 function hash01(n: number): number {
   let x = Math.imul(n ^ 0x5bd1e995, 0x9e3779b1);
   x ^= x >>> 15;
@@ -335,6 +325,33 @@ function hash01(n: number): number {
   x = Math.imul(x, 0xc2b2ae35);
   x ^= x >>> 16;
   return (x >>> 0) / 4294967296;
+}
+
+/**
+ * The yard's own generator (D60): a seeded mulberry32 for the arrangement, the breeds and the facings, from the day's
+ * numbers alone. It never touches the engine's generator, so the picture cannot change what the week does.
+ */
+function seeded(...parts: number[]): () => number {
+  let h = 0x9e3779b9;
+  for (const p of parts) h = Math.imul(h ^ (Math.round(p) | 0), 0x85ebca6b) ^ (h >>> 13);
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffle<T>(xs: T[], rand: () => number): T[] {
+  for (let i = xs.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const t = xs[i] as T;
+    xs[i] = xs[j] as T;
+    xs[j] = t;
+  }
+  return xs;
 }
 
 interface Box {
@@ -370,121 +387,24 @@ function circle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number):
   ctx.arc(x, y, Math.max(0.5, r), 0, Math.PI * 2);
 }
 
-function formatRatio(ratio: number): string {
-  return Number.isInteger(ratio) ? String(ratio) : ratio.toFixed(1);
+function newCanvas(w: number, h: number, readBack = false): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w));
+  canvas.height = Math.max(1, Math.round(h));
+  const ctx = canvas.getContext('2d', readBack ? { willReadFrequently: true } : undefined);
+  if (ctx === null) throw new Error('replay: no 2D context for the yard cache');
+  return { canvas, ctx };
 }
 
-/** The sizes and boxes of one frame, from the canvas size and the text size. */
-interface Layout {
-  fs: number;
-  pad: number;
-  titlePx: number;
-  planPx: number;
-  planLines: 1 | 2;
-  headerH: number;
-  yard: Box;
-  path: Box;
-  captions: Box;
-  hud: Box;
-  /** What the layout needs: the full height, and the HUD's widest line against the room it has. */
-  neededH: number;
-  hudOverflow: number; // > 1 when the HUD's lines are wider than its column may be
-}
-
-// The HUD's rows, in units of fs, top to bottom.
-const HUD_ROWS = {
-  dogsCrew: 1.6,
-  gauge: 4.3,
-  incidents: 2,
-  reputation: 2.45,
-  cash: 1.95,
-  meter: 1.3,
-  meterGap: 0.35,
-  line: 1.35,
-} as const;
-const HUD_UNITS =
-  HUD_ROWS.dogsCrew +
-  HUD_ROWS.gauge +
-  HUD_ROWS.incidents +
-  HUD_ROWS.reputation +
-  HUD_ROWS.cash +
-  3 * HUD_ROWS.meter +
-  HUD_ROWS.meterGap +
-  4 * HUD_ROWS.line; // tomorrow, solo, sick, inspector: the last two rows are kept even when empty, so nothing jumps
-
-function layoutFor(ctx: CanvasRenderingContext2D, width: number, height: number, fs: number): Layout {
-  const pad = fs * 0.7;
-  const titlePx = fs * 1.2;
-  const planPx = fs;
-  ctx.font = fontOf(planPx);
-  const planLines: 1 | 2 = ctx.measureText(PLAN_TEMPLATE).width <= width - 2 * pad ? 1 : 2;
-  const headerH = pad + titlePx * 1.3 + planLines * planPx * 1.35 + fs * 0.45;
-
-  // The HUD column: as wide as its widest line, between 30% and 46% of the canvas.
-  ctx.font = fontOf(fs * 0.95);
-  let widest = 0;
-  for (const text of HUD_TEMPLATES) widest = Math.max(widest, ctx.measureText(text).width);
-  ctx.font = fontOf(fs * 1.25, true);
-  widest = Math.max(widest, ctx.measureText(CASH_TEMPLATE).width);
-  const hudMax = width * 0.46;
-  const hudW = clamp(widest + fs * 0.3, width * 0.3, hudMax);
-  const gap = fs * 0.9;
-
-  const bodyTop = headerH;
-  const bodyBottom = height - pad * 0.7;
-  const hud: Box = { x: width - pad - hudW, y: bodyTop, w: hudW, h: bodyBottom - bodyTop };
-
-  // The left column: the yard, the walk path outside the fence, the captions under them.
-  const leftW = Math.max(1, hud.x - gap - pad);
-  const capH = 2 * fs * 1.3;
-  const pathH = fs * 3.2;
-  const pathGap = fs * 0.35;
-  const yardH = Math.max(1, bodyBottom - bodyTop - pathGap - pathH - fs * 0.3 - capH);
-  const yard: Box = { x: pad, y: bodyTop, w: leftW, h: yardH };
-  const path: Box = { x: pad, y: yard.y + yardH + pathGap, w: leftW, h: pathH };
-  const captions: Box = { x: pad, y: path.y + pathH + fs * 0.3, w: leftW, h: capH };
-
-  const yardMin = fs * 7;
-  const leftNeeded = yardMin + pathGap + pathH + fs * 0.3 + capH;
-  const neededH = headerH + Math.max(HUD_UNITS * fs, leftNeeded) + pad * 0.7;
-  return {
-    fs,
-    pad,
-    titlePx,
-    planPx,
-    planLines,
-    headerH,
-    yard,
-    path,
-    captions,
-    hud,
-    neededH,
-    hudOverflow: (widest + fs * 0.3) / hudMax,
-  };
-}
-
-/** The layout at the largest text size that fits: scaled with the width and the height, 11 to 24 px. */
-function fitLayout(ctx: CanvasRenderingContext2D, width: number, height: number): Layout {
-  let fs = clamp(Math.min(width / 34, height / 28), 11, 24);
-  let layout = layoutFor(ctx, width, height, fs);
-  for (let i = 0; i < 4; i++) {
-    const shrink = Math.min(1, height / layout.neededH, 1 / layout.hudOverflow);
-    if (shrink >= 0.995 || fs <= 7) break;
-    fs = Math.max(7, fs * shrink * 0.99);
-    layout = layoutFor(ctx, width, height, fs);
-  }
-  return layout;
-}
+// ---------------------------------------------------------------------------------------------------------------
+// The frame.
 
 /**
- * Draws one frame into `ctx` (a canvas of `width` × `height` CSS pixels at options.pixelRatio). With a null frame
- * it draws the placeholder "The GM's week plays here once it is on the job." Pure: reads the frame, keeps nothing. The
- * picture is the G4 plan's "The replay's picture": the header with the day, the block and the activity, the plan
- * line ("20 asked · 20 accepted · premium rate · crew 1 scheduled, 1 in"), the yard with floorDogs and floorStaff
- * inside the fence and the walking group on a path outside it, the HUD (dogs and crew, the gauge with its one mark
- * at legalRatio and the band above it tinted, the incident counter and its pulsing icon, the reputation meter, the
- * cash counter, the small energy, cleanliness and fatigue meters, "Tomorrow: N asking", "Days the crew ran solo:
- * N", the sick and fines counters when above 0) and the captions under the yard.
+ * Draws one frame into `ctx` (a canvas of `width` × `height` CSS pixels at options.pixelRatio). With a null frame it
+ * clears the canvas and draws one line, the placeholder ("The GM's week plays here once it is on the job.", or the
+ * page's own), so the page's stage shows behind it. With a frame: the yard as the frame has it (see the module's
+ * header), or the G4 vector yard while the art loads or if an image failed. Reads the frame; keeps only caches of
+ * the drawing (the board at this size, the sprites at this size, a day's arrangement).
  */
 export function drawReplay(
   ctx: CanvasRenderingContext2D,
@@ -496,54 +416,22 @@ export function drawReplay(
   const art = artOrStartLoading();
   if (frame === null) {
     drawPlaceholder(ctx, width, height, options);
+    // The yard is prepared at this size in idle time, so the week's first frame does not pay for it.
+    pendingSize = { width, height, ratio: options.pixelRatio };
+    if (art !== null) warmUp(art);
     return;
   }
   // The motion policy, for both renderers: under reduced motion the progress inside a block is frozen at 0, so the
-  // pulse, the hops, the walk and the mop stand still and every frame of a block is the same picture.
+  // pulse and the hover stand still and every frame of a block is the same picture.
   const still = reducedMotion(options);
   const opts: ReplayOptions = still && options.progress !== 0 ? { ...options, progress: 0, reducedMotion: true } : options;
-  if (art === null) {
+  if (art === null || !(width > 0 && height > 0)) {
     drawVectorReplay(ctx, width, height, frame, opts);
     return;
   }
-  drawArtReplay(ctx, width, height, frame, opts, art);
+  drawYard(ctx, width, height, frame, opts, art, !still);
 }
 
-/** The G4 drawing: the vector yard and its HUD, the fallback while the art loads or if an image fails. */
-function drawVectorReplay(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  frame: ReplayFrame | null,
-  options: ReplayOptions,
-): void {
-  const { colors } = options;
-  ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
-  ctx.globalAlpha = 1;
-  ctx.setLineDash([]);
-  ctx.fillStyle = colors.background;
-  ctx.fillRect(0, 0, width, height);
-  if (!(width > 0 && height > 0)) return;
-
-  if (frame === null) {
-    const fs = clamp(Math.min(width / 34, height / 20), 11, 24);
-    const line = options.placeholder ?? PLACEHOLDER;
-    fitFont(ctx, line, width * 0.9, fs);
-    ctx.fillStyle = colors.ink;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(line, width / 2, height / 2);
-    return;
-  }
-
-  const layout = fitLayout(ctx, width, height);
-  drawHeader(ctx, width, frame, layout, colors);
-  drawYard(ctx, frame, layout, options);
-  drawCaptions(ctx, frame.captions, layout, colors);
-  drawHud(ctx, frame, layout, options);
-}
-
-/** "Monday · late morning · free play" and the day's plan under it. */
 /** The booking choice in business words: what the GM did with the day's requests, never the number behind it. */
 const BOOKING_WORDS: Readonly<Record<Bookings, string>> = {
   all: 'every booking',
@@ -552,9 +440,8 @@ const BOOKING_WORDS: Readonly<Record<Bookings, string>> = {
 };
 
 /**
- * The day's plan under the header, in two parts so a narrow canvas can break the line before the crew:
- * "20 asked · 20 accepted, every booking · premium rate" and "crew 1 scheduled, 1 in"; on a closed day
- * "16 asked · closed" and "crew 1 scheduled, nobody in".
+ * The day's plan in two parts so a narrow line can break before the crew: "20 asked · 20 accepted, every booking ·
+ * premium rate" and "crew 1 scheduled, 1 in"; on a closed day "16 asked · closed" and "crew 1 scheduled, nobody in".
  */
 export function planParts(frame: ReplayFrame): { first: string; crew: string } {
   const crew = `crew ${frame.scheduledStaff} scheduled, ${frame.closed ? 'nobody' : String(frame.staff)} in`;
@@ -564,56 +451,160 @@ export function planParts(frame: ReplayFrame): { first: string; crew: string } {
   return { first: `${frame.requests} asked · ${frame.accepted} accepted${bookings} · ${rate}`, crew };
 }
 
-/** The whole plan line, as the header shows it on one line. */
+/** The whole plan line, as the rail shows it on one line. */
 export function planWords(frame: ReplayFrame): string {
   const { first, crew } = planParts(frame);
   return `${first} · ${crew}`;
 }
 
-function drawHeader(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  frame: ReplayFrame,
-  layout: Layout,
-  colors: ReplayColors,
-): void {
-  const { pad, titlePx, planPx } = layout;
-  const maxW = width - 2 * pad;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
+// --- Reduced motion. ------------------------------------------------------------------------------------------------
 
-  const title = `${frame.dayName} · ${frame.blockName} · ${frame.activityWords}`;
-  fitFont(ctx, title, maxW, titlePx, true);
-  ctx.fillStyle = colors.ink;
-  let y = pad + (titlePx * 1.3) / 2;
-  ctx.fillText(title, pad, y);
-
-  const { first, crew } = planParts(frame);
-  const lines = layout.planLines === 1 ? [`${first} · ${crew}`] : [first, crew];
-  ctx.fillStyle = colors.muted;
-  y += (titlePx * 1.3) / 2;
-  for (const line of lines) {
-    fitFont(ctx, line, maxW, planPx);
-    ctx.fillText(line, pad, y + (planPx * 1.35) / 2);
-    y += planPx * 1.35;
+let motionQuery: MediaQueryList | null | undefined;
+function reducedMotion(options: ReplayOptions): boolean {
+  if (options.reducedMotion !== undefined) return options.reducedMotion;
+  if (motionQuery === undefined) {
+    motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   }
+  return motionQuery?.matches ?? false;
 }
 
-/** The events of the block under the yard, joined with " · " and wrapped onto two lines at most. */
+// --- The page's canvas tokens (WP2 sets them on :root). ----------------------------------------------------------
+
+interface Tokens {
+  ink: string;
+  muted: string;
+  surface: string;
+  amber: string;
+  danger: string;
+  ok: string;
+  font: string;
+}
+
+/** Floor's values (Temp/direction/floor/brand.css), for a page that has not set the tokens. */
+const TOKEN_DEFAULTS: Tokens = {
+  ink: '#13212F',
+  muted: '#44515E',
+  surface: '#FFFFFF',
+  amber: '#F4A51C',
+  danger: '#D23F2A',
+  ok: '#2E8B57',
+  font: DEFAULT_FONTS.body,
+};
+
+function readTokens(fonts: ReplayFonts | undefined): Tokens {
+  if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') return TOKEN_DEFAULTS;
+  const css = getComputedStyle(document.documentElement);
+  const get = (name: string, fallback: string): string => css.getPropertyValue(name).trim() || fallback;
+  return {
+    ink: get('--c-ink', TOKEN_DEFAULTS.ink),
+    muted: get('--c-muted', TOKEN_DEFAULTS.muted),
+    surface: get('--c-surface', TOKEN_DEFAULTS.surface),
+    amber: get('--c-amber', TOKEN_DEFAULTS.amber),
+    danger: get('--c-danger', TOKEN_DEFAULTS.danger),
+    ok: get('--c-ok', TOKEN_DEFAULTS.ok),
+    font: fonts?.body ?? get('--font-ui', TOKEN_DEFAULTS.font),
+  };
+}
+
+const uiFont = (tokens: Tokens, px: number, weight: number): string =>
+  `${weight} ${Math.max(1, Math.round(px * 10) / 10)}px ${tokens.font}`;
+
+// --- The placeholder. -------------------------------------------------------------------------------------------------
+
+/**
+ * The placeholder (before a run, and while the GM gets ready): the canvas cleared to transparent, so the page's stage
+ * shows behind it, and one line of text with a soft white outline so it reads on whatever is behind. Nothing else: the
+ * e2e holds the drawn pixels under 2% of the canvas while the GM gets ready.
+ */
+function drawPlaceholder(ctx: CanvasRenderingContext2D, width: number, height: number, options: ReplayOptions): void {
+  ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.shadowColor = 'transparent';
+  ctx.clearRect(0, 0, width, height);
+  if (!(width > 0 && height > 0)) return;
+  const tokens = readTokens(options.fonts);
+  const line = options.placeholder ?? PLACEHOLDER;
+  // The page's own line (the GM getting ready) is a caption near the bottom; the default line sits in the middle.
+  const caption = options.placeholder !== undefined;
+  let px = caption ? clamp(Math.min(width / 46, height / 36), MIN_LABEL_PX, 18) : clamp(Math.min(width / 36, height / 22), MIN_LABEL_PX, 22);
+  ctx.font = uiFont(tokens, px, 600);
+  const w = ctx.measureText(line).width;
+  if (w > width * 0.9) {
+    px = Math.max(1, (px * width * 0.9) / w);
+    ctx.font = uiFont(tokens, px, 600);
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = caption ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.92)';
+  ctx.lineWidth = caption ? Math.max(1.5, px * 0.14) : Math.max(2, px * 0.24);
+  const y = caption ? height - px * 1.9 : height / 2;
+  ctx.strokeText(line, width / 2, y);
+  ctx.fillStyle = tokens.ink;
+  ctx.fillText(line, width / 2, y);
+}
+
+// ===============================================================================================================
+// The G4 vector yard: the fallback while the art loads or if an image fails. The yard, the walk path under it and
+// the block's events under that, laid out in `fs`, the text size, which scales with the canvas. The HUD is the rail's.
+
+interface Layout {
+  fs: number;
+  pad: number;
+  yard: Box;
+  path: Box;
+  captions: Box;
+}
+
+function vectorLayout(width: number, height: number): Layout {
+  const fs = clamp(Math.min(width / 34, height / 26), 15.5, 24);
+  const pad = fs * 0.7;
+  const capH = 2 * Math.max(fs * 1.05, MIN_LABEL_PX) * 1.3;
+  const pathH = fs * 3.2;
+  const pathGap = fs * 0.35;
+  const yardH = Math.max(1, height - 2 * pad - pathGap - pathH - fs * 0.3 - capH);
+  const yard: Box = { x: pad, y: pad, w: Math.max(1, width - 2 * pad), h: yardH };
+  const path: Box = { x: pad, y: yard.y + yardH + pathGap, w: yard.w, h: pathH };
+  const captions: Box = { x: pad, y: path.y + pathH + fs * 0.3, w: yard.w, h: capH };
+  return { fs, pad, yard, path, captions };
+}
+
+/** The G4 drawing: the vector yard, the fallback while the art loads or if an image fails. */
+function drawVectorReplay(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  frame: ReplayFrame,
+  options: ReplayOptions,
+): void {
+  const { colors } = options;
+  ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.shadowColor = 'transparent';
+  ctx.setLineDash([]);
+  ctx.fillStyle = colors.background;
+  ctx.fillRect(0, 0, width, height);
+  if (!(width > 0 && height > 0)) return;
+  const layout = vectorLayout(width, height);
+  drawVectorYard(ctx, frame, layout, options);
+  drawCaptions(ctx, frame.captions, layout, colors);
+}
+
+/** The events of the block under the yard, joined with " · " and wrapped onto two lines, never under 16 px. */
 function drawCaptions(ctx: CanvasRenderingContext2D, captions: readonly string[], layout: Layout, colors: ReplayColors): void {
   if (captions.length === 0) return;
   const box = layout.captions;
-  let px = layout.fs * 1.05;
+  let px = Math.max(layout.fs * 1.05, MIN_LABEL_PX);
   let lines = packLines(ctx, captions, box.w, px);
-  for (let i = 0; i < 6 && lines.length > 2; i++) {
+  for (let i = 0; i < 6 && lines.length > 2 && px * 0.9 >= MIN_LABEL_PX; i++) {
     px *= 0.9;
     lines = packLines(ctx, captions, box.w, px);
   }
-  const lineH = Math.min(px * 1.3, box.h / Math.max(1, lines.length));
+  const lineH = Math.min(px * 1.3, box.h / Math.max(1, Math.min(2, lines.length)));
   ctx.fillStyle = colors.ink;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  lines.forEach((line, i) => {
+  lines.slice(0, 2).forEach((line, i) => {
     fitFont(ctx, line, box.w, px, true);
     ctx.fillText(line, box.x, box.y + lineH * (i + 0.5));
   });
@@ -636,9 +627,6 @@ function packLines(ctx: CanvasRenderingContext2D, captions: readonly string[], m
   if (current !== '') lines.push(current);
   return lines;
 }
-
-// ---------------------------------------------------------------------------------------------------------------
-// The yard.
 
 type Pose = 'stand' | 'lie';
 
@@ -834,7 +822,7 @@ function spotOf(i: number, spots: Spots, inner: Box, r: number): { x: number; y:
   };
 }
 
-function drawYard(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layout: Layout, options: ReplayOptions): void {
+function drawVectorYard(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layout: Layout, options: ReplayOptions): void {
   const { colors } = options;
   const { yard, fs } = layout;
 
@@ -863,7 +851,7 @@ function drawYard(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layout: Lay
     ctx.fillRect(yard.x + yard.w - post, py, post, post);
   }
 
-  drawPath(ctx, frame, layout, options);
+  drawVectorPath(ctx, frame, layout, options);
 
   const inset = fw + fs * 0.35;
   const inner: Box = { x: yard.x + inset, y: yard.y + inset, w: yard.w - 2 * inset, h: yard.h - 2 * inset };
@@ -897,7 +885,6 @@ function drawScattered(
   const placed = Array.from({ length: frame.floorDogs }, (_, i) => ({ i, ...spotOf(i, spots, inner, r) }));
   placed.sort((a, b) => a.y - b.y); // farther dogs first
   for (const d of placed) drawDog(ctx, d.x, d.y, r, dirOf(d.i), coatOf(d.i, colors), colors, pose);
-
   if (pose === 'lie') {
     // A small "zz" over each sleeping dog.
     ctx.fillStyle = colors.ink;
@@ -1025,7 +1012,7 @@ function drawClosedSign(ctx: CanvasRenderingContext2D, inner: Box, fs: number, c
 }
 
 /** The path outside the fence; during a walk it carries the walking group, the staffer leading on the leashes. */
-function drawPath(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layout: Layout, options: ReplayOptions): void {
+function drawVectorPath(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layout: Layout, options: ReplayOptions): void {
   const { colors } = options;
   const { path, fs } = layout;
   ctx.fillStyle = colors.muted;
@@ -1078,254 +1065,79 @@ function drawPath(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layout: Lay
   drawCrew(ctx, crewX, feet, r, colors, null);
 }
 
-// ---------------------------------------------------------------------------------------------------------------
-// The HUD down the right.
-
-/** A horizontal meter: a faint track and a fill for value / max. */
-function drawMeter(ctx: CanvasRenderingContext2D, box: Box, value: number, max: number, fill: string, colors: ReplayColors): void {
-  const f = clamp(max > 0 ? value / max : 0, 0, 1);
-  ctx.fillStyle = colors.muted;
-  ctx.globalAlpha = 0.22;
-  roundRectPath(ctx, box.x, box.y, box.w, box.h, box.h / 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  if (f > 0) {
-    ctx.fillStyle = fill;
-    roundRectPath(ctx, box.x, box.y, Math.max(box.h, box.w * f), box.h, box.h / 2);
-    ctx.fill();
-  }
-}
-
-/** Text at the left of the column and a number at its right, on one row centred at y. */
-function labelRow(
-  ctx: CanvasRenderingContext2D,
-  hud: Box,
-  y: number,
-  label: string,
-  value: string,
-  px: number,
-  colors: ReplayColors,
-  valueColor: string,
-): void {
-  ctx.textBaseline = 'middle';
-  ctx.font = fontOf(px * 1.05, true);
-  const valueW = ctx.measureText(value).width;
-  ctx.textAlign = 'right';
-  ctx.fillStyle = valueColor;
-  ctx.fillText(value, hud.x + hud.w, y);
-  ctx.textAlign = 'left';
-  ctx.fillStyle = colors.muted;
-  fitFont(ctx, label, Math.max(1, hud.w - valueW - px * 0.5), px * 0.9);
-  ctx.fillText(label, hud.x, y);
-}
-
-function drawHud(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layout: Layout, options: ReplayOptions): void {
-  const { colors } = options;
-  const { hud, fs } = layout;
-  const text = (s: string, y: number, px: number, color: string, bold = false): void => {
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = color;
-    fitFont(ctx, s, hud.w, px, bold);
-    ctx.fillText(s, hud.x, y);
-  };
-  let y = hud.y;
-
-  // Dogs and crew inside the fence.
-  text(`Dogs ${frame.floorDogs} · Crew ${frame.floorStaff}`, y + (HUD_ROWS.dogsCrew * fs) / 2, fs * 1.1, colors.ink, true);
-  y += HUD_ROWS.dogsCrew * fs;
-
-  // The dogs-per-staffer gauge: 0 to gaugeMax, one mark at the legal ratio, the band above it tinted.
-  labelRow(ctx, hud, y + 0.7 * fs, 'Dogs per staffer', formatRatio(frame.ratio), fs, colors, colors.ink);
-  const top = Math.max(1, options.gaugeMax);
-  const bar: Box = { x: hud.x, y: y + 1.95 * fs, w: hud.w, h: 0.85 * fs };
-  const xOf = (v: number): number => bar.x + (clamp(v, 0, top) / top) * bar.w;
-  ctx.fillStyle = colors.muted;
-  ctx.globalAlpha = 0.22;
-  ctx.fillRect(bar.x, bar.y, bar.w, bar.h);
-  ctx.globalAlpha = 1;
-  const legalX = xOf(options.legalRatio);
-  ctx.fillStyle = colors.gaugeOver;
-  ctx.fillRect(legalX, bar.y, bar.x + bar.w - legalX, bar.h);
-  if (frame.ratio > 0) {
-    ctx.fillStyle = colors.ink;
-    ctx.globalAlpha = 0.4;
-    ctx.fillRect(bar.x, bar.y + bar.h * 0.25, xOf(frame.ratio) - bar.x, bar.h * 0.5);
-    ctx.globalAlpha = 1;
-  }
-  ctx.strokeStyle = colors.muted;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(bar.x + 0.5, bar.y + 0.5, bar.w - 1, bar.h - 1);
-  ctx.strokeStyle = colors.ink;
-  ctx.lineWidth = Math.max(1.5, fs * 0.1);
-  ctx.beginPath();
-  ctx.moveTo(legalX, bar.y - 0.15 * fs);
-  ctx.lineTo(legalX, bar.y + bar.h + 0.15 * fs);
-  ctx.stroke();
-  ctx.fillStyle = colors.muted;
-  ctx.font = fontOf(fs * 0.8);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(formatRatio(options.legalRatio), clamp(legalX, hud.x + fs, hud.x + hud.w - fs), bar.y + bar.h + 0.2 * fs);
-  // The marker: a pointer above the bar and a line through it at the ratio.
-  const mx = xOf(frame.ratio);
-  ctx.fillStyle = colors.ink;
-  ctx.beginPath();
-  ctx.moveTo(mx - 0.4 * fs, bar.y - 0.55 * fs);
-  ctx.lineTo(mx + 0.4 * fs, bar.y - 0.55 * fs);
-  ctx.lineTo(mx, bar.y - 0.05 * fs);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillRect(mx - Math.max(1, fs * 0.08), bar.y, Math.max(2, fs * 0.16), bar.h);
-  y += HUD_ROWS.gauge * fs;
-
-  // The incident counter: a rounded "!" badge that pulses in a block with an incident.
-  const incidentNow = frame.events.some((e) => e.type === 'incident');
-  const pulse = incidentNow ? Math.sin(clamp(options.progress, 0, 1) * Math.PI) : 0;
-  const badge = fs * 1.3;
-  const bcx = hud.x + badge * 0.7;
-  const bcy = y + (HUD_ROWS.incidents * fs) / 2;
-  if (pulse > 0) {
-    ctx.fillStyle = colors.incident;
-    ctx.globalAlpha = 0.3 * pulse;
-    const halo = badge * (0.6 + 0.35 * pulse);
-    roundRectPath(ctx, bcx - halo, bcy - halo, halo * 2, halo * 2, halo * 0.45);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  const size = badge * (1 + 0.18 * pulse);
-  ctx.fillStyle = colors.incident;
-  roundRectPath(ctx, bcx - size / 2, bcy - size / 2, size, size, size * 0.3);
-  ctx.fill();
-  ctx.fillStyle = colors.background;
-  ctx.font = fontOf(size * 0.75, true);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('!', bcx, bcy + size * 0.03);
-  ctx.textAlign = 'left';
-  ctx.fillStyle = incidentNow ? colors.incident : colors.ink;
-  const incidentText = `Incidents ${frame.incidentsSoFar}`;
-  const textX = hud.x + badge * 1.6;
-  fitFont(ctx, incidentText, Math.max(1, hud.x + hud.w - textX), fs * 1.1, true);
-  ctx.fillText(incidentText, textX, bcy);
-  y += HUD_ROWS.incidents * fs;
-
-  // Reputation: a meter from 0 to 100.
-  labelRow(ctx, hud, y + 0.65 * fs, 'Reputation', String(Math.round(frame.reputation)), fs, colors, colors.reputation);
-  drawMeter(ctx, { x: hud.x, y: y + 1.4 * fs, w: hud.w, h: 0.6 * fs }, frame.reputation, METER_MAX, colors.reputation, colors);
-  y += HUD_ROWS.reputation * fs;
-
-  // Cash.
-  text(`Cash ${dollars(frame.cash)}`, y + (HUD_ROWS.cash * fs) / 2, fs * 1.25, colors.cash, true);
-  y += HUD_ROWS.cash * fs;
-
-  // Energy, cleanliness and crew fatigue: small meters with their numbers.
-  const meters: [string, number][] = [
-    ['Energy', frame.energy],
-    ['Cleanliness', frame.cleanliness],
-    ['Crew fatigue', frame.fatigue],
-  ];
-  const smallPx = fs * 0.85;
-  ctx.font = fontOf(smallPx);
-  const labelW = ctx.measureText('Crew fatigue').width + fs * 0.4;
-  ctx.font = fontOf(smallPx, true);
-  const numberW = ctx.measureText('100').width + fs * 0.3;
-  for (const [label, value] of meters) {
-    const cy = y + (HUD_ROWS.meter * fs) / 2;
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = colors.muted;
-    fitFont(ctx, label, labelW - fs * 0.2, smallPx);
-    ctx.fillText(label, hud.x, cy);
-    const meterW = Math.max(fs, hud.w - labelW - numberW);
-    drawMeter(ctx, { x: hud.x + labelW, y: cy - 0.25 * fs, w: meterW, h: 0.5 * fs }, value, METER_MAX, colors.ink, colors);
-    ctx.font = fontOf(smallPx, true);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = colors.ink;
-    ctx.fillText(String(Math.round(value)), hud.x + hud.w, cy);
-    y += HUD_ROWS.meter * fs;
-  }
-  y += HUD_ROWS.meterGap * fs;
-
-  // The state that is visible though the rules are not (section 3), and the counters when they have counted.
-  const lines = [`Tomorrow: ${frame.requestsTomorrow} asking`, `Days the crew ran solo: ${frame.soloStreak}`];
-  if (frame.sickSoFar > 0) lines.push(`Sent home sick ${frame.sickSoFar}`);
-  if (frame.finesSoFar > 0) lines.push(`Inspector visits ${frame.finesSoFar}`);
-  for (const line of lines) {
-    text(line, y + (HUD_ROWS.line * fs) / 2, fs * 0.95, colors.ink);
-    y += HUD_ROWS.line * fs;
-  }
-}
-
 // ===============================================================================================================
-// G5c: the illustrated yard (D55). The frame is laid out in `fs` units like G4's: the header card across the top,
-// the yard (the art and the path outside its front fence) on the left with the captions as pills under it, and the
-// HUD's cards down the right. Everything that does not change between frames is in the static layer.
+// G5d: the yard on the set. The art is two JSON files in manifest.ts's shapes and the images they name, found by
+// Vite at build time (every WebP or PNG under src/assets/art/cast/ and set/); a file the JSON names and the build does
+// not have is a failed load, and the vector yard stands in.
 
-/** The art direction's palette, for the colours the page does not pass (ReplayColors' optional fields). */
-export const ART_COLORS = {
-  heading: '#0F5257',
-  card: '#FFFFFF',
-  shadow: 'rgba(15, 82, 87, 0.16)',
-  accent: '#F2665A',
-  highlight: '#F6C344',
-  path: '#EADBBB',
+const ART_URLS: Record<string, string> = import.meta.glob<string>('../assets/art/{cast,set}/*.{webp,png}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+/** Gate 5: the cast is mirrored at run time for the other facing (manifest.ts); false draws every sprite as drawn. */
+const MIRROR_CAST = true;
+/** The silhouette's band height for the spacing test, in image pixels; and the alpha that counts as solid. */
+const BAND = 8;
+const ALPHA_SOLID = 96;
+/** The walk path beside the lawn's front-left edge (world metres: x from −WALK_W to 0, y along the lawn). */
+const WALK_W = 0.95;
+/** Where a figure's anchor keeps away from a blocked footprint, and how tall a prop is taken to be for hiding. */
+const BLOCK_PAD = 0.12;
+const PROP_H = 2.0;
+/** Same-breed-and-coat dogs closer than this (metres) are neighbours for the clone rule. */
+const CLONE_R = 1.7;
+/** The shadow spec (gate 3), in the board image's pixels: the key light from the upper left (spike B's KEY), so a
+ * point h px above the ground throws its shadow h × shear to the side and up; the blur and tint of the set's own. */
+const SHADOW = {
+  shearX: 0.72,
+  shearY: -0.184,
+  castBlur: 3.2,
+  castAlpha: 0.3,
+  contactBlur: 5.2,
+  contactAlpha: 0.42,
+  tint: '12, 30, 18',
 } as const;
+/** The board's slab when the image does not show one, and the path's stone. */
+const SLAB_DEFAULT = { depth: 0, left: '#6E5236', right: '#5A4129' } as const;
+const PATH_STONE = [214, 202, 176] as const;
 
-/** The display and body faces when the page passes none: the page's (--font-display, --font-body in style.css). */
-export const DEFAULT_FONTS: ReplayFonts = {
-  display: "'Fredoka', ui-rounded, 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif",
-  body: "'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-};
-
-interface Palette {
-  bg: string;
-  ink: string;
-  muted: string;
-  heading: string;
-  card: string;
-  shadow: string;
-  accent: string;
-  accentInk: string; // coral text: the page's incident colour, dark enough to read
-  highlight: string;
-  path: string;
-  reputation: string;
-  cash: string;
-  gaugeOver: string;
-  fence: string;
+interface Shape {
+  /** The first band's index: band j covers [j × BAND, (j + 1) × BAND) image px from the anchor, downward. */
+  j0: number;
+  /** Each band's opaque span, left and right in image px from the anchor (NaN for an empty band). */
+  l: Float64Array;
+  r: Float64Array;
+  /** The bounds in image px from the anchor: left, top, right, bottom. */
+  box: [number, number, number, number];
 }
 
-function paletteOf(c: ReplayColors): Palette {
-  return {
-    bg: c.background,
-    ink: c.ink,
-    muted: c.muted,
-    heading: c.heading ?? ART_COLORS.heading,
-    card: c.card ?? ART_COLORS.card,
-    shadow: c.shadow ?? ART_COLORS.shadow,
-    accent: c.accent ?? ART_COLORS.accent,
-    accentInk: c.incident,
-    highlight: c.highlight ?? ART_COLORS.highlight,
-    path: c.path ?? ART_COLORS.path,
-    reputation: c.reputation,
-    cash: c.cash,
-    gaugeOver: c.gaugeOver,
-    fence: c.fence,
-  };
+interface SpriteArt {
+  src: CastSprite;
+  img: HTMLImageElement;
+  shape: Shape;
+  mirrored: Shape;
 }
 
-// --- The art: loaded and decoded once. ---------------------------------------------------------------------------
-
-/** The four breeds, in the order of their sprites; a dog's breed is fixed by its index for the whole week. */
-const PLAY_URLS: readonly string[] = [goldenUrl, collieUrl, corgiUrl, poodleUrl];
-const NAP_URLS: readonly string[] = [goldenNapUrl, collieNapUrl, corgiNapUrl, poodleNapUrl];
+interface GmArt {
+  img: HTMLImageElement;
+  size: [number, number];
+  anchor: [number, number];
+}
 
 interface ArtSet {
-  yard: HTMLImageElement;
-  play: HTMLImageElement[];
-  nap: HTMLImageElement[];
-  crewBall: HTMLImageElement;
-  crewMop: HTMLImageElement;
+  board: HTMLImageElement;
+  boardSize: [number, number];
+  map: BoardMap;
+  gm: Record<GmState, GmArt>;
+  gmSpot: [number, number];
+  /** The dogs by identity (breed and coat), then by pose: every facing drawn. */
+  dogs: Map<string, Partial<Record<DogPose, SpriteArt[]>>>;
+  identities: string[];
+  crew: Partial<Record<CrewPose, SpriteArt[]>>;
+  /** The board's slab under its front edges, sampled from the image: its depth (image px) and its two faces' colours. */
+  slab: { depth: number; left: string; right: string };
 }
 
 let artLoad: Promise<void> | null = null;
@@ -1338,25 +1150,26 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   return img.decode().then(() => img);
 }
 
+function artUrl(file: string): string {
+  const url = ART_URLS[`../assets/art/${file}`];
+  if (url === undefined) throw new Error(`replay: the build has no ${file}`);
+  return url;
+}
+
 /**
- * Loads and decodes every image of the yard once (memoised): the page awaits it before the first week plays. It
- * never rejects: if an image fails, the yard stays the G4 vector drawing.
+ * Loads and decodes the set and the cast once (memoised): the page awaits it before the first week plays. It never
+ * rejects: if a file is missing or an image fails, the yard stays the G4 vector drawing.
  */
 export function replayArtReady(): Promise<void> {
   if (artLoad !== null) return artLoad;
-  if (typeof Image === 'undefined') {
+  if (typeof Image === 'undefined' || typeof document === 'undefined') {
     artLoad = Promise.resolve();
     return artLoad;
   }
-  artLoad = Promise.all([
-    loadImage(yardUrl),
-    Promise.all(PLAY_URLS.map(loadImage)),
-    Promise.all(NAP_URLS.map(loadImage)),
-    loadImage(crewBallUrl),
-    loadImage(crewMopUrl),
-  ]).then(
-    ([yard, play, nap, crewBall, crewMop]) => {
-      artSet = { yard, play, nap, crewBall, crewMop };
+  artLoad = loadArt().then(
+    (art) => {
+      artSet = art;
+      warmUp(art);
     },
     () => {
       artSet = null; // the vector yard is the fallback
@@ -1371,1365 +1184,1483 @@ function artOrStartLoading(): ArtSet | null {
   return artSet;
 }
 
-// --- Reduced motion. ------------------------------------------------------------------------------------------------
-
-let motionQuery: MediaQueryList | null | undefined;
-function reducedMotion(options: ReplayOptions): boolean {
-  if (options.reducedMotion !== undefined) return options.reducedMotion;
-  if (motionQuery === undefined) {
-    motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
-  }
-  return motionQuery?.matches ?? false;
+async function loadArt(): Promise<ArtSet> {
+  const cast = castJson as unknown as CastManifest;
+  const set = setJson as unknown as SetManifest;
+  if (!Array.isArray(cast.sprites) || set.board === undefined || set.gm === undefined) throw new Error('replay: the art manifests are malformed');
+  const [board, ready, running, done, images] = await Promise.all([
+    loadImage(artUrl(set.board.file)),
+    loadImage(artUrl(set.gm.ready.file)),
+    loadImage(artUrl(set.gm.running.file)),
+    loadImage(artUrl(set.gm.done.file)),
+    Promise.all(cast.sprites.map((s) => loadImage(artUrl(s.file)))),
+  ]);
+  const probe = newCanvas(1, 1, true);
+  const dogs = new Map<string, Partial<Record<DogPose, SpriteArt[]>>>();
+  const crew: Partial<Record<CrewPose, SpriteArt[]>> = {};
+  cast.sprites.forEach((src, i) => {
+    const img = images[i] as HTMLImageElement;
+    const shape = shapeOf(img, src, probe);
+    const art: SpriteArt = { src, img, shape, mirrored: mirrorShape(shape) };
+    if (src.kind === 'dog') {
+      const id = `${src.breed ?? 'dog'}|${src.coat ?? ''}`;
+      const poses = dogs.get(id) ?? {};
+      const pose = src.pose as DogPose;
+      (poses[pose] ??= []).push(art);
+      dogs.set(id, poses);
+    } else {
+      (crew[src.pose as CrewPose] ??= []).push(art);
+    }
+  });
+  if (dogs.size === 0 || Object.keys(crew).length === 0) throw new Error('replay: the cast needs a dog and the crew');
+  const gm = { ready: gmArt(ready, set.gm.ready), running: gmArt(running, set.gm.running), done: gmArt(done, set.gm.done) };
+  return {
+    board,
+    boardSize: set.board.size,
+    map: set.board.map,
+    gm,
+    gmSpot: set.gmSpot,
+    dogs,
+    identities: [...dogs.keys()].sort(),
+    crew,
+    slab: sampleSlab(board, set.board.map, probe),
+  };
 }
 
-// --- The layout. ----------------------------------------------------------------------------------------------------
+const gmArt = (img: HTMLImageElement, spec: { size: [number, number]; anchor: [number, number] }): GmArt => ({
+  img,
+  size: spec.size,
+  anchor: spec.anchor,
+});
 
-/** The HUD's cards, top to bottom, and their heights in fs. */
-const CARD_UNITS = { gauge: 7.0, incidents: 3.2, reputation: 3.6, cash: 3.2, meters: 5.3, info: 5.9 } as const;
-type CardName = keyof typeof CARD_UNITS;
-const CARD_ORDER: readonly CardName[] = ['gauge', 'incidents', 'reputation', 'cash', 'meters', 'info'];
-const CARD_GAP = 0.5;
-const HUD_NEED = CARD_ORDER.reduce((s, k) => s + CARD_UNITS[k], 0) + (CARD_ORDER.length - 1) * CARD_GAP;
-const INFO_TEMPLATES = ['Days the crew ran solo: 5', 'Tomorrow: 30 asking', 'Inspector visits 10', 'Sent home sick 10'];
-const METER_LABELS = ['Energy', 'Cleanliness', 'Crew fatigue'] as const;
+/** A sprite's silhouette in bands of BAND image px, measured on its own pixels. */
+function shapeOf(img: HTMLImageElement, src: CastSprite, probe: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }): Shape {
+  const w = img.naturalWidth || src.size[0];
+  const h = img.naturalHeight || src.size[1];
+  // The manifest's size is the image's; if the file differs, its anchor scales with it.
+  const ax = (src.anchor[0] * w) / src.size[0];
+  const ay = (src.anchor[1] * h) / src.size[1];
+  probe.canvas.width = w;
+  probe.canvas.height = h;
+  probe.ctx.clearRect(0, 0, w, h);
+  probe.ctx.drawImage(img, 0, 0);
+  const data = probe.ctx.getImageData(0, 0, w, h).data;
+  const sx = src.size[0] / w;
+  const sy = src.size[1] / h;
+  const j0 = Math.floor(-ay / BAND);
+  const n = Math.floor((h - 1 - ay) / BAND) - j0 + 1;
+  const l = new Float64Array(n).fill(Number.NaN);
+  const r = new Float64Array(n).fill(Number.NaN);
+  for (let y = 0; y < h; y++) {
+    let lo = -1;
+    let hi = -1;
+    const row = y * w * 4;
+    for (let x = 0; x < w; x++) {
+      if ((data[row + x * 4 + 3] ?? 0) >= ALPHA_SOLID) {
+        if (lo < 0) lo = x;
+        hi = x;
+      }
+    }
+    if (lo < 0) continue;
+    const j = Math.floor((y - ay) / BAND) - j0;
+    const left = (lo - ax) * sx;
+    const right = (hi + 1 - ax) * sx;
+    const cl = l[j] as number;
+    l[j] = Number.isNaN(cl) ? left : Math.min(cl, left);
+    r[j] = Number.isNaN(r[j] as number) ? right : Math.max(r[j] as number, right);
+  }
+  return withBox({ j0, l, r, box: [0, 0, 0, 0] }, sy);
+}
 
-/** The yard art's crop: the gate at its right stays in view. */
-const CROP_ALIGN_X = 0.85;
-const CROP_ALIGN_Y = 0.55;
-/** Where the dogs' feet may go on the yard art (fractions of the image): the grass inside the fences. */
-const FLOOR_ON_ART = { x0: 0.08, x1: 0.88, y0: 0.2, y1: 0.85 } as const;
-/** A dog at the back of the yard is drawn at DEPTH_MIN, at the front at DEPTH_MAX. */
-const DEPTH_MIN = 0.8;
-const DEPTH_MAX = 1.08;
+/** Fills the shape's bounds from its bands (`sy` scales the band grid when the file's size differs). */
+function withBox(shape: Shape, sy = 1): Shape {
+  let left = Infinity;
+  let right = -Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (let i = 0; i < shape.l.length; i++) {
+    const l = shape.l[i] as number;
+    if (Number.isNaN(l)) continue;
+    left = Math.min(left, l);
+    right = Math.max(right, shape.r[i] as number);
+    top = Math.min(top, (shape.j0 + i) * BAND * sy);
+    bottom = Math.max(bottom, (shape.j0 + i + 1) * BAND * sy);
+  }
+  shape.box = Number.isFinite(left) ? [left, top, right, bottom] : [0, 0, 0, 0];
+  return shape;
+}
 
-interface ArtLayout {
+function mirrorShape(s: Shape): Shape {
+  const l = new Float64Array(s.l.length);
+  const r = new Float64Array(s.r.length);
+  for (let i = 0; i < s.l.length; i++) {
+    l[i] = -(s.r[i] as number);
+    r[i] = -(s.l[i] as number);
+  }
+  return { j0: s.j0, l, r, box: [-s.box[2], s.box[1], -s.box[0], s.box[3]] };
+}
+
+/**
+ * The board's slab under its front edges, read from the image: how deep it hangs below the lawn's front corner, and the
+ * colours of its front-left and front-right faces, so the walk path beside it is built of the same soil.
+ */
+function sampleSlab(board: HTMLImageElement, map: BoardMap, probe: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }): ArtSet['slab'] {
+  const [ox, oy] = map.origin;
+  const span = Math.round(map.ppm * 1.2);
+  probe.canvas.width = 1;
+  probe.canvas.height = span;
+  probe.ctx.clearRect(0, 0, 1, span);
+  probe.ctx.drawImage(board, Math.round(ox), Math.round(oy), 1, span, 0, 0, 1, span);
+  const column = probe.ctx.getImageData(0, 0, 1, span).data;
+  let depth = 0;
+  while (depth < span && (column[depth * 4 + 3] ?? 0) >= 128) depth++;
+  if (depth < 4) return { ...SLAB_DEFAULT };
+  const at = (x: number, y: number, fallback: string): string => {
+    probe.canvas.width = 1;
+    probe.canvas.height = 1;
+    probe.ctx.clearRect(0, 0, 1, 1);
+    probe.ctx.drawImage(board, Math.round(x), Math.round(y), 1, 1, 0, 0, 1, 1);
+    const [r = 0, g = 0, b = 0, a = 0] = probe.ctx.getImageData(0, 0, 1, 1).data;
+    return a >= 200 ? `rgb(${r}, ${g}, ${b})` : fallback;
+  };
+  // A point a third of the way along each front edge, two thirds of the way down its face.
+  const along = (map.lawn[1] / 3) * map.ppm;
+  const down = depth * 0.66;
+  const ux = (2 / Math.sqrt(5)) * along;
+  const uy = (1 / Math.sqrt(5)) * along;
+  return {
+    depth,
+    left: at(ox - ux, oy - uy + down, SLAB_DEFAULT.left),
+    right: at(ox + ux, oy - uy + down, SLAB_DEFAULT.right),
+  };
+}
+
+// --- The stage: the set fitted to the canvas, and everything drawn at that size. ------------------------------------
+
+/** One look of a figure: a sprite and whether it is drawn mirrored. */
+interface Look {
+  art: SpriteArt;
+  mirror: boolean;
+}
+
+/** A sprite (or the GM) scaled for the stage, in device pixels, with its anchor and its shadow. */
+interface Drawn {
+  img: HTMLCanvasElement;
+  ax: number;
+  ay: number;
+  shadow: HTMLCanvasElement | null;
+  sx: number;
+  sy: number;
+}
+
+interface Stage {
+  key: string;
+  art: ArtSet;
+  width: number;
+  height: number;
+  ratio: number;
+  /** CSS px per board-image px, and the CSS position of the board image's top left. */
+  k: number;
+  bx: number;
+  by: number;
+  /** The lawn's front corner and one world metre along x and along y, in CSS px; CSS px per metre of height. */
+  origin: [number, number];
+  ex: [number, number];
+  ey: [number, number];
+  hpm: number;
   fs: number;
   pad: number;
-  gap: number;
-  radius: number;
-  cardPad: number;
-  header: Box;
-  titlePx: number;
-  planPx: number;
-  planLines: 1 | 2;
-  progress: Box;
-  scene: Box;
-  art: Box;
-  path: Box;
-  captions: Box;
-  /** The source rectangle of the yard image and its scale onto `art`. */
-  crop: Box;
-  floor: Box;
-  dogH: number; // a dog's height at depth 1
-  crewH: number;
-  hud: Box;
-  cards: Record<CardName, Box>;
-  neededH: number;
-  hudOverflow: number;
+  tokens: Tokens;
+  /** The board and the walk path, at this size. */
+  layer: HTMLCanvasElement;
+  /** The GM orb's box (its largest state) and its label's, in CSS px; figures keep clear of both. */
+  orb: Box;
+  label: { x: number; y: number; w: number; h: number; lineFrom: number; lineTo: number };
+  /** The corner the event chips use, kept clear of figures. */
+  chips: Box;
+  /** The blocked footprints on screen: each one's four ground corners (CSS px) and its horizontal extent. */
+  props: { corners: [number, number][]; x0: number; x1: number }[];
+  /** Each blocked footprint raised PROP_H, as its screen outline (cut out of the shadows' clip). */
+  propHulls: [number, number][][];
+  drawn: Map<string, Drawn>;
+  gmShadow: HTMLCanvasElement | null;
+  days: Map<string, DayPlan>;
+  /** Day plans begun in idle time and not finished yet, by key. */
+  pending: Map<string, Generator<void, DayPlan, void>>;
+  warm: boolean;
 }
 
-const displayFont = (fonts: ReplayFonts, px: number, weight = 600): string =>
-  `${weight} ${Math.max(1, Math.round(px * 10) / 10)}px ${fonts.display}`;
-const bodyFont = (fonts: ReplayFonts, px: number, weight = 800): string =>
-  `${weight} ${Math.max(1, Math.round(px * 10) / 10)}px ${fonts.body}`;
+let stage: Stage | null = null;
+let pendingSize: { width: number; height: number; ratio: number } | null = null;
+let warmTimer: ReturnType<typeof setTimeout> | null = null;
 
-function artLayoutFor(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  fs: number,
-  fonts: ReplayFonts,
-  yardW: number,
-  yardH: number,
-): ArtLayout {
-  const pad = fs * 0.75;
-  const gap = fs * 0.6;
-  const radius = fs * 1.05;
-  const cardPad = fs * 0.75;
-  const titlePx = fs * 1.4;
-  const planPx = fs;
+const stageKey = (width: number, height: number, ratio: number): string => `${Math.round(width)}|${Math.round(height)}|${ratio}`;
 
-  ctx.font = bodyFont(fonts, planPx);
-  const innerW = width - 2 * pad - 2 * cardPad;
-  const planLines: 1 | 2 = ctx.measureText(PLAN_TEMPLATE).width <= innerW ? 1 : 2;
-  const progressH = fs * 0.42;
-  const headerH = cardPad * 1.6 + titlePx * 1.2 + planLines * planPx * 1.35 + fs * 0.35 + progressH;
-  const header: Box = { x: pad, y: pad, w: width - 2 * pad, h: headerH };
-  const progress: Box = {
-    x: header.x + cardPad,
-    y: header.y + header.h - cardPad * 0.8 - progressH,
-    w: header.w - 2 * cardPad,
-    h: progressH,
+/** The default week's Monday (config requests.day1, one staffer): arranged while the page is idle, which also warms
+ * the placer's code, so a Round 1 week's first frame only draws. Any other Monday is arranged when it comes. */
+const WARM_DAY = { dogs: 20, staff: 1 } as const;
+
+/**
+ * Prepares the yard at the size the page last drew its placeholder at, in idle time: the board, the path and every
+ * sprite and shadow at that size, and the default Monday's arrangement, so the week's first frame only draws.
+ */
+function warmUp(art: ArtSet): void {
+  const size = pendingSize;
+  if (size === null || warmTimer !== null || !(size.width > 0 && size.height > 0)) return;
+  if (stage !== null && stage.art === art && stage.warm && stage.key === stageKey(size.width, size.height, size.ratio)) return;
+  warmTimer = setTimeout(() => {
+    warmTimer = null;
+    const s = stageFor(size.width, size.height, size.ratio, art);
+    if (s.warm) return;
+    s.warm = true;
+    function* prepare(): Generator<void, void, void> {
+      for (const state of ['ready', 'running', 'done'] as const) gmDrawn(s, state);
+      for (const look of allLooks(art)) {
+        drawnOf(s, look);
+        yield;
+      }
+      inIdleTime(s, 0, WARM_DAY.dogs, WARM_DAY.staff);
+    }
+    idle(s, prepare(), () => true);
+  }, 0);
+}
+
+/**
+ * During a day's pickup, tomorrow's arrangement in idle time, when tomorrow is easy to foresee (the GM took every
+ * booking today, so tomorrow's dogs are tomorrow's requests; the same crew): a guess that only fills the cache, so the
+ * next day's first frame only draws. The arrangement is the same whenever it is made; a wrong guess costs idle time.
+ */
+function planAhead(s: Stage, frame: ReplayFrame): void {
+  if (frame.block !== 3 || frame.closed || frame.bookings !== 'all' || frame.day >= 4) return;
+  inIdleTime(s, frame.day + 1, frame.requestsTomorrow, frame.scheduledStaff);
+}
+
+/** Starts a day's arrangement in idle time; a frame that needs it before it is done finishes what is left (dayPlan). */
+function inIdleTime(s: Stage, day: number, dogs: number, staff: number): void {
+  const key = `${day}|${dogs}|${staff}`;
+  if (s.days.has(key) || s.pending.has(key)) return;
+  const gen = daySteps(s, day, dogs, staff);
+  s.pending.set(key, gen);
+  idle(s, gen, () => s.pending.get(key) === gen, () => s.pending.delete(key));
+}
+
+/**
+ * Runs `work` a little at a time in the browser's idle time (a few milliseconds a slice, between frames), so it never
+ * holds up a frame, while the yard keeps its size and `wanted` holds; `done` when it finishes.
+ */
+function idle(s: Stage, work: Generator<void, unknown, void>, wanted: () => boolean, done?: () => void): void {
+  const later = (fn: (left: () => number) => void): void => {
+    if (typeof requestIdleCallback === 'function') requestIdleCallback((d) => fn(() => d.timeRemaining()), { timeout: 400 });
+    else
+      setTimeout(() => {
+        const t0 = performance.now();
+        fn(() => 3 - (performance.now() - t0));
+      }, 0);
+  };
+  const slice = (left: () => number): void => {
+    if (stage !== s || !wanted()) return; // finished by a frame, or the yard was resized
+    let r = work.next();
+    while (r.done !== true && left() > 1) r = work.next();
+    if (r.done === true) done?.();
+    else later(slice);
+  };
+  later(slice);
+}
+
+/** Every look the cast can be drawn in: each sprite as drawn and, if the cast mirrors, mirrored. */
+function allLooks(art: ArtSet): Look[] {
+  const looks: Look[] = [];
+  const add = (list: SpriteArt[] | undefined): void => {
+    for (const a of list ?? []) {
+      looks.push({ art: a, mirror: false });
+      if (MIRROR_CAST) looks.push({ art: a, mirror: true });
+    }
+  };
+  for (const poses of art.dogs.values()) for (const list of Object.values(poses)) add(list);
+  for (const list of Object.values(art.crew)) add(list);
+  return looks;
+}
+
+function stageFor(width: number, height: number, ratio: number, art: ArtSet): Stage {
+  const key = stageKey(width, height, ratio);
+  if (stage !== null && stage.key === key && stage.art === art) return stage;
+  const map = art.map;
+  const [bw, bh] = art.boardSize;
+  const P = map.ppm;
+  const exImg: [number, number] = [(2 / Math.sqrt(5)) * P, (-1 / Math.sqrt(5)) * P];
+  const eyImg: [number, number] = [(-2 / Math.sqrt(5)) * P, (-1 / Math.sqrt(5)) * P];
+  const groundImg = (mx: number, my: number): [number, number] => [
+    map.origin[0] + mx * exImg[0] + my * eyImg[0],
+    map.origin[1] + mx * exImg[1] + my * eyImg[1],
+  ];
+  // The scene's bounds in image px: the board, the walk path with its slab, the GM in any state.
+  let x0 = 0;
+  let y0 = 0;
+  let x1 = bw;
+  let y1 = bh;
+  for (const [mx, my] of [[-WALK_W, 0], [0, 0], [-WALK_W, map.lawn[1]]] as const) {
+    const [x, y] = groundImg(mx, my);
+    x0 = Math.min(x0, x);
+    x1 = Math.max(x1, x);
+    y1 = Math.max(y1, y + art.slab.depth);
+  }
+  for (const g of Object.values(art.gm)) {
+    x0 = Math.min(x0, art.gmSpot[0] - g.anchor[0]);
+    y0 = Math.min(y0, art.gmSpot[1] - g.anchor[1]);
+    x1 = Math.max(x1, art.gmSpot[0] - g.anchor[0] + g.size[0]);
+  }
+  const pad = Math.max(10, Math.min(width, height) * 0.02);
+  const fs = clamp(Math.round(width / 52), MIN_LABEL_PX, 22);
+  const k = Math.max(0.05, Math.min((width - 2 * pad) / (x1 - x0), (height - 2 * pad) / (y1 - y0), 1));
+  const bx = (width - (x1 - x0) * k) / 2 - x0 * k;
+  const by = (height - (y1 - y0) * k) / 2 - y0 * k;
+  const origin: [number, number] = [bx + map.origin[0] * k, by + map.origin[1] * k];
+  const el = (CAMERA.elevationDeg * Math.PI) / 180;
+  const groundLen = Math.hypot(Math.SQRT1_2, Math.SQRT1_2 * Math.sin(el));
+  const tokens = readTokens(undefined);
+
+  // The GM's box and its label: "The GM" on a pill beside the orb, on the side with room.
+  const run = art.gm.running;
+  let ox0 = Infinity;
+  let oy0 = Infinity;
+  let ox1 = -Infinity;
+  let oy1 = -Infinity;
+  for (const g of Object.values(art.gm)) {
+    ox0 = Math.min(ox0, bx + (art.gmSpot[0] - g.anchor[0]) * k);
+    oy0 = Math.min(oy0, by + (art.gmSpot[1] - g.anchor[1]) * k);
+    ox1 = Math.max(ox1, bx + (art.gmSpot[0] - g.anchor[0] + g.size[0]) * k);
+    oy1 = Math.max(oy1, by + (art.gmSpot[1] - g.anchor[1] + g.size[1]) * k);
+  }
+  const orbMidY = by + (art.gmSpot[1] - run.anchor[1] + run.size[1] / 2) * k;
+  const runRight = bx + (art.gmSpot[0] - run.anchor[0] + run.size[0]) * k;
+  const runLeft = bx + (art.gmSpot[0] - run.anchor[0]) * k;
+  const probe = newCanvas(1, 1);
+  probe.ctx.font = uiFont(tokens, fs, 800);
+  const labelW = probe.ctx.measureText('The GM').width + fs * 1.9;
+  const labelH = Math.round(fs * 1.85);
+  const lead = fs * 1.6;
+  const onRight = runRight + lead + labelW <= width - pad;
+  const lx = onRight ? runRight + lead : Math.max(pad, runLeft - lead - labelW);
+  const label = {
+    x: lx,
+    y: clamp(orbMidY - labelH / 2, pad, height - pad - labelH),
+    w: labelW,
+    h: labelH,
+    lineFrom: onRight ? runRight + 2 : runLeft - 2,
+    lineTo: onRight ? lx : lx + labelW,
   };
 
-  // The HUD column: as wide as its widest line, between 28% and 42% of the canvas.
-  ctx.font = bodyFont(fonts, fs);
-  let widest = 0;
-  for (const text of INFO_TEMPLATES) widest = Math.max(widest, ctx.measureText(text).width + fs * 1.3);
-  ctx.font = displayFont(fonts, fs * 1.9);
-  const cashW = ctx.measureText('−$10,000').width;
-  ctx.font = bodyFont(fonts, fs, 800);
-  widest = Math.max(
-    widest,
-    cashW + ctx.measureText('Cash').width + fs * 2.9,
-    ctx.measureText('Dogs per staffer').width + fs * 4.3,
-    ctx.measureText('Crew fatigue').width + fs * 5.5,
-  );
-  widest += 2 * cardPad;
-  const hudMax = width * 0.42;
-  const hudW = clamp(widest, width * 0.28, hudMax);
-
-  const bodyTop = header.y + header.h + gap;
-  const bodyBottom = height - pad;
-  const hud: Box = { x: width - pad - hudW, y: bodyTop, w: hudW, h: bodyBottom - bodyTop };
-
-  // The cards share the column's height; spare room goes to the cards (at most a quarter more) and the gaps.
-  const need = HUD_NEED * fs;
-  const grow = clamp(hud.h / need, 0, 1.25);
-  const used = (need - (CARD_ORDER.length - 1) * CARD_GAP * fs) * grow;
-  const cardGap = Math.max(CARD_GAP * fs * Math.min(1, grow), (hud.h - used) / (CARD_ORDER.length - 1));
-  const cards = {} as Record<CardName, Box>;
-  let y = hud.y;
-  for (const name of CARD_ORDER) {
-    const h = CARD_UNITS[name] * fs * grow;
-    cards[name] = { x: hud.x, y, w: hud.w, h };
-    y += h + Math.min(cardGap, fs * 1.4);
-  }
-
-  // The left column: the yard art, the path outside its front fence, the captions under them.
-  const leftW = Math.max(1, hud.x - gap - pad);
-  const capH = fs * 2.05;
-  const pathH = fs * 3.3;
-  const sceneH = Math.max(1, bodyBottom - bodyTop - capH - gap * 0.4);
-  const scene: Box = { x: pad, y: bodyTop, w: leftW, h: sceneH };
-  const art: Box = { x: scene.x, y: scene.y, w: scene.w, h: Math.max(1, sceneH - pathH) };
-  const path: Box = { x: scene.x, y: art.y + art.h, w: scene.w, h: scene.h - art.h };
-  const captions: Box = { x: pad, y: scene.y + scene.h + gap * 0.4, w: leftW, h: capH };
-
-  // Cover the art box with the yard image, its gate kept in view.
-  const s = Math.max(art.w / yardW, art.h / yardH);
-  const sw = art.w / s;
-  const sh = art.h / s;
-  const crop: Box = { x: (yardW - sw) * CROP_ALIGN_X, y: (yardH - sh) * CROP_ALIGN_Y, w: sw, h: sh };
-  const toX = (u: number): number => art.x + (u * yardW - crop.x) * s;
-  const toY = (v: number): number => art.y + (v * yardH - crop.y) * s;
-  const dogH = Math.max(4, Math.min(art.h * 0.155, art.w * 0.144));
-  const fx0 = Math.max(toX(FLOOR_ON_ART.x0), art.x + dogH * 0.75);
-  const fx1 = Math.min(toX(FLOOR_ON_ART.x1), art.x + art.w - dogH * 0.75);
-  const fy0 = Math.max(toY(FLOOR_ON_ART.y0), art.y + dogH * 1.05);
-  const fy1 = Math.min(toY(FLOOR_ON_ART.y1), art.y + art.h - dogH * 0.15);
-  const floor: Box = { x: fx0, y: fy0, w: Math.max(1, fx1 - fx0), h: Math.max(1, fy1 - fy0) };
-
-  const leftNeeded = fs * 8 + pathH + capH + gap * 0.4;
-  return {
+  const s: Stage = {
+    key,
+    art,
+    width,
+    height,
+    ratio,
+    k,
+    bx,
+    by,
+    origin,
+    ex: [exImg[0] * k, exImg[1] * k],
+    ey: [eyImg[0] * k, eyImg[1] * k],
+    hpm: ((P * Math.cos(el)) / groundLen) * k,
     fs,
     pad,
-    gap,
-    radius,
-    cardPad,
-    header,
-    titlePx,
-    planPx,
-    planLines,
-    progress,
-    scene,
-    art,
-    path,
-    captions,
-    crop,
-    floor,
-    dogH,
-    crewH: dogH * 1.45, // 1.45 times a standing dog at the same depth (both scale by depth): the adult in the yard
-    hud,
-    cards,
-    neededH: header.y + header.h + gap + Math.max(need, leftNeeded) + pad,
-    hudOverflow: widest / hudMax,
+    tokens,
+    layer: newCanvas(width * ratio, height * ratio).canvas,
+    orb: { x: ox0, y: oy0, w: ox1 - ox0, h: oy1 - oy0 },
+    label,
+    chips: { x: 0, y: 0, w: width * 0.62, h: pad + 2 * Math.round(fs * 1.95) + fs * 0.4 },
+    props: [],
+    propHulls: [],
+    drawn: new Map(),
+    gmShadow: null,
+    days: new Map(),
+    pending: new Map(),
+    warm: false,
   };
+  s.props = map.blocked.map(([rx, ry, rw, rh]) => {
+    const corners = [ground(s, rx, ry), ground(s, rx + rw, ry), ground(s, rx + rw, ry + rh), ground(s, rx, ry + rh)];
+    return { corners, x0: Math.min(...corners.map((c) => c[0])), x1: Math.max(...corners.map((c) => c[0])) };
+  });
+  const lift = PROP_H * s.hpm;
+  s.propHulls = s.props.map(({ corners }) => hull([...corners, ...corners.map(([x, y]): [number, number] => [x, y - lift])]));
+  paintLayer(s);
+  stage = s;
+  return s;
 }
 
-/** The largest text size that fits: scaled with the canvas, 10 to 26 px, smaller when the cards would not fit. */
-function fitArtLayout(ctx: CanvasRenderingContext2D, width: number, height: number, fonts: ReplayFonts, art: ArtSet): ArtLayout {
-  const yw = art.yard.naturalWidth || 1400;
-  const yh = art.yard.naturalHeight || 875;
-  let fs = clamp(Math.min(width / 46, height / 38.5), 10, 26);
-  let layout = artLayoutFor(ctx, width, height, fs, fonts, yw, yh);
-  for (let i = 0; i < 5; i++) {
-    const shrink = Math.min(1, height / layout.neededH, 1 / layout.hudOverflow);
-    if (shrink >= 0.995 || fs <= 7) break;
-    fs = Math.max(7, fs * shrink * 0.99);
-    layout = artLayoutFor(ctx, width, height, fs, fonts, yw, yh);
-  }
-  return layout;
+/** The convex hull of a few points, counter-clockwise on screen (Andrew's monotone chain). */
+function hull(points: [number, number][]): [number, number][] {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: [number, number], a: [number, number], b: [number, number]): number =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list: [number, number][]): [number, number][] => {
+    const h: [number, number][] = [];
+    for (const p of list) {
+      while (h.length >= 2 && cross(h[h.length - 2] as [number, number], h[h.length - 1] as [number, number], p) <= 0) h.pop();
+      h.push(p);
+    }
+    h.pop();
+    return h;
+  };
+  return [...half(pts), ...half([...pts].reverse())];
 }
 
-// --- Sprites, scaled once per size. ---------------------------------------------------------------------------------
-
-/** A sprite pre-scaled for one size: the bitmap holds it at DEPTH_MAX; w and h are its CSS size at depth 1. */
-interface Sprite {
-  img: HTMLCanvasElement;
-  w: number;
-  h: number;
-}
-/** A sprite facing right [0] and left [1]. */
-type Facing = readonly [Sprite, Sprite];
-
-interface SpriteSet {
-  play: Facing[];
-  nap: Facing[];
-  crewBall: Facing;
-  crewMop: Facing;
+/** A world point on the ground (metres) to CSS px. */
+function ground(s: Stage, mx: number, my: number): [number, number] {
+  return [s.origin[0] + mx * s.ex[0] + my * s.ey[0], s.origin[1] + mx * s.ex[1] + my * s.ey[1]];
 }
 
-function newCanvas(w: number, h: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(w));
-  canvas.height = Math.max(1, Math.round(h));
-  const ctx = canvas.getContext('2d');
-  if (ctx === null) throw new Error('replay: no 2D context for the yard cache');
-  return { canvas, ctx };
+/** A CSS point back to the ground (metres). */
+function world(s: Stage, x: number, y: number): [number, number] {
+  const dx = x - s.origin[0];
+  const dy = y - s.origin[1];
+  const det = s.ex[0] * s.ey[1] - s.ey[0] * s.ex[1];
+  return [(dx * s.ey[1] - dy * s.ey[0]) / det, (s.ex[0] * dy - s.ex[1] * dx) / det];
 }
 
-/** The image scaled to `cssH` tall at DEPTH_MAX × ratio, halving in steps so the downscale stays smooth. */
-function prerender(img: HTMLImageElement, cssH: number, ratio: number): Facing {
-  const sw = img.naturalWidth || img.width;
-  const sh = img.naturalHeight || img.height;
-  const w = (sw * cssH) / sh;
-  const pw = Math.max(1, Math.round(w * DEPTH_MAX * ratio));
-  const ph = Math.max(1, Math.round(cssH * DEPTH_MAX * ratio));
-  let src: CanvasImageSource = img;
-  let cw = sw;
-  let ch = sh;
+/** `src` (w × h px) at w·f × h·f device px, halving first so a big downscale stays smooth; mirrored if asked. */
+function scaled(src: CanvasImageSource, w: number, h: number, f: number, mirror: boolean): HTMLCanvasElement {
+  const pw = Math.max(1, Math.round(w * f));
+  const ph = Math.max(1, Math.round(h * f));
+  let cur: CanvasImageSource = src;
+  let cw = w;
+  let ch = h;
   while (cw > pw * 2 && ch > ph * 2) {
     const half = newCanvas(Math.round(cw / 2), Math.round(ch / 2));
     half.ctx.imageSmoothingQuality = 'high';
-    half.ctx.drawImage(src, 0, 0, cw, ch, 0, 0, half.canvas.width, half.canvas.height);
-    src = half.canvas;
+    half.ctx.drawImage(cur, 0, 0, cw, ch, 0, 0, half.canvas.width, half.canvas.height);
+    cur = half.canvas;
     cw = half.canvas.width;
     ch = half.canvas.height;
   }
-  // The sprite with a 1 px warm, darker outline (its silhouette stamped round it) and its colours a touch muted.
-  const o = Math.max(1, Math.round(ratio));
-  const sil = newCanvas(pw, ph);
-  sil.ctx.imageSmoothingQuality = 'high';
-  sil.ctx.drawImage(src, 0, 0, cw, ch, 0, 0, pw, ph);
-  sil.ctx.globalCompositeOperation = 'source-in';
-  sil.ctx.fillStyle = 'rgba(88, 52, 24, 0.55)';
-  sil.ctx.fillRect(0, 0, pw, ph);
-  const right = newCanvas(pw + 2 * o, ph + 2 * o);
-  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
-    right.ctx.drawImage(sil.canvas, o + dx * o, o + dy * o);
+  const out = newCanvas(pw, ph);
+  out.ctx.imageSmoothingQuality = 'high';
+  if (mirror) {
+    out.ctx.translate(pw, 0);
+    out.ctx.scale(-1, 1);
   }
-  right.ctx.imageSmoothingQuality = 'high';
-  right.ctx.filter = 'saturate(0.9)';
-  right.ctx.drawImage(src, 0, 0, cw, ch, o, o, pw, ph);
-  const left = newCanvas(pw + 2 * o, ph + 2 * o);
-  left.ctx.translate(pw + 2 * o, 0);
-  left.ctx.scale(-1, 1);
-  left.ctx.drawImage(right.canvas, 0, 0);
-  const scale = DEPTH_MAX * ratio;
-  const sprite = (c: HTMLCanvasElement): Sprite => ({ img: c, w: c.width / scale, h: c.height / scale });
-  return [sprite(right.canvas), sprite(left.canvas)];
+  out.ctx.drawImage(cur, 0, 0, cw, ch, 0, 0, pw, ph);
+  return out.canvas;
 }
 
-function spritesFor(art: ArtSet, layout: ArtLayout, ratio: number): SpriteSet {
-  // One scale for every dog (the golden's height is the reference), so a corgi stays smaller than a collie.
-  const ref = art.play[0]?.naturalHeight || 160;
-  const dogScale = layout.dogH / ref;
-  const crewRef = art.crewBall.naturalHeight || 205;
-  return {
-    play: art.play.map((img) => prerender(img, (img.naturalHeight || ref) * dogScale, ratio)),
-    nap: art.nap.map((img) => prerender(img, (img.naturalHeight || ref * 0.65) * dogScale, ratio)),
-    crewBall: prerender(art.crewBall, layout.crewH, ratio),
-    crewMop: prerender(art.crewMop, (layout.crewH * (art.crewMop.naturalHeight || crewRef)) / crewRef, ratio),
+/** The static layer: the board, and the walk path built against its front-left edge from the slab's own soil. */
+function paintLayer(s: Stage): void {
+  const { art, ratio, k } = s;
+  const ctx = s.layer.getContext('2d');
+  if (ctx === null) throw new Error('replay: no 2D context for the yard cache');
+  const [bw, bh] = art.boardSize;
+  const board = scaled(art.board, art.board.naturalWidth || bw, art.board.naturalHeight || bh, (bw * k * ratio) / (art.board.naturalWidth || bw), false);
+  ctx.drawImage(board, Math.round(s.bx * ratio), Math.round(s.by * ratio));
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  paintWalkPath(ctx, s);
+}
+
+/**
+ * The walk path: a strip of pale stone the width of a walking pair, level with the lawn and as deep as its slab, laid
+ * against the lawn's front-left edge, faceted like the lawn (each cell two triangles a shade apart) and lit like it
+ * (its left face in the slab's lit soil, its end in the shaded soil).
+ */
+function paintWalkPath(ctx: CanvasRenderingContext2D, s: Stage): void {
+  const L = s.art.map.lawn[1];
+  const depth = s.art.slab.depth * s.k;
+  const g = (mx: number, my: number): [number, number] => ground(s, mx, my);
+  const poly = (pts: [number, number][], fill: string): void => {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
   };
+  const down = ([x, y]: [number, number]): [number, number] => [x, y + depth];
+  if (depth > 0) {
+    poly([g(-WALK_W, 0), g(-WALK_W, L), down(g(-WALK_W, L)), down(g(-WALK_W, 0))], s.art.slab.left);
+    poly([g(0, 0), g(-WALK_W, 0), down(g(-WALK_W, 0)), down(g(0, 0))], s.art.slab.right);
+  }
+  // The top, in facets: cells of about 0.32 m along the path and two across it.
+  const rand = seeded(7, Math.round(L * 100));
+  const along = Math.max(1, Math.round(L / 0.32));
+  const across = 2;
+  const [r0, g0, b0] = PATH_STONE;
+  const tone = (t: number): string => `rgb(${Math.round(r0 * t)}, ${Math.round(g0 * t)}, ${Math.round(b0 * t)})`;
+  ctx.lineJoin = 'round';
+  for (let i = 0; i < along; i++) {
+    for (let j = 0; j < across; j++) {
+      const y0 = (L * i) / along;
+      const y1 = (L * (i + 1)) / along;
+      const x0 = -WALK_W + (WALK_W * j) / across;
+      const x1 = -WALK_W + (WALK_W * (j + 1)) / across;
+      const a = g(x0, y0);
+      const b = g(x1, y0);
+      const c = g(x1, y1);
+      const d = g(x0, y1);
+      const t1 = 0.965 + rand() * 0.05;
+      const t2 = 0.965 + rand() * 0.05;
+      const flip = rand() < 0.5;
+      // Each triangle filled and stroked in its own tone, so no hairline shows between facets.
+      for (const [pts, t] of (flip ? [[[a, b, c], t1], [[a, c, d], t2]] : [[[a, b, d], t1], [[b, c, d], t2]]) as [[number, number][], number][]) {
+        poly(pts, tone(t));
+        ctx.strokeStyle = tone(t);
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    }
+  }
+  // The path's outer edge, a shade darker, where the stone meets its side.
+  ctx.strokeStyle = 'rgba(70, 52, 30, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(...g(-WALK_W, L));
+  ctx.lineTo(...g(-WALK_W, 0));
+  ctx.lineTo(...g(0, 0));
+  ctx.stroke();
 }
 
-// --- The static layer: drawn once per size. -------------------------------------------------------------------------
+/** A look at this stage's size: the sprite scaled (and mirrored), its anchor, and its shadow. Made once, then reused. */
+function drawnOf(s: Stage, look: Look): Drawn {
+  const key = `${look.art.src.id}|${look.mirror ? 'm' : ''}`;
+  const cached = s.drawn.get(key);
+  if (cached !== undefined) return cached;
+  const { src, img } = look.art;
+  const f = s.k * s.ratio;
+  const nw = img.naturalWidth || src.size[0];
+  const nh = img.naturalHeight || src.size[1];
+  const canvas = scaled(img, nw, nh, (src.size[0] * f) / nw, look.mirror);
+  const fx = canvas.width / src.size[0];
+  const fy = canvas.height / src.size[1];
+  const ax = (look.mirror ? src.size[0] - src.anchor[0] : src.anchor[0]) * fx;
+  const ay = src.anchor[1] * fy;
+  const shadow = castShadow(canvas, ax, ay, f);
+  const drawn: Drawn = { img: canvas, ax, ay, shadow: shadow.canvas, sx: shadow.ax, sy: shadow.ay };
+  s.drawn.set(key, drawn);
+  return drawn;
+}
 
-interface Spot {
+/**
+ * The contact shadow (gate 3, one spec for every figure): the sprite's silhouette thrown along the key light (a point
+ * h px up lands h × shearX to the right and h × shearY up), blurred and tinted as the set's own shadows, under a soft
+ * contact ellipse at the feet. `f` is device px per image px. Without canvas filters the two are drawn unblurred.
+ */
+function castShadow(sprite: HTMLCanvasElement, ax: number, ay: number, f: number): { canvas: HTMLCanvasElement | null; ax: number; ay: number } {
+  const w = sprite.width;
+  const h = sprite.height;
+  const A = SHADOW.shearX;
+  const B = SHADOW.shearY;
+  const blur = SHADOW.contactBlur * f;
+  const pad = Math.ceil(blur * 2.5 + 2);
+  const erx = w * 0.42;
+  const ery = Math.max(1, w * 0.11);
+  const ecx = (w / 2 - ax) * 0.5; // from the anchor
+  // Where the anchor sits in the shadow canvas, with room for the throw and the ellipse.
+  const sx = Math.ceil(pad + Math.max(ax - A * (ay - h), erx - ecx, 0));
+  const sy = Math.ceil(pad + Math.max(-B * ay, ery));
+  const W = Math.ceil(sx + Math.max(w - ax + A * ay, ecx + erx) + pad);
+  const H = Math.ceil(sy + Math.max(-B * (h - ay), ery) + pad);
+  const sil = newCanvas(W, H);
+  sil.ctx.setTransform(1, 0, -A, -B, sx - ax + A * ay, sy + B * ay);
+  sil.ctx.drawImage(sprite, 0, 0);
+  sil.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  sil.ctx.globalCompositeOperation = 'source-in';
+  sil.ctx.fillStyle = `rgb(${SHADOW.tint})`;
+  sil.ctx.fillRect(0, 0, W, H);
+  const out = newCanvas(W, H);
+  const filters = typeof out.ctx.filter === 'string';
+  if (filters) out.ctx.filter = `blur(${(SHADOW.castBlur * f).toFixed(2)}px)`;
+  out.ctx.globalAlpha = SHADOW.castAlpha;
+  out.ctx.drawImage(sil.canvas, 0, 0);
+  if (filters) out.ctx.filter = `blur(${blur.toFixed(2)}px)`;
+  out.ctx.globalAlpha = SHADOW.contactAlpha;
+  out.ctx.fillStyle = `rgb(${SHADOW.tint})`;
+  out.ctx.beginPath();
+  out.ctx.ellipse(sx + ecx, sy - f, erx, ery, 0, 0, Math.PI * 2);
+  out.ctx.fill();
+  return { canvas: out.canvas, ax: sx, ay: sy };
+}
+
+/** The GM in a state at this stage's size (no cast shadow: it hovers; its shadow is a soft disc on the roof). */
+function gmDrawn(s: Stage, state: GmState): Drawn {
+  const key = `gm|${state}`;
+  const cached = s.drawn.get(key);
+  if (cached !== undefined) return cached;
+  const g = s.art.gm[state];
+  const f = s.k * s.ratio;
+  const nw = g.img.naturalWidth || g.size[0];
+  const nh = g.img.naturalHeight || g.size[1];
+  const canvas = scaled(g.img, nw, nh, (g.size[0] * f) / nw, false);
+  const drawn: Drawn = { img: canvas, ax: g.anchor[0] * (canvas.width / g.size[0]), ay: g.anchor[1] * (canvas.height / g.size[1]), shadow: null, sx: 0, sy: 0 };
+  s.drawn.set(key, drawn);
+  if (s.gmShadow === null) {
+    const rx = g.size[0] * f * 0.36;
+    const ry = rx * 0.38;
+    const blur = 4 * f;
+    const c = newCanvas(rx * 2 + blur * 6, ry * 2 + blur * 6);
+    if (typeof c.ctx.filter === 'string') c.ctx.filter = `blur(${blur.toFixed(2)}px)`;
+    c.ctx.fillStyle = `rgba(${SHADOW.tint}, 0.32)`;
+    c.ctx.beginPath();
+    c.ctx.ellipse(c.canvas.width / 2, c.canvas.height / 2, rx, ry, 0, 0, Math.PI * 2);
+    c.ctx.fill();
+    s.gmShadow = c.canvas;
+  }
+  return drawn;
+}
+
+// --- Where everyone stands: a day's arrangement, from the yard's own generator. ----------------------------------
+
+/** A figure standing somewhere: its look, its ground point in metres and its anchor in CSS px. */
+interface Fig {
+  look: Look;
+  mx: number;
+  my: number;
   x: number;
   y: number;
 }
 
-interface StaticLayer {
-  key: string;
-  colors: ReplayColors;
-  art: ArtSet;
-  canvas: HTMLCanvasElement;
-  layout: ArtLayout;
-  palette: Palette;
-  fonts: ReplayFonts;
-  sprites: SpriteSet;
-  /** The free-play spots, one per dog the yard can hold, in a fixed scattered order. */
-  spots: Spot[];
-  /** The spots for n dogs, spread apart by their drawn size: computed once per count, then reused. */
-  spotsByCount: Map<number, Spot[]>;
-  meterLabelW: number;
+/** One dog of the day: who it is (breed and coat), the way it faces, its pose in free play, and where it stands. */
+interface DogCard {
+  id: string;
+  facing: Facing;
+  play: DogPose;
+  mx: number;
+  my: number;
 }
 
-let staticLayer: StaticLayer | null = null;
-
-function staticFor(
-  width: number,
-  height: number,
-  options: ReplayOptions,
-  fonts: ReplayFonts,
-  art: ArtSet,
-  probe: CanvasRenderingContext2D,
-): StaticLayer {
-  const ratio = options.pixelRatio;
-  // The fonts' status is in the key: labels drawn in a fallback face are redrawn once the page's faces have loaded.
-  const fontStatus = typeof document !== 'undefined' && document.fonts !== undefined ? document.fonts.status : '';
-  const key = `${width}|${height}|${ratio}|${fonts.display}|${fonts.body}|${options.gaugeMax}|${options.legalRatio}|${fontStatus}`;
-  const cached = staticLayer;
-  if (cached !== null && cached.key === key && cached.colors === options.colors && cached.art === art) return cached;
-
-  probe.setTransform(1, 0, 0, 1, 0, 0);
-  const layout = fitArtLayout(probe, width, height, fonts, art);
-  const palette = paletteOf(options.colors);
-  const { canvas, ctx } = newCanvas(width * ratio, height * ratio);
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.font = bodyFont(fonts, layout.fs);
-  const meterLabelW = Math.max(...METER_LABELS.map((l) => ctx.measureText(l).width)) + layout.fs * 0.6;
-  paintStatic(ctx, width, height, layout, palette, fonts, art, options, meterLabelW);
-  const layer: StaticLayer = {
-    key,
-    colors: options.colors,
-    art,
-    canvas,
-    layout,
-    palette,
-    fonts,
-    sprites: spritesFor(art, layout, ratio),
-    spots: spotsOn(layout.floor, Math.max(1, options.gaugeMax)),
-    spotsByCount: new Map(),
-    meterLabelW,
-  };
-  staticLayer = layer;
-  return layer;
+interface CrewCard {
+  facing: Facing;
+  mx: number;
+  my: number;
 }
 
-/** Where the crew stand in free play and a nap, as fractions of the floor: the first, second and third staffer. */
-const CREW_SPOTS: readonly (readonly [number, number])[] = [
-  [0.3, 0.52],
-  [0.7, 0.4],
-  [0.5, 0.82],
-];
+interface DayPlan {
+  dogs: DogCard[];
+  crew: CrewCard[];
+  /** The organised arrangements, made the first time the day needs one: structured play, a clean, a walk. */
+  more: Map<string, Fig[]>;
+}
+
+/** A placed figure for the spacing test: its silhouette at its anchor (CSS px), its bounds, and which look it took. */
+interface Placed {
+  shape: Shape;
+  alt: number;
+  x: number;
+  y: number;
+  box: [number, number, number, number];
+  clone: string;
+  mx: number;
+  my: number;
+}
+
+/** Where a figure may stand: a world rectangle on the lawn or on the walk path, and an optional preference. */
+interface Region {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+  path: boolean;
+  prefer?: (mx: number, my: number) => boolean;
+}
+
+interface Item {
+  /** The looks the figure may take here (one, or a facing each way); the placer picks the one that fits. */
+  looks: Look[];
+  clone: string;
+  region: Region;
+  /** A spot to stand as near as the room allows (an organised activity); null to spread out (free play). */
+  target: [number, number] | null;
+}
+
+const lawnRegion = (s: Stage): Region => {
+  const [lx, ly] = s.art.map.lawn;
+  const m = s.art.map.margin;
+  return { x0: m, x1: lx - m, y0: m, y1: ly - m, path: false };
+};
+const pathRegion = (s: Stage): Region => ({ x0: -WALK_W + 0.2, x1: -0.2, y0: 0.4, y1: s.art.map.lawn[1] - 0.3, path: true });
+
+function lookShape(look: Look): Shape {
+  return look.mirror ? look.art.mirrored : look.art.shape;
+}
+
+/** The sprite list's look for a facing: the one drawn that way, or another mirrored (gate 5). */
+function faceLook(list: SpriteArt[], facing: Facing): Look {
+  const exact = list.find((a) => a.src.facing === facing);
+  if (exact !== undefined) return { art: exact, mirror: false };
+  const other = list[0] as SpriteArt;
+  return { art: other, mirror: MIRROR_CAST && other.src.facing !== facing };
+}
+
+const DOG_FALLBACK: Readonly<Record<DogPose, DogPose[]>> = {
+  moving: ['moving', 'sitting', 'asleep'],
+  sitting: ['sitting', 'moving', 'asleep'],
+  asleep: ['asleep', 'sitting', 'moving'],
+};
+const CREW_FALLBACK: Readonly<Record<CrewPose, CrewPose[]>> = {
+  ball: ['ball', 'leash', 'mop'],
+  leash: ['leash', 'ball', 'mop'],
+  mop: ['mop', 'ball', 'leash'],
+};
+
+function dogLook(art: ArtSet, id: string, pose: DogPose, facing: Facing): Look {
+  const poses = art.dogs.get(id) ?? (art.dogs.values().next().value as Partial<Record<DogPose, SpriteArt[]>>);
+  for (const p of DOG_FALLBACK[pose]) {
+    const list = poses[p];
+    if (list !== undefined && list.length > 0) return faceLook(list, facing);
+  }
+  throw new Error(`replay: no sprite for ${id}`);
+}
+
+function crewLook(art: ArtSet, pose: CrewPose, facing: Facing): Look {
+  for (const p of CREW_FALLBACK[pose]) {
+    const list = art.crew[p];
+    if (list !== undefined && list.length > 0) return faceLook(list, facing);
+  }
+  const any = Object.values(art.crew).find((l) => l !== undefined && l.length > 0) as SpriteArt[];
+  return faceLook(any, facing);
+}
+
+/** The bounds in CSS px of a shape whose anchor is at (x, y). */
+function boxAt(s: Stage, shape: Shape, x: number, y: number): [number, number, number, number] {
+  const k = s.k;
+  return [x + shape.box[0] * k, y + shape.box[1] * k, x + shape.box[2] * k, y + shape.box[3] * k];
+}
+
+/** How much two placed silhouettes overlap, in CSS px², counting `gap` px of air around each as overlap. */
+function overlapArea(s: Stage, a: Placed, b: Placed, gap: number): number {
+  if (a.box[2] + gap <= b.box[0] || b.box[2] + gap <= a.box[0] || a.box[3] + gap <= b.box[1] || b.box[3] + gap <= a.box[1]) return 0;
+  const k = s.k;
+  const bh = BAND * k;
+  const A = a.shape;
+  const B = b.shape;
+  let area = 0;
+  for (let i = 0; i < A.l.length; i++) {
+    const la = A.l[i] as number;
+    if (Number.isNaN(la)) continue;
+    const top = a.y + (A.j0 + i) * bh;
+    const jb0 = Math.max(0, Math.floor((top - gap - b.y) / bh) - B.j0);
+    const jb1 = Math.min(B.l.length - 1, Math.floor((top + bh + gap - b.y) / bh) - B.j0);
+    const ax0 = a.x + la * k;
+    const ax1 = a.x + (A.r[i] as number) * k;
+    let widest = 0;
+    for (let j = jb0; j <= jb1; j++) {
+      const lb = B.l[j] as number;
+      if (Number.isNaN(lb)) continue;
+      const o = Math.min(ax1, b.x + (B.r[j] as number) * k) - Math.max(ax0, b.x + lb * k) + gap;
+      if (o > widest) widest = o;
+    }
+    area += widest * bh;
+  }
+  return area;
+}
+
+function boxOverlap(a: [number, number, number, number], b: Box): number {
+  const w = Math.min(a[2], b.x + b.w) - Math.max(a[0], b.x);
+  const h = Math.min(a[3], b.y + b.h) - Math.max(a[1], b.y);
+  return w > 0 && h > 0 ? w * h : 0;
+}
 
 /**
- * The free-play spots, one per dog the yard can hold: best-candidate sampling (each spot the farthest of 40 hashed
- * candidates from the spots before it and from the crew's places), so the first 16 to 20 are evenly spread and the
- * later ones fill the gaps. Distances weigh the vertical by 1.4: dogs are wider than they are deep.
+ * How much of a figure standing at (x, y) a prop would hide: the screen width of the figure that a blocked footprint
+ * (taken PROP_H tall) covers from in front. A figure the set's scenery should hide must not stand there, since the
+ * board is one image drawn under every figure.
  */
-function spotsOn(floor: Box, capacity: number): Spot[] {
-  const taken: Spot[] = CREW_SPOTS.map(([u, v]) => ({ x: floor.x + u * floor.w, y: floor.y + v * floor.h }));
-  const spots: Spot[] = [];
-  for (let n = 0; n < capacity; n++) {
-    let best: Spot = { x: floor.x + floor.w / 2, y: floor.y + floor.h / 2 };
-    let bestD = -1;
-    for (let c = 0; c < 40; c++) {
-      const x = floor.x + hash01(n * 977 + c * 31 + 1) * floor.w;
-      const y = floor.y + hash01(n * 977 + c * 31 + 2) * floor.h;
-      let d = Infinity;
-      for (const t of taken) d = Math.min(d, Math.hypot(x - t.x, (y - t.y) * 1.4));
-      if (d > bestD) {
-        bestD = d;
-        best = { x, y };
+function hiddenBehindProps(s: Stage, box: [number, number, number, number], y: number): number {
+  let hidden = 0;
+  for (const { corners, x0, x1 } of s.props) {
+    const xa = Math.max(box[0], x0);
+    const xb = Math.min(box[2], x1);
+    if (xb <= xa) continue;
+    // The footprint's nearest ground point (the largest screen y) within the figure's columns.
+    let nearest = -Infinity;
+    for (let i = 0; i < 4; i++) {
+      const p = corners[i] as [number, number];
+      const q = corners[(i + 1) % 4] as [number, number];
+      if (p[0] >= xa && p[0] <= xb) nearest = Math.max(nearest, p[1]);
+      for (const xe of [xa, xb]) {
+        if ((p[0] - xe) * (q[0] - xe) <= 0 && p[0] !== q[0]) nearest = Math.max(nearest, p[1] + ((q[1] - p[1]) * (xe - p[0])) / (q[0] - p[0]));
       }
     }
-    taken.push(best);
-    spots.push(best);
+    if (nearest > y && nearest - PROP_H * s.hpm < y) hidden += xb - xa;
   }
-  return spots;
+  return hidden;
 }
 
+/** True when the anchor is on its ground (the lawn inside its margin and off the blocked footprints, or the path). */
+function standable(s: Stage, region: Region, mx: number, my: number): boolean {
+  if (mx < region.x0 || mx > region.x1 || my < region.y0 || my > region.y1) return false;
+  if (region.path) return true;
+  for (const [rx, ry, rw, rh] of s.art.map.blocked) {
+    if (mx > rx - BLOCK_PAD && mx < rx + rw + BLOCK_PAD && my > ry - BLOCK_PAD && my < ry + rh + BLOCK_PAD) return false;
+  }
+  return true;
+}
+
+/** True when the silhouette's lowest band (the feet) lies on its ground: no paw over the board's edge or the path's. */
+function feetOnGround(s: Stage, region: Region, shape: Shape, x: number, y: number): boolean {
+  let last = shape.l.length - 1;
+  while (last >= 0 && Number.isNaN(shape.l[last] as number)) last--;
+  if (last < 0) return true;
+  const fy = y + (shape.j0 + last + 0.5) * BAND * s.k;
+  const [lx, ly] = s.art.map.lawn;
+  for (const fx of [x + (shape.l[last] as number) * s.k, x + (shape.r[last] as number) * s.k]) {
+    const [mx, my] = world(s, fx, fy);
+    if (region.path) {
+      if (mx < -WALK_W + 0.04 || mx > 0 || my < 0.04 || my > ly - 0.04) return false;
+    } else if (mx < 0.04 || my < 0.04 || mx > lx - 0.04 || my > ly - 0.04) return false;
+  }
+  return true;
+}
+
+type Score = [number, number, number];
+const better = (a: Score, b: Score): boolean => a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || (a[1] === b[1] && a[2] < b[2])));
+
 /**
- * The free-play spots for `n` dogs: the first n spots, then pushed apart (80 rounds of pairwise separation inside the
- * floor, the crew's places held fixed) until no two dogs' drawn boxes overlap much. A dog's box is its drawn width
- * (about 1.1 dogH at its depth, 1.25 with a margin for tails and ears) by its height (0.95 dogH); a pair that overlaps in both is moved apart
- * along the axis where it overlaps less. With 25 or more the floor cannot hold that and they settle as evenly as it
- * allows. Memoised per count on the layer, so a frame never recomputes it.
+ * Places each item in turn: of a few dozen candidate spots on its ground (seeded), the one that overlaps nothing (the
+ * figures already placed with a little air, the GM, the event chips, the canvas's edges, a prop that would hide it),
+ * then has the fewest same-sprite neighbours (the clone rule), then spreads out most (free play) or stands nearest
+ * its target (an organised activity). Then up to three passes move each figure that still overlaps another to the
+ * most open spots of a grid over its ground. Every item is placed: in a yard too full for clear air, the least
+ * overlap. `fixed` figures (a walk's group, placed first) are obstacles that do not move.
  */
-function spreadSpots(layer: StaticLayer, n: number): Spot[] {
-  const cached = layer.spotsByCount.get(n);
-  if (cached !== undefined) return cached;
-  const L = layer.layout;
-  const f = L.floor;
-  const crowd = crowding(L, n);
-  const pts = layer.spots.slice(0, n).map((sp) => ({ x: sp.x, y: sp.y }));
-  const crew = CREW_SPOTS.map(([u, v]) => ({ x: f.x + u * f.w, y: f.y + v * f.h }));
-  const wOf = (sp: Spot): number => L.dogH * 1.25 * depthAt(L, sp.y) * crowd;
-  const hOf = (sp: Spot): number => L.dogH * 0.95 * depthAt(L, sp.y) * crowd;
-  /** Moves a (and b, unless b is held) apart when their boxes overlap; `share` is a's part of the move. */
-  const separate = (a: Spot, b: Spot, share: number, k: number): void => {
-    const w = (wOf(a) + wOf(b)) / 2;
-    const h = Math.max(hOf(a), hOf(b));
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const ox = w - Math.abs(dx);
-    const oy = h - Math.abs(dy);
-    if (ox <= 0 || oy <= 0) return;
-    if (ox / w < oy / h) {
-      const sx = dx === 0 ? (hash01(k) < 0.5 ? -1 : 1) : Math.sign(dx);
-      a.x -= sx * ox * share;
-      b.x += sx * ox * (1 - share);
-    } else {
-      const sy = dy === 0 ? (hash01(k + 1) < 0.5 ? -1 : 1) : Math.sign(dy);
-      a.y -= sy * oy * share;
-      b.y += sy * oy * (1 - share);
+function placeAll(s: Stage, items: readonly Item[], rand: () => number, fixed: readonly Placed[] = []): Placed[] {
+  return drain(placeSteps(s, items, rand, fixed));
+}
+
+/** Runs a resumable computation to its end. */
+function drain<T>(gen: Generator<void, T, void>): T {
+  let r = gen.next();
+  while (r.done !== true) r = gen.next();
+  return r.value;
+}
+
+/** placeAll as a resumable computation: it pauses after each figure, so the work can be spread over idle time. */
+function* placeSteps(s: Stage, items: readonly Item[], rand: () => number, fixed: readonly Placed[] = []): Generator<void, Placed[], void> {
+  const gap = Math.max(1.5, 0.05 * s.art.map.ppm * s.k);
+  const keepClear: Box[] = [s.orb, { x: s.label.x - gap, y: s.label.y - gap, w: s.label.w + 2 * gap, h: s.label.h + 2 * gap }, s.chips];
+  const out: (Placed | null)[] = items.map(() => null);
+  const shapes = items.map((item) => item.looks.map(lookShape));
+  // The search shrinks as the yard fills, so a full day's arrangement stays a short task on a Chromebook.
+  const crowd = items.length + fixed.length;
+  const spread = clamp(Math.round(1500 / Math.max(1, crowd)), 32, 64);
+  const passes = crowd > 24 ? 2 : 3;
+  const cloneR2 = CLONE_R * CLONE_R;
+
+  /**
+   * Item i's best look at (mx, my) among everyone else placed, or null where it cannot stand or cannot beat `bound`.
+   * The position's own terms (the clone rule, the spread or the target) are the same for every look; each look adds
+   * its overlaps, and a later look is tried only while the first still overlaps something.
+   */
+  const evaluate = (i: number, mx: number, my: number, bound: number, only = -1): { p: Placed; score: Score } | null => {
+    const item = items[i] as Item;
+    const { region, target } = item;
+    if (!standable(s, region, mx, my)) return null;
+    const [x, y] = ground(s, mx, my);
+    let clones = 0;
+    let nearest2 = Infinity;
+    for (let j = 0; j < fixed.length + out.length; j++) {
+      const q = j < fixed.length ? (fixed[j] as Placed) : out[j - fixed.length];
+      if (q == null || j - fixed.length === i) continue;
+      const dx = q.mx - mx;
+      const dy = q.my - my;
+      const d2 = dx * dx + dy * dy;
+      if (item.clone !== '' && q.clone === item.clone && d2 < cloneR2) clones += 1;
+      if (d2 < nearest2) nearest2 = d2;
     }
+    const third =
+      target === null
+        ? -Math.min(Math.sqrt(nearest2), 2 * Math.min(mx - region.x0, region.x1 - mx, my - region.y0, region.y1 - my) + 0.6)
+        : Math.sqrt((mx - target[0]) ** 2 + (my - target[1]) ** 2);
+    let best: { p: Placed; score: Score } | null = null;
+    const alts = shapes[i] as Shape[];
+    for (let alt = 0; alt < alts.length; alt++) {
+      if (only >= 0 && alt !== only) continue;
+      const shape = alts[alt] as Shape;
+      if (!feetOnGround(s, region, shape, x, y)) continue;
+      const box = boxAt(s, shape, x, y);
+      const p: Placed = { shape, alt, x, y, box, clone: item.clone, mx, my };
+      const limit = Math.min(bound, best === null ? Infinity : best.score[0]) + 0.5;
+      let cost = 0;
+      for (const zone of keepClear) cost += boxOverlap(box, zone) * 4;
+      if (box[0] < 0 || box[1] < 0 || box[2] > s.width || box[3] > s.height) cost += 1e6;
+      if (!region.path) cost += hiddenBehindProps(s, box, y) * 1e4;
+      if (region.prefer !== undefined && !region.prefer(mx, my)) cost += 50;
+      for (let j = 0; j < fixed.length + out.length && cost <= limit; j++) {
+        const q = j < fixed.length ? (fixed[j] as Placed) : out[j - fixed.length];
+        if (q == null || j - fixed.length === i) continue;
+        cost += overlapArea(s, p, q, gap);
+      }
+      if (cost > limit) continue;
+      const score: Score = [Math.round(cost), clones, third];
+      if (best === null || better(score, best.score)) best = { p, score };
+      if (score[0] === 0) break; // clear air: the other facing cannot do better here
+    }
+    return best;
   };
-  for (let round = 0; round < 80; round++) {
-    for (let i = 0; i < pts.length; i++) {
-      const a = pts[i] as Spot;
-      for (let j = i + 1; j < pts.length; j++) separate(a, pts[j] as Spot, 0.5, i * 131 + j);
-      for (const c of crew) separate(a, { x: c.x, y: c.y }, 1, i * 17);
+
+  /**
+   * Item i's best spot among fresh candidates (and its current one, if it has one): seeded random spots, or, for the
+   * few figures a pass is still moving, a jittered grid over its whole ground, which finds the narrow gaps.
+   */
+  const settle = (i: number, thorough = false): Score => {
+    const item = items[i] as Item;
+    const { region, target } = item;
+    const candidates: [number, number][] = [];
+    const current = out[i];
+    if (current != null) candidates.push([current.mx, current.my]);
+    if (target !== null) {
+      candidates.push(target);
+      for (const r of [0.15, 0.3, 0.45, 0.6, 0.8, 1.05, 1.35, 1.7, 2.1]) {
+        const turn = rand() * Math.PI * 2;
+        for (let a = 0; a < 6; a++) {
+          const t = turn + (a * Math.PI) / 3;
+          candidates.push([target[0] + r * Math.cos(t), target[1] + r * Math.sin(t)]);
+        }
+      }
     }
-    for (const sp of pts) {
-      sp.x = clamp(sp.x, f.x, f.x + f.w);
-      sp.y = clamp(sp.y, f.y, f.y + f.h);
+    if (thorough) {
+      // The grid's 80 most open points (farthest from every other figure's feet) are the ones worth scoring.
+      const step = 0.3;
+      const open: [number, number, number][] = [];
+      for (let gx = region.x0; gx <= region.x1; gx += step) {
+        for (let gy = region.y0; gy <= region.y1; gy += step) {
+          const mx = gx + (rand() - 0.5) * step;
+          const my = gy + (rand() - 0.5) * step;
+          let d2 = Infinity;
+          for (let j = 0; j < fixed.length + out.length; j++) {
+            const q = j < fixed.length ? (fixed[j] as Placed) : out[j - fixed.length];
+            if (q == null || j - fixed.length === i) continue;
+            d2 = Math.min(d2, (q.mx - mx) ** 2 + (q.my - my) ** 2);
+          }
+          open.push([mx, my, d2]);
+        }
+      }
+      open.sort((a, b) => b[2] - a[2]);
+      for (const [mx, my] of open.slice(0, 80)) candidates.push([mx, my]);
+    } else {
+      for (let c = 0; c < (target === null ? spread : 12); c++) {
+        candidates.push([region.x0 + rand() * (region.x1 - region.x0), region.y0 + rand() * (region.y1 - region.y0)]);
+      }
+    }
+    let best: Placed | null = null;
+    let bestScore: Score = [Infinity, Infinity, Infinity];
+    for (const [mx, my] of candidates) {
+      const e = evaluate(i, mx, my, bestScore[0]);
+      if (e !== null && better(e.score, bestScore)) {
+        best = e.p;
+        bestScore = e.score;
+      }
+    }
+    if (best === null) {
+      // Nothing standable among the candidates (a cramped board): the region's middle.
+      const mx = (region.x0 + region.x1) / 2;
+      const my = (region.y0 + region.y1) / 2;
+      const [x, y] = ground(s, mx, my);
+      const shape = (shapes[i] as Shape[])[0] as Shape;
+      best = { shape, alt: 0, x, y, box: boxAt(s, shape, x, y), clone: item.clone, mx, my };
+    }
+    out[i] = best;
+    return bestScore;
+  };
+
+  for (let i = 0; i < items.length; i++) {
+    settle(i);
+    yield;
+  }
+  for (let pass = 0; pass < passes; pass++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) {
+      const current = out[i] as Placed;
+      const now = evaluate(i, current.mx, current.my, Infinity, current.alt);
+      if (now === null || (now.score[0] === 0 && now.score[1] === 0)) continue;
+      if (better(settle(i, true), now.score)) moved = true;
+      yield;
+    }
+    if (!moved) break;
+  }
+  return out as Placed[];
+}
+
+/**
+ * The day's cast and where each stands in free play: the dogs' breeds and coats dealt evenly from the cast (shuffled),
+ * each dog's facing and its free-play pose (moving or sitting), and its spot, kept all day (a walk's floor too). The
+ * crew stand first, near the middle.
+ */
+function dayPlan(s: Stage, day: number, dogCount: number, staffCount: number): DayPlan {
+  const key = `${day}|${dogCount}|${staffCount}`;
+  const cached = s.days.get(key);
+  if (cached !== undefined) return cached;
+  // Started ahead of time and not done yet: finish it here rather than start again.
+  const started = s.pending.get(key);
+  s.pending.delete(key);
+  return drain(started ?? daySteps(s, day, dogCount, staffCount));
+}
+
+/** dayPlan's work, resumable; it files the plan under its key when it is done. */
+function* daySteps(s: Stage, day: number, dogCount: number, staffCount: number): Generator<void, DayPlan, void> {
+  const key = `${day}|${dogCount}|${staffCount}`;
+  const art = s.art;
+  const rand = seeded(day, dogCount, staffCount, 1);
+  const ids: string[] = [];
+  while (ids.length < dogCount) ids.push(...shuffle([...art.identities], rand));
+  const face = (): Facing => (rand() < 0.5 ? 'right' : 'left');
+  const dogs: DogCard[] = Array.from({ length: dogCount }, (_, i) => ({
+    id: ids[i] as string,
+    facing: face(),
+    play: (rand() < 0.62 ? 'moving' : 'sitting') as DogPose,
+    mx: 0,
+    my: 0,
+  }));
+  // The crew face alternate ways, so two staffers drawn from the one model never stand as copies.
+  const first = face();
+  const crew: CrewCard[] = Array.from({ length: staffCount }, (_, k) => ({ facing: k % 2 === 0 ? first : first === 'right' ? 'left' : 'right', mx: 0, my: 0 }));
+  const [lx, ly] = art.map.lawn;
+  const CREW_AT: readonly [number, number][] = [
+    [0.4, 0.38],
+    [0.66, 0.3],
+    [0.2, 0.5],
+  ];
+  const region = lawnRegion(s);
+  // Each dog may face either way; the placer takes the facing that fits (the seeded one first, when both do).
+  const facings = dogs.map((d): Facing[] => (d.facing === 'right' ? ['right', 'left'] : ['left', 'right']));
+  const items: Item[] = [
+    ...crew.map((c, k): Item => {
+      const at = CREW_AT[k % CREW_AT.length] as [number, number];
+      return { looks: [crewLook(art, 'ball', c.facing)], clone: '', region, target: [at[0] * lx, at[1] * ly] };
+    }),
+    ...dogs.map((d, i): Item => ({ looks: (facings[i] as Facing[]).map((f) => dogLook(art, d.id, d.play, f)), clone: d.id, region, target: null })),
+  ];
+  const spots = yield* placeSteps(s, items, rand);
+  crew.forEach((c, k) => {
+    const p = spots[k] as Placed;
+    c.mx = p.mx;
+    c.my = p.my;
+  });
+  dogs.forEach((d, i) => {
+    const p = spots[crew.length + i] as Placed;
+    d.mx = p.mx;
+    d.my = p.my;
+    d.facing = (facings[i] as Facing[])[p.alt] as Facing;
+  });
+  const plan: DayPlan = { dogs, crew, more: new Map() };
+  s.days.set(key, plan);
+  return plan;
+}
+
+function fig(s: Stage, look: Look, mx: number, my: number): Fig {
+  const [x, y] = ground(s, mx, my);
+  return { look, mx, my, x, y };
+}
+
+const placedOf = (s: Stage, f: Fig, clone = ''): Placed => {
+  const shape = lookShape(f.look);
+  return { shape, alt: 0, x: f.x, y: f.y, box: boxAt(s, shape, f.x, f.y), clone, mx: f.mx, my: f.my };
+};
+
+/**
+ * Structured play: each staffer on the floor with a ball, their dogs sitting in short rows either side of them, every
+ * dog facing its staffer (the rows to the screen's left face right, those to its right face left). The groups stand
+ * side by side across the lawn.
+ */
+function structured(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  const key = `structured|${frame.floorDogs}|${frame.floorStaff}`;
+  const cached = plan.more.get(key);
+  if (cached !== undefined) return cached;
+  const art = s.art;
+  const rand = seeded(frame.day, frame.dogs, frame.staff, 2);
+  const [lx, ly] = art.map.lawn;
+  const groups = Math.max(1, frame.floorStaff);
+  const side: [number, number] = [-Math.SQRT1_2, Math.SQRT1_2]; // one metre toward the screen's left
+  const back: [number, number] = [Math.SQRT1_2, Math.SQRT1_2]; // one metre away from the viewer
+  const centre: [number, number] = [lx * 0.43, ly * 0.43];
+  const spread = Math.min(3.4, (Math.hypot(lx, ly) * 0.8) / groups);
+  const region = lawnRegion(s);
+  const items: Item[] = [];
+  for (let g = 0; g < groups; g++) {
+    const off = (g - (groups - 1) / 2) * spread;
+    const cx = centre[0] - side[0] * off;
+    const cy = centre[1] - side[1] * off;
+    if (frame.floorStaff > 0) items.push({ looks: [crewLook(art, 'ball', g % 2 === 0 ? 'right' : 'left')], clone: '', region, target: [cx, cy] });
+    const first = Math.floor((g * frame.floorDogs) / groups);
+    const m = Math.floor(((g + 1) * frame.floorDogs) / groups) - first;
+    const perSide = Math.ceil(m / 2);
+    const rows = Math.max(1, Math.ceil(Math.sqrt(perSide * 1.3)));
+    const cols = Math.max(1, Math.ceil(perSide / rows));
+    for (let j = 0; j < m; j++) {
+      const d = plan.dogs[first + j] as DogCard;
+      const left = j % 2 === 0;
+      const n = Math.floor(j / 2);
+      const c = n % cols;
+      const r = Math.floor(n / cols);
+      const dist = 0.95 + c * 0.85;
+      const depth = (r - (rows - 1) / 2) * 0.75;
+      const sign = left ? 1 : -1;
+      items.push({
+        looks: [dogLook(art, d.id, 'sitting', left ? 'right' : 'left')],
+        clone: d.id,
+        region,
+        target: [cx + sign * side[0] * dist + back[0] * depth, cy + sign * side[1] * dist + back[1] * depth],
+      });
     }
   }
-  layer.spotsByCount.set(n, pts);
-  return pts;
-}
-
-/** A rounded card with a soft layered shadow and a hairline edge. */
-function card(ctx: CanvasRenderingContext2D, box: Box, radius: number, palette: Palette, fs: number, fill = palette.card): void {
-  ctx.save();
-  ctx.fillStyle = fill;
-  ctx.shadowColor = palette.shadow;
-  ctx.shadowBlur = fs * 1.1;
-  ctx.shadowOffsetY = fs * 0.25;
-  roundRectPath(ctx, box.x, box.y, box.w, box.h, radius);
-  ctx.fill();
-  ctx.shadowColor = 'rgba(15, 82, 87, 0.10)';
-  ctx.shadowBlur = fs * 0.2;
-  ctx.shadowOffsetY = fs * 0.06;
-  ctx.fill();
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(15, 82, 87, 0.10)';
-  ctx.lineWidth = 1;
-  roundRectPath(ctx, box.x + 0.5, box.y + 0.5, box.w - 1, box.h - 1, radius);
-  ctx.stroke();
-}
-
-function paintStatic(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  L: ArtLayout,
-  P: Palette,
-  fonts: ReplayFonts,
-  art: ArtSet,
-  options: ReplayOptions,
-  meterLabelW: number,
-): void {
-  const { fs, cardPad } = L;
-  ctx.fillStyle = P.bg;
-  ctx.fillRect(0, 0, width, height);
-
-  // The header card and its week track (20 blocks, a gap between days).
-  card(ctx, L.header, L.radius, P, fs);
-  forEachBlock(L.progress, (x, w) => {
-    ctx.fillStyle = 'rgba(15, 82, 87, 0.12)';
-    roundRectPath(ctx, x, L.progress.y, w, L.progress.h, L.progress.h / 2);
-    ctx.fill();
-  });
-
-  // The yard: a soft shadow under the scene, the art, the path outside the front fence.
-  const sc = L.scene;
-  ctx.save();
-  ctx.shadowColor = P.shadow;
-  ctx.shadowBlur = fs * 1.1;
-  ctx.shadowOffsetY = fs * 0.25;
-  ctx.fillStyle = P.path;
-  roundRectPath(ctx, sc.x, sc.y, sc.w, sc.h, L.radius);
-  ctx.fill();
-  ctx.restore();
-  ctx.save();
-  roundRectPath(ctx, sc.x, sc.y, sc.w, sc.h, L.radius);
-  ctx.clip();
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(art.yard, L.crop.x, L.crop.y, L.crop.w, L.crop.h, L.art.x, L.art.y, L.art.w, L.art.h);
-  paintPath(ctx, L, art);
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(15, 82, 87, 0.18)';
-  ctx.lineWidth = Math.max(1, fs * 0.08);
-  roundRectPath(ctx, sc.x + 0.5, sc.y + 0.5, sc.w - 1, sc.h - 1, L.radius);
-  ctx.stroke();
-
-  // The cards' shells and the labels that never change.
-  for (const name of CARD_ORDER) card(ctx, L.cards[name], L.radius * 0.85, P, fs);
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  ctx.font = bodyFont(fonts, fs, 800);
-  const badge = fs * 1.5;
-  const labelX = (box: Box): number => box.x + cardPad + badge + fs * 0.45;
-  const g = L.cards.gauge;
-  const rep = L.cards.reputation;
-  const cash = L.cards.cash;
-  const gy = g.y + cardPad + fs * 0.875;
-  const ry = rep.y + cardPad + fs * 0.7;
-  const cy = cash.y + cash.h / 2;
-  // The editor's icon for the measure each card shows: the crew against the legal ratio, reputation, profit.
-  measureTile(ctx, 'overRatio', g.x + cardPad, gy, badge);
-  measureTile(ctx, 'reputation', rep.x + cardPad, ry, badge);
-  measureTile(ctx, 'profit', cash.x + cardPad, cy, badge);
-  ctx.font = bodyFont(fonts, fs, 800);
-  ctx.fillStyle = P.muted;
-  ctx.fillText('Dogs per staffer', labelX(g), gy);
-  ctx.fillText('Reputation', labelX(rep), ry);
-  ctx.fillText('Cash', labelX(cash), cy);
-
-  // The gauge's track, the band above the legal ratio, the one mark and its number.
-  const bar = gaugeBar(L);
-  const top = Math.max(1, options.gaugeMax);
-  const legalX = bar.x + (clamp(options.legalRatio, 0, top) / top) * bar.w;
-  ctx.fillStyle = 'rgba(15, 82, 87, 0.10)';
-  roundRectPath(ctx, bar.x, bar.y, bar.w, bar.h, bar.h / 2);
-  ctx.fill();
-  ctx.save();
-  roundRectPath(ctx, bar.x, bar.y, bar.w, bar.h, bar.h / 2);
-  ctx.clip();
-  ctx.fillStyle = P.gaugeOver;
-  ctx.fillRect(legalX, bar.y, bar.x + bar.w - legalX, bar.h);
-  ctx.restore();
-  ctx.fillStyle = P.heading;
-  ctx.fillRect(legalX - Math.max(1, fs * 0.09), bar.y - fs * 0.25, Math.max(2, fs * 0.18), bar.h + fs * 0.5);
-  ctx.font = bodyFont(fonts, fs, 800);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = P.heading;
-  ctx.fillText(formatRatio(options.legalRatio), clamp(legalX, bar.x + fs, bar.x + bar.w - fs), bar.y + bar.h + fs * 0.3);
-
-  // Reputation's track.
-  const repBar = reputationBar(L);
-  ctx.fillStyle = 'rgba(15, 82, 87, 0.10)';
-  roundRectPath(ctx, repBar.x, repBar.y, repBar.w, repBar.h, repBar.h / 2);
-  ctx.fill();
-
-  // The small meters' labels and tracks.
-  const m = L.cards.meters;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.font = bodyFont(fonts, fs);
-  METER_LABELS.forEach((label, k) => {
-    const row = meterRow(L, k, meterLabelW);
-    ctx.fillStyle = P.muted;
-    ctx.fillText(label, m.x + cardPad, row.cy);
-    ctx.fillStyle = 'rgba(15, 82, 87, 0.10)';
-    roundRectPath(ctx, row.bar.x, row.bar.y, row.bar.w, row.bar.h, row.bar.h / 2);
-    ctx.fill();
-  });
+  const spots = placeAll(s, items, rand);
+  const figs = spots.map((p, i) => fig(s, (items[i] as Item).looks[p.alt] as Look, p.mx, p.my));
+  plan.more.set(key, figs);
+  return figs;
 }
 
 /**
- * The measures' icons as the bonus plan's editor draws them (24-unit line drawings, stroked white on a coloured tile):
- * the same picture for the same measure on the yard. Copied from editor.ts's ICONS until src/ui/icons.ts exports them.
+ * A clean: the crew with the mop on the open floor at the screen's left, the dogs settled out of the way at its right,
+ * sitting or asleep.
  */
-const MEASURE_ICONS = {
-  incidents: { tile: '#EC5A4C', d: ['M12 3.5l9.5 16.5h-19z', 'M12 10v4.5', 'M12 17.4v.1'] },
-  reputation: { tile: '#3A7FD5', d: ['M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z'] },
-  overRatio: {
-    tile: '#F08A3C',
-    d: [
-      'M15 8a3 3 0 1 1-6 0a3 3 0 1 1 6 0',
-      'M6.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5',
-      'M7.3 10a2.1 2.1 0 1 1-4.2 0a2.1 2.1 0 1 1 4.2 0',
-      'M1.8 18c.4-2.1 1.7-3.4 3.4-3.6',
-      'M20.9 10a2.1 2.1 0 1 1-4.2 0a2.1 2.1 0 1 1 4.2 0',
-      'M22.2 18c-.4-2.1-1.7-3.4-3.4-3.6',
-    ],
-  },
-  profit: { tile: '#1F9D74', d: ['M3 17l6-6 4 4 8-8', 'M15 7h6v6'] },
-} as const;
-type MeasureIcon = keyof typeof MEASURE_ICONS;
-const iconPaths = new Map<MeasureIcon, Path2D[]>();
-
-/** The measure's tile, `size` square with its top left at (x, y − size / 2), and its white line drawing. */
-function measureTile(ctx: CanvasRenderingContext2D, key: MeasureIcon, x: number, y: number, size: number): void {
-  const spec = MEASURE_ICONS[key];
-  ctx.fillStyle = spec.tile;
-  roundRectPath(ctx, x, y - size / 2, size, size, size * 0.3);
-  ctx.fill();
-  let paths = iconPaths.get(key);
-  if (paths === undefined) {
-    paths = spec.d.map((d) => new Path2D(d));
-    iconPaths.set(key, paths);
+function cleaning(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  const key = `clean|${frame.floorDogs}|${frame.floorStaff}`;
+  const cached = plan.more.get(key);
+  if (cached !== undefined) return cached;
+  const art = s.art;
+  const rand = seeded(frame.day, frame.dogs, frame.staff, 3);
+  const [lx, ly] = art.map.lawn;
+  const lawn = lawnRegion(s);
+  const right: Region = { ...lawn, prefer: (mx, my) => mx - my > -0.4 };
+  const items: Item[] = [];
+  const CREW_AT: readonly [number, number][] = [
+    [0.22, 0.6],
+    [0.18, 0.32],
+    [0.38, 0.78],
+  ];
+  for (let k = 0; k < frame.floorStaff; k++) {
+    const at = CREW_AT[k % CREW_AT.length] as [number, number];
+    items.push({ looks: [crewLook(art, 'mop', (plan.crew[k] as CrewCard).facing)], clone: '', region: lawn, target: [at[0] * lx, at[1] * ly] });
   }
-  const k = (size * 0.64) / 24;
-  ctx.save();
-  ctx.translate(x + size / 2 - 12 * k, y - 12 * k);
-  ctx.scale(k, k);
-  ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (const path of paths) ctx.stroke(path);
-  ctx.restore();
-}
-
-/** The 20 blocks of the week along `box`, a wider gap between days. */
-function forEachBlock(box: Box, fn: (x: number, w: number, step: number) => void): void {
-  const blockGap = box.h * 0.45;
-  const dayGap = box.h * 1.6;
-  const w = (box.w - 4 * dayGap - 15 * blockGap) / 20;
-  let x = box.x;
-  for (let step = 0; step < WEEK_STEPS; step++) {
-    fn(x, w, step);
-    x += w + (step % 4 === 3 ? dayGap : blockGap);
+  for (let i = 0; i < frame.floorDogs; i++) {
+    const d = plan.dogs[i] as DogCard;
+    const pose: DogPose = rand() < 0.5 ? 'asleep' : 'sitting';
+    const other: Facing = d.facing === 'right' ? 'left' : 'right';
+    items.push({ looks: [dogLook(art, d.id, pose, d.facing), dogLook(art, d.id, pose, other)], clone: d.id, region: right, target: null });
   }
+  const spots = placeAll(s, items, rand);
+  const figs = spots.map((p, i) => fig(s, (items[i] as Item).looks[p.alt] as Look, p.mx, p.my));
+  plan.more.set(key, figs);
+  return figs;
 }
-
-/** The walkers' feet on the strip outside the fence, as a fraction of its height. */
-const PATH_FEET = 0.78;
 
 /**
- * The strip outside the yard's front fence, where the walking group goes: a band of the yard art's own lawn, a touch
- * darker and greyer than the yard, the fence's shadow across its top and a worn track along it.
+ * A walk: the walking group on the path beside the lawn, the staffer in front with the leash and the dogs behind in
+ * pairs, all heading along the path toward the lawn's front corner (the camera-facing diagonal, so every sprite faces
+ * right); placed first, in formation. Then the floor makes room for it: each dog and staffer left behind stands as near
+ * its free-play spot as it can without crowding the group, so the group reads as its own.
  */
-function paintPath(ctx: CanvasRenderingContext2D, L: ArtLayout, art: ArtSet): void {
-  const p = L.path;
-  const yh = art.yard.naturalHeight || 875;
-  // The lawn band starts `feather` above the seam and fades in over the yard's bottom foliage, so there is no line.
-  const feather = clamp(L.fs * 1.1, 10, 20);
-  const ratio = ctx.getTransform().a || 1;
-  const band = newCanvas((p.w) * ratio, (p.h + feather) * ratio);
-  const scale = L.crop.w / p.w; // source pixels per CSS pixel, as in the yard above
-  band.ctx.filter = 'saturate(0.82) brightness(0.88)';
-  band.ctx.drawImage(art.yard, L.crop.x, yh * 0.47 - feather * scale, L.crop.w, (p.h + feather) * scale, 0, 0, band.canvas.width, band.canvas.height);
-  band.ctx.filter = 'none';
-  band.ctx.globalCompositeOperation = 'destination-in';
-  const mask = band.ctx.createLinearGradient(0, 0, 0, feather * 2 * ratio);
-  mask.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  mask.addColorStop(1, 'rgba(0, 0, 0, 1)');
-  band.ctx.fillStyle = mask;
-  band.ctx.fillRect(0, 0, band.canvas.width, band.canvas.height);
-  ctx.drawImage(band.canvas, p.x, p.y - feather, p.w, p.h + feather);
-  const track = ctx.createLinearGradient(0, p.y + p.h * 0.5, 0, p.y + p.h);
-  track.addColorStop(0, 'rgba(206, 180, 128, 0)');
-  track.addColorStop(0.55, 'rgba(206, 180, 128, 0.32)');
-  track.addColorStop(1, 'rgba(206, 180, 128, 0)');
-  ctx.fillStyle = track;
-  ctx.fillRect(p.x, p.y + p.h * 0.5, p.w, p.h * 0.5);
-  // The fence's shadow on the ground beyond it, soft at both edges.
-  const shade = ctx.createLinearGradient(0, p.y - feather * 0.5, 0, p.y + p.h * 0.45);
-  shade.addColorStop(0, 'rgba(40, 50, 20, 0)');
-  shade.addColorStop(0.25, 'rgba(40, 50, 20, 0.26)');
-  shade.addColorStop(1, 'rgba(40, 50, 20, 0)');
-  ctx.fillStyle = shade;
-  ctx.fillRect(p.x, p.y - feather * 0.5, p.w, p.h * 0.45 + feather * 0.5);
-}
-
-function gaugeBar(L: ArtLayout): Box {
-  const g = L.cards.gauge;
-  const h = L.fs * 0.8;
-  return { x: g.x + L.cardPad, y: g.y + g.h - L.cardPad - L.fs * 1.35 - h, w: g.w - 2 * L.cardPad, h };
-}
-
-function reputationBar(L: ArtLayout): Box {
-  const r = L.cards.reputation;
-  const h = L.fs * 0.7;
-  return { x: r.x + L.cardPad, y: r.y + r.h - L.cardPad - h, w: r.w - 2 * L.cardPad, h };
-}
-
-function meterRow(L: ArtLayout, k: number, labelW: number): { cy: number; bar: Box; numberX: number } {
-  const m = L.cards.meters;
-  const rowH = (m.h - L.cardPad * 1.2) / 3;
-  const cy = m.y + L.cardPad * 0.6 + rowH * (k + 0.5);
-  const numberW = L.fs * 2;
-  const x = m.x + L.cardPad + labelW;
-  const h = L.fs * 0.55;
-  return { cy, bar: { x, y: cy - h / 2, w: Math.max(L.fs, m.x + m.w - L.cardPad - numberW - x), h }, numberX: m.x + m.w - L.cardPad };
-}
-
-// --- The frame. -----------------------------------------------------------------------------------------------------
-
-/**
- * The placeholder (before a run, and while the GM gets ready): the canvas cleared to transparent, so the page's stage
- * shows behind it, and one line of text with a soft cream outline so it reads on whatever is behind. Nothing else.
- */
-function drawPlaceholder(ctx: CanvasRenderingContext2D, width: number, height: number, options: ReplayOptions): void {
-  const { colors } = options;
-  ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
-  ctx.globalAlpha = 1;
-  ctx.shadowColor = 'transparent';
-  ctx.clearRect(0, 0, width, height);
-  if (!(width > 0 && height > 0)) return;
-  const fonts = options.fonts ?? DEFAULT_FONTS;
-  const line = options.placeholder ?? PLACEHOLDER;
-  // The page's own line (the GM getting ready) is a caption near the bottom: the speech bubble beside the yard carries
-  // the message. The default line sits in the middle. The size and the outline keep the drawn pixels under 2% of the
-  // canvas (the e2e's placeholder check).
-  const caption = options.placeholder !== undefined;
-  let px = caption ? clamp(Math.min(width / 52, height / 40), 11, 15) : clamp(Math.min(width / 36, height / 22), 11, 22);
-  ctx.font = displayFont(fonts, px, 600);
-  const w = ctx.measureText(line).width;
-  if (w > width * 0.9) {
-    px = Math.max(1, (px * width * 0.9) / w);
-    ctx.font = displayFont(fonts, px, 600);
+function walking(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  const key = `walk|${frame.floorDogs}|${frame.floorStaff}|${frame.walkingDogs}|${frame.walkingStaff}`;
+  const cached = plan.more.get(key);
+  if (cached !== undefined) return cached;
+  const art = s.art;
+  const rand = seeded(frame.day, frame.dogs, frame.staff, 4);
+  const path = pathRegion(s);
+  const mid = (path.x0 + path.x1) / 2;
+  const group: Item[] = [];
+  if (frame.walkingStaff > 0) group.push({ looks: [crewLook(art, 'leash', 'right')], clone: '', region: path, target: [mid, path.y0 + 0.2] });
+  for (let j = 0; j < frame.walkingDogs; j++) {
+    const d = plan.dogs[frame.floorDogs + j] as DogCard;
+    const lane = j % 2 === 0 ? -0.16 : 0.16;
+    group.push({ looks: [dogLook(art, d.id, 'moving', 'right')], clone: d.id, region: path, target: [mid + lane, path.y0 + 1.1 + Math.floor(j / 2) * 1.0 + (j % 2) * 0.45] });
   }
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = caption ? 'rgba(251, 246, 236, 0.6)' : 'rgba(251, 246, 236, 0.92)';
-  ctx.lineWidth = caption ? Math.max(1.5, px * 0.14) : Math.max(2, px * 0.24);
-  const y = caption ? height - px * 1.9 : height / 2;
-  ctx.strokeText(line, width / 2, y);
-  ctx.fillStyle = colors.heading ?? ART_COLORS.heading;
-  ctx.fillText(line, width / 2, y);
-}
-
-/** One figure on the yard, depth-sorted by its feet. Reused from frame to frame. */
-interface Actor {
-  x: number;
-  y: number; // the feet
-  sprite: Sprite | null;
-  depth: number;
-  lift: number; // a hop, in CSS px
-  shadow: boolean;
-}
-const actorPool: Actor[] = [];
-const actorOrder: Actor[] = [];
-function actor(i: number): Actor {
-  let a = actorPool[i];
-  if (a === undefined) {
-    a = { x: 0, y: 0, sprite: null, depth: 1, lift: 0, shadow: true };
-    actorPool[i] = a;
+  const walkers = placeAll(s, group, rand);
+  const lawn = lawnRegion(s);
+  const floor: Item[] = [];
+  for (let i = 0; i < frame.floorDogs; i++) {
+    const d = plan.dogs[i] as DogCard;
+    floor.push({ looks: [dogLook(art, d.id, d.play, d.facing)], clone: d.id, region: lawn, target: [d.mx, d.my] });
   }
-  return a;
+  for (let k = 0; k < frame.floorStaff; k++) {
+    const c = plan.crew[k] as CrewCard;
+    floor.push({ looks: [crewLook(art, 'ball', c.facing)], clone: '', region: lawn, target: [c.mx, c.my] });
+  }
+  const stay = placeAll(s, floor, rand, walkers);
+  const figs = [
+    ...walkers.map((p, i) => fig(s, (group[i] as Item).looks[p.alt] as Look, p.mx, p.my)),
+    ...stay.map((p, i) => fig(s, (floor[i] as Item).looks[p.alt] as Look, p.mx, p.my)),
+  ];
+  plan.more.set(key, figs);
+  return figs;
 }
-const byFeet = (a: Actor, b: Actor): number => a.y - b.y;
 
-/** Dog i's breed: the four in turn, so any 16 dogs show four of each (the facing and the spot come from the hash). */
-const breedOf = (i: number): number => i % PLAY_URLS.length;
-const facingOf = (i: number): 0 | 1 => (hash01(i * 5 + 2) < 0.5 ? 1 : 0);
+/** A nap: every dog lies down as near its free-play spot as the room allows; the crew stay where they stood. */
+function napping(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  const key = `nap|${frame.floorDogs}|${frame.floorStaff}`;
+  const cached = plan.more.get(key);
+  if (cached !== undefined) return cached;
+  const art = s.art;
+  const rand = seeded(frame.day, frame.dogs, frame.staff, 5);
+  const region = lawnRegion(s);
+  const items: Item[] = [];
+  for (let k = 0; k < frame.floorStaff; k++) {
+    const c = plan.crew[k] as CrewCard;
+    items.push({ looks: [crewLook(art, 'leash', c.facing)], clone: '', region, target: [c.mx, c.my] });
+  }
+  for (let i = 0; i < frame.floorDogs; i++) {
+    const d = plan.dogs[i] as DogCard;
+    const other: Facing = d.facing === 'right' ? 'left' : 'right';
+    items.push({ looks: [dogLook(art, d.id, 'asleep', d.facing), dogLook(art, d.id, 'asleep', other)], clone: d.id, region, target: [d.mx, d.my] });
+  }
+  const spots = placeAll(s, items, rand);
+  const figs = spots.map((p, i) => fig(s, (items[i] as Item).looks[p.alt] as Look, p.mx, p.my));
+  plan.more.set(key, figs);
+  return figs;
+}
 
-function drawArtReplay(
+/** Everyone on the yard in this block: the floor as the activity has it (a walk's group on the path beside it). */
+function figuresOf(s: Stage, frame: ReplayFrame): Fig[] {
+  if (frame.closed || frame.activity === null) return [];
+  const plan = dayPlan(s, frame.day, frame.dogs, frame.staff);
+  const art = s.art;
+  if (frame.activity === 'structuredPlay') return structured(s, plan, frame);
+  if (frame.activity === 'clean') return cleaning(s, plan, frame);
+  if (frame.activity === 'nap') return napping(s, plan, frame);
+  if (frame.walkingStaff > 0 || frame.walkingDogs > 0) return walking(s, plan, frame);
+  const floor: Fig[] = [];
+  for (let i = 0; i < frame.floorDogs; i++) {
+    const d = plan.dogs[i] as DogCard;
+    floor.push(fig(s, dogLook(art, d.id, d.play, d.facing), d.mx, d.my));
+  }
+  for (let k = 0; k < frame.floorStaff; k++) {
+    const c = plan.crew[k] as CrewCard;
+    floor.push(fig(s, crewLook(art, 'ball', c.facing), c.mx, c.my));
+  }
+  return floor;
+}
+
+// --- The frame on the set. ------------------------------------------------------------------------------------------
+
+function drawYard(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   frame: ReplayFrame,
   options: ReplayOptions,
   art: ArtSet,
+  motion: boolean,
 ): void {
-  if (!(width > 0 && height > 0)) return;
-  const fonts = options.fonts ?? DEFAULT_FONTS;
-  const layer = staticFor(width, height, options, fonts, art, ctx);
-  const L = layer.layout;
-  const motion = !reducedMotion(options);
+  const s = stageFor(width, height, options.pixelRatio, art);
+  const tokens = options.fonts === undefined ? s.tokens : { ...s.tokens, font: options.fonts.body };
+  const R = s.ratio;
   const progress = clamp(options.progress, 0, 1);
+  const t0 = import.meta.env.DEV ? performance.now() : 0;
+  const figs = figuresOf(s, frame).sort((a, b) => a.y - b.y || a.x - b.x);
+  if (import.meta.env.DEV) (globalThis as { __yard?: unknown }).__yard = { ms: Math.round((performance.now() - t0) * 10) / 10, ...yardStats(s, figs) };
+  planAhead(s, frame);
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1;
   ctx.shadowColor = 'transparent';
   ctx.setLineDash([]);
-  ctx.drawImage(layer.canvas, 0, 0);
-  ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.drawImage(s.layer, 0, 0);
 
-  drawArtHeader(ctx, frame, layer);
+  // The incident: a ring on the lawn around the floor, never on a dog (D60).
+  if (frame.events.some((e) => e.type === 'incident')) drawPulse(ctx, s, tokens, figs, motion ? progress : null);
+
+  // The GM over the clubhouse: its soft shadow on the roof, then the orb, hovering gently while the week plays.
+  const state: GmState = options.gm ?? 'running';
+  const gm = gmDrawn(s, state);
+  const [gx, gy] = [s.bx + s.art.gmSpot[0] * s.k, s.by + s.art.gmSpot[1] * s.k];
+  if (s.gmShadow !== null) ctx.drawImage(s.gmShadow, Math.round(gx * R - s.gmShadow.width / 2), Math.round(gy * R - s.gmShadow.height / 2));
+  const hover = motion && state === 'running' ? Math.sin(((frame.day * 4 + frame.block + progress) / 8) * Math.PI * 2) * 2.5 * s.k * 2 : 0;
+  ctx.drawImage(gm.img, Math.round(gx * R - gm.ax), Math.round((gy + hover) * R - gm.ay));
+
+  // The figures: every shadow first, so none falls across another figure, and only on the ground (the lawn and the
+  // path: a shadow thrown past the fence would land on the page); then the figures back to front.
+  const drawn = figs.map((f) => drawnOf(s, f.look));
+  const [lx, ly] = s.art.map.lawn;
   ctx.save();
-  roundRectPath(ctx, L.scene.x, L.scene.y, L.scene.w, L.scene.h, L.radius);
+  ctx.setTransform(R, 0, 0, R, 0, 0);
+  ctx.beginPath();
+  for (const quad of [[[0, 0], [lx, 0], [lx, ly], [0, ly]], [[-WALK_W, 0], [0, 0], [0, ly], [-WALK_W, ly]]] as const) {
+    quad.forEach(([mx, my], i) => (i === 0 ? ctx.moveTo(...ground(s, mx, my)) : ctx.lineTo(...ground(s, mx, my))));
+    ctx.closePath();
+  }
   ctx.clip();
-  if (frame.closed || frame.activity === null) drawClosedYard(ctx, layer);
-  else drawFloor(ctx, frame, layer, motion ? progress : 0, motion);
-  ctx.restore();
-  drawPills(ctx, frame.captions, layer);
-  drawArtHud(ctx, frame, layer, options, motion ? progress : 0, motion);
-}
-
-function drawArtHeader(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layer: StaticLayer): void {
-  const { layout: L, palette: P, fonts } = layer;
-  const x = L.header.x + L.cardPad;
-  const maxW = L.header.w - 2 * L.cardPad;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  const title = `${frame.dayName} · ${frame.blockName} · ${frame.activityWords}`;
-  fitWith(ctx, title, maxW, L.titlePx, (px) => displayFont(fonts, px));
-  ctx.fillStyle = P.heading;
-  let y = L.header.y + L.cardPad * 0.8 + (L.titlePx * 1.2) / 2;
-  ctx.fillText(title, x, y);
-  y += (L.titlePx * 1.2) / 2;
-  const { first, crew } = planParts(frame);
-  ctx.fillStyle = P.muted;
-  if (L.planLines === 1) {
-    const line = `${first} · ${crew}`;
-    fitWith(ctx, line, maxW, L.planPx, (px) => bodyFont(fonts, px));
-    ctx.fillText(line, x, y + (L.planPx * 1.35) / 2);
-  } else {
-    for (const line of [first, crew]) {
-      fitWith(ctx, line, maxW, L.planPx, (px) => bodyFont(fonts, px));
-      ctx.fillText(line, x, y + (L.planPx * 1.35) / 2);
-      y += L.planPx * 1.35;
-    }
+  // Less the scenery standing on the lawn (each blocked footprint raised PROP_H): no shadow on a wall or a bush. Each is
+  // its own clip (the canvas with that outline cut out), since clips intersect.
+  for (const outline of s.propHulls) {
+    ctx.beginPath();
+    ctx.rect(0, 0, s.width, s.height);
+    outline.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    ctx.closePath();
+    ctx.clip('evenodd');
   }
-  // Where the week stands: the blocks played in teal, this one in coral.
-  const now = frame.day * 4 + frame.block;
-  const p = L.progress;
-  forEachBlock(p, (bx, bw, step) => {
-    if (step > now) return;
-    ctx.fillStyle = step === now ? P.accent : P.heading;
-    roundRectPath(ctx, bx, p.y, bw, p.h, p.h / 2);
-    ctx.fill();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  figs.forEach((f, i) => {
+    const d = drawn[i] as Drawn;
+    if (d.shadow !== null) ctx.drawImage(d.shadow, Math.round(f.x * R - d.sx), Math.round(f.y * R - d.sy));
   });
+  ctx.restore();
+  figs.forEach((f, i) => {
+    const d = drawn[i] as Drawn;
+    ctx.drawImage(d.img, Math.round(f.x * R - d.ax), Math.round(f.y * R - d.ay));
+  });
+
+  ctx.setTransform(R, 0, 0, R, 0, 0);
+  drawGmLabel(ctx, s, tokens);
+  const captions = frame.closed && !frame.captions.some((c) => /closed/i.test(c)) ? ['Closed', ...frame.captions] : frame.captions;
+  drawChips(ctx, s, tokens, captions);
 }
 
-/** Sets the font at the size where `text` fits `maxW` (never above `px`). */
-function fitWith(ctx: CanvasRenderingContext2D, text: string, maxW: number, px: number, font: (px: number) => string): number {
-  ctx.font = font(px);
-  const w = ctx.measureText(text).width;
-  if (w <= maxW || w <= 0) return px;
-  const fitted = Math.max(1, (px * maxW) / w);
-  ctx.font = font(fitted);
-  return fitted;
-}
-
-/** Below 1 only when the yard is crowded: the dogs shrink so that 30 still fit without heavy overlap. */
-const crowding = (L: ArtLayout, dogs: number): number =>
-  clamp(Math.sqrt((L.floor.w * L.floor.h) / Math.max(1, dogs) / (L.dogH * L.dogH * 0.95)), 0.72, 1);
-
-const depthAt = (L: ArtLayout, y: number): number =>
-  DEPTH_MIN + (DEPTH_MAX - DEPTH_MIN) * clamp((y - L.floor.y) / Math.max(1, L.floor.h), 0, 1);
-
-/** The floor of an open day: the activity's dogs and crew, depth-sorted, and the walking group on the path. */
-function drawFloor(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layer: StaticLayer, progress: number, motion: boolean): void {
-  const { layout: L, sprites: S } = layer;
-  let n = 0;
-  const activity = frame.activity;
-  if (activity === 'clean') {
-    drawCrates(ctx, frame, layer);
-  } else if (activity === 'structuredPlay') {
-    n = placeStructured(frame, layer);
-  } else {
-    // Free play, a nap, and the floor a walk leaves: each dog on its spot.
-    const napping = activity === 'nap';
-    const crowd = crowding(L, frame.floorDogs);
-    const spots = spreadSpots(layer, frame.floorDogs);
-    for (let i = 0; i < frame.floorDogs; i++) {
-      const spot = spots[i] as Spot;
-      const a = actor(n++);
-      a.x = spot.x;
-      a.y = spot.y;
-      a.depth = depthAt(L, spot.y) * crowd;
-      const facing = facingOf(i);
-      a.sprite = ((napping ? S.nap : S.play)[breedOf(i)] as Facing)[facing];
-      a.lift = !napping && motion && hash01(i * 13 + 5) < 0.6 ? Math.abs(Math.sin(Math.PI * (2 * progress + hash01(i + 77)))) * L.dogH * 0.14 : 0;
-      a.shadow = true;
-    }
-    for (let k = 0; k < frame.floorStaff; k++) {
-      const a = actor(n++);
-      const [u, v] = CREW_SPOTS[k % CREW_SPOTS.length] ?? [0.5, 0.5];
-      a.x = L.floor.x + u * L.floor.w;
-      a.y = L.floor.y + v * L.floor.h;
-      a.depth = depthAt(L, a.y);
-      a.sprite = S.crewBall[a.x < L.floor.x + L.floor.w / 2 ? 0 : 1];
-      a.lift = 0;
-      a.shadow = true;
+/** Development only (stripped from the build): how many pairs of figures overlap, and how many clone neighbours. */
+function yardStats(s: Stage, figs: readonly Fig[]): { figures: number; overlaps: number; worst: number; clones: number } {
+  const placed = figs.map((f) => placedOf(s, f, f.look.art.src.kind === 'dog' ? `${f.look.art.src.breed}|${f.look.art.src.coat}|${f.look.art.src.pose}` : ''));
+  let overlaps = 0;
+  let worst = 0;
+  let clones = 0;
+  for (let i = 0; i < placed.length; i++) {
+    for (let j = i + 1; j < placed.length; j++) {
+      const a = placed[i] as Placed;
+      const b = placed[j] as Placed;
+      const o = overlapArea(s, a, b, 0);
+      if (o > 4) overlaps += 1;
+      worst = Math.max(worst, o);
+      if (a.clone !== '' && a.clone === b.clone && Math.hypot(a.mx - b.mx, a.my - b.my) < CLONE_R) clones += 1;
     }
   }
-  drawActors(ctx, n);
-  if (activity === 'nap') drawSnores(ctx, frame, layer, progress, motion);
-  if (frame.walkingStaff > 0) drawWalk(ctx, frame, layer, progress, motion);
+  return { figures: figs.length, overlaps, worst: Math.round(worst), clones };
 }
 
 /**
- * Structured play: each staffer with a ball, their dogs in neat rows in front of them, every dog facing them. The
- * groups share the floor side by side, or in two rows when side by side would leave each too narrow for its rows.
+ * The incident's pulse: a ring on the lawn round the dogs on the floor (their middle, wide enough to take them in),
+ * clipped to the lawn, growing and fading through the block; a steady ring under reduced motion (`progress` null).
  */
-function placeStructured(frame: ReplayFrame, layer: StaticLayer): number {
-  const { layout: L, sprites: S } = layer;
-  const groups = Math.max(1, frame.floorStaff);
-  const dogs = frame.floorDogs;
-  const crewW = S.crewBall[0].w * DEPTH_MAX * 1.05;
-  const crowd = crowding(L, dogs);
-  const dogH = L.dogH * crowd; // the dogs' height as drawn
-  const tiers = groups > 1 && L.floor.w / groups < crewW + dogH * 2.2 ? 2 : 1;
-  const perTier = Math.ceil(groups / tiers);
-  const tierH = L.floor.h / tiers;
-  let n = 0;
-  for (let k = 0; k < groups; k++) {
-    const tier = Math.floor(k / perTier);
-    const inTier = tier === tiers - 1 ? groups - perTier * (tiers - 1) : perTier;
-    const cellW = L.floor.w / inTier;
-    const x0 = L.floor.x + cellW * (k - tier * perTier);
-    const y0 = L.floor.y + tierH * tier + (tiers > 1 ? dogH * 0.25 : 0);
-    const h0 = tiers > 1 ? tierH - dogH * 0.25 : tierH;
-    const first = Math.floor((k * dogs) / groups);
-    const m = Math.floor(((k + 1) * dogs) / groups) - first;
-    // The rows: as square as the room allows, at most a dog's width apart.
-    const availW = Math.max(1, cellW - crewW);
-    let cols = 1;
-    let best = 0;
-    for (let c = 1; c <= Math.max(1, m); c++) {
-      const rows = Math.ceil(m / c);
-      const fit = Math.min(availW / c / (dogH * 0.85), h0 / Math.max(1, rows) / (dogH * 0.6));
-      if (fit > best) {
-        best = fit;
-        cols = c;
-      }
-    }
-    const rows = Math.max(1, Math.ceil(m / cols));
-    const dx = Math.min(availW / cols, dogH * 1.2);
-    const dy = rows > 1 ? Math.min(h0 / (rows - 0.4), dogH * 0.78) : 0;
-    const gridW = dx * cols;
-    const gridH = dy * (rows - 1);
-    const gx = x0 + crewW + (availW - gridW) / 2;
-    const gy = y0 + (h0 - gridH) / 2;
-    if (frame.floorStaff > 0) {
-      const a = actor(n++);
-      a.x = gx - crewW * 0.55;
-      a.y = gy + gridH / 2 + dogH * 0.1;
-      a.depth = depthAt(L, a.y);
-      a.sprite = S.crewBall[0];
-      a.lift = 0;
-      a.shadow = true;
-    }
-    for (let j = 0; j < m; j++) {
-      const i = first + j;
-      const a = actor(n++);
-      a.x = gx + dx * ((j % cols) + 0.5);
-      a.y = gy + dy * Math.floor(j / cols);
-      a.depth = depthAt(L, a.y) * crowd;
-      a.sprite = (S.play[breedOf(i)] as Facing)[1];
-      a.lift = 0;
-      a.shadow = true;
-    }
+function drawPulse(ctx: CanvasRenderingContext2D, s: Stage, tokens: Tokens, figs: readonly Fig[], progress: number | null): void {
+  const [lx, ly] = s.art.map.lawn;
+  const onLawn = figs.filter((f) => f.mx >= 0);
+  let cx = lx * 0.45;
+  let cy = ly * 0.45;
+  let radius = Math.min(lx, ly) * 0.3;
+  if (onLawn.length > 0) {
+    cx = onLawn.reduce((t, f) => t + f.mx, 0) / onLawn.length;
+    cy = onLawn.reduce((t, f) => t + f.my, 0) / onLawn.length;
+    const rms = Math.sqrt(onLawn.reduce((t, f) => t + (f.mx - cx) ** 2 + (f.my - cy) ** 2, 0) / onLawn.length);
+    radius = clamp(rms * 1.35, 1.1, Math.min(lx, ly) * 0.48);
   }
-  return n;
-}
-
-function drawActors(ctx: CanvasRenderingContext2D, n: number): void {
-  actorOrder.length = 0;
-  for (let k = 0; k < n; k++) actorOrder.push(actorPool[k] as Actor);
-  actorOrder.sort(byFeet);
-  // The shadows first, in one path, so no figure stands in another's shadow.
-  // The light comes from the upper left, as in the yard art: each shadow falls a little to the right.
-  ctx.fillStyle = 'rgba(28, 52, 16, 0.3)';
-  ctx.beginPath();
-  for (const a of actorOrder) {
-    if (!a.shadow || a.sprite === null) continue;
-    const rx = a.sprite.w * a.depth * 0.38 * (a.sprite.h > a.sprite.w * 1.3 ? 0.7 : 1);
-    const sx = a.x + rx * 0.18;
-    const sy = a.y - rx * 0.04;
-    ctx.moveTo(sx + rx, sy);
-    ctx.ellipse(sx, sy, rx, rx * 0.24, 0, 0, Math.PI * 2);
-  }
-  ctx.fill();
-  for (const a of actorOrder) {
-    const s = a.sprite;
-    if (s === null) continue;
-    const w = s.w * a.depth;
-    const h = s.h * a.depth;
-    ctx.drawImage(s.img, a.x - w / 2, a.y - h - a.lift + h * 0.04, w, h);
-  }
-}
-
-/** A small "z z" over some of the sleeping dogs, rising gently with the block. */
-function drawSnores(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layer: StaticLayer, progress: number, motion: boolean): void {
-  const { layout: L, palette: P, fonts } = layer;
-  ctx.fillStyle = P.heading;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  const px = Math.max(10, L.dogH * 0.32);
-  const spots = spreadSpots(layer, frame.floorDogs);
-  for (let i = 0; i < frame.floorDogs; i += 2) {
-    const spot = spots[i] as Spot;
-    const rise = motion ? progress * L.dogH * 0.15 : 0;
-    const x = spot.x + L.dogH * 0.25;
-    const y = spot.y - L.dogH * 0.62 - rise;
-    ctx.globalAlpha = 0.85;
-    ctx.font = displayFont(fonts, px);
-    ctx.fillText('z', x, y);
-    ctx.globalAlpha = 0.6;
-    ctx.font = displayFont(fonts, px * 0.75);
-    ctx.fillText('z', x + px * 0.6, y - px * 0.55);
-  }
-  ctx.globalAlpha = 1;
-}
-
-/** Cleaning: the dogs in neat wire crates along the back of the yard, the crew mopping the front. */
-function drawCrates(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layer: StaticLayer): void {
-  const { layout: L, sprites: S } = layer;
-  const n = frame.floorDogs;
-  let rows = 1;
-  let cols = Math.max(1, n);
-  let cw = 0;
-  for (let r = 1; r <= 6; r++) {
-    const c = Math.max(1, Math.ceil(n / r));
-    const w = Math.min(L.dogH * 1.5, (L.floor.w * 1.04) / c, (L.floor.h * 0.5) / r / (0.74 * 1.18));
-    if (w > cw + 0.5) {
-      cw = w;
-      rows = r;
-      cols = c;
-    }
-  }
-  const ch = cw * 0.74;
-  const rowGap = ch * 0.18;
-  const top = L.floor.y - L.dogH * 0.35;
-  const line = Math.max(1, cw * 0.04);
-  for (let r = 0; r < rows; r++) {
-    const inRow = Math.min(cols, n - r * cols);
-    if (inRow <= 0) break;
-    const y = top + r * (ch + rowGap);
-    const x0 = L.floor.x + (L.floor.w - inRow * cw) / 2;
-    for (let c = 0; c < inRow; c++) {
-      const i = r * cols + c;
-      const x = x0 + c * cw;
-      const inset = cw * 0.05;
-      const bx = x + inset;
-      const bw = cw - 2 * inset;
-      // The crate's back and its cushion.
-      ctx.fillStyle = 'rgba(255, 250, 238, 0.62)';
-      roundRectPath(ctx, bx, y, bw, ch, cw * 0.08);
-      ctx.fill();
-      ctx.fillStyle = '#F6C344';
-      roundRectPath(ctx, bx + bw * 0.06, y + ch * 0.72, bw * 0.88, ch * 0.2, ch * 0.08);
-      ctx.fill();
-      // The dog, curled up.
-      const sprite = (S.nap[breedOf(i)] as Facing)[facingOf(i)];
-      const scale = Math.min((bw * 0.86) / sprite.w, (ch * 0.62) / sprite.h);
-      const w = sprite.w * scale;
-      const h = sprite.h * scale;
-      ctx.drawImage(sprite.img, x + cw / 2 - w / 2, y + ch * 0.86 - h, w, h);
-      // The wire front.
-      ctx.strokeStyle = '#1F5E62';
-      ctx.lineWidth = line * 1.4;
-      roundRectPath(ctx, bx, y, bw, ch, cw * 0.08);
-      ctx.stroke();
-      ctx.lineWidth = line;
-      ctx.beginPath();
-      for (let b = 1; b <= 5; b++) {
-        const xb = bx + (bw * b) / 6;
-        ctx.moveTo(xb, y);
-        ctx.lineTo(xb, y + ch);
-      }
-      ctx.moveTo(bx + bw * 0.38, y - ch * 0.07);
-      ctx.lineTo(bx + bw * 0.62, y - ch * 0.07);
-      ctx.stroke();
-    }
-  }
-  // The crew mopping the open floor in front.
-  const staff = frame.floorStaff;
-  let n2 = 0;
-  for (let k = 0; k < staff; k++) {
-    const a = actor(n2++);
-    a.x = L.floor.x + (L.floor.w * (k + 1)) / (staff + 1);
-    a.y = L.floor.y + L.floor.h * 0.97;
-    a.depth = DEPTH_MAX;
-    a.sprite = S.crewMop[k % 2 === 0 ? 0 : 1];
-    a.lift = 0;
-    a.shadow = true;
-  }
-  drawActors(ctx, n2);
-}
-
-/** The walking group on the path outside the fence: the staffer leading, the dogs on their leashes behind. */
-function drawWalk(ctx: CanvasRenderingContext2D, frame: ReplayFrame, layer: StaticLayer, progress: number, motion: boolean): void {
-  const { layout: L, sprites: S } = layer;
-  const p = L.path;
-  const feet = p.y + p.h * PATH_FEET;
-  const crew = S.crewBall[0];
-  const crewScale = Math.min(1, (p.h * 1.9) / crew.h);
-  const cw = crew.w * crewScale;
-  const chh = crew.h * crewScale;
-  const dogScale = Math.min(0.85, (p.h * 0.9) / L.dogH);
-  const spacing = L.dogH * 1.05 * dogScale;
-  const n = frame.walkingDogs;
-  const groupW = n * spacing + cw;
-  const drift = motion ? progress * spacing * 0.9 : 0;
-  const start = p.x + Math.max(L.fs, (p.w - groupW) / 2 - spacing * 0.45) + drift;
-  const crewX = start + n * spacing + cw * 0.5;
-  const handX = crewX - cw * 0.3;
-  const handY = feet - chh * 0.5;
-  const dogsAt: number[] = [];
-  ctx.strokeStyle = 'rgba(40, 40, 40, 0.65)';
-  ctx.lineWidth = Math.max(1, L.fs * 0.08);
-  ctx.beginPath();
-  for (let k = 0; k < n; k++) {
-    const x = start + k * spacing + spacing * 0.5;
-    dogsAt.push(x);
-    const sprite = (S.play[breedOf(frame.floorDogs + k)] as Facing)[0];
-    const h = sprite.h * dogScale;
-    ctx.moveTo(handX, handY);
-    ctx.quadraticCurveTo((handX + x) / 2, handY + h * 0.4, x + sprite.w * dogScale * 0.32, feet - h * 0.72);
-  }
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(70, 50, 20, 0.22)';
-  ctx.beginPath();
-  for (let k = 0; k < n; k++) {
-    const x = dogsAt[k] as number;
-    ctx.moveTo(x + spacing * 0.4, feet);
-    ctx.ellipse(x, feet, spacing * 0.4, spacing * 0.1, 0, 0, Math.PI * 2);
-  }
-  ctx.moveTo(crewX + cw * 0.35, feet);
-  ctx.ellipse(crewX, feet, cw * 0.35, cw * 0.1, 0, 0, Math.PI * 2);
-  ctx.fill();
-  for (let k = 0; k < n; k++) {
-    const i = frame.floorDogs + k;
-    const sprite = (S.play[breedOf(i)] as Facing)[0];
-    const w = sprite.w * dogScale;
-    const h = sprite.h * dogScale;
-    const bob = motion ? Math.abs(Math.sin(Math.PI * (2 * progress + k * 0.37))) * h * 0.1 : 0;
-    ctx.drawImage(sprite.img, (dogsAt[k] as number) - w / 2, feet - h - bob, w, h);
-  }
-  ctx.drawImage(crew.img, crewX - cw / 2, feet - chh, cw, chh);
-}
-
-/** The closed sign's board: a deep coral that white text reads on at 5.8:1 (the art's coral is 3.1:1). */
-const CLOSED_SIGN = '#B8382A';
-
-/** A closed day: the yard empty and quiet, a "Closed" sign on a post in the middle. */
-function drawClosedYard(ctx: CanvasRenderingContext2D, layer: StaticLayer): void {
-  const { layout: L, fonts } = layer;
-  ctx.fillStyle = 'rgba(251, 246, 236, 0.32)';
-  ctx.fillRect(L.art.x, L.art.y, L.art.w, L.art.h);
-  const px = clamp(Math.min(L.art.w / 7, L.art.h / 6), L.fs * 1.3, L.fs * 3.2);
-  ctx.font = displayFont(fonts, px);
-  const textW = ctx.measureText('Closed').width;
-  const boardW = textW + px * 1.3;
-  const boardH = px * 1.75;
-  const cx = L.art.x + L.art.w / 2;
-  const ground = L.floor.y + L.floor.h * 0.72;
-  const boardY = ground - boardH - px * 1.6;
-  // The post and its shadow.
-  ctx.fillStyle = 'rgba(30, 60, 20, 0.25)';
-  ctx.beginPath();
-  ctx.ellipse(cx, ground, px * 0.9, px * 0.22, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#9A6A3C';
-  roundRectPath(ctx, cx - px * 0.16, boardY + boardH * 0.5, px * 0.32, ground - boardY - boardH * 0.5, px * 0.08);
-  ctx.fill();
-  // The board, tilted a touch.
+  const R = s.ratio;
   ctx.save();
-  ctx.translate(cx, boardY + boardH / 2);
-  ctx.rotate(-0.035);
-  ctx.fillStyle = 'rgba(60, 30, 20, 0.25)';
-  roundRectPath(ctx, -boardW / 2, -boardH / 2 + px * 0.12, boardW, boardH, px * 0.32);
-  ctx.fill();
-  ctx.fillStyle = CLOSED_SIGN; // white on it at 5.8:1
-  roundRectPath(ctx, -boardW / 2, -boardH / 2, boardW, boardH, px * 0.32);
-  ctx.fill();
-  ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = Math.max(1.5, px * 0.07);
-  roundRectPath(ctx, -boardW / 2 + px * 0.16, -boardH / 2 + px * 0.16, boardW - px * 0.32, boardH - px * 0.32, px * 0.2);
-  ctx.stroke();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Closed', 0, px * 0.04);
+  ctx.setTransform(R, 0, 0, R, 0, 0);
+  ctx.beginPath();
+  for (const [mx, my] of [[0, 0], [lx, 0], [lx, ly], [0, ly]] as const) ctx.lineTo(...ground(s, mx, my));
+  ctx.closePath();
+  ctx.clip();
+  const ring = (r: number, alpha: number, width: number, fill: number): void => {
+    ctx.beginPath();
+    for (let a = 0; a <= 48; a++) {
+      const t = (a / 48) * Math.PI * 2;
+      const [x, y] = ground(s, cx + r * Math.cos(t), cy + r * Math.sin(t));
+      if (a === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.globalAlpha = fill;
+    ctx.fillStyle = tokens.danger;
+    ctx.fill();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = tokens.danger;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  };
+  const w = Math.max(2, s.fs * 0.17);
+  if (progress === null) ring(radius, 0.7, w, 0.1);
+  else {
+    const fade = (1 - progress) ** 0.8;
+    ring(radius * (0.7 + 0.35 * progress), 0.85 * fade, w, 0.12 * fade);
+  }
   ctx.restore();
 }
 
-// --- Captions as pills. ---------------------------------------------------------------------------------------------
-
-interface PillStyle {
-  fill: string;
-  ink: string;
-  dot: string;
-  glyph: string;
-}
-const PILL_INCIDENT: PillStyle = { fill: '#FDE4E0', ink: '#9E2B20', dot: '#D2402F', glyph: '!' };
-const PILL_MONEY: PillStyle = { fill: '#FDF1CC', ink: '#6E4B00', dot: '#9A6400', glyph: '$' };
-const PILL_SICK: PillStyle = { fill: '#E2F0EF', ink: '#0F5257', dot: '#237570', glyph: '+' };
-const PILL_CLOSED: PillStyle = { fill: '#ECE6DA', ink: '#3B3A35', dot: '#6A645B', glyph: '×' };
-const PILL_PHOTO: PillStyle = { fill: '#E2F0EF', ink: '#0F5257', dot: '#237570', glyph: '★' };
-
-function pillStyle(caption: string): PillStyle {
-  if (caption === 'Incident') return PILL_INCIDENT;
-  if (caption.startsWith('Vet bill') || caption.startsWith('Inspector')) return PILL_MONEY;
-  if (caption.includes('sent home sick')) return PILL_SICK;
-  if (caption.startsWith('Walk photo')) return PILL_PHOTO;
-  return PILL_CLOSED;
-}
-
-/** The block's events under the yard, one pill each; a row that runs out of room continues above it. */
-function drawPills(ctx: CanvasRenderingContext2D, captions: readonly string[], layer: StaticLayer): void {
-  if (captions.length === 0) return;
-  const { layout: L, fonts } = layer;
-  const box = L.captions;
-  let px = L.fs * 1.02;
-  const widthAt = (text: string, size: number): number => {
-    ctx.font = bodyFont(fonts, size, 800);
-    return ctx.measureText(text).width + size * 2.6;
-  };
-  const total = (size: number): number => captions.reduce((s, c) => s + widthAt(c, size), 0) + (captions.length - 1) * L.fs * 0.45;
-  if (total(px) > box.w) px = Math.max(L.fs * 0.9, (px * box.w) / total(px));
-  const h = Math.min(box.h * 0.92, px * 1.85);
-  const gapX = L.fs * 0.45;
-  let x = box.x;
-  let y = box.y + (box.h - h) / 2;
-  for (const caption of captions) {
-    const style = pillStyle(caption);
-    let w = widthAt(caption, px);
-    if (x > box.x && x + w > box.x + box.w) {
-      x = box.x;
-      y -= h + L.fs * 0.35; // the next row sits above, over the path
-    }
-    w = Math.min(w, box.w);
-    ctx.fillStyle = 'rgba(15, 82, 87, 0.16)';
-    roundRectPath(ctx, x, y + px * 0.12, w, h, h / 2);
-    ctx.fill();
-    ctx.fillStyle = style.fill;
-    roundRectPath(ctx, x, y, w, h, h / 2);
-    ctx.fill();
-    const r = h * 0.32;
-    const dotX = x + h * 0.5;
-    const cy = y + h / 2;
-    if (style === PILL_INCIDENT) {
-      measureTile(ctx, 'incidents', dotX - r * 1.05, cy, r * 2.1); // the HUD's and the editor's warning triangle
-    } else {
-      ctx.fillStyle = style.dot;
-      circle(ctx, dotX, cy, r);
-      ctx.fill();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = bodyFont(fonts, r * 1.45, 800);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(style.glyph, dotX, cy + r * 0.06);
-    }
-    ctx.fillStyle = style.ink;
-    ctx.textAlign = 'left';
-    fitWith(ctx, caption, w - px * 2.2, px, (size) => bodyFont(fonts, size, 800));
-    ctx.fillText(caption, dotX + r + px * 0.45, cy + px * 0.04);
-    x += w + gapX;
-  }
-}
-
-// --- The HUD. -------------------------------------------------------------------------------------------------------
-
-function drawArtHud(
-  ctx: CanvasRenderingContext2D,
-  frame: ReplayFrame,
-  layer: StaticLayer,
-  options: ReplayOptions,
-  progress: number,
-  motion: boolean,
-): void {
-  const { layout: L, palette: P, fonts } = layer;
-  const { fs, cardPad } = L;
-  ctx.textBaseline = 'middle';
-
-  // The dogs-per-staffer gauge: the big number, the floor's dogs and crew, the fill and the marker.
-  const g = L.cards.gauge;
-  const over = frame.ratio > options.legalRatio;
-  const bar = gaugeBar(L);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = over ? P.accentInk : P.heading;
-  ctx.font = displayFont(fonts, fs * 2);
-  ctx.fillText(formatRatio(frame.ratio), g.x + g.w - cardPad, g.y + cardPad + fs * 0.875);
-  ctx.textAlign = 'left';
-  ctx.fillStyle = P.ink;
-  const crewLine = `Dogs ${frame.floorDogs} · Crew ${frame.floorStaff}`;
-  fitWith(ctx, crewLine, g.w - 2 * cardPad, fs, (px) => bodyFont(fonts, px));
-  ctx.fillText(crewLine, g.x + cardPad, g.y + cardPad + fs * 2.4);
-  const top = Math.max(1, options.gaugeMax);
-  const mx = bar.x + (clamp(frame.ratio, 0, top) / top) * bar.w;
-  if (frame.ratio > 0) {
-    ctx.fillStyle = P.heading;
-    ctx.globalAlpha = 0.85;
-    roundRectPath(ctx, bar.x, bar.y + bar.h * 0.2, Math.max(bar.h * 0.6, mx - bar.x), bar.h * 0.6, bar.h * 0.3);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  ctx.fillStyle = '#FFFFFF';
-  circle(ctx, mx, bar.y + bar.h / 2, bar.h * 0.78);
-  ctx.fill();
-  ctx.strokeStyle = over ? P.accent : P.heading;
-  ctx.lineWidth = Math.max(2, fs * 0.2);
+/** "The GM" on a navy pill with the amber light, a short line to the orb (Floor's callout). */
+function drawGmLabel(ctx: CanvasRenderingContext2D, s: Stage, tokens: Tokens): void {
+  const { x, y, w, h, lineFrom, lineTo } = s.label;
+  const mid = y + h / 2;
+  ctx.strokeStyle = tokens.ink;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(lineFrom, mid);
+  ctx.lineTo(lineTo, mid);
   ctx.stroke();
+  ctx.fillStyle = tokens.ink;
+  roundRectPath(ctx, x, y, w, h, h / 2);
+  ctx.fill();
+  ctx.fillStyle = tokens.amber;
+  circle(ctx, x + h * 0.52, mid, s.fs * 0.26);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = uiFont(tokens, s.fs, 800);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('The GM', x + h * 0.52 + s.fs * 0.62, mid + s.fs * 0.04);
+}
 
-  // Incidents: the icon, pulsing in a block with an incident (a steady highlight under reduced motion).
-  const inc = L.cards.incidents;
-  const incidentNow = frame.events.some((e) => e.type === 'incident');
-  if (incidentNow) {
-    ctx.fillStyle = 'rgba(242, 102, 90, 0.12)';
-    roundRectPath(ctx, inc.x + 1, inc.y + 1, inc.w - 2, inc.h - 2, L.radius * 0.85);
-    ctx.fill();
-  }
-  const icon = fs * 1.75;
-  const icx = inc.x + cardPad + icon / 2;
-  const icy = inc.y + inc.h / 2;
-  const pulse = incidentNow && motion ? Math.sin(progress * Math.PI) : 0;
-  if (pulse > 0) {
+/** How a chip looks: the Incident chip is the badge (white on the danger red); the rest are white with a mark. */
+function chipLook(caption: string, tokens: Tokens): { fill: string; ink: string; mark: string | null; warn: boolean } {
+  if (caption === 'Incident') return { fill: tokens.danger, ink: '#FFFFFF', mark: null, warn: true };
+  if (caption === 'Closed') return { fill: tokens.ink, ink: '#FFFFFF', mark: null, warn: false };
+  if (caption.startsWith('Walk photo')) return { fill: tokens.surface, ink: tokens.ink, mark: tokens.ok, warn: false };
+  if (caption.startsWith('The staffer')) return { fill: tokens.surface, ink: tokens.ink, mark: tokens.ink, warn: false };
+  return { fill: tokens.surface, ink: tokens.ink, mark: tokens.amber, warn: false }; // money and sickness
+}
+
+/** The block's events, as the frame words them, on chips in the top left corner; a full row continues below. */
+function drawChips(ctx: CanvasRenderingContext2D, s: Stage, tokens: Tokens, captions: readonly string[]): void {
+  if (captions.length === 0) return;
+  const fs = s.fs;
+  const h = Math.round(fs * 1.95);
+  const padX = fs * 0.7;
+  const gap = fs * 0.4;
+  const maxRight = Math.max(s.width * 0.62, Math.min(s.width - s.pad, s.pad + fs * 16));
+  let x = s.pad;
+  let y = s.pad;
+  ctx.font = uiFont(tokens, fs, 700);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  for (const caption of captions) {
+    const look = chipLook(caption, tokens);
+    const lead = look.warn ? fs * 1.05 + fs * 0.4 : look.mark !== null ? fs * 0.5 + fs * 0.45 : 0;
+    const w = Math.min(s.width - 2 * s.pad, ctx.measureText(caption).width + 2 * padX + lead);
+    if (x > s.pad && x + w > maxRight) {
+      x = s.pad;
+      y += h + gap;
+    }
     ctx.save();
-    roundRectPath(ctx, inc.x, inc.y, inc.w, inc.h, L.radius * 0.85);
-    ctx.clip();
-    ctx.fillStyle = P.accent;
-    ctx.globalAlpha = 0.28 * pulse;
-    circle(ctx, icx, icy, icon * (0.6 + 0.32 * pulse));
+    ctx.shadowColor = 'rgba(19, 33, 47, 0.18)';
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetY = 1;
+    ctx.fillStyle = look.fill;
+    roundRectPath(ctx, x, y, w, h, 6);
     ctx.fill();
     ctx.restore();
-  }
-  const size = icon * (1 + 0.12 * pulse);
-  measureTile(ctx, 'incidents', icx - size / 2, icy, size);
-  ctx.textAlign = 'left';
-  ctx.fillStyle = P.muted;
-  ctx.font = bodyFont(fonts, fs, 800);
-  ctx.fillText('Incidents', icx + icon / 2 + fs * 0.55, icy);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = incidentNow ? P.accentInk : P.heading;
-  ctx.font = displayFont(fonts, fs * 2);
-  ctx.fillText(String(frame.incidentsSoFar), inc.x + inc.w - cardPad, icy + fs * 0.05);
-
-  // Reputation: the number and the meter.
-  const rep = L.cards.reputation;
-  ctx.fillStyle = P.heading;
-  ctx.font = displayFont(fonts, fs * 1.5);
-  ctx.fillText(String(Math.round(frame.reputation)), rep.x + rep.w - cardPad, rep.y + cardPad + fs * 0.7);
-  const repBar = reputationBar(L);
-  const rf = clamp(frame.reputation / METER_MAX, 0, 1);
-  if (rf > 0) {
-    ctx.fillStyle = P.highlight;
-    roundRectPath(ctx, repBar.x, repBar.y, Math.max(repBar.h, repBar.w * rf), repBar.h, repBar.h / 2);
-    ctx.fill();
-  }
-
-  // Cash, in bold numerals.
-  const cash = L.cards.cash;
-  ctx.fillStyle = P.cash;
-  ctx.font = bodyFont(fonts, fs, 800);
-  const cashLabelW = ctx.measureText('Cash').width;
-  fitWith(ctx, dollars(frame.cash), cash.w - 2 * cardPad - cashLabelW - fs * 2.75, fs * 1.9, (px) => displayFont(fonts, px));
-  ctx.fillText(dollars(frame.cash), cash.x + cash.w - cardPad, cash.y + cash.h / 2 + fs * 0.05);
-
-  // Energy, cleanliness and crew fatigue.
-  const values = [frame.energy, frame.cleanliness, frame.fatigue];
-  const fills = [P.highlight, '#3BA39C', P.accent];
-  for (let k = 0; k < 3; k++) {
-    const row = meterRow(L, k, layer.meterLabelW);
-    const v = values[k] ?? 0;
-    const f = clamp(v / METER_MAX, 0, 1);
-    if (f > 0) {
-      ctx.fillStyle = fills[k] ?? P.heading;
-      roundRectPath(ctx, row.bar.x, row.bar.y, Math.max(row.bar.h, row.bar.w * f), row.bar.h, row.bar.h / 2);
+    const cy = y + h / 2;
+    let tx = x + padX;
+    if (look.warn) {
+      warnIcon(ctx, tx, cy, fs * 1.05, look.ink);
+      tx += fs * 1.05 + fs * 0.4;
+    } else if (look.mark !== null) {
+      ctx.fillStyle = look.mark;
+      circle(ctx, tx + fs * 0.25, cy, fs * 0.25);
       ctx.fill();
+      tx += fs * 0.5 + fs * 0.45;
     }
-    ctx.textAlign = 'right';
-    ctx.fillStyle = P.ink;
-    ctx.font = displayFont(fonts, fs);
-    ctx.fillText(String(Math.round(v)), row.numberX, row.cy);
-  }
-
-  // Tomorrow's requests, the solo days, and the sick and inspector counters once they have counted.
-  const info = L.cards.info;
-  const lines = infoLines;
-  lines[0] = `Tomorrow: ${frame.requestsTomorrow} asking`;
-  lines[1] = `Days the crew ran solo: ${frame.soloStreak}`;
-  let count = 2;
-  if (frame.sickSoFar > 0) lines[count++] = `Sent home sick ${frame.sickSoFar}`;
-  if (frame.finesSoFar > 0) lines[count++] = `Inspector visits ${frame.finesSoFar}`;
-  const rowH = (info.h - cardPad * 1.2) / 4;
-  ctx.textAlign = 'left';
-  for (let k = 0; k < count; k++) {
-    const cy = info.y + cardPad * 0.6 + rowH * (k + 0.5);
-    const text = lines[k] ?? '';
-    ctx.fillStyle = k < 2 ? P.heading : P.accent;
-    circle(ctx, info.x + cardPad + fs * 0.3, cy, fs * 0.28);
-    ctx.fill();
-    ctx.fillStyle = P.ink;
-    fitWith(ctx, text, info.w - 2 * cardPad - fs * 1.1, fs, (px) => bodyFont(fonts, px));
-    ctx.fillText(text, info.x + cardPad + fs * 1.0, cy);
+    ctx.fillStyle = look.ink;
+    ctx.fillText(caption, tx, cy + fs * 0.04);
+    x += w + gap;
   }
 }
-const infoLines: string[] = ['', '', '', ''];
+
+/** The warning triangle (the editor's incident icon, 24 units), stroked at `size` px with its left edge at x. */
+const WARN_PATHS = ['M12 3.5l9.5 16.5h-19z', 'M12 10v4.5', 'M12 17.4v.1'] as const;
+let warnPaths: Path2D[] | null = null;
+function warnIcon(ctx: CanvasRenderingContext2D, x: number, cy: number, size: number, color: string): void {
+  warnPaths ??= WARN_PATHS.map((d) => new Path2D(d));
+  const k = size / 24;
+  ctx.save();
+  ctx.translate(x, cy - 12 * k);
+  ctx.scale(k, k);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const p of warnPaths) ctx.stroke(p);
+  ctx.restore();
+}

@@ -147,6 +147,68 @@ async function twoFrames(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
+/**
+ * The page's text under the open tray (G5d round 4): every visible line of text outside the tray, cut to what its
+ * scrolling ancestors show, whose box meets the tray's box. Empty when no line of the page is under the tray.
+ */
+async function textUnderTray(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const tray = document.querySelector('#teacher');
+    if (!(tray instanceof HTMLElement) || tray.hidden) return ['(the tray is not open)'];
+    const t = tray.getBoundingClientRect();
+    const hits: string[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      const text = node.textContent?.trim() ?? '';
+      const host = node.parentElement;
+      if (text === '' || host === null || tray.contains(host) || getComputedStyle(host).visibility !== 'visible') continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      for (const r of Array.from(range.getClientRects())) {
+        let top = r.top;
+        let bottom = r.bottom;
+        let left = r.left;
+        let right = r.right;
+        for (let a: Element | null = host; a !== null && a !== document.documentElement; a = a.parentElement) {
+          const style = getComputedStyle(a);
+          if (style.overflowX === 'visible' && style.overflowY === 'visible') continue;
+          const clip = a.getBoundingClientRect();
+          top = Math.max(top, clip.top);
+          bottom = Math.min(bottom, clip.bottom);
+          left = Math.max(left, clip.left);
+          right = Math.min(right, clip.right);
+        }
+        if (bottom - top < 2 || right - left < 2) continue; // clipped away, or a screen reader's 1 px text
+        if (top < t.bottom && bottom > t.top && left < t.right && right > t.left) hits.push(`"${text.slice(0, 40)}" at ${Math.round(top)} px (tray top ${Math.round(t.top)})`);
+      }
+    }
+    return hits;
+  });
+}
+
+/** Lines of the page cut by the open tray's top edge: shown above it only in part (G5d round 4). */
+async function linesCutAtTrayEdge(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const tray = document.querySelector('#teacher');
+    if (!(tray instanceof HTMLElement) || tray.hidden) return ['(the tray is not open)'];
+    const edge = tray.getBoundingClientRect().top;
+    const hits: string[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      const text = node.textContent?.trim() ?? '';
+      const host = node.parentElement;
+      if (text === '' || host === null || tray.contains(host) || host.closest('.visually-hidden') !== null) continue;
+      if (getComputedStyle(host).visibility !== 'visible') continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      for (const r of Array.from(range.getClientRects())) {
+        if (r.height >= 2 && r.width >= 2 && r.top < edge - 1 && r.bottom > edge + 1) hits.push(`"${text.slice(0, 40)}" ${Math.round(r.top)} to ${Math.round(r.bottom)} px (edge ${Math.round(edge)})`);
+      }
+    }
+    return hits;
+  });
+}
+
 test('the page loads offline-clean, the tray closed, the rules hidden', async ({ page }) => {
   const foreign = watchRequests(page);
   await page.goto('/');
@@ -362,6 +424,7 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
     }, { timeout: 5_000, message: 'the prediction and what the GM did, side by side in view above the tray' })
     .toBe(true);
   console.log(`[e2e] after the week: ${JSON.stringify(await geometry())}`);
+  expect(await textUnderTray(page)).toEqual([]); // the tray has been open since the load: no line of the page under it
   // The teacher's check line has the engine's numbers (D6, section 13); the student's status has none.
   const check = (await page.locator('#check').textContent()) ?? '';
   expect(check).toMatch(/^Weeks trained [\d,]+ · ε 0\.10 · evaluations [\d,]+ · stable · target met · \d+\.\d s$/);
@@ -435,7 +498,9 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   // The page's content can always scroll clear of the open tray: the report's last row, then the revealed rules.
   const clearsTray = (selector: string) =>
     page.evaluate((sel) => {
-      window.scrollTo(0, document.documentElement.scrollHeight);
+      // The page's scroller: the body while the tray is open (its box ends at the tray's top, G5d round 4).
+      const scroller = document.documentElement.classList.contains('teacher-open') ? document.body : (document.scrollingElement ?? document.documentElement);
+      scroller.scrollTo(0, scroller.scrollHeight);
       const rows = document.querySelectorAll(sel);
       const last = rows[rows.length - 1];
       const tray = document.querySelector('#teacher');
@@ -494,6 +559,29 @@ test('the fold holds on Round 1 and on Round 3 with all six measures on, after t
     expect(open).toBe(closed); // the tray overlays; the button does not move (D46)
     expect(open).toBeLessThanOrEqual(trayTop);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1366);
+  }
+});
+
+test('the open tray never has a line of the page under it, after a run at 1024 and at 1366 wide, wherever the page is scrolled (G5d round 4)', async ({ page }) => {
+  test.setTimeout(150_000);
+  for (const width of [1024, 1366]) {
+    await page.setViewportSize({ width, height: 768 });
+    await page.goto('/');
+    await makePicks(page);
+    await page.click('#train');
+    await weekOver(page);
+    await openTray(page);
+    // Where the tray opening moved the page (the class's buttons kept above it), no line is cut by its edge either.
+    expect(await linesCutAtTrayEdge(page), `${width} wide, the page where the tray left it`).toEqual([]);
+    const where: string[] = [];
+    for (const at of [0, 0.5, 1]) {
+      // The page's scroller while the tray is open is the body, whose box ends at the tray's top; nothing scrolls under it.
+      if (at > 0) await page.evaluate((f) => document.body.scrollTo(0, (document.body.scrollHeight - document.body.clientHeight) * f), at);
+      const under = await textUnderTray(page);
+      where.push(`${at}: ${under.length}`);
+      expect(under, `${width} wide, scrolled to ${at} of the page`).toEqual([]);
+    }
+    console.log(`[e2e] ${width} × 768, the tray open after a run: lines under it by scroll position ${where.join(', ')}`);
   }
 });
 

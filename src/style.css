@@ -118,7 +118,10 @@
 @supports (height: 100dvh) {
   :root { --view-height: calc(100dvh / var(--zoom)); }
 }
-html.teacher-open { --tray-pad: var(--tray-height, 0px); scroll-padding-bottom: var(--tray-height, 0px); }
+/* The open tray (G5d round 4): the page scrolls in the body, whose box ends at the tray's top, so no line of the page
+   is ever under the tray, at any width or scroll; the window itself does not scroll while the tray is open. */
+html.teacher-open { --tray-pad: var(--tray-height, 0px); overflow: hidden; }
+html.teacher-open body { height: calc(var(--view-height) - var(--tray-height, 0px)); min-height: 0; overflow-y: auto; scroll-padding-bottom: 12px; }
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -815,11 +818,11 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
 #rail-live { contain: layout paint; } /* a block's update lays out the rail alone (acceptance 7) */
 /* While the week plays the whole rail fits the window at 1366 × 768, 1024 × 768 and 1920 × 1080 (the status is
    pinned to the top then, so the rail cannot scroll): the type as elsewhere, a tight rhythm between the blocks. */
-.rail-live > * { padding: 8px 22px; border-bottom: 1px solid var(--line); }
+.rail-live > * { padding: 6px 22px; border-bottom: 1px solid var(--line); } /* round 4: 6 px, so the whole week fits 1024 × 768 */
 .when { font: 850 27px/1.05 var(--font-ui); font-stretch: 70%; color: var(--navy); }
 .choices { margin-top: 3px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink-2); }
 /* This block, in one bold line: the most prominent words after the gauge's number (round 2, row 10). */
-.rail-live > .this-block { padding-top: 7px; padding-bottom: 7px; font: 800 20px/1.25 var(--font-ui); font-stretch: 86%; color: var(--navy); background: var(--panel-2); }
+.rail-live > .this-block { padding-top: 6px; padding-bottom: 6px; font: 800 20px/1.25 var(--font-ui); font-stretch: 86%; color: var(--navy); background: var(--panel-2); }
 .this-block .asked { font-weight: 500; color: var(--ink-2); }
 .choices-crew { display: block; }
 .timeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 7px; }
@@ -843,19 +846,23 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
 .stat-lab { display: flex; align-items: center; gap: 6px; font: 600 15px/1.2 var(--font-ui); color: var(--ink-2); }
 .stat-icon { display: grid; flex: none; place-items: center; }
 .live-crowd.over .stat-lab { color: var(--red-ink); }
-.gauge { position: relative; height: 16px; margin-top: 7px; background: var(--line-2); border-radius: 3px; }
+.gauge { position: relative; height: 16px; margin: 7px 0 25px; background: var(--line-2); border-radius: 3px; } /* room under it for the limit's label */
 .gauge-fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--navy); border-radius: 3px 0 0 3px; }
 .gauge-over { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red) 0 4px, #ee8c7c 4px 8px); }
 .gauge-mark { position: absolute; top: -6px; bottom: -6px; width: 3px; margin-left: -1px; background: var(--navy); }
 /* The limit's label under its own mark (round 1, row 25). */
 .gauge-limit { position: absolute; top: calc(100% + 8px); transform: translateX(-50%); font-size: var(--text-sm); line-height: 1; color: var(--ink-2); white-space: nowrap; }
 .gauge-limit b { color: var(--ink); }
-.gauge-floor { margin-top: 26px; font-size: var(--text-sm); color: var(--ink-2); }
 
 .live-stats { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); } /* the cash label on one line at 1024 */
 .live-stats .stat { min-width: 0; padding: 0 0 0 14px; border-left: 1px solid var(--line); }
 .live-stats .stat:nth-child(odd) { padding: 0 14px 0 0; border-left: 0; }
 .live-stats .stat:nth-child(n + 3) { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-2); }
+/* Incidents and reputation: the scope beside the number, not under it (round 4: the rail keeps the window's height with
+   the plan line's add-on). */
+.live-stats .stat:nth-child(n + 3) { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; }
+.live-stats .stat:nth-child(n + 3) > .stat-lab { grid-column: 1 / -1; }
+.live-stats .stat:nth-child(n + 3) > .stat-sub { margin-top: 5px; }
 .stat-bonus .stat-val { color: var(--navy); }
 .stat-val {
   margin-top: 5px;
@@ -1114,7 +1121,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
 }
 .check { font-weight: 600; font-variant-numeric: tabular-nums; color: #fff; }
 .teacher-hint { color: #c3ced8; }
-html.teacher-open #app { padding-bottom: calc(var(--tray-height, 120px) + 16px); }
+html.teacher-open #app { padding-bottom: 16px; } /* the page's end, above the tray (the body ends at its top) */
 
 /* ---------- The pilot (?pilot=N), the teacher's measurement ---------- */
 #pilot:empty { display: none; }

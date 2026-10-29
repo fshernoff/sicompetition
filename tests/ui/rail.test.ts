@@ -57,7 +57,7 @@ describe('railModel: the yard in words', () => {
         if (sickNow > 0) sawSick = true;
       }
     }
-    expect(sawSick).toBe(true); // the fixtures include a block with dogs sent home sick
+    expect(sawSick).toBe(true); // the fixtures include a block with dogs found sick at pickup
   });
 
   it('writes cash as the report writes dollars and says the reputation change since Monday in words', () => {

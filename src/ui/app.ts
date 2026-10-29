@@ -247,6 +247,14 @@ function readFonts(get: (name: string, fallback: string) => string): ReplayFonts
 }
 
 /** Smooth scrolling, or instant under prefers-reduced-motion: reduce (G5c, acceptance 5). */
+/**
+ * The element the page scrolls in: the body while the teacher's tray is open (its box ends at the tray's top, so no
+ * line is ever under the tray: G5d round 4), the document otherwise.
+ */
+export function pageScroller(): Element {
+  return document.documentElement.classList.contains('teacher-open') ? document.body : (document.scrollingElement ?? document.documentElement);
+}
+
 export function scrollBehavior(): ScrollBehavior {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 }
@@ -1084,7 +1092,7 @@ export function mountApp(): Page {
     page.status.textContent = studentStatus('idle');
     const first = pickRadios.find((r) => r.checked) ?? pickRadios[0];
     first?.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: scrollBehavior() }); // the console again, as on the load screen
+    pageScroller().scrollTo({ top: 0, behavior: scrollBehavior() }); // the console again, as on the load screen
   });
 
   editor.onChange = () => clearRun(page);

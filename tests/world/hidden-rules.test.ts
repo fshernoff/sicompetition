@@ -25,12 +25,12 @@ const EXPECTED: readonly [string, string, string][] = [
   [
     'H5',
     "Reviews set tomorrow's requests.",
-    "Tomorrow's requests start from 20 at a reputation of 50 and move 0.05 for every point of reputation above or below it; the rate moves them too (low +3, standard 0, premium −1), and each dog sent home sick today cancels 1 request; never more than 30. Monday's requests are 20.",
+    "Tomorrow's requests start from 20 at a reputation of 50 and move 0.05 for every point of reputation above or below it; the rate moves them too (low +3, standard 0, premium −1), and each dog found sick at pickup today cancels 1 request; never more than 30. Monday's requests are 20.",
   ],
   [
     'H6',
     'A dirty floor causes illness and cancellations.',
-    'Cleanliness starts the week at 80. Each play block takes off 0.5 per dog present, a nap 0.1 per dog, a clean adds 50 (the dogs are crated), and the night adds 10. At pickup, if cleanliness is below 40, dogs go home sick: on average up to 10 in 100 of them when the floor is at its dirtiest, fewer the cleaner it is, with the fraction of a case settled by a draw; each case costs 1 reputation point and cancels 1 request tomorrow.',
+    'Cleanliness starts the week at 80. Each play block takes off 0.5 per dog present, a nap 0.1 per dog, a clean adds 50 (the dogs are crated), and the night adds 10. At pickup, if cleanliness is below 40, dogs are found sick: on average up to 10 in 100 of them when the floor is at its dirtiest, fewer the cleaner it is, with the fraction of a case settled by a draw; each case costs 1 reputation point and cancels 1 request tomorrow.',
   ],
   [
     'H7',

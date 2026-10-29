@@ -48,7 +48,7 @@ export const UI_ICON_PATHS = {
   replay: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/>',
   /** A clock face: the time of day. */
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
-  /** A cross in a circle: dogs sent home sick. */
+  /** A cross in a circle: dogs found sick at pickup. */
   sick: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
   /** A calendar page: tomorrow. */
   calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4M16 3v4"/>',

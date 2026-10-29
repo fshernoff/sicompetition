@@ -292,7 +292,7 @@ export function renderTiles(container: HTMLElement, tiles: HeadlineTile[], notes
  * empty), then "Naps, cleans and walks" (days: the day's counts, "1 walk", "1 nap · 1 clean", "—", "closed"; week "2 naps ·
  * no cleans · 1 walk"); Dogs per staffer, the day's
  * average (on the floor, over the day's blocks: one decimal from DayReport.avgRatio, "—" when 0; week
- * avgDogsPerStaffer); Blocks over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits (fines
+ * avgDogsPerStaffer); Blocks over 15 dogs per staffer; Incidents; Dogs found sick at pickup; Inspector visits (fines
  * counted); Blocks with crew fatigue above 70%; Reputation at pickup (week "50 → 21 (−29)" from reputationStart to
  * reputationEnd); Cleanliness at pickup (Math.round; week "80 → 0 (−80)" from cleanliness.weekStart to Friday's
  * pickup); Crew fatigue at pickup (Math.round; week "20 → 100 (+80)" from fatigue.weekStart). Counts in the week
@@ -365,7 +365,7 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
     },
     { label: `Blocks over ${world.bookings.legalRatio} dogs per staffer`, days: num((d) => d.blocksOverRatio), week: String(t.blocksOverRatio) },
     { label: 'Incidents', days: num((d) => d.incidents), week: String(t.incidents) },
-    { label: 'Dogs sent home sick', days: num((d) => d.illnessCases), week: String(t.illnessCases) },
+    { label: 'Dogs found sick at pickup', days: num((d) => d.illnessCases), week: String(t.illnessCases) },
     { label: 'Inspector visits', days: num((d) => d.fines), week: String(t.fines) },
     {
       label: `Blocks with crew fatigue above ${world.fatigue.kpiThreshold}%`,

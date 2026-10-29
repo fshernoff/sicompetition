@@ -1,14 +1,15 @@
 // The teacher's tray (BRIEF section 11, D39, D46): the "Teacher" button in the bar opens a panel fixed to the bottom of
 // the window, one row in three labelled groups (Round; This run: the seed and the export; Behind the curtain: the
 // reveal of the hidden rules, the learning curve, D50: the teacher's view of the AI behind the GM, and the training
-// details, which show the learner's check line at the panel's foot; G5d). The tray overlays the page and never moves the lesson; while it is open the page gets its measured
-// height as bottom padding, so the last rows can still scroll above it.
+// details, which show the learner's check line at the panel's foot; G5d). The tray overlays the bottom of the window and
+// never moves the lesson; while it is open the page scrolls in the body, whose box ends at the tray's measured top, so
+// no line of the page is ever under the tray and the last rows scroll clear of it (G5d round 4).
 // The export builds its file from what the page holds once the run's readout is out (D47, D51): the trace the
 // sentence, the replay and the table show, the setup snapshotted at the click, the run's result and the trainer's
 // curve. It never runs the GM's week again.
 import { hiddenRules } from '../world/hiddenRules.ts';
 import { describeBonusPlan } from '../world/bonusPlan.ts';
-import { redraw, scrollBehavior } from './app.ts';
+import { pageScroller, redraw, scrollBehavior } from './app.ts';
 import type { Page } from './app.ts';
 import { buildExport, downloadJson, exportFilename } from './export.ts';
 import type { RunExportInput } from './export.ts';
@@ -19,15 +20,15 @@ const HIDE = 'Hide the hidden rules';
 const SHOW_CURVE = 'Show the learning curve';
 const HIDE_CURVE = 'Hide the learning curve';
 
-/** Writes the open tray's height to --tray-height, the padding the page keeps under it. */
+/** Writes the open tray's height to --tray-height: the body, the page's scroller then, ends that far above the window's bottom. */
 function measureTray(page: Page): void {
   if (page.teacher.hidden) return;
   document.documentElement.style.setProperty('--tray-height', `${page.teacher.offsetHeight}px`);
 }
 
 /**
- * The page's controls that must never sit under the open tray (G5d round 2, row 4): the buttons a class presses. When
- * the tray opens over one, the page (which keeps the tray's height as bottom padding) scrolls it clear, at once.
+ * The page's controls that stay in view when the tray opens (G5d round 2, row 4): the buttons a class presses. When the
+ * tray opens over one that was in the window, the page scrolls it above the tray, at once.
  */
 const KEEP_CLEAR = ['#train', '#new-prediction', '#replay-again'];
 
@@ -41,21 +42,76 @@ function keepClear(page: Page): void {
     if (box.bottom <= 0 || box.top >= window.innerHeight) continue; // off screen: not covered by the tray
     if (box.bottom > trayTop) overlap = Math.max(overlap, box.bottom - trayTop + 12);
   }
-  if (overlap > 0) window.scrollBy({ top: overlap, behavior: 'auto' });
+  if (overlap > 0) {
+    pageScroller().scrollBy({ top: overlap, behavior: 'auto' });
+    clearEdge(page); // the page moved: it lands with no line cut by the tray's edge
+  }
+}
+
+/**
+ * No line of the page cut by the tray's top edge where the tray has moved the page (G5d round 4): if the page's
+ * scroller (the body, whose box ends at the tray's top) shows a line of text only in part at that edge, it scrolls a
+ * few pixels more so the line is whole, shown (preferred) or below the edge, keeping the class's buttons above it.
+ * Text in a sticky box does not move with the scroll and is left out. A page the tray did not move stays where it is
+ * (D46: the tray never moves the lesson).
+ */
+function clearEdge(page: Page): void {
+  if (page.teacher.hidden) return;
+  const body = document.body;
+  const edge = body.getBoundingClientRect().top + body.clientHeight;
+  const lines: Array<[number, number]> = [];
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    const host = node.parentElement;
+    if (host === null || (node.textContent ?? '').trim() === '' || page.teacher.contains(host) || host.closest('.visually-hidden') !== null) continue;
+    let moves = true;
+    for (let a: Element | null = host; a !== null && a !== body; a = a.parentElement) {
+      if (getComputedStyle(a).position === 'sticky') moves = false;
+    }
+    if (!moves) continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    for (const r of Array.from(range.getClientRects())) if (r.height >= 2 && r.width >= 2) lines.push([r.top, r.bottom]);
+  }
+  const buttons = KEEP_CLEAR.map((s) => document.querySelector<HTMLElement>(s))
+    .filter((el): el is HTMLElement => el !== null && el.getClientRects().length > 0)
+    .map((el) => el.getBoundingClientRect().bottom)
+    .filter((bottom) => bottom > 0 && bottom <= edge);
+  const cut = (d: number): boolean => lines.some(([top, bottom]) => top - d < edge - 1 && bottom - d > edge + 1);
+  if (!cut(0)) return;
+  const room = body.scrollHeight - body.clientHeight;
+  // The smallest move first, a reveal (down the page) weighed at half a hide (up), so the cut line is shown if it can be.
+  const moves = Array.from({ length: 48 }, (_, i) => i + 1)
+    .flatMap((n) => [n, -n])
+    .sort((a, b) => (a > 0 ? a : -2 * a) - (b > 0 ? b : -2 * b));
+  for (const d of moves) {
+    if (body.scrollTop + d < 0 || body.scrollTop + d > room) continue;
+    if (d < 0 && buttons.some((bottom) => bottom - d > edge)) continue;
+    if (!cut(d)) {
+      body.scrollTop += d;
+      return;
+    }
+  }
 }
 
 export function openTray(page: Page): void {
+  const wasOpen = document.documentElement.classList.contains('teacher-open');
+  const top = pageScroller().scrollTop;
   page.teacher.hidden = false;
   page.teacherOpen.setAttribute('aria-expanded', 'true');
   document.documentElement.classList.add('teacher-open');
   measureTray(page);
+  if (!wasOpen) document.body.scrollTop = top; // the page stays where it was, now scrolling above the tray
   keepClear(page);
 }
 
 export function closeTray(page: Page): void {
+  const wasOpen = document.documentElement.classList.contains('teacher-open');
+  const top = pageScroller().scrollTop;
   page.teacher.hidden = true;
   page.teacherOpen.setAttribute('aria-expanded', 'false');
   document.documentElement.classList.remove('teacher-open');
+  if (wasOpen) window.scrollTo({ top, behavior: 'auto' }); // the window scrolls again, from where the body was
 }
 
 /** A seed that is not a whole number 0..4294967295: the message goes to the tray, never to the student's status. */
@@ -78,6 +134,7 @@ function showDetails(page: Page, open: boolean): void {
   foot.hidden = !open;
   button.setAttribute('aria-expanded', String(open));
   measureTray(page);
+  keepClear(page); // a taller tray may now cover a button
 }
 
 /** The hidden rules, written into the list once: the config's, so no run or clear ever touches them. */

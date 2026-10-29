@@ -84,6 +84,8 @@ export interface ReplayFrame {
    * wage; null and 0 on a closed day (no revenue, no wages). */
   ratePrice: number | null;
   wages: number;
+  /** The activity add-on per dog per play block (section 5's price, public); null with no plan. */
+  addOnPrice: number | null;
   bookings: Bookings | null;
   requests: number; // owners asking today
   accepted: number; // = dogs
@@ -251,6 +253,7 @@ export function replayFrame(steps: readonly StepRecord[], t: number, world: Worl
     rate: plan === null ? null : plan.rate,
     ratePrice: plan === null ? null : world.rates[plan.rate],
     wages: closed ? 0 : dayState.scheduledStaff * world.wagePerStaffDay,
+    addOnPrice: plan === null ? null : world.addOnPerDogPerPlayBlock,
     bookings: plan === null ? null : plan.bookings,
     requests: before.requestsToday,
     accepted: dogs,
@@ -463,11 +466,12 @@ const staffWords = (n: number): string => `${n} ${n === 1 ? 'staffer' : 'staffer
 const priceWords = (v: number): string => `$${Math.round(v).toLocaleString('en-US')}`;
 
 /**
- * Today's plan, scoped to today, with what its choices cost (BRIEF 10.2, G5d round 3), in two parts so a narrow line
- * can break before the crew: "Today: 18 asked · all 18 accepted · premium, $52 a dog" and "1 staffer scheduled, $300
- * in wages"; a cap is named only on a day it turned dogs away ("Today: 20 asked · 15 accepted, capped at the legal
- * ratio · standard, $40 a dog"); a closed day "Today: 16 asked · closed" and "1 staffer scheduled, called out" (a
- * closed day pays no wages). Only a lone staffer calls out (H7), so an open day's crew is the scheduled crew.
+ * Today's plan, scoped to today, with what its choices cost (BRIEF 10.2, G5d rounds 3 and 4), in two parts so a narrow
+ * line can break before the crew: "Today: 18 asked · all 18 accepted · premium, $52 a dog + $10 a dog per play block"
+ * and "1 staffer scheduled, $300 in wages" (the add-on named, so today's takings reconcile on screen); a cap is named
+ * only on a day it turned dogs away ("Today: 20 asked · 15 accepted, capped at the legal ratio · standard, $40 a dog +
+ * $10 a dog per play block"); a closed day "Today: 16 asked · closed" and "1 staffer scheduled, called out" (a closed
+ * day pays no wages). Only a lone staffer calls out (H7), so an open day's crew is the scheduled crew.
  */
 export function planParts(frame: ReplayFrame): { first: string; crew: string } {
   const scheduled = `${staffWords(frame.scheduledStaff)} scheduled`;
@@ -477,7 +481,8 @@ export function planParts(frame: ReplayFrame): { first: string; crew: string } {
   const accepted = turnedAway
     ? `${frame.accepted} accepted${frame.bookings === null ? '' : CAP_WORDS[frame.bookings]}`
     : `all ${frame.accepted} accepted`;
-  const rate = frame.rate === null || frame.ratePrice === null ? 'no rate' : `${frame.rate}, ${priceWords(frame.ratePrice)} a dog`;
+  const addOn = frame.addOnPrice === null ? '' : ` + ${priceWords(frame.addOnPrice)} a dog per play block`;
+  const rate = frame.rate === null || frame.ratePrice === null ? 'no rate' : `${frame.rate}, ${priceWords(frame.ratePrice)} a dog${addOn}`;
   return { first: `Today: ${frame.requests} asked · ${accepted} · ${rate}`, crew };
 }
 

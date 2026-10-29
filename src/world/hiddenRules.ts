@@ -81,7 +81,7 @@ export function hiddenRules(config: WorldConfig): readonly RuleLine[] {
         `Tomorrow's requests start from ${num(c.requests.base)} at a reputation of ${num(c.reputation.weekStart)} ` +
         `and move ${num(c.requests.reputationSlope)} for every point of reputation above or below it; ` +
         `the rate moves them too (low ${signed(c.requests.rateEffect.low)}, standard ${signed(c.requests.rateEffect.standard)}, premium ${signed(c.requests.rateEffect.premium)}), ` +
-        `and each dog sent home sick today cancels ${requests(c.illness.requestHit)}; never more than ${num(c.requests.max)}. ` +
+        `and each dog found sick at pickup today cancels ${requests(c.illness.requestHit)}; never more than ${num(c.requests.max)}. ` +
         `Monday's requests are ${num(c.requests.day1)}.`,
     },
     {
@@ -91,7 +91,7 @@ export function hiddenRules(config: WorldConfig): readonly RuleLine[] {
         `Cleanliness starts the week at ${num(c.cleanliness.weekStart)}. ` +
         `Each play block takes off ${abs(c.cleanliness.perDogPlayBlock)} per dog present, a nap ${abs(c.cleanliness.perDogNapBlock)} per dog, ` +
         `a clean adds ${num(c.cleanliness.cleanBlock)} (the dogs are crated), and the night adds ${num(c.cleanliness.overnight)}. ` +
-        `At pickup, if cleanliness is below ${num(c.illness.threshold)}, dogs go home sick: on average up to ${chance(c.illness.maxRate)} of them ` +
+        `At pickup, if cleanliness is below ${num(c.illness.threshold)}, dogs are found sick: on average up to ${chance(c.illness.maxRate)} of them ` +
         `when the floor is at its dirtiest, fewer the cleaner it is, with the fraction of a case settled by a draw; ` +
         `each case costs ${points(c.illness.reputationHit)} and cancels ${requests(c.illness.requestHit)} tomorrow.`,
     },

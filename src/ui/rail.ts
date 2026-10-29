@@ -39,7 +39,7 @@ export interface RailModel {
   cleanliness: number;
   fatigue: number;
   fatigueLimit: number;
-  /** Owners asking for tomorrow; days in a row with one staffer, before today; dogs sent home sick this week and in this block. */
+  /** Owners asking for tomorrow; days in a row with one staffer, before today; dogs found sick at pickup this week and in this block. */
   tomorrow: number;
   soloDays: number;
   sick: { week: number; thisBlock: number };
@@ -115,10 +115,6 @@ export function railModel(frame: ReplayFrame, world: WorldConfig, dayStartCash?:
 
 const DAY_SHORT: readonly string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-/** "18 dogs, 1 staffer on the floor" (and "1 dog", "2 staffers"). */
-export function floorWords(dogs: number, staff: number): string {
-  return `${dogs} ${dogs === 1 ? 'dog' : 'dogs'}, ${staff} ${staff === 1 ? 'staffer' : 'staffers'} on the floor`;
-}
 
 /** Updates the rail in place; null empties it (no week on the yard). */
 export type RailView = (model: RailModel | null) => void;
@@ -202,8 +198,9 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const limitNum = el('b');
   limitText.append(limitNum, ' legal limit');
   gauge.append(fill, over, mark, limitText);
-  const floor = el('p', 'gauge-floor');
-  crowdBody.append(label('overRatio', 'Dogs per staffer now'), gauge, floor);
+  // The dogs and the crew behind the number are the block line's, just above (round 4: the gauge's own floor line
+  // repeated them, and its room went to the plan line's add-on).
+  crowdBody.append(label('overRatio', 'Dogs per staffer now'), gauge);
   crowd.append(big, crowdBody);
 
   // The money and the costs in one block of four (BRIEF 10.2; round 3, rows 2 and 7): the page's cash now, which pays the
@@ -260,8 +257,9 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const facts = el('div', 'live-facts');
   const tomorrow = fact('Tomorrow: ', ' asking');
   const solo = fact('Days in a row with one staffer, before today: ', '');
-  // "Found sick at pickup: 3 this week", when above 0 (BRIEF 10.2: illness is found at pickup; one event, one phrasing).
-  const sick = fact('Found sick at pickup: ', ' this week');
+  // "Found sick at pickup (not incidents): 3 this week", when above 0 (BRIEF 10.2: illness is found at pickup; one name
+  // for it, in the chip, here and in the report's row; G5d round 4).
+  const sick = fact('Found sick at pickup (not incidents): ', ' this week');
   facts.append(tomorrow.line, sick.line, solo.line); // Tomorrow and the sick dogs share a line where there is room
 
   container.replaceChildren(whenBox, blockLine, crowd, stats, meters, facts);
@@ -300,7 +298,6 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     mark.style.left = `${scale(p.limit)}%`;
     limitText.style.left = `${scale(p.limit)}%`;
     limitNum.textContent = String(p.limit);
-    floor.textContent = floorWords(p.dogs, p.staff);
 
     cashVal.textContent = withCents(m.cash.now);
     cashTodayVal.textContent = withCents(m.cash.today);

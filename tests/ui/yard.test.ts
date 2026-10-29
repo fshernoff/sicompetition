@@ -154,3 +154,40 @@ describe('the yard keeps off the mess', () => {
     });
   }
 });
+
+// A sprite not yet in the yard before any repeat (G5d round 3, row 24): where the activity's poses give every dog of the
+// block a sprite of its own, no dog sprite appears twice, however far apart. Free play, a clean and the floor during a
+// walk take two poses (moving or sitting; sitting or asleep), so two dogs of one breed and coat; structured play (all
+// sitting) and a nap (asleep) one. The cast has twelve breeds and coats, so the 18 to 23 dogs of a packed day's play.
+describe('the yard shows a sprite not yet used before it repeats one (round 3, row 24)', () => {
+  const SPRITES_EACH: Readonly<Record<string, number>> = { freePlay: 2, walk: 2, clean: 2, structuredPlay: 1, nap: 1 };
+  const seen = { blocks: 0, most: 0 };
+  const identity = (f: YardFigure): string => `${f.breed ?? ''}|${f.coat ?? ''}`;
+
+  for (const [name, trace] of WEEKS) {
+    for (const [w, h] of SIZES) {
+      it(`${name}, at ${w} × ${h}: no dog sprite twice where the activity has enough`, () => {
+        const found: string[] = [];
+        for (let t = 0; t < 20; t++) {
+          const frame = replayFrame(trace.steps, t, config);
+          if (frame.closed || frame.activity === null) continue;
+          const dogs = arrangeYard(frame, w, h).figures.filter((f) => f.kind === 'dog');
+          const perIdentity = new Map<string, number>();
+          for (const d of dogs) perIdentity.set(identity(d), (perIdentity.get(identity(d)) ?? 0) + 1);
+          if (Math.max(0, ...perIdentity.values()) > (SPRITES_EACH[frame.activity] ?? 1)) continue;
+          seen.blocks += 1;
+          seen.most = Math.max(seen.most, dogs.length);
+          const ids = dogs.map((d) => d.id);
+          const twice = [...new Set(ids.filter((id, k) => ids.indexOf(id) !== k))];
+          if (twice.length > 0) found.push(`${frame.dayName} ${frame.blockName} (${frame.activityWords}, ${dogs.length} dogs): ${twice.join(', ')} twice`);
+        }
+        expect(found).toEqual([]);
+      });
+    }
+  }
+
+  it('checked blocks of 18 dogs and more', () => {
+    expect(seen.most).toBeGreaterThanOrEqual(18);
+    expect(seen.blocks).toBeGreaterThan(100);
+  });
+});

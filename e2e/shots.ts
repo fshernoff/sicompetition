@@ -174,7 +174,7 @@ async function main(): Promise<void> {
       await shot(careful, '19-careful-report');
       await careful.close();
 
-      // The drawn yard, when the art cannot load.
+      // The yard's notice, when the art cannot load (D64): nothing drawn, the two sentences in the page's type.
       const vector = await browser.newPage({ viewport: { width: 1366, height: 768 } });
       await vector.route(/\.(webp|png|svg)(\?.*)?$/, (route) => route.abort());
       await vector.goto(url);

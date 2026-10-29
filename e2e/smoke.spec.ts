@@ -33,7 +33,7 @@ const CHANGED = 'The plan changed. Put the GM to work to see what it does with t
  */
 async function samplePreparing(page: Page): Promise<void> {
   await page.evaluate((preparing) => {
-    const samples: { drawn: number; readout: string; reportHidden: boolean; week: string }[] = [];
+    const samples: { drawn: number; sig: number; readout: string; reportHidden: boolean; week: string }[] = [];
     (window as unknown as { __prep?: typeof samples }).__prep = samples;
     const canvas = document.querySelector('#replay') as HTMLCanvasElement;
     const tick = (): void => {
@@ -42,9 +42,14 @@ async function samplePreparing(page: Page): Promise<void> {
         const ctx = canvas.getContext('2d');
         const d = ctx ? ctx.getImageData(0, 0, canvas.width, canvas.height).data : new Uint8ClampedArray(4);
         let differ = 0;
-        for (let i = 0; i < d.length; i += 4) if (d[i] !== d[0] || d[i + 1] !== d[1] || d[i + 2] !== d[2]) differ++;
+        let sig = 0; // the picture's signature: equal for the same picture
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] !== d[0] || d[i + 1] !== d[1] || d[i + 2] !== d[2]) differ++;
+          sig += (d[i] as number) + 3 * (d[i + 1] as number) + 7 * (d[i + 2] as number) + 11 * (d[i + 3] as number);
+        }
         samples.push({
           drawn: differ / (d.length / 4),
+          sig,
           readout: document.querySelector('#readout')?.textContent ?? '',
           reportHidden: (document.querySelector('#report') as HTMLElement | null)?.hidden === true,
           week: canvas.getAttribute('data-week') ?? '',
@@ -67,6 +72,15 @@ async function expectPreparingClean(page: Page): Promise<number> {
     expect(x.week).toBe('preparing');
   }
   return samples.length;
+}
+
+/**
+ * How many different pictures the yard showed among the sampled getting-ready frames that drew anything (the orb on the
+ * roof and its label): more than one while the orb breathes, one under reduced motion (G5d round 3, row 10).
+ */
+async function preparingPictures(page: Page): Promise<number> {
+  const samples = await page.evaluate(() => (window as unknown as { __prep?: { drawn: number; sig: number }[] }).__prep ?? []);
+  return new Set(samples.filter((x) => x.drawn > 0).map((x) => x.sig)).size;
 }
 
 /** Waits for the run to end as a student sees it: the week has played and the readout is out. */
@@ -327,6 +341,7 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   // Exactly these states, in this order, and nothing else (one week on the yard, never another; D50).
   expect(weeks.filter((w, i) => i === 0 || w !== weeks[i - 1])).toEqual(['none', 'preparing', 'final']);
   console.log(`[e2e] frames sampled while the GM got ready (Round 1): ${await expectPreparingClean(page)}`);
+  expect(await preparingPictures(page)).toBeGreaterThan(1); // the orb breathes while the GM gets ready
   await expect(page.locator('#replay')).toHaveAttribute('data-plays', '1'); // the week played once, nothing before it
   for (const id of ['#prediction', '#round-round1', '#seed', '#export']) await expect(page.locator(id)).toBeEnabled();
   await expect(page.locator('#kpi-profit-on')).toBeDisabled(); // Round 1's own lock is back, not the run's
@@ -691,11 +706,14 @@ test('a plan the engine never settles on is, for the student, just the week the 
   await page.fill('#seed', '1');
   // While the GM gets ready (the engine runs to its cap, about a second here) every frame shows the placeholder and
   // nothing of the readout, sampled in the browser (Astra, plan and diff reviews: prove nothing plays while it trains).
+  // Under reduced motion, so the orb holds its ready picture the whole time (G5d round 3, row 10).
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await samplePreparing(page);
   await makePicks(page);
   await page.click('#train');
   await weekOver(page);
   console.log(`[e2e] frames sampled while the GM got ready (the unsettled plan): ${await expectPreparingClean(page)}`);
+  expect(await preparingPictures(page)).toBe(1); // reduced motion: the orb holds its ready picture
   await expect(page.locator('#replay')).toHaveAttribute('data-plays', '1');
   // For the student a plan the engine never settles on is just the week the GM ran (D50); the check line says so.
   const status = (await page.locator('#status').textContent()) ?? '';
@@ -817,6 +835,42 @@ test('a student runs the week by keyboard alone, and nothing the page shows, the
   const drawn = await page.evaluate(() => (window as unknown as { __drawn: string[] }).__drawn);
   expect(drawn.length).toBeGreaterThan(0);
   const text = STUDENT_ALLOWED.reduce((t, phrase) => t.replace(phrase, ' '), `${shown.join('\n')}\n${drawn.join('\n')}`);
+  const hits = STUDENT_BANS.flatMap((word) => (text.match(new RegExp(`.{0,40}${word.source}.{0,40}`, word.flags.includes('i') ? 'gi' : 'g')) ?? []));
+  expect(hits).toEqual([]);
+});
+
+test('without its pictures the yard draws nothing and says so, in words a student reads (D64)', async ({ page }) => {
+  // Every string drawn on a canvas, and every picture or shape drawn on the yard's.
+  await page.addInitScript(() => {
+    const seen = { drawn: [] as string[], shapes: [] as string[] };
+    (window as unknown as { __seen: typeof seen }).__seen = seen;
+    const proto = CanvasRenderingContext2D.prototype as unknown as Record<string, (...args: unknown[]) => unknown>;
+    for (const name of ['fillText', 'strokeText', 'drawImage', 'fill', 'stroke', 'fillRect', 'strokeRect', 'putImageData']) {
+      const original = proto[name] as (...args: unknown[]) => unknown;
+      proto[name] = function (this: CanvasRenderingContext2D, ...args: unknown[]) {
+        if (name === 'fillText' || name === 'strokeText') seen.drawn.push(String(args[0]));
+        else if (this.canvas.id === 'replay') seen.shapes.push(name);
+        return original.apply(this, args);
+      };
+    }
+  });
+  await page.route(/\.(webp|png|svg)(\?.*)?$/, (route) => route.abort());
+  await page.goto('/');
+  const said = async (): Promise<string> => (await page.evaluate(() => (window as unknown as { __seen: { drawn: string[] } }).__seen.drawn)).join(' ');
+  // The notice (BRIEF 10.2), its lines wrapped to the yard's box: on load, and again in the week's own frames.
+  await expect.poll(said, { timeout: 10_000 }).toContain('The panel beside it shows everything the GM does.');
+  await makePicks(page);
+  await page.click('#train');
+  await expect(page.locator('#status')).toHaveText(PLAYING, { timeout: 90_000 });
+  await page.evaluate(() => {
+    (window as unknown as { __seen: { drawn: string[] } }).__seen.drawn.length = 0;
+  });
+  await expect.poll(said, { timeout: 10_000 }).toContain('The panel beside it shows everything the GM does.');
+  expect(await said()).toContain("The yard's pictures did not load on this computer.");
+  // No picture, board or figure drawn on the yard at any point.
+  const shapes = await page.evaluate(() => (window as unknown as { __seen: { shapes: string[] } }).__seen.shapes);
+  expect([...new Set(shapes)]).toEqual([]);
+  const text = STUDENT_ALLOWED.reduce((t, phrase) => t.replace(phrase, ' '), `${await studentText(page)}\n${await said()}`);
   const hits = STUDENT_BANS.flatMap((word) => (text.match(new RegExp(`.{0,40}${word.source}.{0,40}`, word.flags.includes('i') ? 'gi' : 'g')) ?? []));
   expect(hits).toEqual([]);
 });

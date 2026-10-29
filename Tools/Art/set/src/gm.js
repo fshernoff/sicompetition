@@ -2,7 +2,8 @@
 // (the status line's three; gate 7):
 //   ready   the GM is getting ready: the amber band turned low, a faint warmth beside it.
 //   running the GM is running the week: the amber band lit, a hot core line, its light on the shell's nearest facets.
-//   done    the week is over: the band lit steady green, the status light's "done", in the same finish as the amber.
+//   done    the week is over: the band lit a steady pale warm white, in the same finish as the amber: neutral, so
+//           it says the week is finished and never whether it went well (no green, no red).
 // The orb is in the same place in every state. No face, no limbs, no halo, no ring, no chevron or arrow (never "up").
 // The band's edges are the shell's cut edges: crisp, with no 2D glow laid round them.
 import * as THREE from 'three';
@@ -11,9 +12,9 @@ import { V, hash, sstep } from './lib.js';
 export const GM = { r: 0.27, gap: 0.05, hover: 0.85 };
 const AMBER = new THREE.Color('#FFB21E');
 const CORE = new THREE.Color('#FFE2A6');
-// the page's ok green as a light: the band a little brighter than #2E8B57 so it reads lit, its core pale
-const GREEN = new THREE.Color('#34A866');
-const GREEN_CORE = new THREE.Color('#BDF2D0');
+// the done light: a pale warm white band with a white core
+const WHITE = new THREE.Color('#FFF1D6');
+const WHITE_CORE = new THREE.Color('#FFFFFF');
 const DIM = new THREE.Color('#7C5A26');
 const SHELL = [new THREE.Color('#3B4047'), new THREE.Color('#4B5159')];
 const CUT = new THREE.Color('#141518');
@@ -86,8 +87,8 @@ export function buildGM(state = 'running', { hover } = {}) {
   const bright = state !== 'ready';
   const g = new THREE.Group();
   const orb = new THREE.Group();
-  // ready: the band turned low, a faint warmth beside it; running: amber lit; done: green lit, the same way
-  const light = state === 'done' ? GREEN : AMBER, core = state === 'done' ? GREEN_CORE : CORE;
+  // ready: the band turned low, a faint warmth beside it; running: amber lit; done: white lit, the same way
+  const light = state === 'done' ? WHITE : AMBER, core = state === 'done' ? WHITE_CORE : CORE;
   const upper = bright ? shell(true, 0.5, light) : shell(true, 0.14, DIM);
   const lower = bright ? shell(false, 0.42, light) : shell(false, 0.12, DIM);
   orb.add(upper.mesh, lower.mesh);

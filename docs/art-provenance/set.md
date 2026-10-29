@@ -16,9 +16,9 @@ generated part: `docs/art-provenance/README.md`).
 | `set/board.webp` | the board, with its key-light shadows and its soft shadow on the page; 24 px of clear transparency on every side | 2395 × 1467 | 118,610 | `52b91d3d8813` |
 | `set/gm-ready.webp` | the GM getting ready: the amber band turned low | 114 × 240 | 2,446 | `fe2d83398fc1` |
 | `set/gm-running.webp` | the GM running the week: the amber band lit | 114 × 240 | 3,104 | `17348d3a544a` |
-| `set/gm-done.webp` | the week is over: the band lit green | 114 × 240 | 2,766 | `a45aa92689db` |
-| `set/gm-page-ready.webp`, `set/gm-page-running.webp`, `set/gm-page-done.webp` | the same three at the page's size (64 CSS px), for the status line, the orb centred | 128 × 128 | 2,200; 2,724; 2,520 | `d4b7bfb2b2d9`, `23e8fa0b7bc1`, `50c2056da31a` |
-| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 3,427 | `516b986a9dce` |
+| `set/gm-done.webp` | the week is over: the band lit a pale warm white | 114 × 240 | 2,834 | `e12e5f32915d` |
+| `set/gm-page-ready.webp`, `set/gm-page-running.webp`, `set/gm-page-done.webp` | the same three at the page's size (64 CSS px), for the status line, the orb centred | 128 × 128 | 2,200; 2,724; 2,512 | `d4b7bfb2b2d9`, `23e8fa0b7bc1`, `d44de11da266` |
+| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 3,476 | `3597b0a6bb20` |
 
 Every image is at 2× the yard's CSS size, lossy WebP with a real alpha channel. The hashes are this render's; the
 render is deterministic (two runs on Oct 28 gave byte-identical files), so a rerun on the same tools reproduces them.
@@ -33,6 +33,11 @@ see-through slivers at its edges); the large hedge bush made round;
 the hedge moved clear of the clubhouse's edge (no cypress sliver); 24 px of clear transparency round the board, its
 page shadow included (the map and `gmSpot` moved with it); the done state made a green band, the orb in the same place
 in every state at both sizes, no ring; the page's orb centred.
+
+**The third render (Oct 28, after review round 1):** the critic read the green done band as "good" on a bad week (the
+scorecard must never read as a win), so done is now a neutral band: a steady pale warm white. Only `gm-done.webp` and
+`gm-page-done.webp` changed; the board and the other four GM files are byte-identical to the second render, and
+`set.json` changed only in its `_notes` line describing done.
 
 ## The tools
 
@@ -97,9 +102,9 @@ node Tools/Art/set/render.mjs cast     # the board with WP4a's cast (src/assets/
    edges exactly (spike B's band showed notches at 8×); the band is unlit, its light on the nearest facets is baked
    into their colours, and there is no 2D glow round it (spike B's haze could read as a halo). Ready: the amber band
    turned low (`#7C5A26`), a faint warmth beside it. Running: the amber band lit (`#FFB21E`) with a hot core line.
-   Done: the band lit green (`#34A866`, the page's ok green a little brighter so it reads lit, with a pale core and its
-   light on the nearest facets, the same finish as the amber): the status light's convention, amber working and green
-   done, which also differs from amber in lightness for a colour-blind viewer; no face, no halo, no ring, no arrow or
+   Done: the band lit a steady pale warm white (`#FFF1D6`, a white core, its light on the nearest facets, the same
+   finish as the amber): neutral, so it says the week is finished and never whether it went well (no green, no red),
+   and it differs from the dim and the lit amber in both hue and lightness; no face, no halo, no ring, no arrow or
    chevron (never "up"). The orb is in the same place in every state, 0.85 m over its spot. The yard's three share one
    frame and one anchor (the point it hovers over, on the roof at `gmSpot`, inside the image); the page's three share
    one 128 px frame with the orb centred. The GM's grade is lighter (contrast 0.96).

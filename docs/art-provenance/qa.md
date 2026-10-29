@@ -260,3 +260,63 @@ Round 2 of the cast (WP4a's fixes):
 | cast/poodle-cream-moving.webp | 0a3fbe15795d | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
 | cast/poodle-cream-sitting.webp | b2e372942906 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
 | cast/poodle-cream-asleep.webp | 5e3c25399555 | main thread | 2026-10-29 | clean | at 2× the image (4× the page) on cream and near-black, its breed's sheet |
+| cast/beagle-tricolour-moving.webp | 0c67ddc98005 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/beagle-tricolour-sitting.webp | 476c8055863d | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/beagle-tricolour-asleep.webp | beadb9c7cff0 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/collie-black-moving.webp | 6037dba489ec | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/collie-black-sitting.webp | 6a2edcefa454 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/collie-black-asleep.webp | 41f46cd4d795 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/collie-red-moving.webp | 9b86aae70f7f | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/collie-red-sitting.webp | aa9cc6d2cc26 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/collie-red-asleep.webp | eb90dcd7e185 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/corgi-red-moving.webp | b5134e6eb61d | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/corgi-red-sitting.webp | 713f33476cbd | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/corgi-red-asleep.webp | 3e595c75e601 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/corgi-sable-moving.webp | 4ed78a5f9a73 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/corgi-sable-sitting.webp | 08612af0b812 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/corgi-sable-asleep.webp | 68f7c6917b02 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/lab-black-asleep.webp | 9d08b8e91c7f | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/lab-chocolate-asleep.webp | 6a8e8f6785ef | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/lab-yellow-moving.webp | 0c82acb8066a | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/lab-yellow-sitting.webp | 7719a501385f | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/lab-yellow-asleep.webp | 4bc6f8b727a2 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/poodle-black-moving.webp | 453fca12f563 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/poodle-black-sitting.webp | ea2cd62b24d8 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/poodle-black-asleep.webp | ee6656d11bf2 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/poodle-cream-moving.webp | 0a3fbe15795d | Astra | 2026-10-29 | defect: pale fringe along belly and lower-leg contours on near-black. | round 2 of the cast: fresh 2× crops |
+| cast/poodle-cream-sitting.webp | b2e372942906 | Astra | 2026-10-29 | defect: pale fringe around tail pom and lower haunch on near-black. | round 2 of the cast: fresh 2× crops |
+| cast/poodle-cream-asleep.webp | 5e3c25399555 | Astra | 2026-10-29 | defect: pale fringe beneath tail pom and along lower ear edge on near-black. | round 2 of the cast: fresh 2× crops |
+| cast/crew2-leash.webp | 5d9261ba81b5 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/crew2-ball.webp | 5b1feea92c5f | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| cast/crew2-mop.webp | 3c066a3eab13 | Astra | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops |
+| set/gm-done.webp | e12e5f32915d | main thread | 2026-10-29 | clean | the third render: at 2× on cream and navy beside the other states; a neutral warm-white band, the orb in place |
+| set/gm-page-done.webp | d44de11da266 | main thread | 2026-10-29 | clean | the third render: at 2× on cream and navy beside the other states; a neutral warm-white band, the orb in place |
+| cast/beagle-tricolour-moving.webp | 0c67ddc98005 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/beagle-tricolour-sitting.webp | 476c8055863d | Sonnet | 2026-10-29 | defect: the white tail tip is clipped flat by the left canvas edge (6 opaque pixels in column 0) | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/beagle-tricolour-asleep.webp | beadb9c7cff0 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/collie-black-moving.webp | 6037dba489ec | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/collie-black-sitting.webp | 6a2edcefa454 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/collie-black-asleep.webp | 41f46cd4d795 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/collie-red-moving.webp | 9b86aae70f7f | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/collie-red-sitting.webp | aa9cc6d2cc26 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/collie-red-asleep.webp | eb90dcd7e185 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/corgi-red-moving.webp | b5134e6eb61d | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/corgi-red-sitting.webp | 713f33476cbd | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/corgi-red-asleep.webp | 3e595c75e601 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/corgi-sable-moving.webp | 4ed78a5f9a73 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/corgi-sable-sitting.webp | 08612af0b812 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/corgi-sable-asleep.webp | 68f7c6917b02 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/lab-black-asleep.webp | 9d08b8e91c7f | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/lab-chocolate-asleep.webp | 6a8e8f6785ef | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/lab-yellow-moving.webp | 0c82acb8066a | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/lab-yellow-sitting.webp | 7719a501385f | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/lab-yellow-asleep.webp | 4bc6f8b727a2 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/poodle-black-moving.webp | 453fca12f563 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/poodle-black-sitting.webp | ea2cd62b24d8 | Sonnet | 2026-10-29 | defect: pinhole gaps between the near front leg and the far leg (about x=74, y=123) show as light specks on cream | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/poodle-black-asleep.webp | ee6656d11bf2 | Sonnet | 2026-10-29 | defect: a 1x2 px translucent pinhole between the pompon tail and the hind leg (x=29, y=49-50) | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/poodle-cream-moving.webp | 0a3fbe15795d | Sonnet | 2026-10-29 | defect: a single dark speck in the groin notch (about x=62, y=78), visible on cream | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/poodle-cream-sitting.webp | b2e372942906 | Sonnet | 2026-10-29 | defect: pinhole gaps between the near front leg and the far leg and haunch, a dotted dark seam | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/poodle-cream-asleep.webp | 5e3c25399555 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/crew2-leash.webp | 5d9261ba81b5 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/crew2-ball.webp | 5b1feea92c5f | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |
+| cast/crew2-mop.webp | 3c066a3eab13 | Sonnet | 2026-10-29 | clean | round 2 of the cast: fresh 2× crops, zooms to 12× |

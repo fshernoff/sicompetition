@@ -21,14 +21,18 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
   the hybrid. The cast (dogs, crew) generated under eight gates; the set and the GM modelled in three.js and rendered
   offline (`.claude/docs/reviews/g5d-directions.md`). The art contract: `src/assets/art/manifest.ts`. Ports for
   parallel worktrees: `E2E_PORT`, `SHOTS_PORT`, `PERF_PORT`.
-- **Phase 2 running when this was written** (briefs: `.claude/docs/plans/g5d-packages.md`): WP2 the page and the rail
-  (Opus, its own worktree and branch), WP3 the yard (Opus, its own worktree and branch), WP4a the cast and WP4b the set
-  and the GM (Opus, the main checkout, new files only, not committed by them). WP2 and WP3 commit on their worktree
-  branches; the main thread reviews every diff, merges them into `g5d-look`, and swaps their placeholders for WP4's
-  art.
-- **Next:** review and merge the four; the D58 passes for every new image (the main thread, Astra, a fresh Sonnet);
-  review round 1 (shots, the three reads, the rounds file `.claude/docs/reviews/g5d-look-rounds.md`); WP5 the words;
-  rounds to the stop rule; Astra on the group's diff; the owner's gate before the Nov 5 freeze.
+- **Phase 2, state at the last update (Oct 28, late):**
+  - Merged on `g5d-look`: WP3 the yard (`c0b039d`, cherry-picked without its placeholder-art commit), WP4a the cast
+    (`197a2bb`: 48 sprites, six breeds, two adult crew), WP4b's first set (`7b3ada6`).
+  - Running: WP4b re-rendering the set from the D58 readers' findings (lawn tone steps, a chopped bush, a cypress
+    sliver, a 24 px margin, the done state, the page orb centred); WP2 the page in its worktree
+    (`.claude/worktrees/agent-ae16041c278544645`, branch `worktree-agent-ae16041c278544645`); Sonnet's D58 pass on
+    the 45 cast sprites. All three were stopped by the account's usage limit and resumed.
+  - D58 ledger: the set's first bytes have Astra and Sonnet defects (being fixed); the cast has the main thread's 48
+    clean, Astra's 41 of 45 clean (four recolour defects: beagle-tan-asleep, lab-yellow x3, for WP4a), Sonnet's to
+    come; crew2 has the main thread's pass only.
+  - Gotcha: an Agent `isolation: worktree` was created from `main`, not the current branch; WP3 reset itself to
+    `35b92bf`. Check a worktree's base before merging it.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.
 
 ## Session 7 (2026-10-28): the submission thread started

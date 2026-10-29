@@ -52,4 +52,11 @@ export interface SetManifest {
   gm: Record<'ready' | 'running' | 'done', { file: string; size: [number, number]; anchor: [number, number] }>;
   /** Where the GM hovers on the board, in board-image pixels. */
   gmSpot: [number, number];
+  /** The GM at the page's size (about 64 CSS px), the same three states, for the page beside the status line. */
+  gmPage: Record<'ready' | 'running' | 'done', { file: string; size: [number, number] }>;
+  /** The walkers' strip on the front path, in world metres [x, y, w, h] (y may be negative: outside the lawn). */
+  walk: [number, number, number, number];
+  /** The set's own shadow, so the yard's code shadows match it (gate 3): tint RGB, alpha and blur of the cast
+   * shadow, the contact ellipse's alpha and blur, and the key light's throw on the ground per pixel of height. */
+  shadow: { tint: [number, number, number]; alpha: number; blur: number; contactAlpha: number; contactBlur: number; throw: [number, number] };
 }

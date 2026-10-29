@@ -1,0 +1,144 @@
+{
+  "board": {
+    "file": "set/board.webp",
+    "size": [
+      2317,
+      1427
+    ],
+    "map": {
+      "ppm": 139.14,
+      "origin": [
+        1181.6,
+        1283.5
+      ],
+      "lawn": [
+        7.2,
+        7.2
+      ],
+      "margin": 0.45,
+      "blocked": [
+        [
+          5.87,
+          5.87,
+          1.33,
+          1.33
+        ],
+        [
+          0,
+          6.16,
+          2.36,
+          1.04
+        ],
+        [
+          6.13,
+          4,
+          1.07,
+          2.77
+        ],
+        [
+          2.66,
+          6.23,
+          2.64,
+          0.97
+        ],
+        [
+          6.51,
+          3.03,
+          0.69,
+          0.91
+        ]
+      ]
+    }
+  },
+  "gm": {
+    "ready": {
+      "file": "set/gm-ready.webp",
+      "size": [
+        144,
+        272
+      ],
+      "anchor": [
+        72,
+        231.51
+      ]
+    },
+    "running": {
+      "file": "set/gm-running.webp",
+      "size": [
+        144,
+        272
+      ],
+      "anchor": [
+        72,
+        231.51
+      ]
+    },
+    "done": {
+      "file": "set/gm-done.webp",
+      "size": [
+        144,
+        272
+      ],
+      "anchor": [
+        72,
+        231.51
+      ]
+    }
+  },
+  "gmSpot": [
+    390.09,
+    209.14
+  ],
+  "gmPage": {
+    "ready": {
+      "file": "set/gm-page-ready.webp",
+      "size": [
+        128,
+        128
+      ]
+    },
+    "running": {
+      "file": "set/gm-page-running.webp",
+      "size": [
+        128,
+        128
+      ]
+    },
+    "done": {
+      "file": "set/gm-page-done.webp",
+      "size": [
+        128,
+        128
+      ]
+    }
+  },
+  "walk": [
+    0.4,
+    -0.65,
+    7.12,
+    0.3
+  ],
+  "shadow": {
+    "tint": [
+      12,
+      30,
+      18
+    ],
+    "alpha": 0.3,
+    "blur": 1.6,
+    "contactAlpha": 0.42,
+    "contactBlur": 2.6,
+    "throw": [
+      0.72,
+      -0.184
+    ]
+  },
+  "_notes": [
+    "SetManifest (src/assets/art/manifest.ts) plus three extras: gmPage, walk, shadow. Every pixel value is in the image's own pixels, at 2x the yard's CSS size.",
+    "The map: world (x, y) in metres lands at origin + x * ppm * (2, -1) / sqrt(5) + y * ppm * (-2, -1) / sqrt(5); a metre along x is [124.45,-62.23] px, along y [-124.45,-62.23] px, a metre straight up [0,-152.42] px.",
+    "The lawn is [0, lawn[0]] x [0, lawn[1]] inside the fence lines (the fence on the two back sides, the gate in the right-back one at y 1.3 to 2.6); the front two sides are open. blocked: [x, y, w, h] footprints already padded by 0.2 m.",
+    "walk: [x, y, w, h], where the walking group stands: the flagstone path along the lawn's front-right edge (y from -1 to 0), outside the lawn.",
+    "gm: drawn with its anchor (the point it hovers over, inside the image) on gmSpot; the three states share one size and anchor, so swapping a state never moves the orb except as the state means (done settles lower). gmPage: the same three at 128 px square (64 CSS px), the orb in the same place in each.",
+    "shadow: the board's cast shadows, for the cast's code shadows: tint rgb, alpha, blur in px at the yard's 1x (x2 in these images); a contact ellipse at contactAlpha and contactBlur; throw: the screen offset (dx, dy) of a shadow point per px of height above the anchor (the key light from the upper left, shadows to the right)."
+  ]
+}

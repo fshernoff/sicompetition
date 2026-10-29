@@ -1,0 +1,12 @@
+{
+  "name": "reward-the-pack-set",
+  "private": true,
+  "description": "Build-time only: the set (board, clubhouse, fence, props) and the GM, modelled in three.js and rendered offline from the one camera (G5d, D59). Never a dependency of the page.",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  }
+}

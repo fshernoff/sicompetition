@@ -11,7 +11,7 @@ or more, on cream and on near-black), never from the page or a downscaled view, 
 - no text, letters or logos; no halo, fringe or speck on light or dark; one light direction and one finish across the
   set; no figure cut by the image's edges or the page's crop (scenery may run off the frame).
 
-`sha` is the first 12 hex digits of the file's SHA-256 (`shasum -a 256 <file> | cut -c1-12`): a regenerated or
+`file` is the path from `src/assets/art/` (`hero-yard.webp`, `cast/corgi-red-moving.webp`, `set/board.webp`). `sha` is the first 12 hex digits of the file's SHA-256 (`shasum -a 256 <file> | cut -c1-12`): a regenerated or
 re-encoded file needs three new passes. `verdict` is `clean` or `defect: <what and where>`. `tests/art/qa.test.ts`
 holds the page to this.
 

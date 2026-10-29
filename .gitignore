@@ -10,3 +10,8 @@ blob-report/
 
 # Class evidence (exports, concept-check scores, memos): never in the repo, even with team codes only.
 /Evidence/
+
+# The parallel packages' git worktrees (G5d).
+.claude/worktrees/
+# The set renderer's own install.
+Tools/Art/*/node_modules/

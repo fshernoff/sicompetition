@@ -4,7 +4,8 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', 'node_modules', 'Temp', 'test-results', 'playwright-report']),
+  // .claude/worktrees: the parallel packages' own checkouts (G5d), linted in their worktree, not from here.
+  globalIgnores(['dist', 'node_modules', 'Temp', 'test-results', 'playwright-report', '.claude/worktrees', 'Tools/Art/*/node_modules']),
   {
     files: ['**/*.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

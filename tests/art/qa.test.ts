@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 // D58: no image ships without three clean figure-by-figure passes on its exact bytes (the main thread, Astra, a fresh
-// Sonnet agent) in docs/art-provenance/qa.md, and a provenance entry in docs/art-provenance/README.md.
+// Sonnet agent) in docs/art-provenance/qa.md, and a provenance entry in docs/art-provenance/README.md or set.md.
 const ART = 'src/assets/art';
 const READERS = ['main thread', 'Astra', 'Sonnet'];
 
@@ -28,7 +28,8 @@ function sha12(path: string): string {
   return createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 12);
 }
 
-const shipped = readdirSync(ART).filter((name) => /\.(webp|png|jpg|jpeg|svg|avif)$/.test(name));
+// Every image under src/assets/art, in subfolders too (the cast and the set live in cast/ and set/), by its path from ART.
+const shipped = (readdirSync(ART, { recursive: true }) as string[]).filter((name) => /\.(webp|png|jpg|jpeg|svg|avif)$/.test(name)).sort();
 
 describe('the art QA (D58)', () => {
   it('ships at least one image', () => {
@@ -47,7 +48,8 @@ describe('the art QA (D58)', () => {
   });
 
   it.each(shipped)('%s is in the provenance record', (name) => {
-    const stem = name.replace(/\.[a-z]+$/, '');
-    expect(readFileSync('docs/art-provenance/README.md', 'utf8')).toContain(stem);
+    const stem = name.replace(/\.[a-z]+$/, '').split('/').pop() ?? name;
+    const record = ['docs/art-provenance/README.md', 'docs/art-provenance/set.md'].map((f) => (existsSync(f) ? readFileSync(f, 'utf8') : '')).join('\n');
+    expect(record).toContain(stem);
   });
 });

@@ -17,9 +17,11 @@
 // incident's pulse move, and neither under reduced motion. If any image fails, the schematic yard is the fallback.
 import type { Bookings, FloorActivity, Rate, State, StepRecord, WorldConfig, WorldEvent } from '../world/types.ts';
 import { CAMERA } from '../assets/art/manifest.ts';
-import type { BoardMap, CastManifest, CastSprite, CrewPose, DogPose, Facing, SetManifest } from '../assets/art/manifest.ts';
+import type { BoardMap, CastManifest, CastSprite, CrewPose, DogPose, Facing, MessDecal, SetManifest } from '../assets/art/manifest.ts';
 import castJson from '../assets/art/cast.json' with { type: 'json' };
 import setJson from '../assets/art/set.json' with { type: 'json' };
+import configJson from '../world/config.default.json' with { type: 'json' };
+import { bookingsAccepted } from '../world/rules.ts';
 
 /** One block of the week on screen. 20 blocks: 6 s a week. */
 export const STEP_MS = 300;
@@ -1025,6 +1027,11 @@ export const REFERENCE_YARD: readonly [number, number] = [784, 690];
 const SAME_SPRITE_PX = 160;
 const SAME_BREED_POSE_PX = 110;
 
+/** The default world: the crew fatigue above which the staff of a play or nap block stand tired (the config's KPI
+ * threshold, BRIEF 6), and the numbers the yard's look-ahead guesses with (it only fills a cache). */
+const WORLD = configJson as unknown as WorldConfig;
+const FATIGUE_LIMIT = WORLD.fatigue.kpiThreshold;
+
 /** Gate 5: the cast is mirrored at run time for the other facing (manifest.ts); false draws every sprite as drawn. */
 const MIRROR_CAST = true;
 /** The silhouette's band height for the spacing test, in image pixels; and the alpha that counts as solid. */
@@ -1041,11 +1048,34 @@ const SHADOW_DEFAULT: ShadowSpec = { throw: [0.72, -0.184], blur: 3.2, alpha: 0.
 interface Shape {
   /** The first band's index: band j covers [j × BAND, (j + 1) × BAND) image px from the anchor, downward. */
   j0: number;
-  /** Each band's opaque span, left and right in image px from the anchor (NaN for an empty band). */
-  l: Float64Array;
-  r: Float64Array;
+  /** How many bands. */
+  n: number;
+  /**
+   * Each band's opaque span in whole image px from the anchor, left then right (band i at 2i and 2i + 1; an empty band
+   * has its left above its right). One small array per sprite, shared by its mirror, which reads it with `flip`.
+   */
+  lr: Int16Array;
+  flip: boolean;
   /** The bounds in image px from the anchor: left, top, right, bottom. */
   box: [number, number, number, number];
+}
+
+const EMPTY_L = 32767;
+const EMPTY_R = -32768;
+
+/** A band's left and right edge as the shape faces (mirrored: the right edge negated, and the left). */
+const bandL = (s: Shape, i: number): number => (s.flip ? -(s.lr[2 * i + 1] as number) : (s.lr[2 * i] as number));
+const bandR = (s: Shape, i: number): number => (s.flip ? -(s.lr[2 * i] as number) : (s.lr[2 * i + 1] as number));
+const bandEmpty = (s: Shape, i: number): boolean => (s.lr[2 * i] as number) > (s.lr[2 * i + 1] as number);
+
+/** A shape's empty band array for n bands. */
+function bands(n: number): Int16Array {
+  const lr = new Int16Array(2 * n);
+  for (let i = 0; i < n; i++) {
+    lr[2 * i] = EMPTY_L;
+    lr[2 * i + 1] = EMPTY_R;
+  }
+  return lr;
 }
 
 /** The shadow spec in the board image's pixels: the throw per px of height, blurs, alphas and the tint. */
@@ -1069,8 +1099,6 @@ interface CastEntry {
 /** The cast by who and what: the dogs by identity (breed and coat) and pose, the crew by person and pose. */
 interface CastIndex {
   dogs: Map<string, Partial<Record<DogPose, CastEntry[]>>>;
-  /** Each breed's identities ('golden|gold', 'golden|red'), sorted. */
-  breeds: Map<string, string[]>;
   /** The crew by person ('crew', 'crew2': different staff), then by pose. */
   crew: Map<string, Partial<Record<CrewPose, CastEntry[]>>>;
   people: string[];
@@ -1090,19 +1118,41 @@ interface SetData {
   /** Each state's image size and anchor, and its orb's opaque box (left, top, right, bottom) in the image's pixels. */
   gm: Record<GmState, { size: [number, number]; anchor: [number, number]; orb: [number, number, number, number] }>;
   shadow: ShadowSpec;
+  /** The mess decals (set.json's mess), and the mess cells of those whose images loaded (messMask). */
+  mess: MessDecal[];
+  messMasks: ReadonlyMap<string, MessMask>;
 }
+
+/**
+ * Where a decal's mess is, on a grid of MESS_MASK_STEP image px: a cell is set where the decal is opaque (a decal holds
+ * only its mess: the mud and its tracks, the kibble, the ring, the ball, the bowl and its puddle), widened by a cell so
+ * a foot keeps off its edge.
+ */
+interface MessMask {
+  w: number;
+  h: number;
+  on: Uint8Array;
+}
+
+const MESS_MASK_STEP = 4;
 
 interface ArtSet {
   board: HTMLImageElement;
   set: SetData;
   cast: CastIndex;
   gm: Record<GmState, HTMLImageElement>;
+  /** The mess decals that loaded (one that did not is left out; the yard draws without it). */
+  mess: { decal: MessDecal; img: HTMLImageElement }[];
 }
+
+/** What a foot point is on: a decal nobody stands on (the bowl, the toy and its spilled kibble), or the mud. */
+const MESS_NO_STAND = 1;
+const MESS_NO_SLEEP = 2;
 
 const GM_STATES: readonly GmState[] = ['ready', 'running', 'done'];
 
 /** The set's data; the orbs' boxes measured on their images when given, otherwise the orb taken as the image's top square. */
-function setData(orbs?: Record<GmState, [number, number, number, number]>): SetData {
+function setData(orbs?: Record<GmState, [number, number, number, number]>, messMasks: ReadonlyMap<string, MessMask> = new Map()): SetData {
   const lx = SET.board.map.lawn[0];
   const s = SET.shadow;
   const gm = {} as SetData['gm'];
@@ -1121,29 +1171,23 @@ function setData(orbs?: Record<GmState, [number, number, number, number]>): SetD
       s === undefined
         ? SHADOW_DEFAULT
         : { throw: s.throw, blur: s.blur * 2, alpha: s.alpha, contactBlur: s.contactBlur * 2, contactAlpha: s.contactAlpha, tint: s.tint.join(', ') },
+    mess: Array.isArray(SET.mess) ? SET.mess : [],
+    messMasks,
   };
 }
 
 function indexCast(entries: readonly CastEntry[]): CastIndex {
   const dogs = new Map<string, Partial<Record<DogPose, CastEntry[]>>>();
   const crew = new Map<string, Partial<Record<CrewPose, CastEntry[]>>>();
-  const breeds = new Map<string, string[]>();
   for (const e of entries) {
     const { src } = e;
     const [map, key] = src.kind === 'dog' ? [dogs, `${src.breed ?? 'dog'}|${src.coat ?? ''}`] : [crew, src.id.split('-')[0] ?? 'crew'];
     const poses = (map.get(key) ?? {}) as Record<string, CastEntry[] | undefined>;
     (poses[src.pose] ??= []).push(e);
     map.set(key, poses);
-    if (src.kind === 'dog') {
-      const breed = src.breed ?? 'dog';
-      const ids = breeds.get(breed) ?? [];
-      if (!ids.includes(key)) ids.push(key);
-      breeds.set(breed, ids);
-    }
   }
   if (dogs.size === 0 || crew.size === 0) throw new Error('replay: the cast needs a dog and the crew');
-  for (const ids of breeds.values()) ids.sort();
-  return { dogs, breeds, crew, people: [...crew.keys()].sort(), plans: new Map(), pendingPlans: new Map() };
+  return { dogs, crew, people: [...crew.keys()].sort(), plans: new Map(), pendingPlans: new Map() };
 }
 
 /** A sprite's silhouette without its pixels: the ellipse inside its box (the schematic yard and the tests). */
@@ -1152,16 +1196,15 @@ function ellipseShape(src: CastSprite): Shape {
   const [ax, ay] = src.anchor;
   const j0 = Math.floor(-ay / BAND);
   const n = Math.floor((h - 1 - ay) / BAND) - j0 + 1;
-  const l = new Float64Array(n).fill(Number.NaN);
-  const r = new Float64Array(n).fill(Number.NaN);
+  const lr = bands(n);
   for (let j = 0; j < n; j++) {
     const t = ((j0 + j + 0.5) * BAND + ay - h / 2) / (h / 2);
     if (Math.abs(t) >= 1) continue;
     const half = (w / 2) * Math.sqrt(1 - t * t) * 0.92;
-    l[j] = w / 2 - half - ax;
-    r[j] = w / 2 + half - ax;
+    lr[2 * j] = Math.floor(w / 2 - half - ax);
+    lr[2 * j + 1] = Math.ceil(w / 2 + half - ax);
   }
-  return withBox({ j0, l, r, box: [0, 0, 0, 0] });
+  return withBox({ j0, n, lr, flip: false, box: [0, 0, 0, 0] });
 }
 
 let plainCast: CastIndex | null = null;
@@ -1247,7 +1290,36 @@ async function loadArt(): Promise<ArtSet> {
   const gm = { ready, running, done };
   const orbs = {} as Record<GmState, [number, number, number, number]>;
   for (const state of GM_STATES) orbs[state] = orbBox(gm[state], SET.gm[state].size, probe);
-  return { board, set: setData(orbs), cast, gm };
+  const decals = Array.isArray(SET.mess) ? SET.mess : [];
+  const loaded = await Promise.allSettled(decals.map((d) => loadImage(artUrl(d.file))));
+  const mess: ArtSet['mess'] = [];
+  const masks = new Map<string, MessMask>();
+  loaded.forEach((r, i) => {
+    if (r.status !== 'fulfilled') return;
+    const decal = decals[i] as MessDecal;
+    mess.push({ decal, img: r.value });
+    masks.set(decal.id, messMask(r.value, decal, probe));
+  });
+  return { board, set: setData(orbs, masks), cast, gm, mess };
+}
+
+/** A decal's mess cells, read from its alpha at one pixel per cell. */
+function messMask(img: HTMLImageElement, decal: MessDecal, probe: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }): MessMask {
+  const w = Math.max(1, Math.ceil(decal.size[0] / MESS_MASK_STEP));
+  const h = Math.max(1, Math.ceil(decal.size[1] / MESS_MASK_STEP));
+  probe.canvas.width = w;
+  probe.canvas.height = h;
+  probe.ctx.clearRect(0, 0, w, h);
+  probe.ctx.drawImage(img, 0, 0, w, h);
+  const data = probe.ctx.getImageData(0, 0, w, h).data;
+  const on = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if ((data[(y * w + x) * 4 + 3] ?? 0) < 48) continue;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (x + dx >= 0 && x + dx < w && y + dy >= 0 && y + dy < h) on[(y + dy) * w + x + dx] = 1;
+    }
+  }
+  return { w, h, on };
 }
 
 /** The GM's orb: its opaque box in a state's image, in the manifest's pixels (the image also holds its hover gap). */
@@ -1289,8 +1361,7 @@ function shapeOf(img: HTMLImageElement, src: CastSprite, probe: { canvas: HTMLCa
   const sy = src.size[1] / h;
   const j0 = Math.floor(-ay / BAND);
   const n = Math.floor((h - 1 - ay) / BAND) - j0 + 1;
-  const l = new Float64Array(n).fill(Number.NaN);
-  const r = new Float64Array(n).fill(Number.NaN);
+  const lr = bands(n);
   for (let y = 0; y < h; y++) {
     let lo = -1;
     let hi = -1;
@@ -1303,13 +1374,10 @@ function shapeOf(img: HTMLImageElement, src: CastSprite, probe: { canvas: HTMLCa
     }
     if (lo < 0) continue;
     const j = Math.floor((y - ay) / BAND) - j0;
-    const left = (lo - ax) * sx;
-    const right = (hi + 1 - ax) * sx;
-    const cl = l[j] as number;
-    l[j] = Number.isNaN(cl) ? left : Math.min(cl, left);
-    r[j] = Number.isNaN(r[j] as number) ? right : Math.max(r[j] as number, right);
+    lr[2 * j] = Math.min(lr[2 * j] as number, Math.floor((lo - ax) * sx));
+    lr[2 * j + 1] = Math.max(lr[2 * j + 1] as number, Math.ceil((hi + 1 - ax) * sx));
   }
-  return withBox({ j0, l, r, box: [0, 0, 0, 0] }, sy);
+  return withBox({ j0, n, lr, flip: false, box: [0, 0, 0, 0] }, sy);
 }
 
 /** Fills the shape's bounds from its bands (`sy` scales the band grid when the file's size differs). */
@@ -1318,11 +1386,10 @@ function withBox(shape: Shape, sy = 1): Shape {
   let right = -Infinity;
   let top = Infinity;
   let bottom = -Infinity;
-  for (let i = 0; i < shape.l.length; i++) {
-    const l = shape.l[i] as number;
-    if (Number.isNaN(l)) continue;
-    left = Math.min(left, l);
-    right = Math.max(right, shape.r[i] as number);
+  for (let i = 0; i < shape.n; i++) {
+    if (bandEmpty(shape, i)) continue;
+    left = Math.min(left, bandL(shape, i));
+    right = Math.max(right, bandR(shape, i));
     top = Math.min(top, (shape.j0 + i) * BAND * sy);
     bottom = Math.max(bottom, (shape.j0 + i + 1) * BAND * sy);
   }
@@ -1330,14 +1397,9 @@ function withBox(shape: Shape, sy = 1): Shape {
   return shape;
 }
 
+/** The shape mirrored: the same bands, read flipped. */
 function mirrorShape(s: Shape): Shape {
-  const l = new Float64Array(s.l.length);
-  const r = new Float64Array(s.r.length);
-  for (let i = 0; i < s.l.length; i++) {
-    l[i] = -(s.r[i] as number);
-    r[i] = -(s.l[i] as number);
-  }
-  return { j0: s.j0, l, r, box: [-s.box[2], s.box[1], -s.box[0], s.box[3]] };
+  return { j0: s.j0, n: s.n, lr: s.lr, flip: !s.flip, box: [-s.box[2], s.box[1], -s.box[0], s.box[3]] };
 }
 
 // ===============================================================================================================
@@ -1382,6 +1444,8 @@ interface Scene {
   /** The spacing rules at this size, in CSS px (round 2, finding 9). */
   sameSprite: number;
   sameBreedPose: number;
+  /** The mess decals' rectangles in CSS px, with their alpha when measured (otherwise the diamond inside each). */
+  mess: { id: string; x0: number; y0: number; x1: number; y1: number; mask: MessMask | null }[];
 }
 
 /**
@@ -1462,6 +1526,14 @@ function sceneFor(width: number, height: number, set: SetData, cast: CastIndex):
     propHulls: [],
     sameSprite: (SAME_SPRITE_PX * k) / refK,
     sameBreedPose: (SAME_BREED_POSE_PX * k) / refK,
+    mess: set.mess.map((d) => ({
+      id: d.id,
+      x0: bx + d.at[0] * k,
+      y0: by + d.at[1] * k,
+      x1: bx + (d.at[0] + d.size[0]) * k,
+      y1: by + (d.at[1] + d.size[1]) * k,
+      mask: set.messMasks.get(d.id) ?? null,
+    })),
   };
   s.props = map.blocked.map(([rx, ry, rw, rh]) => {
     const corners = [ground(s, rx, ry), ground(s, rx + rw, ry), ground(s, rx + rw, ry + rh), ground(s, rx, ry + rh)];
@@ -1470,6 +1542,26 @@ function sceneFor(width: number, height: number, set: SetData, cast: CastIndex):
   const lift = PROP_H * s.hpm;
   s.propHulls = s.props.map(({ corners }) => hull([...corners, ...corners.map(([x, y]): [number, number] => [x, y - lift])]));
   return s;
+}
+
+/**
+ * What the foot point (x, y) stands on, whether or not the mess shows now (so a figure never has to move when it
+ * appears): MESS_NO_STAND on the mess of a decal other than the mud (the bowl and its puddle, the ring, the ball, the
+ * kibble), MESS_NO_SLEEP on the mud and its tracks (a dog may stand in it, not sleep in it): the decal's mess cells,
+ * read from its alpha (messMask). Only for the decals the yard draws (their images loaded): the schematic yard draws
+ * none, and nor do the tests; the decals' `blocked` areas hold everywhere (standable).
+ */
+function messUnder(s: Scene, x: number, y: number): number {
+  let hit = 0;
+  for (const m of s.mess) {
+    if (x < m.x0 || x >= m.x1 || y < m.y0 || y >= m.y1) continue;
+    const mask = m.mask;
+    if (mask === null) continue;
+    const u = (x - m.x0) / (m.x1 - m.x0);
+    const v = (y - m.y0) / (m.y1 - m.y0);
+    if (mask.on[Math.floor(v * mask.h) * mask.w + Math.floor(u * mask.w)] === 1) hit |= m.id === 'mud' ? MESS_NO_SLEEP : MESS_NO_STAND;
+  }
+  return hit;
 }
 
 /** "The GM" in the page's bold face, as em: its words (about 3.4 em) and the pill's padding and light (1.9 em). */
@@ -1525,9 +1617,14 @@ export interface YardFigure {
   breed: string | null;
   coat: string | null;
   pose: string;
-  /** The foot anchor in CSS px of a yard `width` × `height`. */
+  /** The way it faces as drawn, and whether it is on the walk path (the walking group). */
+  facing: Facing;
+  walking: boolean;
+  /** The foot anchor in CSS px of a yard `width` × `height`, and on the ground in world metres (the set's map). */
   x: number;
   y: number;
+  mx: number;
+  my: number;
 }
 
 /**
@@ -1541,7 +1638,7 @@ export function arrangeYard(frame: ReplayFrame, width: number, height: number): 
   const refK = Math.min(REFERENCE_YARD[0] / bw, REFERENCE_YARD[1] / bh);
   const figures = figuresOf(s, frame).map((f): YardFigure => {
     const src = f.look.art.src;
-    return { id: src.id, kind: src.kind, breed: src.breed ?? null, coat: src.coat ?? null, pose: src.pose, x: f.x, y: f.y };
+    return { id: src.id, kind: src.kind, breed: src.breed ?? null, coat: src.coat ?? null, pose: src.pose, facing: lookFacing(f.look), walking: f.my < 0, x: f.x, y: f.y, mx: f.mx, my: f.my };
   });
   return { figures, scale: s.k / refK };
 }
@@ -1585,6 +1682,8 @@ interface CrewCard {
 interface DayPlan {
   dogs: DogCard[];
   crew: CrewCard[];
+  /** In free play, each kneeling staffer's companion: staffer index to dog index. */
+  companionOf: Map<number, number>;
   /** The organised arrangements, made the first time the day needs one: structured play, a clean, a walk, a nap. */
   more: Map<string, { look: Look; mx: number; my: number }[]>;
 }
@@ -1610,7 +1709,7 @@ interface Region {
   y0: number;
   y1: number;
   path: boolean;
-  prefer?: (mx: number, my: number) => boolean;
+  prefer: ((mx: number, my: number) => boolean) | null;
 }
 
 interface Item {
@@ -1619,22 +1718,24 @@ interface Item {
   region: Region;
   /** A spot to stand as near as the room allows (an organised activity); null to spread out (free play). */
   target: [number, number] | null;
+  /** A figure this one may touch (a kneeling staffer's companion, at its hand): their overlap is not counted. */
+  touch: Placed | null;
 }
 
 const lawnRegion = (s: Scene): Region => {
   const [lx, ly] = s.set.map.lawn;
   const m = s.set.map.margin;
-  return { x0: m, x1: lx - m, y0: m, y1: ly - m, path: false };
+  return { x0: m, x1: lx - m, y0: m, y1: ly - m, path: false, prefer: null };
 };
 /** The walking group's strip on the set's own path (set.json's walk), where their anchors stand. */
 const pathRegion = (s: Scene): Region => {
   const [x, y, w, h] = s.set.walk;
-  return { x0: x, x1: x + w, y0: y, y1: y + h, path: true };
+  return { x0: x, x1: x + w, y0: y, y1: y + h, path: true, prefer: null };
 };
 /** The path's whole width around the strip (where feet and shadows may fall): set.json's path runs y from -1 to 0. */
 const pathGround = (s: Scene): Region => {
   const [x, y, w, h] = s.set.walk;
-  return { x0: x - 0.4, x1: x + w + 0.3, y0: y - 0.35, y1: Math.min(0, y + h + 0.35), path: true };
+  return { x0: x - 0.4, x1: x + w + 0.3, y0: y - 0.35, y1: Math.min(0, y + h + 0.35), path: true, prefer: null };
 };
 
 function lookShape(look: Look): Shape {
@@ -1658,6 +1759,8 @@ const CREW_FALLBACK: Readonly<Record<CrewPose, CrewPose[]>> = {
   ball: ['ball', 'leash', 'mop'],
   leash: ['leash', 'ball', 'mop'],
   mop: ['mop', 'ball', 'leash'],
+  kneel: ['kneel', 'ball', 'leash'],
+  tired: ['tired', 'leash', 'ball'],
 };
 const other = (f: Facing): Facing => (f === 'right' ? 'left' : 'right');
 
@@ -1678,14 +1781,16 @@ const dogLooks = (cast: CastIndex, d: DogCard, poses: readonly DogPose[], facing
 const personOf = (cast: CastIndex, k: number): string => cast.people[k % cast.people.length] ?? 'crew';
 
 /**
- * Staffer k's pose in an activity (round 1, finding 7): chosen so no two staffers are the same sprite in the same pose
- * (the third staffer is the first person again, in another pose).
+ * Staffer k's pose in an activity (round 1, finding 7; round 2, the crew's poses): in a play or nap block no two staff
+ * share a pose (one holds the ball, one kneels beside a dog, a third stands by with a leash; in a nap the first kneels);
+ * a clean keeps the mop for every staffer, its tool, and a walk the leash. Above the fatigue limit the staff of a play
+ * or nap block stand tired instead (figuresOf).
  */
 const CREW_POSES: Readonly<Record<'free' | 'nap' | 'structured' | 'clean', readonly CrewPose[]>> = {
-  free: ['ball', 'leash', 'leash'],
-  nap: ['leash', 'leash', 'ball'],
-  structured: ['ball', 'ball', 'leash'],
-  clean: ['mop', 'mop', 'leash'],
+  free: ['ball', 'kneel', 'leash'],
+  nap: ['kneel', 'leash', 'ball'],
+  structured: ['ball', 'kneel', 'leash'],
+  clean: ['mop', 'mop', 'mop'],
 };
 const crewPose = (activity: keyof typeof CREW_POSES, k: number): CrewPose => CREW_POSES[activity][k % 3] ?? 'leash';
 
@@ -1717,19 +1822,17 @@ function overlapArea(s: Scene, a: Placed, b: Placed, gap: number): number {
   const A = a.shape;
   const B = b.shape;
   let area = 0;
-  for (let i = 0; i < A.l.length; i++) {
-    const la = A.l[i] as number;
-    if (Number.isNaN(la)) continue;
+  for (let i = 0; i < A.n; i++) {
+    if (bandEmpty(A, i)) continue;
     const top = a.y + (A.j0 + i) * bh;
     const jb0 = Math.max(0, Math.floor((top - gap - b.y) / bh) - B.j0);
-    const jb1 = Math.min(B.l.length - 1, Math.floor((top + bh + gap - b.y) / bh) - B.j0);
-    const ax0 = a.x + la * k;
-    const ax1 = a.x + (A.r[i] as number) * k;
+    const jb1 = Math.min(B.n - 1, Math.floor((top + bh + gap - b.y) / bh) - B.j0);
+    const ax0 = a.x + bandL(A, i) * k;
+    const ax1 = a.x + bandR(A, i) * k;
     let widest = 0;
     for (let j = jb0; j <= jb1; j++) {
-      const lb = B.l[j] as number;
-      if (Number.isNaN(lb)) continue;
-      const o = Math.min(ax1, b.x + (B.r[j] as number) * k) - Math.max(ax0, b.x + lb * k) + gap;
+      if (bandEmpty(B, j)) continue;
+      const o = Math.min(ax1, b.x + bandR(B, j) * k) - Math.max(ax0, b.x + bandL(B, j) * k) + gap;
       if (o > widest) widest = o;
     }
     area += widest * bh;
@@ -1776,17 +1879,23 @@ function standable(s: Scene, region: Region, mx: number, my: number): boolean {
   for (const [rx, ry, rw, rh] of s.set.map.blocked) {
     if (mx > rx - BLOCK_PAD && mx < rx + rw + BLOCK_PAD && my > ry - BLOCK_PAD && my < ry + rh + BLOCK_PAD) return false;
   }
+  // A decal's own blocked areas (the bowl on its side: its footprint and the lawn behind it, already padded), kept clear
+  // whether or not it shows: a day's arrangement holds all day, and a figure that moved when the bowl appeared would
+  // move with no action the week records (D60).
+  for (const d of s.set.mess) {
+    for (const [rx, ry, rw, rh] of d.blocked ?? []) if (mx > rx && mx < rx + rw && my > ry && my < ry + rh) return false;
+  }
   return true;
 }
 
 /** True when the silhouette's lowest band (the feet) lies on its ground: no paw over the board's edge or the path's. */
 function feetOnGround(s: Scene, region: Region, shape: Shape, x: number, y: number): boolean {
-  let last = shape.l.length - 1;
-  while (last >= 0 && Number.isNaN(shape.l[last] as number)) last--;
+  let last = shape.n - 1;
+  while (last >= 0 && bandEmpty(shape, last)) last--;
   if (last < 0) return true;
   const fy = y + (shape.j0 + last + 0.5) * BAND * s.k;
   const [lx, ly] = s.set.map.lawn;
-  for (const fx of [x + (shape.l[last] as number) * s.k, x + (shape.r[last] as number) * s.k]) {
+  for (const fx of [x + bandL(shape, last) * s.k, x + bandR(shape, last) * s.k]) {
     const [mx, my] = world(s, fx, fy);
     if (region.path) {
       const g = pathGround(s);
@@ -1828,10 +1937,12 @@ function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed
   const shapes = items.map((item) => item.looks.map(lookShape));
   const sprites = items.map((item) => item.looks.map(spriteKey));
   const breedPoses = items.map((item) => item.looks.map(breedPoseKey));
-  // The search shrinks as the yard fills, so a full day's arrangement stays a short task on a Chromebook.
+  const asleep = items.map((item) => item.looks.map((l) => l.art.src.pose === 'asleep'));
+  // The search is small enough that a day's arrangement made inside a frame (a day the look-ahead did not foresee) keeps
+  // the frame short on a throttled Chromebook; it shrinks as the yard fills.
   const crowd = items.length + fixed.length;
-  const spread = clamp(Math.round(1500 / Math.max(1, crowd)), 32, 64);
-  const passes = crowd > 24 ? 2 : 3;
+  const spread = clamp(Math.round(900 / Math.max(1, crowd)), 24, 40);
+  const passes = 2;
   const r1 = s.sameSprite ** 2;
   const r2 = s.sameBreedPose ** 2;
   const others = (i: number): Placed[] => {
@@ -1864,6 +1975,9 @@ function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed
     const { region, target } = item;
     if (!standable(s, region, mx, my)) return null;
     const [x, y] = ground(s, mx, my);
+    // The mess: nobody stands on the bowl or the toy, and no dog sleeps in the mud.
+    const mess = messUnder(s, x, y);
+    if ((mess & MESS_NO_STAND) !== 0) return null;
     let nearest2 = Infinity;
     const near: { q: Placed; d2: number }[] = [];
     for (const q of list) {
@@ -1880,6 +1994,7 @@ function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed
     const alts = shapes[i] as Shape[];
     for (let alt = 0; alt < alts.length; alt++) {
       if (only >= 0 && alt !== only) continue;
+      if ((mess & MESS_NO_SLEEP) !== 0 && (asleep[i] as boolean[])[alt] === true) continue;
       const limitScore = best === null ? bound : better(best.score, bound) ? best.score : bound;
       const viol = breaches(i, alt, near);
       if (viol > limitScore[0]) continue;
@@ -1892,8 +2007,8 @@ function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed
       for (const zone of keepClear) cost += boxOverlap(box, zone) * 4;
       if (box[0] < 0 || box[1] < 0 || box[2] > s.width || box[3] > s.height) cost += 1e6;
       if (!region.path) cost += hiddenBehindProps(s, box, y) * 1e4;
-      if (region.prefer !== undefined && !region.prefer(mx, my)) cost += 50;
-      for (let j = 0; j < list.length && cost <= limit; j++) cost += overlapArea(s, p, list[j] as Placed, gap);
+      if (region.prefer !== null && !region.prefer(mx, my)) cost += 50;
+      for (let j = 0; j < list.length && cost <= limit; j++) if (list[j] !== item.touch) cost += overlapArea(s, p, list[j] as Placed, gap);
       if (cost > limit) continue;
       const score: Score = [viol, Math.round(cost), third];
       if (best === null || better(score, best.score)) best = { p, score };
@@ -1932,7 +2047,11 @@ function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed
         for (let gy = region.y0; gy <= region.y1; gy += step) {
           const mx = gx + (rand() - 0.5) * step;
           const my = gy + (rand() - 0.5) * step;
+          // Only the ground it may take: the open lawn often lies on the mess, where nobody (or no sleeper) goes.
+          if (!standable(s, region, mx, my)) continue;
           const [x, y] = ground(s, mx, my);
+          const mess = messUnder(s, x, y);
+          if ((mess & MESS_NO_STAND) !== 0) continue;
           let d2 = Infinity;
           const near: { q: Placed; d2: number }[] = [];
           for (const q of list) {
@@ -1941,8 +2060,11 @@ function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed
             if (ds < r1) near.push({ q, d2: ds });
           }
           let viol = Infinity;
-          for (let alt = 0; alt < alts; alt++) viol = Math.min(viol, breaches(i, alt, near));
-          grid.push([mx, my, viol, d2]);
+          for (let alt = 0; alt < alts; alt++) {
+            if ((mess & MESS_NO_SLEEP) !== 0 && (asleep[i] as boolean[])[alt] === true) continue;
+            viol = Math.min(viol, breaches(i, alt, near));
+          }
+          if (viol < Infinity) grid.push([mx, my, viol, d2]);
         }
       }
       grid.sort((a, b) => a[2] - b[2] || b[3] - a[3]);
@@ -1993,8 +2115,8 @@ function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed
 }
 
 /**
- * The day's cast and where each stands in free play, in world metres, kept all day: the dogs dealt so the breeds come
- * evenly (the breeds in a shuffled turn, each breed's coats in turn), each with a facing and a free-play pose (moving
+ * The day's cast and where each stands in free play, in world metres, kept all day: the dogs dealt so the spacing
+ * rules have room (daySteps), each with a facing and a free-play pose (moving
  * or sitting) the placer may change, the other pose or facing, where the spacing rules need it; the crew first, near
  * the middle. Cached on the cast by day, dogs and staff.
  */
@@ -2013,15 +2135,28 @@ function* daySteps(s: Scene, day: number, dogCount: number, staffCount: number):
   const key = `${day}|${dogCount}|${staffCount}`;
   const cast = s.cast;
   const rand = seeded(day, dogCount, staffCount, 1);
-  const breedOrder = shuffle([...cast.breeds.keys()].sort(), rand);
-  const coats = new Map(breedOrder.map((b) => [b, shuffle([...(cast.breeds.get(b) ?? [])], rand)] as const));
+  // The dogs dealt so the spacing rules have room: each next dog the identity (breed and coat) whose repeats cost the
+  // least, a repeat of the identity weighing as the same-sprite rule's distance squared and of the breed as the
+  // same-breed rule's, so a new coat comes before a repeat and a breed with one coat repeats least; ties in a seeded
+  // order.
+  const order = shuffle([...cast.dogs.keys()].sort(), rand);
+  const idCount = new Map<string, number>();
+  const breedCount = new Map<string, number>();
   const ids: string[] = [];
-  for (let turn = 0; ids.length < dogCount; turn++) {
-    for (const b of breedOrder) {
-      if (ids.length >= dogCount) break;
-      const list = coats.get(b) ?? [];
-      if (list.length > 0) ids.push(list[turn % list.length] as string);
+  while (ids.length < dogCount) {
+    let pick = order[0] as string;
+    let cost = Infinity;
+    for (const id of order) {
+      const c = (idCount.get(id) ?? 0) * SAME_SPRITE_PX ** 2 + (breedCount.get(id.split('|')[0] ?? id) ?? 0) * SAME_BREED_POSE_PX ** 2;
+      if (c < cost) {
+        cost = c;
+        pick = id;
+      }
     }
+    ids.push(pick);
+    idCount.set(pick, (idCount.get(pick) ?? 0) + 1);
+    const b = pick.split('|')[0] ?? pick;
+    breedCount.set(b, (breedCount.get(b) ?? 0) + 1);
   }
   const face = (): Facing => (rand() < 0.5 ? 'right' : 'left');
   const dogs: DogCard[] = ids.map((id) => ({
@@ -2042,31 +2177,90 @@ function* daySteps(s: Scene, day: number, dogCount: number, staffCount: number):
     [0.2, 0.5],
   ];
   const region = lawnRegion(s);
-  const playPoses = (d: DogCard): DogPose[] => (d.play === 'moving' ? ['moving', 'sitting'] : ['sitting', 'moving']);
-  const items: Item[] = [
-    ...crew.map((c, k): Item => {
-      const at = CREW_AT[k % CREW_AT.length] as [number, number];
-      return { looks: [crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing)], region, target: [at[0] * lx, at[1] * ly] };
-    }),
-    ...dogs.map((d): Item => ({ looks: dogLooks(cast, d, playPoses(d)), region, target: null })),
-  ];
-  const spots = yield* placeSteps(s, items, rand);
+  // The crew first, near the middle; then the dogs among them, a kneeling staffer's companion at its hand.
+  const crewItems = crew.map((c, k): Item => {
+    const at = CREW_AT[k % CREW_AT.length] as [number, number];
+    const target: [number, number] = [at[0] * lx, at[1] * ly];
+    if (crewPose('free', k) === 'kneel') c.facing = kneelFacing(s, target[0], target[1], c.facing, 'sitting');
+    return { looks: [crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing)], region, target , touch: null };
+  });
+  const crewSpots = yield* placeSteps(s, crewItems, rand);
   crew.forEach((c, k) => {
-    const p = spots[k] as Placed;
+    const p = crewSpots[k] as Placed;
     c.mx = p.mx;
     c.my = p.my;
   });
+  const companions = new Map<number, number>();
+  crew.forEach((_, k) => {
+    if (crewPose('free', k) === 'kneel' && companions.size < dogs.length) companions.set(companions.size, k);
+  });
+  const playPoses = (d: DogCard): DogPose[] => (d.play === 'moving' ? ['moving', 'sitting'] : ['sitting', 'moving']);
+  const dogItems = dogs.map((d, i): Item => {
+    const k = companions.get(i);
+    if (k === undefined) return { looks: dogLooks(cast, d, playPoses(d)), region, target: null , touch: null };
+    return companionItem(s, d, ['sitting', 'moving'], crew[k] as CrewCard, crewSpots[k] as Placed, region);
+  });
+  const dogSpots = yield* placeDogsSteps(s, dogItems, rand, crewSpots);
   dogs.forEach((d, i) => {
-    const p = spots[crew.length + i] as Placed;
+    const p = dogSpots[i] as Placed;
+    const look = (dogItems[i] as Item).looks[p.alt] as Look;
     d.mx = p.mx;
     d.my = p.my;
-    // The look the placer took: its pose and its facing (dogLooks' order: each pose, its own facing then the other).
-    d.play = (playPoses(d)[Math.floor(p.alt / 2)] ?? d.play) as DogPose;
-    if (p.alt % 2 === 1) d.facing = other(d.facing);
+    d.play = look.art.src.pose as DogPose;
+    d.facing = lookFacing(look);
   });
-  const plan: DayPlan = { dogs, crew, more: new Map() };
+  const companionOf = new Map<number, number>();
+  for (const [i, k] of companions) companionOf.set(k, i);
+  const plan: DayPlan = { dogs, crew, companionOf, more: new Map() };
   cast.plans.set(key, plan);
   return plan;
+}
+
+/** The way a look faces as drawn. */
+const lookFacing = (look: Look): Facing => (look.mirror ? other(look.art.src.facing) : look.art.src.facing);
+
+/**
+ * The way a kneeling staffer at (mx, my) faces: `facing` if its hand there has ground a dog may take (in `pose`: on the
+ * lawn, off the props and the bowl and the toy, a sleeper out of the mud), otherwise the other way if that has.
+ */
+function kneelFacing(s: Scene, mx: number, my: number, facing: Facing, pose: DogPose): Facing {
+  const free = (f: Facing): boolean => {
+    const [hx, hy] = handSpot(mx, my, f);
+    if (!standable(s, lawnRegion(s), hx, hy)) return false;
+    const mess = messUnder(s, ...ground(s, hx, hy));
+    return (mess & MESS_NO_STAND) === 0 && !(pose === 'asleep' && (mess & MESS_NO_SLEEP) !== 0);
+  };
+  return free(facing) || !free(other(facing)) ? facing : other(facing);
+}
+
+/** Where a dog goes to meet a kneeling staffer's reaching hand: beside it on the side it faces, a little toward the
+ * camera (world metres; the kneel sprite's hand is about 0.4 m out, a dog's head ahead of its feet). */
+function handSpot(mx: number, my: number, facing: Facing): [number, number] {
+  const f = facing === 'right' ? 1 : -1;
+  return [mx + f * 0.46 - 0.11, my - f * 0.46 - 0.11];
+}
+
+/**
+ * Places the dogs among `fixed` figures: the kneeling staffers' companions first, each at its staffer's hand, then the
+ * rest around them, so no other dog takes a companion's place or pushes it off. In the items' order.
+ */
+function* placeDogsSteps(s: Scene, items: readonly Item[], rand: () => number, fixed: readonly Placed[]): Generator<void, Placed[], void> {
+  const pairs = items.map((item, i) => [item, i] as const);
+  const first = pairs.filter(([item]) => item.touch !== null);
+  const rest = pairs.filter(([item]) => item.touch === null);
+  const a = yield* placeSteps(s, first.map(([item]) => item), rand, fixed);
+  const b = yield* placeSteps(s, rest.map(([item]) => item), rand, [...fixed, ...a]);
+  const out: Placed[] = [];
+  first.forEach(([, i], n) => (out[i] = a[n] as Placed));
+  rest.forEach(([, i], n) => (out[i] = b[n] as Placed));
+  return out;
+}
+const placeDogs = (s: Scene, items: readonly Item[], rand: () => number, fixed: readonly Placed[]): Placed[] => drain(placeDogsSteps(s, items, rand, fixed));
+
+/** A kneeling staffer's companion: the dog at the staffer's hand, facing it, in one of `poses`, touching it. */
+function companionItem(s: Scene, d: DogCard, poses: readonly DogPose[], c: CrewCard, at: Placed, region: Region): Item {
+  const facing = other(c.facing);
+  return { looks: poses.map((p) => dogLook(s.cast, d.id, p, facing)), region, target: handSpot(at.mx, at.my, c.facing), touch: at };
 }
 
 function fig(s: Scene, look: Look, mx: number, my: number): Fig {
@@ -2123,9 +2317,10 @@ function dealToSlots(s: Scene, dogs: readonly DogCard[], slots: readonly [number
 }
 
 /**
- * Structured play: each staffer on the floor with a ball, their dogs sitting in short rows either side of them, every
- * dog facing its staffer (the rows to the screen's left face right, those to its right face left). The groups stand
- * side by side across the lawn; the dogs are dealt to the rows so the same breed sits apart.
+ * Structured play: each staffer on the floor with its group, its dogs sitting in short rows either side of it, every
+ * dog facing it (the rows to the screen's left face right, those to its right face left); a kneeling leader's first
+ * dog on the side it faces sits at its hand. The groups stand side by side across the lawn; the leaders first, then the
+ * dogs dealt to the rows so the same breed sits apart.
  */
 function structured(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
   return cachedFigs(s, plan, `structured|${frame.floorDogs}|${frame.floorStaff}`, () => {
@@ -2138,43 +2333,55 @@ function structured(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
     const centre: [number, number] = [lx * 0.43, ly * 0.43];
     const spread = Math.min(3.4, (Math.hypot(lx, ly) * 0.8) / groups);
     const region = lawnRegion(s);
-    const crewItems: Item[] = [];
-    const slots: { at: [number, number]; facing: Facing }[] = [];
+    const leaders: { card: CrewCard; item: Item; kneel: boolean }[] = [];
+    const slots: { at: [number, number]; facing: Facing; hand: number }[] = [];
     for (let g = 0; g < groups; g++) {
       const off = (g - (groups - 1) / 2) * spread;
       const cx = centre[0] - side[0] * off;
       const cy = centre[1] - side[1] * off;
-      if (frame.floorStaff > 0) crewItems.push({ looks: [crewLook(cast, personOf(cast, g), crewPose('structured', g), g % 2 === 0 ? 'right' : 'left')], region, target: [cx, cy] });
+      const pose = crewPose('structured', g);
+      const facing: Facing = pose === 'kneel' ? kneelFacing(s, cx, cy, g % 2 === 0 ? 'right' : 'left', 'sitting') : g % 2 === 0 ? 'right' : 'left';
+      if (frame.floorStaff > 0) leaders.push({ card: { facing, mx: cx, my: cy }, item: { looks: [crewLook(cast, personOf(cast, g), pose, facing)], region, target: [cx, cy] , touch: null }, kneel: pose === 'kneel' });
       const first = Math.floor((g * frame.floorDogs) / groups);
       const m = Math.floor(((g + 1) * frame.floorDogs) / groups) - first;
       const perSide = Math.ceil(m / 2);
       const rows = Math.max(1, Math.ceil(Math.sqrt(perSide * 1.3)));
       const cols = Math.max(1, Math.ceil(perSide / rows));
+      // A kneeling leader reaches toward the screen's left (facing left: the left rows, j even) or its right (j odd).
+      const handJ = facing === 'left' ? 0 : 1;
       for (let j = 0; j < m; j++) {
         const leftSide = j % 2 === 0;
         const n = Math.floor(j / 2);
         const dist = 0.95 + (n % cols) * 0.85;
         const depth = (Math.floor(n / cols) - (rows - 1) / 2) * 0.75;
         const sign = leftSide ? 1 : -1;
-        slots.push({ at: [cx + sign * side[0] * dist + back[0] * depth, cy + sign * side[1] * dist + back[1] * depth], facing: leftSide ? 'right' : 'left' });
+        const atHand = frame.floorStaff > 0 && pose === 'kneel' && j === handJ;
+        slots.push({
+          at: atHand ? handSpot(cx, cy, facing) : [cx + sign * side[0] * dist + back[0] * depth, cy + sign * side[1] * dist + back[1] * depth],
+          facing: leftSide ? 'right' : 'left',
+          hand: atHand ? leaders.length - 1 : -1,
+        });
       }
     }
+    const leaderItems = leaders.map((l) => l.item);
+    const leaderSpots = placeAll(s, leaderItems, rand);
     const dealt = dealToSlots(s, plan.dogs.slice(0, frame.floorDogs), slots.map((sl) => sl.at));
-    const items: Item[] = [
-      ...crewItems,
-      ...dealt.map((d, j): Item => {
-        const slot = slots[j] as { at: [number, number]; facing: Facing };
-        return { looks: [dogLook(cast, d.id, 'sitting', slot.facing)], region, target: slot.at };
-      }),
-    ];
-    return figsOf(s, items, placeAll(s, items, rand));
+    const dogItems = dealt.map((d, j): Item => {
+      const slot = slots[j] as { at: [number, number]; facing: Facing; hand: number };
+      if (slot.hand >= 0) {
+        const leader = leaders[slot.hand] as { card: CrewCard };
+        return companionItem(s, d, ['sitting'], leader.card, leaderSpots[slot.hand] as Placed, region);
+      }
+      return { looks: [dogLook(cast, d.id, 'sitting', slot.facing)], region, target: slot.at , touch: null };
+    });
+    return [...figsOf(s, leaderItems, leaderSpots), ...figsOf(s, dogItems, placeDogs(s, dogItems, rand, leaderSpots))];
   });
 }
 
 /**
- * A clean: the crew with the mop on the open floor at the screen's left, the dogs settled out of the way at its right,
- * sitting or asleep (a dog that moved in free play rests asleep, one that sat stays sitting, unless the rules need the
- * other).
+ * A clean: the crew with the mop (the clean's tool, every staffer) on the open floor at the screen's left, the dogs
+ * settled out of the way at its right, sitting or asleep (a dog that moved in free play rests asleep, one that sat
+ * stays sitting, unless the rules need the other).
  */
 function cleaning(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
   return cachedFigs(s, plan, `clean|${frame.floorDogs}|${frame.floorStaff}`, () => {
@@ -2188,16 +2395,17 @@ function cleaning(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
       [0.18, 0.32],
       [0.38, 0.78],
     ];
-    const items: Item[] = [];
+    const crewItems: Item[] = [];
     for (let k = 0; k < frame.floorStaff; k++) {
       const at = CREW_AT[k % CREW_AT.length] as [number, number];
-      items.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('clean', k), (plan.crew[k] as CrewCard).facing)], region: lawn, target: [at[0] * lx, at[1] * ly] });
+      crewItems.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('clean', k), (plan.crew[k] as CrewCard).facing)], region: lawn, target: [at[0] * lx, at[1] * ly] , touch: null });
     }
-    for (const d of plan.dogs.slice(0, frame.floorDogs)) {
+    const crewSpots = placeAll(s, crewItems, rand);
+    const dogItems = plan.dogs.slice(0, frame.floorDogs).map((d): Item => {
       const poses: DogPose[] = d.play === 'moving' ? ['asleep', 'sitting'] : ['sitting', 'asleep'];
-      items.push({ looks: dogLooks(cast, d, poses), region: right, target: null });
-    }
-    return figsOf(s, items, placeAll(s, items, rand));
+      return { looks: dogLooks(cast, d, poses), region: right, target: null , touch: null };
+    });
+    return [...figsOf(s, crewItems, crewSpots), ...figsOf(s, dogItems, placeAll(s, dogItems, rand, crewSpots))];
   });
 }
 
@@ -2205,9 +2413,9 @@ function cleaning(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
  * A walk: the walking group on the set's own path (set.json's walk strip, along the lawn's front-right edge), the
  * staffer in front with the leash and the dogs behind in single file, all heading along the path toward the lawn's
  * front corner (the camera-facing diagonal down and left, so every sprite faces left); placed first, in formation. The
- * walkers are chosen breed by breed, so no two in the file are the same breed. Then the floor makes room for it: each
- * dog and staffer left behind stands as near its free-play spot as it can, in its own pose or the other where the
- * rules need it.
+ * walkers are chosen breed by breed, so no two in the file are the same breed, and never a kneeling staffer's
+ * companion. Then the floor makes room for it: each staffer and dog left behind stands as near its free-play spot as it
+ * can, in its own pose or the other where the rules need it, a kneeler's companion back at its hand.
  */
 function walking(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
   return cachedFigs(s, plan, `walk|${frame.floorDogs}|${frame.floorStaff}|${frame.walkingDogs}|${frame.walkingStaff}`, () => {
@@ -2215,8 +2423,14 @@ function walking(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
     const rand = seeded(frame.day, frame.dogs, frame.staff, 4);
     const path = pathRegion(s);
     const mid = (path.y0 + path.y1) / 2;
+    // The staff left on the floor, and the companions of those who kneel there.
+    const companions = new Map<number, number>(); // dog → staffer
+    for (let k = 0; k < frame.floorStaff; k++) {
+      const i = plan.companionOf.get(k);
+      if (i !== undefined && crewPose('free', k) === 'kneel') companions.set(i, k);
+    }
     // The walkers: in a seeded order, a dog of a breed not yet walking, until the group is full.
-    const order = shuffle(plan.dogs.map((_, i) => i), rand);
+    const order = shuffle(plan.dogs.map((_, i) => i), rand).filter((i) => !companions.has(i));
     const walkers: number[] = [];
     const breedsWalking = new Set<string>();
     for (const i of order) {
@@ -2228,60 +2442,109 @@ function walking(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
     }
     for (const i of order) if (walkers.length < frame.walkingDogs && !walkers.includes(i)) walkers.push(i);
     const group: Item[] = [];
-    if (frame.walkingStaff > 0) group.push({ looks: [crewLook(cast, personOf(cast, frame.staff - 1), 'leash', 'left')], region: path, target: [path.x0 + 0.25, mid] });
+    if (frame.walkingStaff > 0) group.push({ looks: [crewLook(cast, personOf(cast, frame.staff - 1), 'leash', 'left')], region: path, target: [path.x0 + 0.25, mid] , touch: null });
     walkers.forEach((i, j) => {
       const d = plan.dogs[i] as DogCard;
-      group.push({ looks: [dogLook(cast, d.id, 'moving', 'left')], region: path, target: [path.x0 + 1.05 + j * 0.95, mid + (j % 2 === 0 ? -0.05 : 0.05)] });
+      group.push({ looks: [dogLook(cast, d.id, 'moving', 'left')], region: path, target: [path.x0 + 1.05 + j * 0.95, mid + (j % 2 === 0 ? -0.05 : 0.05)] , touch: null });
     });
     const walked = placeAll(s, group, rand);
     const lawn = lawnRegion(s);
-    const floor: Item[] = [];
-    plan.dogs.forEach((d, i) => {
-      if (walkers.includes(i)) return;
-      const poses: DogPose[] = d.play === 'moving' ? ['moving', 'sitting'] : ['sitting', 'moving'];
-      floor.push({ looks: dogLooks(cast, d, poses), region: lawn, target: [d.mx, d.my] });
-    });
+    const crewItems: Item[] = [];
     for (let k = 0; k < frame.floorStaff; k++) {
       const c = plan.crew[k] as CrewCard;
-      floor.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing)], region: lawn, target: [c.mx, c.my] });
+      crewItems.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing)], region: lawn, target: [c.mx, c.my] , touch: null });
     }
-    const stay = placeAll(s, floor, rand, walked);
-    return [...figsOf(s, group, walked), ...figsOf(s, floor, stay)];
+    const crewSpots = placeAll(s, crewItems, rand, walked);
+    const dogItems: Item[] = [];
+    plan.dogs.forEach((d, i) => {
+      if (walkers.includes(i)) return;
+      const k = companions.get(i);
+      if (k !== undefined) dogItems.push(companionItem(s, d, [d.play, d.play === 'moving' ? 'sitting' : 'moving'], plan.crew[k] as CrewCard, crewSpots[k] as Placed, lawn));
+      else {
+        const poses: DogPose[] = d.play === 'moving' ? ['moving', 'sitting'] : ['sitting', 'moving'];
+        dogItems.push({ looks: dogLooks(cast, d, poses), region: lawn, target: [d.mx, d.my] , touch: null });
+      }
+    });
+    const dogSpots = placeDogs(s, dogItems, rand, [...walked, ...crewSpots]);
+    return [...figsOf(s, group, walked), ...figsOf(s, crewItems, crewSpots), ...figsOf(s, dogItems, dogSpots)];
   });
 }
 
-/** A nap: every dog lies down as near its free-play spot as the rules and the room allow; the crew stay where they stood. */
+/**
+ * A nap: every dog lies down as near its free-play spot as the room allows (never in the mud), or sits quietly where
+ * lying there would put it too near its own sprite or its breed asleep (the spacing rules); the crew stay where they
+ * stood, a kneeling staffer beside a sleeping dog that faces it.
+ */
 function napping(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
   return cachedFigs(s, plan, `nap|${frame.floorDogs}|${frame.floorStaff}`, () => {
     const cast = s.cast;
     const rand = seeded(frame.day, frame.dogs, frame.staff, 5);
     const region = lawnRegion(s);
-    const items: Item[] = [];
+    const crewItems: Item[] = [];
+    const facings: Facing[] = [];
     for (let k = 0; k < frame.floorStaff; k++) {
       const c = plan.crew[k] as CrewCard;
-      items.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('nap', k), c.facing)], region, target: [c.mx, c.my] });
+      const facing = crewPose('nap', k) === 'kneel' ? kneelFacing(s, c.mx, c.my, c.facing, 'asleep') : c.facing;
+      facings.push(facing);
+      crewItems.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('nap', k), facing)], region, target: [c.mx, c.my] , touch: null });
     }
-    for (const d of plan.dogs.slice(0, frame.floorDogs)) items.push({ looks: dogLooks(cast, d, ['asleep']), region, target: [d.mx, d.my] });
-    return figsOf(s, items, placeAll(s, items, rand));
+    const crewSpots = placeAll(s, crewItems, rand);
+    // Each kneeler's companion: its free-play companion if it had one, otherwise the dog nearest to it.
+    const dogs = plan.dogs.slice(0, frame.floorDogs);
+    const companions = new Map<number, number>();
+    for (let k = 0; k < frame.floorStaff; k++) {
+      if (crewPose('nap', k) !== 'kneel' || dogs.length === 0) continue;
+      const c = plan.crew[k] as CrewCard;
+      let pick = plan.companionOf.get(k);
+      if (pick === undefined || pick >= dogs.length || companions.has(pick)) {
+        let best = Infinity;
+        dogs.forEach((d, i) => {
+          const dist = Math.hypot(d.mx - c.mx, d.my - c.my);
+          if (!companions.has(i) && dist < best) {
+            best = dist;
+            pick = i;
+          }
+        });
+      }
+      if (pick !== undefined) companions.set(pick, k);
+    }
+    const dogItems = dogs.map((d, i): Item => {
+      const k = companions.get(i);
+      if (k !== undefined) return companionItem(s, d, ['asleep', 'sitting'], { ...(plan.crew[k] as CrewCard), facing: facings[k] as Facing }, crewSpots[k] as Placed, region);
+      return { looks: dogLooks(cast, d, ['asleep', 'sitting']), region, target: [d.mx, d.my] , touch: null };
+    });
+    return [...figsOf(s, crewItems, crewSpots), ...figsOf(s, dogItems, placeDogs(s, dogItems, rand, crewSpots))];
   });
 }
 
-/** Everyone on the yard in this block: the floor as the activity has it (a walk's group on the path beside it). */
+/**
+ * Everyone on the yard in this block: the floor as the activity has it (a walk's group on the path beside it). Above
+ * the crew fatigue limit (the config's 70), the staff on the floor of a play or nap block stand tired in place of the
+ * ball or the kneel (D60: the frame's state shown); a clean keeps its mop and a walk its leash.
+ */
 function figuresOf(s: Scene, frame: ReplayFrame): Fig[] {
   if (frame.closed || frame.activity === null) return [];
   const plan = dayPlan(s, frame.day, frame.dogs, frame.staff);
   const cast = s.cast;
-  if (frame.activity === 'structuredPlay') return structured(s, plan, frame);
-  if (frame.activity === 'clean') return cleaning(s, plan, frame);
-  if (frame.activity === 'nap') return napping(s, plan, frame);
-  if (frame.walkingStaff > 0 || frame.walkingDogs > 0) return walking(s, plan, frame);
-  const floor: Fig[] = [];
-  for (const d of plan.dogs.slice(0, frame.floorDogs)) floor.push(fig(s, dogLook(cast, d.id, d.play, d.facing), d.mx, d.my));
-  for (let k = 0; k < frame.floorStaff; k++) {
-    const c = plan.crew[k] as CrewCard;
-    floor.push(fig(s, crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing), c.mx, c.my));
+  let figs: Fig[];
+  if (frame.activity === 'structuredPlay') figs = structured(s, plan, frame);
+  else if (frame.activity === 'clean') return cleaning(s, plan, frame);
+  else if (frame.activity === 'nap') figs = napping(s, plan, frame);
+  else if (frame.walkingStaff > 0 || frame.walkingDogs > 0) return walking(s, plan, frame);
+  else {
+    figs = [];
+    for (let k = 0; k < frame.floorStaff; k++) {
+      const c = plan.crew[k] as CrewCard;
+      figs.push(fig(s, crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing), c.mx, c.my));
+    }
+    for (const d of plan.dogs.slice(0, frame.floorDogs)) figs.push(fig(s, dogLook(cast, d.id, d.play, d.facing), d.mx, d.my));
   }
-  return floor;
+  if (!(frame.fatigue > FATIGUE_LIMIT)) return figs;
+  return figs.map((f) => {
+    const src = f.look.art.src;
+    if (src.kind !== 'crew') return f;
+    return { look: crewLook(cast, src.id.split('-')[0] ?? 'crew', 'tired', lookFacing(f.look)), mx: f.mx, my: f.my, x: f.x, y: f.y };
+  });
 }
 
 // ===============================================================================================================
@@ -2303,8 +2566,11 @@ interface Stage extends Scene {
   art: ArtSet;
   ratio: number;
   tokens: Tokens;
-  /** The board, at this size. */
+  /** The board, at this size, and where it lies: its top-left in device px and device px per board-image px. */
   layer: HTMLCanvasElement;
+  boardDev: { x: number; y: number; fx: number; fy: number };
+  /** The mess decals at this size, by id. */
+  messDrawn: Map<string, HTMLCanvasElement>;
   drawn: Map<string, Drawn>;
   gmShadow: HTMLCanvasElement | null;
   /** The stage's preparation (startWarm): the job running, the level it is doing, the level reached, the level asked. */
@@ -2384,7 +2650,10 @@ function* prepare(s: Stage, from: number, to: number): Generator<void, number, v
       cast.pendingPlans.delete(key);
     }
   }
+  // Monday's other likely arrangements: the first day's requests as each booking choice and crew would take them.
+  foresee(s, 0, WORLD.requests.day1, ['all', 'legal', 'safe'], WARM_DAY.staff);
   if (to < 2) return to;
+  for (const m of s.art.mess) messCanvas(s, m);
   const plan = cast.plans.get(key);
   if (plan !== undefined) {
     for (const [k, c] of plan.crew.entries()) drawnOf(s, crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing));
@@ -2411,13 +2680,23 @@ function advanceWarm(s: Stage, ms: number): void {
 }
 
 /**
- * During a day's pickup, tomorrow's arrangement in idle time, when tomorrow is easy to foresee (the GM took every
- * booking today, so tomorrow's dogs are tomorrow's requests; the same crew): a guess that only fills the cache, so the
- * next day's first frame only draws. The arrangement is the same whenever it is made; a wrong guess costs idle time.
+ * From a day's afternoon (with the requests projected for tomorrow) and again at its pickup (the final figure),
+ * tomorrow's arrangements in idle time for each crew the GM may schedule (1 to 3), today's crew first, its dogs as
+ * today's booking choice would accept them (bookingsAccepted): guesses that only fill the cache, so the next day's first
+ * frame only draws, even on a day the GM changes its crew (a day's arrangement made inside a frame would make that frame
+ * a long task on a throttled Chromebook). The arrangement is the same whenever it is made; a wrong guess costs idle
+ * time and a little memory (the plan's heap budget allows for it).
  */
 function planAhead(s: Stage, frame: ReplayFrame): void {
-  if (frame.block !== 3 || frame.closed || frame.bookings !== 'all' || frame.day >= 4) return;
-  inIdleTime(s, frame.day + 1, frame.requestsTomorrow, frame.scheduledStaff);
+  if (frame.block < 2 || frame.day >= 4) return;
+  foresee(s, frame.day + 1, frame.requestsTomorrow, [frame.bookings ?? 'all'], frame.closed ? 1 : frame.scheduledStaff);
+}
+
+/** The arrangements a day may need: for each booking choice and each crew of 1 to 3 (`first` first), in idle time. */
+function foresee(s: Stage, day: number, requests: number, bookings: readonly Bookings[], first: number): void {
+  for (const staff of [first, ...[1, 2, 3].filter((k) => k !== first)]) {
+    for (const b of bookings) inIdleTime(s, day, bookingsAccepted(requests, b, staff, WORLD), staff);
+  }
 }
 
 /** Starts a day's arrangement in idle time; a frame that needs it before it is done finishes what is left (dayPlan). */
@@ -2430,13 +2709,23 @@ function inIdleTime(s: Stage, day: number, dogs: number, staff: number): void {
   idle(s, gen, () => cast.pendingPlans.get(key) === gen, () => cast.pendingPlans.delete(key));
 }
 
+/** The longest an idle slice of the yard's preparation runs, in ms: well inside a frame on a throttled Chromebook. */
+const IDLE_SLICE_MS = 6;
+
 /**
  * Runs `work` a little at a time in the browser's idle time (a few milliseconds a slice, between frames), so it never
  * holds up a frame, while the stage is kept and `wanted` holds; `done` when it finishes.
  */
 function idle(s: Stage, work: Generator<void, unknown, void>, wanted: () => boolean, done?: () => void): void {
   const later = (fn: (left: () => number) => void): void => {
-    if (typeof requestIdleCallback === 'function') requestIdleCallback((d) => fn(() => d.timeRemaining()), { timeout: 400 });
+    if (typeof requestIdleCallback === 'function')
+      requestIdleCallback(
+        (d) => {
+          const end = performance.now() + IDLE_SLICE_MS;
+          fn(() => Math.min(d.timeRemaining(), end - performance.now()));
+        },
+        { timeout: 400 },
+      );
     else
       setTimeout(() => {
         const t0 = performance.now();
@@ -2478,6 +2767,8 @@ function stageFor(width: number, height: number, ratio: number, art: ArtSet): St
     ratio,
     tokens: readTokens(undefined),
     layer: newCanvas(width * ratio, height * ratio).canvas,
+    boardDev: { x: 0, y: 0, fx: 1, fy: 1 },
+    messDrawn: new Map(),
     drawn: new Map(),
     gmShadow: null,
     warmWork: null,
@@ -2529,13 +2820,54 @@ function paintLayer(s: Stage): void {
   const nh = art.board.naturalHeight || bh;
   const target = bw * k * ratio; // device px wide
   // Most sizes draw the board at under half its pixels: they start from a half-size copy made once.
+  let board: HTMLCanvasElement;
   if (target * 2 <= nw) {
     if (boardHalf === null || boardHalf.art !== art) boardHalf = { art, canvas: scaled(art.board, nw, nh, 0.5, false) };
     const half = boardHalf.canvas;
-    ctx.drawImage(scaled(half, half.width, half.height, target / half.width, false), Math.round(s.bx * ratio), Math.round(s.by * ratio));
-    return;
+    board = scaled(half, half.width, half.height, target / half.width, false);
+  } else board = scaled(art.board, nw, nh, target / nw, false);
+  s.boardDev = { x: Math.round(s.bx * ratio), y: Math.round(s.by * ratio), fx: board.width / bw, fy: board.height / bh };
+  ctx.drawImage(board, s.boardDev.x, s.boardDev.y);
+}
+
+/** A mess decal at this stage's size: scaled as the board is, made once. */
+function messCanvas(s: Stage, m: { decal: MessDecal; img: HTMLImageElement }): HTMLCanvasElement {
+  const cached = s.messDrawn.get(m.decal.id);
+  if (cached !== undefined) return cached;
+  const nw = m.img.naturalWidth || m.decal.size[0];
+  const nh = m.img.naturalHeight || m.decal.size[1];
+  const canvas = scaled(m.img, nw, nh, (m.decal.size[0] * s.boardDev.fx) / nw, false);
+  s.messDrawn.set(m.decal.id, canvas);
+  return canvas;
+}
+
+/** The block the yard drew last and the one before it (its step and cleanliness), to tell when a decal appears. */
+const blocksSeen: { prev: { step: number; cleanliness: number } | null; cur: { step: number; cleanliness: number } | null } = { prev: null, cur: null };
+const MESS_FADE_MS = 200;
+
+/**
+ * The mess on the board (round 2, row 15; D60: the frame's cleanliness, shown): each decal while the cleanliness is
+ * under its `below`, over the board and under every shadow and figure, its top-left on its board-image pixel at exactly
+ * the board's drawn scale and offset. A decal that appears this block (the block before it, drawn just before, had it
+ * hidden) fades in over the block's first 200 ms; at once under reduced motion.
+ */
+function drawMess(ctx: CanvasRenderingContext2D, s: Stage, frame: ReplayFrame, progress: number, motion: boolean): void {
+  const step = frame.day * 4 + frame.block;
+  if (blocksSeen.cur === null || blocksSeen.cur.step !== step) {
+    blocksSeen.prev = blocksSeen.cur;
+    blocksSeen.cur = { step, cleanliness: frame.cleanliness };
   }
-  ctx.drawImage(scaled(art.board, nw, nh, target / nw, false), Math.round(s.bx * ratio), Math.round(s.by * ratio));
+  const prev = blocksSeen.prev;
+  const { x, y, fx, fy } = s.boardDev;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  for (const m of s.art.mess) {
+    const d = m.decal;
+    if (!(frame.cleanliness < d.below)) continue;
+    const appearing = motion && prev !== null && prev.step === step - 1 && !(prev.cleanliness < d.below);
+    ctx.globalAlpha = appearing ? clamp((progress * STEP_MS) / MESS_FADE_MS, 0, 1) : 1;
+    ctx.drawImage(messCanvas(s, m), x + d.at[0] * fx, y + d.at[1] * fy, d.size[0] * fx, d.size[1] * fy);
+  }
+  ctx.globalAlpha = 1;
 }
 
 /** Draws a pre-rendered canvas with its anchor (ax, ay) at device point (x, y): pixel for pixel, or scaled. */
@@ -2688,6 +3020,7 @@ function drawYard(
   ctx.setLineDash([]);
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.drawImage(s.layer, 0, 0);
+  drawMess(ctx, s, frame, progress, motion);
 
   // The incident: a ring on the lawn around the floor, never on a dog (D60).
   if (frame.events.some((e) => e.type === 'incident')) drawPulse(ctx, s, R, tokens, figs, motion ? progress : null);
@@ -2756,8 +3089,13 @@ function clipToGround(ctx: CanvasRenderingContext2D, s: Scene, R: number): void 
 }
 
 /** Development only (stripped from the build): overlapping pairs, and pairs that break a spacing rule. */
-function yardStats(s: Scene, figs: readonly Fig[]): { figures: number; overlaps: number; worst: number; breaches: number } {
+function yardStats(s: Scene, figs: readonly Fig[]): { figures: number; overlaps: number; worst: number; breaches: number; onMess: number } {
   const placed = figs.map((f) => placedOf(s, f));
+  let onMess = 0;
+  for (const f of figs) {
+    const m = messUnder(s, f.x, f.y);
+    if ((m & MESS_NO_STAND) !== 0 || ((m & MESS_NO_SLEEP) !== 0 && f.look.art.src.pose === 'asleep')) onMess += 1;
+  }
   let overlaps = 0;
   let worst = 0;
   let breaches = 0;
@@ -2772,7 +3110,7 @@ function yardStats(s: Scene, figs: readonly Fig[]): { figures: number; overlaps:
       if ((a.sprite === b.sprite && d < s.sameSprite) || (a.breedPose !== '' && a.breedPose === b.breedPose && d < s.sameBreedPose)) breaches += 1;
     }
   }
-  return { figures: figs.length, overlaps, worst: Math.round(worst), breaches };
+  return { figures: figs.length, overlaps, worst: Math.round(worst), breaches, onMess };
 }
 
 /**

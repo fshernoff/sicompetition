@@ -8,6 +8,8 @@ import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, recklessCoveredPolicy, recklessPolicy, stationaryPolicy } from '../../src/sim/policies.ts';
 import { REFERENCE_YARD, arrangeYard, replayFrame } from '../../src/ui/replay.ts';
 import type { YardFigure } from '../../src/ui/replay.ts';
+import setJson from '../../src/assets/art/set.json' with { type: 'json' };
+import type { SetManifest } from '../../src/assets/art/manifest.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { EpisodeTrace } from '../../src/world/types.ts';
 import { config, round1 } from '../helpers.ts';
@@ -74,4 +76,81 @@ describe('the yard keeps a sprite and a breed in one pose apart (round 2, findin
       expect(arrangeYard(frame, 784, 690)).toEqual(arrangeYard(frame, 784, 690));
     }
   });
+});
+
+// The crew's poses (G5d round 2, the faceted crew): in a play or nap block no two staff on the floor share a pose (one
+// holds the ball, one kneels beside a dog that faces it, a third stands by with a leash); a clean keeps the mop and a
+// walk the leash; above the crew fatigue limit (the config's KPI threshold, 70) the staff of a play or nap block stand
+// tired instead, never in a clean or a walk (D60: the frame's state, shown).
+describe('the crew on the yard', () => {
+  const LIMIT = config.fatigue.kpiThreshold;
+  const PLAY_OR_NAP = new Set(['freePlay', 'structuredPlay', 'nap']);
+  const seen = { tired: 0, kneel: 0, play: 0 };
+
+  for (const [name, trace] of WEEKS) {
+    it(`${name}: no two staff share a pose, tired exactly above the fatigue limit in play and nap`, () => {
+      const found: string[] = [];
+      for (let t = 0; t < 20; t++) {
+        const frame = replayFrame(trace.steps, t, config);
+        if (frame.closed || frame.activity === null) continue;
+        const { figures } = arrangeYard(frame, REFERENCE_YARD[0], REFERENCE_YARD[1]);
+        const floor = figures.filter((f) => f.kind === 'crew' && !f.walking);
+        const walkers = figures.filter((f) => f.kind === 'crew' && f.walking);
+        const where = `${frame.dayName} ${frame.blockName} (${frame.activityWords}, fatigue ${frame.fatigue})`;
+        if (floor.length !== frame.floorStaff) found.push(`${where}: ${floor.length} staff drawn on the floor of ${frame.floorStaff}`);
+        if (walkers.some((f) => f.pose !== 'leash')) found.push(`${where}: a walker without the leash`);
+        const poses = floor.map((f) => f.pose);
+        if (PLAY_OR_NAP.has(frame.activity)) {
+          seen.play += 1;
+          if (frame.fatigue > LIMIT) {
+            seen.tired += 1;
+            if (poses.some((p) => p !== 'tired')) found.push(`${where}: ${poses.join(', ')}, not tired`);
+          } else {
+            if (poses.includes('tired')) found.push(`${where}: tired at or under the limit`);
+            if (new Set(poses).size !== poses.length) found.push(`${where}: two staff share a pose (${poses.join(', ')})`);
+          }
+          for (const k of floor.filter((f) => f.pose === 'kneel')) {
+            seen.kneel += 1;
+            const sign = k.facing === 'right' ? 1 : -1;
+            const beside = figures.some((d) => d.kind === 'dog' && !d.walking && (d.x - k.x) * sign > 0 && Math.abs(d.x - k.x) < 75 && Math.abs(d.y - k.y) < 40 && d.facing !== k.facing);
+            if (!beside) found.push(`${where}: a kneeling staffer with no dog at its hand facing it`);
+          }
+        } else {
+          if (poses.includes('tired')) found.push(`${where}: tired in a ${frame.activity}`);
+          if (frame.activity === 'clean' && poses.some((p) => p !== 'mop')) found.push(`${where}: a clean without the mop (${poses.join(', ')})`);
+        }
+      }
+      expect(found).toEqual([]);
+    });
+  }
+
+  it('saw the tired pose, a kneeling staffer and play blocks in the fixture weeks', () => {
+    expect(seen.play).toBeGreaterThan(20);
+    expect(seen.tired).toBeGreaterThan(0);
+    expect(seen.kneel).toBeGreaterThan(0);
+  });
+});
+
+// The mess decals (G5d round 2, row 15): a decal that stands up (the bowl on its side) carries `blocked` areas in
+// set.json, its footprint and the lawn behind it; no figure's anchor is ever in one, so none stands on it or wrongly
+// behind it, whether or not the decal shows (a day's places hold all day, D60).
+describe('the yard keeps off the mess', () => {
+  const blocked = ((setJson as unknown as SetManifest).mess ?? []).flatMap((d) => d.blocked ?? []);
+
+  it('has a decal with blocked areas to keep off', () => {
+    expect(blocked.length).toBeGreaterThan(0);
+  });
+
+  for (const [name, trace] of WEEKS) {
+    it(`${name}: no figure stands in a decal's blocked area`, () => {
+      const found: string[] = [];
+      for (let t = 0; t < 20; t++) {
+        const frame = replayFrame(trace.steps, t, config);
+        for (const f of arrangeYard(frame, REFERENCE_YARD[0], REFERENCE_YARD[1]).figures) {
+          if (blocked.some(([x, y, w, h]) => f.mx > x && f.mx < x + w && f.my > y && f.my < y + h)) found.push(`${frame.dayName} ${frame.blockName}: ${f.id} at (${f.mx.toFixed(2)}, ${f.my.toFixed(2)})`);
+        }
+      }
+      expect(found).toEqual([]);
+    });
+  }
 });

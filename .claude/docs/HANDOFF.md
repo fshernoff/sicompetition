@@ -21,14 +21,15 @@ triaged, 15 findings). Read it, then `.claude/docs/reviews/g5d-directions.md`.
   the hybrid. The cast (dogs, crew) generated under eight gates; the set and the GM modelled in three.js and rendered
   offline (`.claude/docs/reviews/g5d-directions.md`). The art contract: `src/assets/art/manifest.ts`. Ports for
   parallel worktrees: `E2E_PORT`, `SHOTS_PORT`, `PERF_PORT`.
-- **State at the last update (Oct 29, early):** on `g5d-look` (last `b06b405`): WP2 the page (`5ce99b1`), WP3 the
-  yard (`c0b039d`), the cast (45 sprites after the readers' fixes; the tan beagle dropped), the set's second render
-  (D58: three clean readers on all seven), G5c's art removed. Review round 1 done and triaged
-  (`.claude/docs/reviews/g5d-look-rounds.md`: 33 rows; BRIEF 10.1 and 10.2 words changed; `tests/ui/report.test.ts`
-  failing for the new P&L row). Dispatched: WP2 and WP3 (their worktrees, reset to `g5d-look`), WP4b (a neutral done
-  band). D58 passes running: Astra and Sonnet on 29 cast sprites (26 changed, 3 crew2). Next: merge the fixes, round 2.
-  - Gotcha: an Agent `isolation: worktree` was created from `main`, not the current branch; check a worktree's base.
-  - Gotcha: zsh does not split `$LIST` in `for x in $LIST`; use an array or a file.
+- **State at the last update (Oct 29):** `g5d-look` at `52e8f94`: WP2's and WP3's round 1 fixes merged; the cast
+  (42 sprites: six breeds, two adult crew; the tan beagle and the cream poodle dropped, the sable corgi renamed
+  mahogany, three pockets repaired in `build_cast.py`'s `POCKET_REPAIRS`) and the set (the done band neutral white)
+  pass D58: `tests/art/qa.test.ts` green, the whole suite green. Round 2 of the look review: the main thread's notes
+  and the fresh critic's (3 blocking, 9 high, 16 medium) are in; Astra's round 2 running; then the triage and the
+  fixes (BRIEF words first: the booking rule's words, the cash and profit labels, the status line when the week is
+  over, the picks' scope "this week"). The budget allows rounds 3 and 4.
+  - Gotchas: an Agent `isolation: worktree` starts from `main` (reset it to `g5d-look`); zsh does not split `$LIST`;
+    a defect in the ledger closes only by the same reader's later clean pass on the same bytes.
 - **Owner preferences this session:** no lists of questions (memory `feedback-no-quizzing`); act on his calls.
 
 ## Session 7 (2026-10-28): the submission thread started

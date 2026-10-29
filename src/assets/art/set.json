@@ -151,7 +151,7 @@
       "id": "kibble",
       "file": "set/mess-kibble.webp",
       "size": [
-        326,
+        307,
         194
       ],
       "at": [
@@ -189,6 +189,6 @@
     "walk: [x, y, w, h], where the walking group stands: the flagstone path along the lawn's front-right edge (y from -1 to 0), outside the lawn.",
     "gm: drawn with its anchor (the point it hovers over, inside the image) on gmSpot; the three states share one size, one anchor and one place for the orb: ready is the amber band turned low, running the amber band lit, done the band lit a pale warm white (neutral: finished, not good or bad). gmPage: the same three at 128 px square (64 CSS px), the orb centred and in the same place in each.",
     "shadow: the board's cast shadows, for the cast's code shadows: tint rgb, alpha, blur in px at the yard's 1x (x2 in these images); a contact ellipse at contactAlpha and contactBlur; throw: the screen offset (dx, dy) of a shadow point per px of height above the anchor (the key light from the upper left, shadows to the right).",
-    "mess: the decals the yard lays on the board by the frame's cleanliness (D60: state, nothing invented), each shown while cleanliness is under `below` (so under 10 all three show): drawn with its top-left corner on the board-image pixel `at`, at the board's own scale, over the board and under every figure. Each is the board's own render of that patch of lawn with the mess on it (the same frame, light, shadows and grade; the lawn's own facets, tinted; the yard's contact shadow under its objects), transparent wherever the board shows through unchanged, so it is only right on this board.webp. Anything in one higher than 8 cm (the bowl on its side, 24 cm) comes with `blocked`: [x, y, w, h] in world metres, padded as map.blocked, where no figure may stand while the decal shows."
+    "mess: the decals the yard lays on the board by the frame's cleanliness (D60: state, nothing invented), each shown while cleanliness is under `below` (so under 10 all three show): drawn with its top-left corner on the board-image pixel `at`, at the board's own scale, over the board and under every figure. Each is the board's own render of that patch of lawn with the mess on it (the same frame, light, shadows and grade; the lawn's own facets round it, copied unchanged; the yard's contact shadow under its objects), transparent wherever the board shows through unchanged, so it is only right on this board.webp. Anything in one higher than 8 cm (the bowl on its side, 24 cm) comes with `blocked`: [x, y, w, h] in world metres, padded as map.blocked, where no figure may stand while the decal shows."
   ]
 }

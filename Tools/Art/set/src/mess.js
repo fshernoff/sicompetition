@@ -3,12 +3,11 @@
 // rendered through the board's own frame (render.js, renderDecal), so each lands exactly in its light and perspective.
 //   mud     flat wet mud, darker and glossier toward its middle, two tracks of paw prints leading out of it, fading as
 //           the mud wears off the paws
-//   kibble  a spill of kibble fanning out from a heap, a red rubber ring and a tennis ball, on trampled grass
+//   kibble  a spill of kibble fanning out from a heap, a red rubber ring and a tennis ball
 //   bowl    a steel water bowl knocked over on its side, the puddle flowing out of its mouth, a few drops beyond it
 // Each is three parts, as board.js's lawn() and decalGroup() take them:
-//   tintAt(p, colour)   the grass round its pieces, vertex by vertex: a soft field fading to nothing (the kibble's
-//                       trampled grass), or the colour unchanged (round the mud and the puddle: no stain), or null to
-//                       leave a vertex alone. The lawn's cells it touches are copied with the lawn's own vertices, facet
+//   tintAt(p, colour)   the grass round its pieces, vertex by vertex: the colour unchanged (no stain, no wash, no
+//                       band round any of the three), or null to leave a vertex alone. The lawn's cells it touches are copied with the lawn's own vertices, facet
 //                       tones and occlusion, so they meet the board's lawn exactly; they also join a decal's pieces into
 //                       one patch (no loose specks).
 //   shadeAt(p)          its own baked soft occlusion on the grass (1 everywhere now: the objects are grounded by
@@ -35,7 +34,6 @@ const toWorld = (p) => [-p.z, -p.x, p.y];
 // the toys', the mud's sheen and the steel's highlight.
 export const MC = {
   mud: C.soil, mudDeep: C.soilDeep, sheen: col('#9C8C78'),
-  worn: C.wood, // trampled grass yellows toward the fence's tan
   kibble: col('#B5773D'), kibbleLight: col('#CF9858'),
   ring: col('#C8432F'), ball: col('#D3E84A'), seam: col('#F6F5EE'),
   water: C.water, waterLight: col('#B9D3DD'),
@@ -264,14 +262,12 @@ function kibble(s) {
     { x: Bl.x, y: Bl.y, r: 0.034, dx: 0.45, dy: 0.5 },
   ];
 
-  // trampled grass under all of it (one patch: the hull of everything, a little wider), more round the heap
-  const all = [...pieces.map((q) => [q.x, q.y]), ...contacts.map((c) => [c.x, c.y])];
-  const H = hull(all);
+  // no tint under it: the grass round everything (their hull, a little wider) is the board's own, copied unchanged only
+  // to join the pieces into one patch (a trampled tint toward the fence's tan read as a pale wash: D58, Oct 29)
+  const H = hull([...pieces.map((q) => [q.x, q.y]), ...contacts.map((c) => [c.x, c.y])]);
   const tintAt = (p, clr) => {
     const [x, y] = toWorld(p);
-    const tramp = 1 - sstep(-0.06, 0.2, polySigned([x, y], H)), heap = 1 - sstep(0.05, 0.32, Math.hypot(x - s.x, y - s.y));
-    if (tramp <= 0 && heap <= 0) return null;
-    return clr.clone().lerp(MC.worn, 0.1 * tramp + 0.08 * heap);
+    return polySigned([x, y], H) < 0.2 ? clr : null;
   };
   return { id: s.id, below: s.below, tintAt, shadeAt: () => 1, flats, objects, contacts };
 }

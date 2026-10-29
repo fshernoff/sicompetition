@@ -65,13 +65,19 @@ const tail = (h) => Math.min(1.3, 2.45 * h);
 // Where no figure's anchor may stand, as [x, y, w, h] on the lawn (w along x, h along y): each prop's footprint padded
 // by `pad` (by 0.45 m round a prop taller than a paw, so a wide figure's tail or head never sinks into it), and the
 // lawn behind it.
+// One footprint [x0, y0]..[x1, y1] of height h, as blocked() keeps it (null when it falls off the lawn).
+export function blockRect(x0, y0, x1, y1, h, pad = 0.2) {
+  const p = h > 0.25 ? pad + 0.25 : pad;
+  const a = Math.max(0, x0 - p), b = Math.max(0, y0 - p);
+  const c = Math.min(X, x1 + p + tail(h)), d = Math.min(Y, y1 + p + tail(h));
+  return c > a && d > b ? [a, b, c - a, d - b].map((v) => Math.round(v * 100) / 100) : null;
+}
+
 export function blocked(pad = 0.2) {
   const out = [];
   const add = (x0, y0, x1, y1, h) => {
-    const p = h > 0.25 ? pad + 0.25 : pad;
-    const a = Math.max(0, x0 - p), b = Math.max(0, y0 - p);
-    const c = Math.min(X, x1 + p + tail(h)), d = Math.min(Y, y1 + p + tail(h));
-    if (c > a && d > b) out.push([a, b, c - a, d - b].map((v) => Math.round(v * 100) / 100));
+    const r = blockRect(x0, y0, x1, y1, h, pad);
+    if (r) out.push(r);
   };
   for (const b of BUSHES) add(b.x - b.r, b.y - b.r, b.x + b.r, b.y + b.r, b.h);
   add(PLANTER.x - PLANTER.w / 2, PLANTER.y - PLANTER.d / 2, PLANTER.x + PLANTER.w / 2, PLANTER.y + PLANTER.d / 2, PLANTER.h + PLANTER.shrub.h);
@@ -80,20 +86,23 @@ export function blocked(pad = 0.2) {
 }
 
 // The mess (review round 2, row 15; D60: the frame's cleanliness is state, so the yard may show it): three decals the
-// yard lays on the board, each from a cleanliness under `below` on. Each lies flat on open lawn where dogs stand (inside
-// the margin, off every blocked footprint, clear of the clubhouse, the fence and the walk), the three spread over the
-// lawn's front, its right and its left so the yard reads as getting messier; nothing in one is higher than 8 cm (the
-// depth audit's rule: lower is stood on, not hidden behind), so the yard draws them over the board and under every
-// figure. The shapes are in mess.js.
+// yard lays on the board, each from a cleanliness under `below` on. Each lies on open lawn where dogs stand (inside the
+// margin, off every blocked footprint, clear of the clubhouse, the fence and the walk), the three spread over the
+// lawn's front, its right and its left so the yard reads as getting messier. The yard draws them over the board and
+// under every figure, so anything in one higher than 8 cm (the depth audit's rule: lower is stood on, not hidden
+// behind) comes with its own blocked footprint, as the board's props do: only the bowl on its side. The shapes are in
+// mess.js.
 export const MESS = [
-  // a trampled muddy patch, two tracks of paw prints leading out of it (each fading as the mud wears off the paws)
+  // flat wet mud, darker and glossier toward its middle, two tracks of paw prints leading out of it (each fading as the
+  // mud wears off the paws)
   { id: 'mud', below: 50, x: 2.0, y: 2.3, a: 0.8, b: 0.55, rot: 0.35,
     trails: [{ p: [[2.72, 2.78], [3.25, 3.3], [4.25, 3.52]], n: 8 }, { p: [[1.5, 1.78], [1.3, 1.4], [0.98, 1.06]], n: 4 }] },
-  // a spill of kibble fanning out from a heap where it landed, a chewed rope toy and a ball
+  // a spill of kibble fanning out from a heap where it landed, a red rubber ring and a tennis ball
   { id: 'kibble', below: 30, x: 5.0, y: 1.3, dir: 2.1, len: 0.8, n: 44, heap: 12, seed: 7,
-    toy: { x: 5.42, y: 1.8, ang: -0.62 }, ball: { x: 4.52, y: 1.02 } },
-  // a water bowl knocked upside down, its puddle spreading toward the front, a few drops beyond it
-  { id: 'bowl', below: 10, x: 1.15, y: 5.2, puddle: { x: 1.6, y: 4.75, rx: 0.62, ry: 0.4, rot: -0.85 } },
+    ring: { x: 5.42, y: 1.84 }, ball: { x: 4.52, y: 1.02 } },
+  // a steel water bowl knocked over on its side, its mouth toward the front, the puddle flowing out of it: (x, y) is
+  // where the mouth's lip meets the grass, `dir` the way the mouth faces (radians in the lawn's plane, 0 along +x)
+  { id: 'bowl', below: 10, x: 1.3, y: 5.05, dir: -1.05, puddle: { len: 0.95, width: 0.6 } },
 ];
 
 // The walkers' strip on the front path: [x, y, w, h] for their anchors (the path's middle, clear of the slab's lip),

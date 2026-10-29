@@ -47,11 +47,13 @@ export function mess({ quality = 0.9, boardQuality = 0.9, check = true } = {}) {
   const b = renderBoard(buildBoard(), { extra });
   const out = { board: { png: png(b.canvas), webp: webp(b.canvas, boardQuality), size: [b.canvas.width, b.canvas.height], offset: b.offset }, decals: [] };
   for (const spec of MESS) {
-    const d = renderDecal(decalGroup(buildMess(spec.id)), b.F, b.offset);
-    out.decals.push({ id: spec.id, below: spec.below, png: png(d.canvas), webp: webp(d.canvas, quality), size: [d.canvas.width, d.canvas.height], at: d.at });
+    const m = buildMess(spec.id);
+    const d = renderDecal(decalGroup(m), b.F, b.offset);
+    out.decals.push({ id: spec.id, below: spec.below, png: png(d.canvas), webp: webp(d.canvas, quality), size: [d.canvas.width, d.canvas.height], at: d.at, blocked: m.blocked ?? [], top: m.top });
   }
   if (check) {
-    const f = renderBoard(buildBoard({ mess: combineMess(MESS.map((s) => buildMess(s.id))) }), { extra });
+    const all = combineMess(MESS.map((s) => buildMess(s.id)));
+    const f = renderBoard(buildBoard({ mess: all }), { extra, contacts: all.contacts });
     out.full = { png: png(f.canvas), size: [f.canvas.width, f.canvas.height], offset: f.offset };
   }
   out.ms = Math.round(performance.now() - t0);
@@ -173,6 +175,38 @@ export function audit({ step = 0.15 } = {}) {
     }
   }
   return { spots: spots.length, rays: probes.length, faults: faults.length, first: faults.slice(0, 12), ms: Math.round(performance.now() - t0) };
+}
+
+// The depth audit for the mess: from every place a figure may stand (the lawn inside the margin, off the board's blocked
+// rectangles and off the decal's own), the same rays as audit(); any that hits a decal's object higher than 8 cm is a
+// fault (the yard draws every figure over the decals).
+export function auditMess({ step = 0.15 } = {}) {
+  const t0 = performance.now();
+  const rc = new THREE.Raycaster();
+  const probes = [];
+  for (const o of [-0.35, 0, 0.35]) probes.push([o, 0.04]);
+  for (const h of [0.3, 0.6]) for (const o of [-0.6, -0.3, 0, 0.3, 0.6]) probes.push([o, h]);
+  for (const o of [-0.45, 0, 0.45]) probes.push([o, 0.9]);
+  for (const h of [1.2, 1.5, 1.8]) for (const o of [-0.25, 0, 0.25]) probes.push([o, h]);
+  return MESS.map((spec) => {
+    const m = buildMess(spec.id);
+    const mesh = new THREE.Mesh(m.objects.geometry(), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+    mesh.updateMatrixWorld(true);
+    const B = [...blocked(0.2), ...(m.blocked ?? [])];
+    const inB = (x, y) => B.some(([bx, by, bw, bh]) => x >= bx && x <= bx + bw && y >= by && y <= by + bh);
+    let spots = 0, faults = 0;
+    for (let x = MARGIN; x <= LAWN[0] - MARGIN + 1e-9; x += step) for (let y = MARGIN; y <= LAWN[1] - MARGIN + 1e-9; y += step) {
+      if (inB(x, y)) continue;
+      spots++;
+      for (const [o, h] of probes) {
+        rc.set(W(x, y, h).addScaledVector(VIEW.right, o), VIEW.d);
+        if (rc.intersectObject(mesh, false).some((i) => i.point.y > 0.08)) { faults++; break; }
+      }
+    }
+    let top = 0;
+    for (let i = 1; i < m.objects.pos.length; i += 3) top = Math.max(top, m.objects.pos[i]);
+    return { id: spec.id, top: Math.round(top * 1000) / 1000, blocked: m.blocked ?? [], spots, faults };
+  }).concat([{ ms: Math.round(performance.now() - t0) }]);
 }
 
 // --- composites ------------------------------------------------------------------------------------------------------

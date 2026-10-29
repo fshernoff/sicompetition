@@ -96,9 +96,27 @@ function keyLight(centre, box) {
   return l;
 }
 
+// The yard's contact shadow under a figure (set.json's shadow.contactAlpha and contactBlur), for the mess's objects:
+// soft ellipses on the ground, each a ground circle of radius r round (x, y) moved toward the lower right by (dx, dy)
+// of its own size, in the shadow's tint; laid with the key light's shadows and kept to the ground with them.
+export const CONTACT = { alpha: 0.42, blur: 2.6 }; // blur in px at the yard's 1x (x2 in these images)
+function contactLayer(F, contacts, w, h) {
+  const c = canvas2d(w, h), g = c.getContext('2d');
+  g.fillStyle = '#000';
+  const s = PPM * SPRITE_SCALE; // a ground circle of radius r is an ellipse r * s across and r * s / 2 high
+  for (const { x, y, r, dx = 0.3, dy = 0.3 } of contacts) {
+    const [px, py] = F.px(W(x, y, 0)).map((v) => v / SS);
+    const a = r * s, b = (r * s) / 2;
+    g.beginPath();
+    g.ellipse(px + dx * a, py + dy * b, a, b, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  return tinted(c, CONTACT.blur * SPRITE_SCALE, SHADOW.tint, CONTACT.alpha);
+}
+
 // The board: returns the shipped (2x) canvas and the contract's map. `extra` are world points the image must contain
-// (the GM's room over the roof).
-export function renderBoard(group, { extra = [], layers = null } = {}) {
+// (the GM's room over the roof). `contacts` (the check of the mess decals only): contact shadows, as contactLayer.
+export function renderBoard(group, { extra = [], layers = null, contacts = null } = {}) {
   const ppm = PPM * SPRITE_SCALE * SS;
   group.updateMatrixWorld(true);
   // the slab's shadow on the page reaches past the slab: its footprint is part of the frame, with room for its blur
@@ -141,6 +159,10 @@ export function renderBoard(group, { extra = [], layers = null } = {}) {
   g.drawImage(colour, 0, 0);
   const sh = tinted(shadowMask, SHADOW.blur * SPRITE_SCALE, SHADOW.tint, SHADOW.alpha);
   const sg = sh.getContext('2d');
+  if (contacts && contacts.length) {
+    sg.globalCompositeOperation = 'source-over'; // (tinted leaves its canvas in source-in)
+    sg.drawImage(contactLayer(F, contacts, W2, H2), 0, 0);
+  }
   sg.globalCompositeOperation = 'destination-in';
   sg.drawImage(groundMask, 0, 0);
   g.drawImage(sh, 0, 0);
@@ -165,7 +187,8 @@ export function renderBoard(group, { extra = [], layers = null } = {}) {
 // light and perspective; `offset` is the board's crop (renderBoard's). `group` is board.js's decalGroup: the clean lawn
 // hides what sinks below it and takes the objects' shadows, the tinted cells and the flat pieces lie on it, the
 // objects stand on it. The same passes as the board's: colour; the key light's shadows on the ground as a mask, blurred
-// and laid at 30% in the deep green-black, kept to the ground; the grade. Only the decal's own pixels are drawn (the
+// and laid at 30% in the deep green-black, with the yard's contact shadow under each object (group.userData.contacts),
+// kept to the ground; the grade. Only the decal's own pixels are drawn (the
 // lawn writes depth, never colour), so the result is transparent wherever the board shows through unchanged.
 // Returns the decal cropped to its faintest pixel plus `pad`, and `at`: the board-image pixel of its top-left corner.
 export function renderDecal(group, F, offset, { pad = 2 } = {}) {
@@ -189,6 +212,11 @@ export function renderDecal(group, F, offset, { pad = 2 } = {}) {
   g.drawImage(colour, 0, 0);
   const sh = tinted(shadowMask, SHADOW.blur * SPRITE_SCALE, SHADOW.tint, SHADOW.alpha);
   const sg = sh.getContext('2d');
+  const contacts = group.userData.contacts ?? [];
+  if (contacts.length) {
+    sg.globalCompositeOperation = 'source-over'; // (tinted leaves its canvas in source-in)
+    sg.drawImage(contactLayer(F, contacts, out.width, out.height), 0, 0);
+  }
   sg.globalCompositeOperation = 'destination-in';
   sg.drawImage(groundMask, 0, 0);
   g.drawImage(sh, 0, 0);

@@ -51,7 +51,8 @@ export interface BoardMap {
  * A mess decal (review round 2, row 15; D60: the frame's cleanliness is state, so the yard may show it): a patch of the
  * lawn as the board's own render shows it with the mess on it (mud and tracks, spilled kibble and toys, a tipped bowl
  * and its puddle), transparent wherever the board shows through unchanged. Drawn over the board at the board's own
- * scale and offset, under every figure; nothing in one stands higher than 8 cm, so a figure is never wrongly over it.
+ * scale and offset, under every figure. Anything in one higher than 8 cm (the bowl on its side) comes with `blocked`,
+ * so a figure is never drawn over something that stands in front of it.
  */
 export interface MessDecal {
   id: string; // 'mud', 'kibble', 'bowl'
@@ -63,6 +64,9 @@ export interface MessDecal {
   at: [number, number];
   /** Shown while the frame's cleanliness (0 to 100) is under this: 50, 30, 10, so the yard gets messier as it falls. */
   below: number;
+  /** While it shows, where no figure's anchor may stand, as world-metre rectangles [x, y, w, h] padded like
+   * BoardMap.blocked (its footprint and the lawn behind it); absent when nothing in it is higher than 8 cm. */
+  blocked?: [number, number, number, number][];
 }
 
 export interface SetManifest {

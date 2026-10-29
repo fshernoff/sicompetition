@@ -20,10 +20,10 @@ Code agent, package WP4b-r2) to review round 2, row 15 of `.claude/docs/reviews/
 | `set/gm-running.webp` | the GM running the week: the amber band lit | 114 × 240 | 3,104 | `17348d3a544a` |
 | `set/gm-done.webp` | the week is over: the band lit a pale warm white | 114 × 240 | 2,834 | `e12e5f32915d` |
 | `set/gm-page-ready.webp`, `set/gm-page-running.webp`, `set/gm-page-done.webp` | the same three at the page's size (64 CSS px), for the status line, the orb centred | 128 × 128 | 2,200; 2,724; 2,512 | `d4b7bfb2b2d9`, `23e8fa0b7bc1`, `d44de11da266` |
-| `set/mess-mud.webp` | the mess under cleanliness 50: a trampled muddy patch, two tracks of paw prints leading out of it | 434 × 425 | 45,440 | `b93bbc4988fc` |
-| `set/mess-kibble.webp` | under 30: a spill of kibble from a heap, a chewed rope toy and a tennis ball, on trampled grass | 341 × 183 | 27,086 | `76eac86b1116` |
-| `set/mess-bowl.webp` | under 10: a steel water bowl knocked upside down, its puddle and a few drops on wet grass | 432 × 135 | 17,854 | `d27b7ea710b2` |
-| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, `mess`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 4,647 | `0de75f06fbf4` |
+| `set/mess-mud.webp` | the mess under cleanliness 50: flat wet mud, darker and glossier toward its middle, two tracks of paw prints leading out of it | 341 × 414 | 33,392 | `b4a14ed85bc6` |
+| `set/mess-kibble.webp` | under 30: a spill of kibble from a heap, a red rubber ring and a tennis ball, on trampled grass | 326 × 194 | 26,926 | `9c53a1a47040` |
+| `set/mess-bowl.webp` | under 10: a steel water bowl knocked over on its side, the puddle flowing out of its mouth, a few drops | 475 × 203 | 17,726 | `cd9e84ee3af3` |
+| `set.json` | the contract (`manifest.ts`'s `SetManifest`): the board's map, the GM's anchors and `gmSpot`, `mess`, plus `gmPage`, `walk`, `shadow` and `_notes` | | 4,951 | `c23456b97134` |
 
 Every image is at 2× the yard's CSS size, lossy WebP with a real alpha channel (the mess decals: lossless WebP). The hashes are this render's; the
 render is deterministic (two runs on Oct 28 gave byte-identical files), so a rerun on the same tools reproduces them.
@@ -48,6 +48,19 @@ scorecard must never read as a win), so done is now a neutral band: a steady pal
 Three decals were added, new files only: the board and the six GM files are byte-identical to the third render (their
 SHA-256 before and after, in full, unchanged), and `set.json` gained its `mess` list and one `_notes` line. The yard
 (WP3) shows each while the frame's cleanliness is under its `below` (D60: the frame's state, nothing invented).
+
+**The mess decals' second render (Oct 29, after their D58 passes):** Astra and Sonnet found defects in all three (the
+mud read as a raised crater, with a straight wall and step at its upper right and a brown stain glow beyond it; the rope
+toy read as a knobbed bone with tape bands and a stray streak, floating on a faint offset shadow, and the ball as an
+olive blob with a pale lower fringe; the upturned bowl read upright, its soft shadow flared toward the light, a darker
+band round its puddle). All three were remade: the mud flat and wet, its colour a smooth field with no bands, a sheen,
+no stain; the toys a red rubber ring and a fluorescent tennis ball with its white seam, each grounded by the yard's
+contact shadow to its lower right; the bowl on its side, steel with a highlight, its mouth pouring the puddle, its
+shadow to the lower right only, no band; the kibble pieces as they were. The board, the six GM files and the cast are
+byte-identical (SHA-256 before and after); `set.json` changed only in its `mess` list (new sizes and places, and the
+bowl's `blocked`) and its `mess` note; `manifest.ts` gained `MessDecal.blocked`. A bug found on the way: the contact
+shadow was first drawn onto a canvas `tinted()` leaves in `source-in`, which wiped every other shadow in the layer
+(the decal check caught it as differences along the fence's shadows).
 
 ## The tools
 
@@ -129,34 +142,46 @@ the board again only to take its frame and crop, and stops unless that render's 
    of lawn with the mess on it, so it lands in the board's camera, light, shadows and grade by construction:
    - *Where:* on open lawn where dogs stand, inside the margin, off every blocked footprint, clear of the clubhouse,
      the fence and the walk, the three spread over the lawn's front (the mud), its right (the kibble) and its left
-     (the bowl). Nothing in one stands higher than 8 cm (measured: the rope's knots 7.8 cm, the bowl 6.5 cm, the flat
-     pieces 1.1 to 1.2 cm), the depth audit's own rule, so the yard draws them over the board and under every figure.
+     (the bowl). The yard draws them over the board and under every figure, so anything higher than 8 cm (the depth
+     audit's own rule) needs a blocked footprint as the board's props have: only the bowl on its side (23.9 cm), whose
+     footprint and the lawn behind it are its `blocked` in `set.json`, by `layout.js`'s `blockRect`, the board's own
+     rule. Measured: the kibble decal's tallest point 7.8 cm (the ball), the flat pieces 1.1 to 1.2 cm.
    - *The pieces,* in the board's language and palette (flat-shaded, vertex-coloured facets; the slab's soil, the
-     fence's tan, the bowl's steel, the gate's iron, the water; new: a golden kibble brown, the rope's cream, a slate
-     stripe a touch deeper than the window glass, a tennis-ball yellow): flat pieces 1.1 cm over the lawn (the mud as
-     a ragged pool in three bands, drier at its edge and wettest in the middle; paw prints, a pad and four toes, in a
-     trot's left and right, fading as the mud wears off; the puddle in two rings with a streak of sky; drops; the
-     rope's frayed ends) and small objects that cast the key light's shadow (44 kibble pieces fanning from a heap,
-     three on top; a twisted rope toy with a knot at each end and two slate stripes; a tennis ball with a pale seam;
-     a steel dog bowl upside down with the black non-slip ring on its base). Each piece is a little larger than life
-     so the mess reads where the yard draws the board at about a third of its pixels.
-   - *The grass round them* is tinted vertex by vertex as a soft field that fades to nothing (mud smeared in and
-     trampled grass round the pool and along the tracks; trampled grass under the spill; wet grass round the puddle,
-     the bowl and the drops), the way the board bakes its soft occlusion, so there is no edge where it meets the
-     board's lawn. The tinted cells are the lawn's own cells (its vertices, facet tones and occlusion, copied), so
-     they match the board's lawn exactly; they also join each decal's pieces into one patch (no loose specks). The
-     objects bake a little soft occlusion into the grass round them, as the board's bowl does.
+     fence's tan, the bowl's steel, the water; new: a golden kibble brown, the mud's sheen, a rubber red, a tennis-ball
+     yellow-green and its white seam, the steel's highlight). Flat pieces 1.1 cm over the lawn: the mud as one flat
+     pool with an organic outline all round (48 points, slow waves, no straight run), its colour a smooth field vertex
+     by vertex (olive-brown where it thins into the grass, the slab's soil, then darker and wetter toward the middle;
+     no bands, no rim) and two soft streaks of sky on the wettest mud; paw prints, a pad and four toes, in a trot's
+     left and right, fading as the mud wears off; the puddle, narrow at the bowl's lip and widening to a rounded
+     front, in two rings with a streak of sky; drops. Objects that cast the key light's shadow: 44 kibble pieces
+     fanning from a heap, three on top (unchanged); a plain red rubber ring lying flat (25 cm across, 4.8 cm high); a
+     tennis ball (7.8 cm), fluorescent yellow-green, its white seam the ball's own curve; a flared steel dog bowl (30
+     cm across its rolled lip) knocked over on its side, resting on its wall and lip, its mouth toward the front
+     right and a little up so its inside shows, every facet's steel brightness from the sky it faces and a bright
+     highlight where it mirrors the key light toward the camera. The toys and the bowl are a little darker where they
+     meet the grass. Each piece is a little larger than life so the mess reads where the yard draws the board at about
+     a third of its pixels.
+   - *The grass round them:* round the kibble, trampled grass tinted vertex by vertex as a soft field that fades to
+     nothing, the way the board bakes its soft occlusion. Round the mud, along its tracks, and round the puddle, the
+     drops and the bowl (with the lawn behind the bowl, so its outline lies on grass), the grass is copied unchanged:
+     no stain, no band. The copied cells are the lawn's own (its vertices, facet tones and occlusion), so they match
+     the board's lawn exactly; they also join each decal's pieces into one patch (no loose specks).
+   - *Grounded:* each object has the yard's own contact shadow (`set.json`'s `contactAlpha` 0.42 and `contactBlur`
+     2.6, the figures' spec) as soft ellipses on the ground under it, moved toward its lower right; the ring along its
+     circle, the bowl along the line it rests on. No soft occlusion round any object (it showed as a halo on the side
+     facing the light).
    - *The render* (`render.js`, `renderDecal`): through the board's own frame (the same camera, size and
      supersampling as the board, recomputed from the board and checked by re-rendering it), with the board's lights;
      the clean lawn drawn only into depth (pushed back a hair, so the tinted cells on it are drawn and anything below
      it is not); the objects' key-light shadows on the lawn and the flat pieces as a mask, blurred and laid at 30% in
-     the deep green-black, kept to the ground, exactly as the board's; the board's grade. Only the decal's own pixels
+     the deep green-black, exactly as the board's, with the contact shadows laid in the same layer, kept to the
+     ground; the board's grade. Only the decal's own pixels
      are drawn, so it is transparent wherever the board shows through unchanged; cropped to its faintest pixel plus
      2 px, and `at` is where that crop's top-left corner falls in the board image.
    - *The encoding:* lossless. Lossy WebP at the board's 0.90 put a faint grey fringe on the decals' soft outer edge
      (the encoder blends the colour of a partly clear edge pixel with the black under the clear ones: a master pixel
      (128, 159, 69) at alpha 48 came back (138, 152, 92)); Chromium encodes quality 1 losslessly, and each decal now
-     decodes to exactly its PNG master. 90 KB for the three.
+     decodes to exactly its PNG master. 78 KB for the three.
 
 ## The checks (the package's own, not D58's)
 
@@ -178,15 +203,22 @@ the board again only to take its frame and crop, and stops unless that render's 
   `Temp/set/composite-cast-{1x,2x}.png`, 18 dogs of every breed and the crew, 0 touching pixels.
 - The GM on the page's surfaces: `Temp/set/gm-page-sheet.png` (white, the steel page, the navy bar, at 1× and 2×),
   `Temp/set/gm-yard-sheet.png`.
-- **The mess decals** (Oct 29, `node Tools/Art/set/render.mjs mess`, run twice: byte-identical files):
+- **The mess decals** (their second render, Oct 29, `node Tools/Art/set/render.mjs mess`, run twice: byte-identical
+  files):
   - The board rendered again for their frame is byte for byte the shipped `board.webp` (118,610 B), its crop offset
-    55, 124; the board rendered with all three in place has the same crop.
+    55, 124; the board rendered with all three in place (and their contact shadows) has the same crop.
   - The decals laid on the board against the board rendered with the mess in place: on the lossless masters, at most
-    4 levels in any channel inside each decal's box (mean 0.012 to 0.017; 0 pixels over 4) and 0 outside. On the
-    shipped files, every opaque decal pixel equals that render exactly (86,160, 36,584 and 34,318 pixels; worst
-    difference 0); inside the decals' boxes the shipped board with the decals on it differs from it by a mean of 0.39
-    to 0.56 levels, below the shipped board's own lossy error outside them (mean 1.05). The images' borders are clear
-    (nothing cut off); partly clear edge pixels (1,954, 1,036 and 944) much darker than an opaque neighbour: 0.
+    4 levels in any channel inside each decal's box (mean 0.012 to 0.014; 0 pixels over 4) and 0 outside. On the
+    shipped files, every opaque decal pixel equals that render exactly (55,753, 35,313 and 49,155 pixels; worst
+    difference 0); inside the decals' boxes the shipped board with the decals on it differs from it by a mean of 0.49
+    to 0.65 levels, below the shipped board's own lossy error outside them (mean 1.05). The images' borders are clear
+    (nothing cut off); partly clear edge pixels (1,814, 994 and 1,197) much darker than an opaque neighbour: 0.
+  - The depth audit for the decals (`auditMess`: the board's rays from every place a figure may stand, off the
+    board's blocked rectangles and the decal's own): mud 1,612 places, kibble 1,612, bowl 1,548 (its `blocked`
+    [0.91, 4.81, 1.27, 1.22]): **0** rays hit anything of a decal higher than 8 cm.
+  - Shadow directions: on the board at 6×, every object's shadow and contact shadow falls to its lower right and none
+    toward the light; the grass round the bowl darkens on average to its right (−0.87 in luma) and below (−0.77),
+    against −0.21 to its left and −0.24 above (`Temp/set/mess-zoom6-{ring,ball,bowl,kibble}.png`, a scratch script).
   - `Tools/Agent/art_qa.py` on the three shipped files (crops at 2× on cream and near-black in
     `Temp/set/qa-mess/`): each 1 figure and 0 specks. On cream and black each shows the patch of lawn it carries
     round its mess; on the board that lawn is the board's own, so it does not show.

@@ -55,7 +55,7 @@ const setFile = path.join(ART, 'set.json');
 
 // --- the mess (review round 2, row 15) ------------------------------------------------------------------------------
 const MESS_Q = 1; // the decals' WebP: Chromium encodes quality 1 losslessly (lossy put a grey fringe on their soft edges)
-const MESS_NOTE = "mess: the decals the yard lays on the board by the frame's cleanliness (D60: state, nothing invented), each shown while cleanliness is under `below` (so under 10 all three show): drawn with its top-left corner on the board-image pixel `at`, at the board's own scale, over the board and under every figure. Each is the board's own render of that patch of lawn with the mess on it (the same frame, light, shadows and grade; the lawn's own facets, tinted), transparent wherever the board shows through unchanged, so it is only right on this board.webp. Nothing in one stands higher than 8 cm.";
+const MESS_NOTE = "mess: the decals the yard lays on the board by the frame's cleanliness (D60: state, nothing invented), each shown while cleanliness is under `below` (so under 10 all three show): drawn with its top-left corner on the board-image pixel `at`, at the board's own scale, over the board and under every figure. Each is the board's own render of that patch of lawn with the mess on it (the same frame, light, shadows and grade; the lawn's own facets, tinted; the yard's contact shadow under its objects), transparent wherever the board shows through unchanged, so it is only right on this board.webp. Anything in one higher than 8 cm (the bowl on its side, 24 cm) comes with `blocked`: [x, y, w, h] in world metres, padded as map.blocked, where no figure may stand while the decal shows.";
 async function renderMess() {
   const r = await call('mess', { quality: MESS_Q, boardQuality: 0.9, check: true });
   const shipped = fs.readFileSync(path.join(OUT, 'board.webp'));
@@ -72,9 +72,11 @@ async function renderMess() {
     const bytes = write(path.join(ART, file), d.webp);
     write(path.join(TEMP, `mess-${d.id}.png`), d.png);
     console.log(`${file} ${d.size.join(' x ')} at ${d.at} below ${d.below}: ${bytes} B`);
-    return { id: d.id, file, size: d.size, at: d.at, below: d.below };
+    return { id: d.id, file, size: d.size, at: d.at, below: d.below, ...(d.blocked.length ? { blocked: d.blocked } : {}) };
   });
   console.log(`mess renders ${r.ms} ms in the page`);
+  const au = await call('auditMess', { step: 0.15 });
+  for (const x of au.filter((q) => q.id)) console.log(`depth audit, ${x.id}: tallest ${x.top} m, blocked ${JSON.stringify(x.blocked)}; ${x.spots} places a figure may stand: ${x.faults} faults`);
   return list;
 }
 
@@ -162,7 +164,7 @@ if (mode === 'mess') {
   const cast = JSON.parse(fs.readFileSync(path.join(ART, 'cast.json'), 'utf8'));
   const dogs = cast.sprites.filter((c) => c.kind === 'dog');
   const crew = cast.sprites.find((c) => c.kind === 'crew' && c.pose === 'leash') ?? cast.sprites.find((c) => c.kind === 'crew');
-  const B = set.board.map.blocked, [X, Y] = set.board.map.lawn, M = set.board.map.margin;
+  const B = [...set.board.map.blocked, ...set.mess.flatMap((d) => d.blocked ?? [])], [X, Y] = set.board.map.lawn, M = set.board.map.margin;
   const inB = ([x, y]) => B.some(([bx, by, bw, bh]) => x >= bx && x <= bx + bw && y >= by && y <= by + bh);
   let seed = 11;
   const rnd = () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };

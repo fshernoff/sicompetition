@@ -439,7 +439,8 @@ export function buildBoard({ mess = null } = {}) {
 }
 
 // The decal's own meshes, tagged by role for its passes (render.js, renderDecal): the clean lawn (an occluder and the
-// shadow's receiver), the tinted cells, the flat pieces (ground: they take shadows) and the objects (casters).
+// shadow's receiver), the tinted cells, the flat pieces (ground: they take shadows) and the objects (casters); and the
+// objects' contact shadows.
 export function decalGroup(mess) {
   const mat = (double = false) => {
     const m = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
@@ -459,6 +460,7 @@ export function decalGroup(mess) {
   add(lawn(mess), 'cells');
   add(mess.flats, 'flats', { receive: true });
   add(mess.objects, 'objects', { cast: true, double: true });
+  grp.userData.contacts = mess.contacts ?? [];
   return grp;
 }
 

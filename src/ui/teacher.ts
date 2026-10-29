@@ -1,7 +1,7 @@
 // The teacher's tray (BRIEF section 11, D39, D46): the "Teacher" button in the bar opens a panel fixed to the bottom of
-// the window, in three labelled groups (Round; This run: the seed and the export; Behind the curtain: the reveal of the
-// hidden rules and the learning curve, D50: the teacher's view of the AI behind the GM), with the learner's check line
-// at its foot (G5d). The tray overlays the page and never moves the lesson; while it is open the page gets its measured
+// the window, one row in three labelled groups (Round; This run: the seed and the export; Behind the curtain: the
+// reveal of the hidden rules, the learning curve, D50: the teacher's view of the AI behind the GM, and the training
+// details, which show the learner's check line at the panel's foot; G5d). The tray overlays the page and never moves the lesson; while it is open the page gets its measured
 // height as bottom padding, so the last rows can still scroll above it.
 // The export builds its file from what the page holds once the run's readout is out (D47, D51): the trace the
 // sentence, the replay and the table show, the setup snapshotted at the click, the run's result and the trainer's
@@ -42,8 +42,22 @@ export function closeTray(page: Page): void {
 export function rejectSeed(page: Page, message: string): void {
   openTray(page);
   page.check.textContent = message;
+  showDetails(page, true); // the message is the teacher's to read
   measureTray(page); // the message may wrap to another line
   page.seed.focus();
+}
+
+/**
+ * The training details (G5d round 1, row 28): the learner's check line and the export's note, under a disclosure in
+ * the panel's row, so the panel is one row until the teacher asks for them.
+ */
+function showDetails(page: Page, open: boolean): void {
+  const button = page.teacher.querySelector<HTMLButtonElement>('#training-details');
+  const foot = page.teacher.querySelector<HTMLElement>('#teacher-foot');
+  if (button === null || foot === null) return;
+  foot.hidden = !open;
+  button.setAttribute('aria-expanded', String(open));
+  measureTray(page);
 }
 
 /** The hidden rules, written into the list once: the config's, so no run or clear ever touches them. */
@@ -132,6 +146,9 @@ export function mountTeacher(page: Page): void {
   // size, not only the window's (Astra, G5 diff review).
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => measureTray(page)).observe(page.teacher);
   page.reveal.addEventListener('click', () => toggleRules(page));
+  page.teacher.querySelector('#training-details')?.addEventListener('click', (e) => {
+    showDetails(page, (e.currentTarget as HTMLElement).getAttribute('aria-expanded') !== 'true');
+  });
   page.showCurve.addEventListener('click', () => toggleCurve(page));
   page.exportButton.addEventListener('click', () => {
     const input = exportInput(page);

@@ -25,13 +25,14 @@
                 <img class="orb-img" data-orb="done" data-art="gm-done" alt="" width="56" height="56" />
               </span>
               <p id="status">Write your prediction, then put the GM to work.</p>
+              <span id="rail-round" class="rail-round" hidden></span>
             </div>
 
             <div id="result" class="result" hidden>
               <div class="result-cols">
                 <section class="result-col result-business" aria-labelledby="business-title">
                   <h2 id="business-title" class="col-title">How the business did</h2>
-                  <dl id="business" class="business"></dl>
+                  <div id="business" class="business"></div>
                 </section>
                 <section class="result-col result-call" aria-labelledby="call-title">
                   <h2 id="call-title" class="col-title">What you called</h2>
@@ -40,7 +41,10 @@
                 </section>
               </div>
               <div class="readout-box">
-                <p class="readout-label" id="readout-label">What the GM did</p>
+                <div class="readout-head">
+                  <p class="readout-label" id="readout-label">What the GM did</p>
+                  <a class="to-report" href="#report">See the weekly P&amp;L</a>
+                </div>
                 <p id="readout" aria-live="polite"></p>
               </div>
             </div>
@@ -89,6 +93,10 @@
             <div id="stage-plan" class="stage-plan" hidden>
               <p class="box-label">The bonus plan it works to</p>
               <p id="stage-plan-words" class="stage-plan-words"></p>
+            </div>
+            <div id="stage-why" class="stage-why" hidden>
+              <p class="box-label">Your team's reasons</p>
+              <p id="stage-why-text" class="stage-why-text"></p>
             </div>
           </div>
         </div>
@@ -151,10 +159,11 @@
             <span class="t-label" id="t-curtain">Behind the curtain</span>
             <button id="reveal" type="button">Reveal the hidden rules</button>
             <button id="show-curve" type="button">Show the learning curve</button>
+            <button id="training-details" type="button" class="t-disclose" aria-expanded="false" aria-controls="teacher-foot">Training details</button>
           </div>
           <button id="teacher-close" type="button" class="teacher-close">Close</button>
         </div>
-        <p class="teacher-foot"><span id="check" class="check">No run yet.</span><span class="teacher-hint">The export carries the prediction as it stood when the GM was put to work.</span></p>
+        <p id="teacher-foot" class="teacher-foot" hidden><span id="check" class="check">No run yet.</span><span class="teacher-hint">The export carries the prediction as it stood when the GM was put to work.</span></p>
       </div>
     </aside>
     <script type="module" src="./src/main.ts"></script>

@@ -73,9 +73,13 @@
 
   /* The frame */
   --bar-h: 52px;
-  --view-height: 100vh;
-  --console-w: min(940px, max(800px, 64vw));
-  --live-w: clamp(420px, 40vw, 560px);
+  /* The window in the page's own pixels: the viewport units divided by the projector's zoom (1 elsewhere). */
+  --zoom: 1;
+  --vw: calc(1vw / var(--zoom));
+  --view-height: calc(100vh / var(--zoom));
+  --console-w: min(940px, max(800px, calc(64 * var(--vw))));
+  --live-w: clamp(420px, calc(40 * var(--vw)), 560px);
+  --done-w: min(874px, max(720px, calc(57 * var(--vw)))); /* the week's end: the scorecard's rail, a wider yard beside it */
 
   /* The teacher's learning curve: dark ink on a pale chart, one blue for the average, one orange for the weeks run
      the current way. */
@@ -112,14 +116,14 @@
   text-rendering: optimizeLegibility;
 }
 @supports (height: 100dvh) {
-  :root { --view-height: 100dvh; }
+  :root { --view-height: calc(100dvh / var(--zoom)); }
 }
 html.teacher-open { --tray-pad: var(--tray-height, 0px); scroll-padding-bottom: var(--tray-height, 0px); }
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; min-height: 100vh; background: var(--steel); }
+body { margin: 0; min-height: var(--view-height); background: var(--steel); }
 :disabled { cursor: not-allowed; }
 button, input, textarea { font: inherit; color: inherit; }
 h1, h2, h3 { font-family: var(--font-ui); color: var(--navy); text-wrap: balance; }
@@ -156,7 +160,7 @@ img { max-width: 100%; }
   border-radius: var(--r-2);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
+  transition: transform 0.1s;
 }
 /* The one primary action: amber with navy words and an arrow (the arrow is drawn here, so the button's words stay
    its whole text). */
@@ -174,7 +178,7 @@ img { max-width: 100%; }
 .btn-go:hover:enabled { background: #f7b23c; }
 .btn-go:hover:enabled::after { transform: translateX(3px); }
 .btn-go:active:enabled { transform: translateY(2px); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.18); }
-.btn-go:disabled { color: #4e5a66; background: #dde3e8; box-shadow: none; } /* 5.0:1 */
+.btn-go:disabled { color: #4e5a66; background: var(--panel); box-shadow: inset 0 0 0 1.5px #b9c3cc; } /* 6.6:1; an outline, not a fill: not yet */
 .btn-go:enabled { animation: wake 0.6s ease-out; }
 /* The button lights up when the five picks are made: a ring that swells and fades (box-shadow only, so the
    button's box never moves; the e2e measures it at once). */
@@ -250,6 +254,7 @@ img { max-width: 100%; }
 /* The run: the rail narrows and the yard takes the room; the click scrolls the bar away, so the rail's status line
    and the whole yard sit in the window (above the open tray). */
 #watch[data-phase='run'] { --rail-w: var(--live-w); min-height: var(--view-height); }
+#watch[data-phase='done'] { --rail-w: var(--done-w); }
 .rail {
   align-self: stretch;
   min-width: 0;
@@ -269,8 +274,9 @@ img { max-width: 100%; }
 #watch[data-phase='run'] .stage, #watch[data-phase='done'] .stage { height: calc(var(--view-height) - var(--tray-pad, 0px)); }
 
 /* What each phase shows. The load screen and the week's end lay the rail out as a grid: on the load screen the premise
-   heads the plan's column and the prediction has the other column from the top (so the button sits high: the fold);
-   after the week the status and the scorecard beside the business span both, the plan and the Why under them. */
+   across the top, then step 1 (the plan) beside steps 2 and 3 (the picks, the Why and the button), their headings
+   level (round 1, row 23); after the week the status and the scorecard beside the business span both, and the plan it
+   worked to and the team's Why under them. */
 .rail-head, .result, .premise, .console, .live { display: none; }
 #watch[data-phase='load'] .rail, #watch[data-phase='done'] .rail {
   display: grid;
@@ -278,7 +284,7 @@ img { max-width: 100%; }
   grid-template-rows: auto 1fr;
   align-content: start;
 }
-#watch[data-phase='load'] .rail { grid-template-areas: 'premise predict' 'plan predict'; }
+#watch[data-phase='load'] .rail { grid-template-areas: 'premise premise' 'plan predict'; }
 #watch[data-phase='done'] .rail { grid-template-areas: 'compare compare' 'plan predict'; }
 #watch[data-phase='load'] .compare, #watch[data-phase='load'] .console, #watch[data-phase='done'] .console { display: contents; }
 #watch[data-phase='done'] .compare { display: block; grid-area: compare; }
@@ -287,7 +293,7 @@ img { max-width: 100%; }
 .predict { grid-area: predict; }
 /* On the load screen the status line speaks only when it has news (the plan changed after a run, a run failed), in
    the premise's place. */
-#watch[data-phase='load'][data-status='changed'] .rail-head, #watch[data-phase='load'][data-status='error'] .rail-head { display: flex; grid-area: premise; border-right: 1px solid var(--line); }
+#watch[data-phase='load'][data-status='changed'] .rail-head, #watch[data-phase='load'][data-status='error'] .rail-head { display: flex; grid-area: premise; }
 #watch[data-phase='load'][data-status='changed'] .premise, #watch[data-phase='load'][data-status='error'] .premise { display: none; }
 #watch[data-phase='run'] .compare { display: block; }
 #watch[data-phase='run'] .rail-head { display: flex; }
@@ -298,7 +304,7 @@ img { max-width: 100%; }
 /* ---------- The GM: the set's orb, in its state ---------- */
 .orb { position: relative; flex: none; width: 52px; height: 52px; }
 .orb-img { position: absolute; inset: 0; display: none; width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
-.orb-premise { width: 42px; height: 42px; }
+.orb-premise { width: 40px; height: 40px; }
 .orb-premise .orb-img { display: block; }
 #watch[data-gm='idle'] .orb-head [data-orb='ready'],
 #watch[data-gm='preparing'] .orb-head [data-orb='ready'],
@@ -337,32 +343,33 @@ img { max-width: 100%; }
   border-bottom: 1px solid var(--line);
 }
 /* The line's own box is the orb's height, its words centred in it: the line starts at the rail's top edge. */
-#status { display: flex; align-items: center; min-height: 52px; font: 800 21px/1.2 var(--font-ui); font-stretch: 82%; color: var(--navy); }
+#status { display: flex; flex: 1 1 auto; align-items: center; min-height: 52px; font: 800 21px/1.2 var(--font-ui); font-stretch: 82%; color: var(--navy); }
+/* The round in the run's header, where the bar has scrolled away (round 1, row 33); the bar has it on the load screen. */
+.rail-round { flex: none; align-self: center; padding: 6px 10px; font: 700 15px/1 var(--font-ui); color: var(--navy); white-space: nowrap; background: var(--amber); border-radius: var(--r-1); }
+#watch[data-phase='load'] .rail-round, html:not(.bar-gone) .rail-round { display: none; }
 #watch[data-status='error'] #status { color: var(--red-ink); }
 
 /* ---------- The premise: whose business it is and what this round asks ---------- */
 .premise {
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px 22px 14px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 22px 8px 18px;
   background: var(--panel-2);
-  border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
-.orb-premise { margin-top: 1px; }
 .premise-text { min-width: 0; }
-.tagline { font: 800 18px/1.25 var(--font-ui); font-stretch: 84%; color: var(--navy); }
-.round-note { margin-top: 5px; font-size: var(--text-sm); color: var(--ink-2); }
+.tagline { font: 800 18px/1.2 var(--font-ui); font-stretch: 82%; color: var(--navy); }
+.round-note { margin-top: 3px; font-size: var(--text-sm); color: var(--ink-2); }
 .round-note:empty { display: none; }
 
 /* ---------- The console: the plan beside the prediction ---------- */
-.plan, .predict { min-width: 0; padding: 14px 22px 16px; }
+.plan, .predict { min-width: 0; padding: 12px 22px 16px; }
 .plan { border-right: 1px solid var(--line); }
 .step-title {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 8px;
+  margin: 0 0 7px;
   font: 800 21px/1.1 var(--font-ui);
   font-stretch: 80%;
   letter-spacing: 0.005em;
@@ -469,7 +476,14 @@ img { max-width: 100%; }
 .toggle:not(:checked):disabled { opacity: 0.45; }
 .toggle:focus-visible { outline-offset: 3px; }
 
-/* The dollar amount: a native range, navy on a pale track. */
+/* The dollar amount: a native range on a pale track with its zero marked in the middle, filled from the zero to the
+   amount: green for a pay, red for a penalty (round 1, row 13). The editor sets --lo and --hi, the filled part's ends. */
+.kpi-row { --fill-c: var(--navy); }
+.kpi-row.pay { --fill-c: var(--green-ink); }
+.kpi-row.penalty { --fill-c: var(--red); }
+.kpi-row.off { --fill-c: #aab4bd; }
+.kpi-row.pay:not(.off) .kpi-value { color: var(--green-ink); }
+.kpi-row.penalty:not(.off) .kpi-value { color: var(--red-ink); }
 .kpi-weight {
   -webkit-appearance: none;
   appearance: none;
@@ -481,18 +495,25 @@ img { max-width: 100%; }
   cursor: pointer;
 }
 .kpi-weight::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(to right, var(--navy) var(--fill, 50%), #d5dce2 var(--fill, 50%));
+  height: 8px;
+  border-radius: 4px;
+  background:
+    linear-gradient(to right, transparent calc(50% - 1px), var(--ink-2) calc(50% - 1px), var(--ink-2) calc(50% + 1px), transparent calc(50% + 1px)),
+    linear-gradient(to right, #d5dce2 var(--lo, 50%), var(--fill-c) var(--lo, 50%), var(--fill-c) var(--hi, 50%), #d5dce2 var(--hi, 50%));
 }
-.kpi-weight::-moz-range-track { height: 6px; border-radius: 3px; background: #d5dce2; }
-.kpi-weight::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--navy); }
+.kpi-weight::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background:
+    linear-gradient(to right, transparent calc(50% - 1px), var(--ink-2) calc(50% - 1px), var(--ink-2) calc(50% + 1px), transparent calc(50% + 1px)),
+    linear-gradient(to right, #d5dce2 var(--lo, 50%), var(--fill-c) var(--lo, 50%), var(--fill-c) var(--hi, 50%), #d5dce2 var(--hi, 50%));
+}
 .kpi-weight::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 18px;
   height: 18px;
-  margin-top: -6px;
+  margin-top: -5px;
   background: #fff;
   border: 2.5px solid var(--navy);
   border-radius: 50%;
@@ -500,9 +521,7 @@ img { max-width: 100%; }
 }
 .kpi-weight::-moz-range-thumb { width: 13px; height: 13px; background: #fff; border: 2.5px solid var(--navy); border-radius: 50%; }
 .kpi-weight:disabled { cursor: default; }
-.kpi-weight:disabled::-webkit-slider-runnable-track { background: linear-gradient(to right, #aab4bd var(--fill, 50%), #e4e9ed var(--fill, 50%)); }
 .kpi-weight:disabled::-webkit-slider-thumb { border-color: #9aa5b0; box-shadow: none; }
-.kpi-weight:disabled::-moz-range-progress { background: #aab4bd; }
 .kpi-weight:disabled::-moz-range-thumb { border-color: #9aa5b0; }
 .kpi-weight:focus-visible { outline-offset: 2px; border-radius: 4px; }
 
@@ -521,14 +540,18 @@ img { max-width: 100%; }
 .plan-strip-text { min-width: 0; }
 .plan-strip-label { display: none; margin: 0 0 2px; font-size: var(--text-sm); color: #c3ced8; }
 #watch[data-phase='done'] .plan-strip-label { display: block; }
-.plan-words { font: 700 16px/1.3 var(--font-ui); }
+.plan-words { font: 400 16px/1.35 var(--font-ui); }
+.plan-line { display: block; padding-left: 1em; text-indent: -1em; }
+.plan-line + .plan-line { padding-left: 2em; } /* a clause a line, its wrap hanging under it */
+.plan-words b { font-weight: 800; color: #fff; }
 .plan-note { margin: 6px 0 0; font-size: var(--text-sm); color: var(--ink-3); }
 .plan-note:empty { display: none; }
+.blocks-note { margin: 6px 0 0; font-size: var(--text-sm); color: var(--ink-2); }
 
 /* ---------- The team's prediction: five picks on one grid, the Why, the button ---------- */
-.picks { display: grid; gap: 8px; margin: 2px 0 0; }
+.picks { display: grid; gap: 6px; margin: 0; }
 .pick { min-width: 0; margin: 0; padding: 0; border: 0; }
-.pick-label { display: block; padding: 0; margin: 0 0 4px; font: 600 15px/1.2 var(--font-ui); color: var(--ink); }
+.pick-label { display: block; padding: 0; margin: 0 0 3px; font: 600 15px/1.2 var(--font-ui); color: var(--ink); }
 .pick-chips {
   position: relative;
   display: grid;
@@ -545,10 +568,11 @@ img { max-width: 100%; }
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 6px;
+  gap: 4px;
+  height: 32px;
+  padding: 0 4px;
   font: 600 15px/1 var(--font-ui);
-  font-stretch: 94%;
+  font-stretch: 92%;
   color: var(--ink);
   white-space: nowrap;
   border-left: 1px solid var(--line);
@@ -557,29 +581,27 @@ img { max-width: 100%; }
 }
 .pick-input:first-child + .pick-chip { border-left: 0; }
 .pick-chip:hover { background: var(--panel-2); }
-/* The chosen segment: navy, and a check mark in an amber badge, so the choice never rests on colour alone. */
+/* The chosen segment: navy, and a check mark in an amber disc before its words, in the flow, so the choice never
+   rests on colour alone and the mark never touches the words (round 1, row 12). */
 .pick-tick {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  display: grid;
+  display: none;
+  flex: none;
   place-items: center;
   width: 13px;
   height: 13px;
   color: var(--navy);
   background: var(--amber);
   border-radius: 50%;
-  opacity: 0;
 }
 .pick-tick svg { width: 9px; height: 9px; }
-.pick-input:checked + .pick-chip { padding: 0 15px 0 5px; font-weight: 700; color: #fff; background: var(--navy); border-left-color: var(--navy); }
-.pick-input:checked + .pick-chip .pick-tick { opacity: 1; }
+.pick-input:checked + .pick-chip { font-weight: 700; font-stretch: 88%; color: #fff; background: var(--navy); border-left-color: var(--navy); }
+.pick-input:checked + .pick-chip .pick-tick { display: grid; }
 .pick-input:focus-visible + .pick-chip { outline: 3px solid var(--focus); outline-offset: -3px; }
 .pick-input:checked:focus-visible + .pick-chip { outline-color: var(--amber); }
 .pick-input:disabled + .pick-chip { cursor: default; }
 .pick-input:disabled:not(:checked) + .pick-chip { color: var(--ink-3); background: var(--panel-2); }
 
-.why { margin: 12px 0 0; }
+.why { margin: 10px 0 0; }
 .why-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0 0 6px; font-size: var(--text-sm); color: var(--ink-2); }
 .why-label .step { align-self: center; }
 .why-word { font: 800 19px/1.1 var(--font-ui); font-stretch: 82%; color: var(--navy); }
@@ -587,7 +609,7 @@ img { max-width: 100%; }
 #prediction {
   display: block;
   width: 100%;
-  padding: 8px 10px;
+  padding: 6px 10px;
   font: 400 15px/1.35 var(--font-ui);
   color: var(--ink);
   background: var(--panel);
@@ -600,17 +622,45 @@ img { max-width: 100%; }
 #prediction:focus-visible { outline: 3px solid var(--focus); outline-offset: 0; border-color: var(--focus); }
 #prediction:disabled { color: var(--ink-2); background: var(--panel-2); }
 #watch[data-phase='done'] #prediction { min-height: 0; }
-.actions { display: flex; gap: 10px; margin: 10px 0 0; }
+.actions { display: flex; gap: 10px; margin: 8px 0 0; }
 .actions #train { flex: 1 1 auto; }
 /* After the week the two ways on stack, full width: a new prediction, and the same plan again. */
 #watch[data-phase='done'] .actions { flex-direction: column; }
+
+/* After the week the plan and the Why are a read-only summary under the scorecard (round 1, row 21): the plan it
+   worked to in words, and the team's reasons as a quote (still the same field: a teacher may correct it before the
+   export), with the two ways on. "Make a new prediction" brings the plan's table and the picks back. */
+#watch[data-phase='done'] .plan .step-title,
+#watch[data-phase='done'] .plan-limit,
+#watch[data-phase='done'] .plan-table,
+#watch[data-phase='done'] .plan-note,
+#watch[data-phase='done'] .blocks-note,
+#watch[data-phase='done'] .predict .step-title,
+#watch[data-phase='done'] .picks-hint { display: none; }
+#watch[data-phase='done'] .plan-strip { margin: 0; }
+#watch[data-phase='done'] .why { margin: 0; }
+#watch[data-phase='done'] .why-word { font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
+#watch[data-phase='done'] #prediction {
+  padding: 2px 0 2px 10px;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid var(--amber);
+  border-radius: 0;
+  resize: none;
+  field-sizing: content;
+  max-height: 8.2em;
+}
+/* No reasons written: nothing to quote. */
+#watch[data-phase='done'] .why:has(#prediction:placeholder-shown) .why-label,
+#watch[data-phase='done'] #prediction:placeholder-shown { display: none; }
+#watch[data-phase='done'] #prediction:focus-visible { outline-offset: 2px; }
 .picks-hint { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; font-size: var(--text-sm); color: var(--ink-2); }
 .pick-dots { display: inline-flex; flex: none; gap: 4px; }
 .pick-dots i { width: 9px; height: 9px; border: 1.5px solid var(--control-line); border-radius: 50%; }
 .pick-dots i.on { background: var(--navy); border-color: var(--navy); }
 
 /* ---------- After the week: how the business did, beside what the team called, with equal weight ---------- */
-.result-cols { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); border-bottom: 1px solid var(--line); }
+.result-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); border-bottom: 1px solid var(--line); }
 .result-col { min-width: 0; padding: 14px 22px 16px; }
 .result-business { border-right: 1px solid var(--line); }
 .col-title {
@@ -621,40 +671,38 @@ img { max-width: 100%; }
   text-transform: uppercase;
   color: var(--ink-2);
 }
-.business { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; margin: 0; }
-.biz { min-width: 0; }
-.biz dt { display: flex; align-items: center; gap: 6px; font: 600 15px/1.2 var(--font-ui); color: var(--ink-2); }
-.biz-icon { display: grid; flex: none; place-items: center; }
-.biz dd { margin: 0; }
-.biz-val {
-  margin-top: 4px !important;
-  font: 850 38px/1 var(--font-ui);
-  font-stretch: 68%;
-  font-variant-numeric: tabular-nums lining-nums;
+/* The two headlines, the business's and the call's, in one size and one navy (round 1, row 6): the call is a count,
+   never styled as a win (D56). */
+.business-line, .called-line {
+  margin: 0 0 10px;
+  font: 850 26px/1.08 var(--font-ui);
+  font-stretch: 72%;
   color: var(--navy);
 }
-.biz-sub { margin-top: 3px !important; font-size: var(--text-sm); color: var(--ink-3); }
-.biz.hurt dt, .biz.hurt .biz-val { color: var(--red-ink); }
-/* "You called N of 5." in the business's own size and navy: a count, never styled as a win (D56). */
-.called-line {
-  margin: 0 0 8px;
-  font: 850 32px/1.05 var(--font-ui);
-  font-stretch: 70%;
-  color: var(--navy);
-  border-radius: 4px;
-}
+.called-line { border-radius: 4px; }
+/* The business's figures, a table beside the picks' table, the same rows and rules. */
+.biz-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.biz-table th, .biz-table td { padding: 5px 0; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line-2); }
+.biz-table tr:first-child th, .biz-table tr:first-child td { border-top: 1.5px solid var(--line-strong); }
+.biz-table th { font-weight: 600; color: var(--ink-2); }
+.biz-icon { display: inline-grid; place-items: center; margin-right: 6px; vertical-align: -3px; }
+.biz-table td.biz-val { padding-left: 10px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums lining-nums; color: var(--ink); white-space: nowrap; }
+.biz-table tr.strong th, .biz-table tr.strong td { color: var(--navy); font-weight: 800; }
+.biz-table tr.hurt th, .biz-table tr.hurt td { color: var(--red-ink); }
 .called-line:focus { outline: none; }
 .called-line:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .score-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .score-table thead th {
   white-space: nowrap;
-  padding: 0 6px 5px 0;
+  padding: 0 14px 5px 0;
   font-weight: 600;
   text-align: left;
   color: var(--ink-3);
   border-bottom: 1.5px solid var(--line-strong);
 }
-.score-table td, .score-table tbody th { padding: 5px 6px 5px 0; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line-2); }
+.score-table td, .score-table tbody th { padding: 5px 14px 5px 0; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line-2); }
+.score-table .score-h-mark, .score-table td.score-mark { padding-right: 0; }
+.score-pick { white-space: nowrap; }
 .score-table tbody th { font-weight: 600; line-height: 1.2; color: var(--ink); }
 .score-pick { color: var(--ink-2); }
 .score-actual { font-weight: 700; color: var(--ink); }
@@ -667,6 +715,9 @@ img { max-width: 100%; }
 .score-row.missed .mark { color: var(--ink-2); }
 .score-row.missed .mark-icon { color: var(--ink-2); background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-2); }
 .readout-box { padding: 12px 22px 14px; border-bottom: 1px solid var(--line); }
+.readout-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.to-report { font: 700 15px/1 var(--font-ui); color: var(--focus); text-underline-offset: 3px; white-space: nowrap; }
+.to-report::after { content: ' ↓'; }
 .readout-label { font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
 #readout { margin-top: 5px; font-size: var(--text-md); line-height: 1.4; color: var(--ink); }
 #readout:empty::before { content: 'The readout appears here once the GM is on the job.'; color: var(--ink-3); }
@@ -704,8 +755,10 @@ img { max-width: 100%; }
 .gauge-fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--navy); border-radius: 3px 0 0 3px; }
 .gauge-over { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red) 0 4px, #ee8c7c 4px 8px); }
 .gauge-mark { position: absolute; top: -6px; bottom: -6px; width: 3px; margin-left: -1px; background: var(--navy); }
-.gauge-lines { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; font-size: var(--text-sm); color: var(--ink-2); }
+/* The limit's label under its own mark (round 1, row 25). */
+.gauge-limit { position: absolute; top: calc(100% + 8px); transform: translateX(-50%); font-size: var(--text-sm); line-height: 1; color: var(--ink-2); white-space: nowrap; }
 .gauge-limit b { color: var(--ink); }
+.gauge-floor { margin-top: 30px; font-size: var(--text-sm); color: var(--ink-2); }
 
 .live-trio { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.15fr) minmax(0, 0.9fr); }
 .live-trio .stat { min-width: 0; padding: 0 14px; border-left: 1px solid var(--line); }
@@ -732,21 +785,31 @@ img { max-width: 100%; }
   background: var(--red);
   border-radius: var(--r-1);
 }
-.stat-sub.quiet .badge-warn { color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
-.live-meters { display: grid; grid-template-columns: 112px minmax(0, 1fr) 32px; gap: 7px 10px; align-items: center; font-size: var(--text-sm); }
-.live-meters .meter { position: relative; height: 7px; background: var(--line-2); border-radius: 3px; }
+.stat-quiet { color: var(--ink-3); }
+.stat-sub.loss b { color: var(--red-ink); }
+.stat-cash .stat-sub b { color: var(--ink); }
+.live-meters { display: grid; grid-template-columns: 112px minmax(0, 1fr) 32px; gap: 9px 10px; align-items: center; font-size: var(--text-sm); }
+.live-meters .meter { position: relative; height: 8px; background: var(--line-2); border-radius: 3px; }
 .live-meters .meter i { position: absolute; top: 0; bottom: 0; left: 0; background: #5f6d7a; border-radius: 3px; }
+/* The crew's fatigue: the plan's 70% marked on the track, the part above it hatched, the number red past it. */
+.meter-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--navy); }
+.meter-over { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--red) 0 3px, #ee8c7c 3px 6px); border-radius: 0 3px 3px 0; }
+.meter-limit { position: absolute; bottom: calc(100% + 5px); transform: translateX(-50%); font-size: 15px; line-height: 1; color: var(--ink-3); }
+.live-meters .meter:has(.meter-mark) { margin-top: 18px; }
+.live-meters .meter-name:nth-last-child(3) { margin-top: 18px; }
+.live-meters b.meter-num:last-child { margin-top: 18px; }
 .meter-num { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.meter-num.high { color: var(--red-ink); }
 .rail-live > .live-meters { padding-bottom: 6px; border-bottom: 0; }
-.live-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: var(--text-sm); color: var(--ink-2); }
+.live-facts { display: grid; gap: 3px; font-size: var(--text-sm); color: var(--ink-2); }
 .live-facts b { color: var(--ink); }
-.fact-wide { grid-column: 1 / -1; }
 .rail-live > .live-facts { padding-top: 6px; }
 
-/* While the GM gets ready: the picks the class made and the plan it works to, in the rail. */
-.stage-picks, .stage-plan { padding: 12px 22px; border-bottom: 1px solid var(--line); }
-/* While the week plays the rail is the block's values only (what the GM is doing and what it costs). */
-#watch[data-gm='playing'] .stage-plan, #watch[data-gm='playing'] .stage-picks { display: none; }
+/* While the GM gets ready: the picks the class made, the plan it works to and the team's reasons, in the rail; while
+   the week plays, the block's values first, then the picks and the reasons under them (round 1, row 20). */
+.stage-picks, .stage-plan, .stage-why { padding: 12px 22px; border-bottom: 1px solid var(--line); }
+#watch[data-gm='playing'] .stage-plan { display: none; }
+.stage-why-text { padding-left: 10px; font-size: var(--text-sm); line-height: 1.4; color: var(--ink); border-left: 3px solid var(--amber); white-space: pre-line; }
 .box-label { margin: 0 0 6px; font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
 .stage-picks-list { display: grid; margin: 0; padding: 0; list-style: none; }
 .stage-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 28px; font-size: var(--text-sm); border-top: 1px solid var(--line-2); }
@@ -780,9 +843,8 @@ img { max-width: 100%; }
 }
 .yard-frame { position: relative; flex: 1 1 auto; min-height: 0; isolation: isolate; }
 #replay { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; }
-/* After the week the yard's box keeps the proportions it played at (app.ts sets --yard-aspect); while the page turns
-   to the scorecard the canvas shows the picture it played at, fitted (object-fit), then settleYard draws it at this size. */
-#watch[data-phase='done'] .yard-frame { flex: 0 1 auto; width: 100%; max-height: 100%; aspect-ratio: var(--yard-aspect, 6 / 5); }
+/* The canvas fills the yard's column in every state (round 1, row 19). At the week's end the page keeps the picture
+   the week played at, fitted to the narrower column (object-fit), until settleYard draws it at the column's size. */
 #watch[data-phase='done'] #replay { object-fit: contain; object-position: center top; }
 /* Before the week and while the GM gets ready, the canvas is clear and the board shows behind it: the yard before
    opening (the set's board, WP4b). */
@@ -830,12 +892,12 @@ img { max-width: 100%; }
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.teacher-inner { position: relative; max-width: 1400px; margin: 0 auto; padding-right: 96px; }
+.teacher-inner { position: relative; max-width: 1400px; margin: 0 auto; padding-right: 84px; }
 /* One row of groups, each its label over its controls; the check line at the foot. */
-.teacher-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 18px; }
+.teacher-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 14px; }
 .teacher-title { display: inline-flex; align-items: center; gap: 8px; height: 34px; font: 800 18px/1 var(--font-ui); font-stretch: 82%; color: #fff; }
 .teacher-title svg { color: var(--amber); }
-.t-group { display: grid; grid-auto-flow: column; grid-template-rows: auto auto; align-items: center; gap: 5px 8px; min-width: 0; margin: 0; padding: 0 0 0 18px; border: 0; border-left: 1px solid var(--navy-line); }
+.t-group { display: grid; grid-auto-flow: column; grid-template-rows: auto auto; align-items: center; gap: 5px 8px; min-width: 0; margin: 0; padding: 0 0 0 14px; border: 0; border-left: 1px solid var(--navy-line); }
 .rounds { display: flex; gap: 4px; }
 .t-label, .rounds legend { grid-row: 1; grid-column: 1 / span 6; float: none; margin: 0; padding: 0; font: 700 15px/1 var(--font-ui); font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; color: #c3ced8; }
 .t-group > :not(.t-label) { grid-row: 2; }
@@ -846,9 +908,9 @@ img { max-width: 100%; }
 .rounds label:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
 .t-field { font-weight: 600; color: #dce3ea; }
 .teacher input[type='number'] {
-  width: 8.5em;
+  width: 7em;
   height: 34px;
-  padding: 0 10px;
+  padding: 0 8px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--navy);
@@ -858,7 +920,7 @@ img { max-width: 100%; }
 }
 .teacher button {
   height: 34px;
-  padding: 0 12px;
+  padding: 0 10px;
   font: 700 15px/1 var(--font-ui);
   color: #fff;
   background: transparent;
@@ -871,7 +933,16 @@ img { max-width: 100%; }
 .teacher .teacher-close { position: absolute; top: 0; right: 0; }
 .teacher input:disabled, .teacher button:disabled { opacity: 0.5; cursor: not-allowed; }
 .teacher :focus-visible { outline-color: var(--amber); }
-.teacher-foot { display: flex; flex-wrap: wrap; gap: 2px 18px; margin: 6px 0 0; }
+.teacher-foot { display: flex; flex-wrap: wrap; gap: 2px 18px; margin: 8px 0 1px; padding-top: 7px; border-top: 1px solid var(--navy-line); }
+/* The training details: a disclosure, its chevron turning when open (round 1, row 28). */
+.teacher .t-disclose { display: inline-flex; align-items: center; gap: 6px; }
+.t-disclose::after { content: ''; width: 7px; height: 7px; margin-top: -3px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
+.t-disclose[aria-expanded='true']::after { margin-top: 3px; transform: rotate(-135deg); }
+/* A narrow window wraps the groups: no divider then, so none is left hanging at a line's start (row 28). */
+@media (max-width: 1299px) {
+  .teacher-row { column-gap: 22px; }
+  .t-group { padding-left: 0; border-left: 0; }
+}
 .check { font-weight: 600; font-variant-numeric: tabular-nums; color: #fff; }
 .teacher-hint { color: #c3ced8; }
 html.teacher-open #app { padding-bottom: calc(var(--tray-height, 120px) + 16px); }
@@ -910,21 +981,17 @@ html.teacher-open #app { padding-bottom: calc(var(--tray-height, 120px) + 16px);
   .plan:not(.plan-locked) .plan-head-amount { display: none; }
 }
 
-/* ---------- The projector: the same screen, larger (1920 × 1080 and up) ---------- */
+/* ---------- The projector: the same screen, larger (round 1, row 10) ----------
+   A wide, tall window shows the 1366 × 768 screen scaled up whole (type, panels, the yard), so the back row reads it
+   and nothing is left empty: 1920 × 1080 is the Chromebook's screen at 1.4. */
+@media (min-width: 1580px) and (min-height: 880px) {
+  :root { --zoom: 1.15; zoom: 1.15; }
+}
 @media (min-width: 1800px) and (min-height: 1000px) {
-  :root { --bar-h: 64px; --console-w: 1060px; --live-w: 640px; }
-  .topbar h1 { font-size: 30px; }
-  .round-badge, .teacher-key, .wm-sub { font-size: 17px; }
-  .tagline { font-size: 22px; }
-  .round-note, .plan-limit, .pick-label, .pick-chip, .why-label, .kpi-per, .kpi-figure, .plan-note, .stat-lab, .stat-sub, .choices, .gauge-lines, .live-meters, .live-facts, .biz dt, .biz-sub, .score-table, .stage-when { font-size: 17px; }
-  .kpi-name, .kpi-value, .plan-words, #readout { font-size: 18px; }
-  .step-title, #status { font-size: 25px; }
-  .when { font-size: 32px; }
-  .crowd-big { font-size: 88px; }
-  .stat-val { font-size: 50px; }
-  .pick-chip { height: 40px; }
-  .kpi-row { min-height: 38px; }
-  .orb { width: 64px; height: 64px; }
+  :root { --zoom: 1.4; zoom: 1.4; }
+}
+@media (min-width: 2400px) and (min-height: 1340px) {
+  :root { --zoom: 1.75; zoom: 1.75; }
 }
 
 /* ---------- Motion off: instant, no pulse, ring or fade (acceptance 5) ---------- */

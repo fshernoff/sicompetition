@@ -21,15 +21,19 @@ export interface RailModel {
   perStaffer: { now: number; dogs: number; staff: number; limit: number; over: boolean };
   /** Incidents this week so far, and in this block. */
   incidents: { week: number; thisBlock: number };
-  /** Cash now and at the week's start, as the report writes dollars ("$5,024", "$2,000"). */
-  cash: { now: string; start: string };
+  /**
+   * Cash now and at the week's start, as the report writes dollars ("$5,024", "$2,000"), and today's change so far
+   * ("+$575", "−$120", "$0"; empty when the day's opening cash was not given).
+   */
+  cash: { now: string; start: string; today: string };
   /** Reputation now, and the change since Monday in words: "Down 10 this week", "Up 3 this week", "No change this week". */
   reputation: { now: number; change: string };
-  /** The three meters, 0 to 100, whole numbers. */
+  /** The three meters, 0 to 100, whole numbers, and the crew fatigue the bonus plan's measure counts above (70). */
   energy: number;
   cleanliness: number;
   fatigue: number;
-  /** Owners asking for tomorrow; days in a row the crew ran solo; dogs sent home sick this week and in this block. */
+  fatigueLimit: number;
+  /** Owners asking for tomorrow; days in a row the crew ran solo, before today; dogs sent home sick this week and in this block. */
   tomorrow: number;
   soloDays: number;
   sick: { week: number; thisBlock: number };
@@ -44,11 +48,19 @@ function reputationChange(change: number): string {
   return 'No change this week';
 }
 
+/** A change of cash with its sign: "+$575", "−$120", "$0". */
+function signedMoney(dollars: number): string {
+  const text = formatMoney(dollars);
+  return text === '$0' || text.startsWith('−') ? text : `+${text}`;
+}
+
 /**
  * The rail's values for one block (G5d WP2): every count says its scope ("this week", "this block"), the money is
  * written as the report writes it, and the words are the frame's own (activityWords, planWords, captions).
+ * `dayStartCash` is the cash when the day opened (the week's start on Monday, the last pickup's after), for today's
+ * change; the page reads it from the trace.
  */
-export function railModel(frame: ReplayFrame, world: WorldConfig): RailModel {
+export function railModel(frame: ReplayFrame, world: WorldConfig, dayStartCash?: number): RailModel {
   const reputation = Math.round(frame.reputation);
   const sickThisBlock = frame.events.filter((e) => e.type === 'illness').reduce((n, e) => n + (e.amount ?? 0), 0);
   return {
@@ -66,11 +78,16 @@ export function railModel(frame: ReplayFrame, world: WorldConfig): RailModel {
       over: frame.ratio > world.bookings.legalRatio,
     },
     incidents: { week: frame.incidentsSoFar, thisBlock: frame.events.filter((e) => e.type === 'incident').length },
-    cash: { now: formatMoney(frame.cash), start: formatMoney(world.cash.weekStart) },
+    cash: {
+      now: formatMoney(frame.cash),
+      start: formatMoney(world.cash.weekStart),
+      today: dayStartCash === undefined ? '' : signedMoney(frame.cash - dayStartCash),
+    },
     reputation: { now: reputation, change: reputationChange(reputation - world.reputation.weekStart) },
     energy: Math.round(frame.energy),
     cleanliness: Math.round(frame.cleanliness),
     fatigue: Math.round(frame.fatigue),
+    fatigueLimit: world.fatigue.kpiThreshold,
     tomorrow: frame.requestsTomorrow,
     soloDays: frame.soloStreak,
     sick: { week: frame.sickSoFar, thisBlock: sickThisBlock },
@@ -95,7 +112,8 @@ export type RailIcon = 'overRatio' | 'incidents' | 'cash' | 'reputation';
  * Builds the rail's nodes once inside `container` and returns the function that writes a block's values into them
  * (text and a few style properties, never new nodes, so a block costs a handful of writes). `gaugeMax` is the gauge's
  * top (world.requests.max); `icon` returns an icon's markup (icons.ts). DOM only when called: nothing here runs at
- * module load, so the model above is tested under node.
+ * module load, so the model above is tested under node. The block's events are the yard's own chips (WP3): the rail
+ * does not repeat them.
  */
 export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name: RailIcon) => string): RailView {
   const doc = container.ownerDocument;
@@ -150,7 +168,8 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   }
   whenBox.append(whenLine, choices, timeline);
 
-  // The crowding: dogs per staffer now against the legal limit, the part over it hatched.
+  // The crowding: dogs per staffer now against the legal limit, the part over it hatched, the limit's label under
+  // its own mark (round 1, row 25).
   const crowd = el('div', 'live-crowd');
   const big = el('p', 'crowd-big');
   const crowdBody = el('div', 'crowd-body');
@@ -159,14 +178,12 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const fill = el('span', 'gauge-fill');
   const over = el('span', 'gauge-over');
   const mark = el('span', 'gauge-mark');
-  gauge.append(fill, over, mark);
-  const gaugeLines = el('p', 'gauge-lines');
-  const floor = el('span', 'gauge-floor');
   const limitText = el('span', 'gauge-limit');
   const limitNum = el('b');
   limitText.append(limitNum, ' legal limit');
-  gaugeLines.append(floor, limitText);
-  crowdBody.append(label('overRatio', 'Dogs per staffer now'), gauge, gaugeLines);
+  gauge.append(fill, over, mark, limitText);
+  const floor = el('p', 'gauge-floor');
+  crowdBody.append(label('overRatio', 'Dogs per staffer now'), gauge, floor);
   crowd.append(big, crowdBody);
 
   // What it is costing: incidents, cash, reputation, each with its scope.
@@ -177,40 +194,49 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const incBadge = el('span', 'badge-warn');
   const incBadgeText = el('span');
   incBadge.append(glyph('incidents'), incBadgeText);
-  incSub.appendChild(incBadge);
+  const incQuiet = el('span', 'stat-quiet', 'None this block');
+  incSub.append(incBadge, incQuiet);
   incBox.append(label('incidents', 'Incidents this week'), incVal, incSub);
   const cashBox = el('div', 'stat stat-cash');
   const cashVal = el('p', 'stat-val');
+  const cashToday = fact('Today so far: ', '');
+  cashToday.line.className = 'stat-sub';
   const cashSub = el('p', 'stat-sub');
-  cashBox.append(label('cash', 'Cash'), cashVal, cashSub);
+  cashBox.append(label('cash', 'Cash'), cashVal, cashToday.line, cashSub);
   const repBox = el('div', 'stat stat-rep');
   const repVal = el('p', 'stat-val');
   const repSub = el('p', 'stat-sub');
   repBox.append(label('reputation', 'Reputation'), repVal, repSub);
   trio.append(incBox, cashBox, repBox);
 
-  // The meters, then the rest in words. This block's events are the yard's own chips (WP3): the rail does not repeat them.
+  // The meters, each named for whose it is (BRIEF 10.2); the crew's fatigue with the plan's 70% marked and the part
+  // above it hatched (row 22). Then the rest in words, one a line.
   const meters = el('div', 'live-meters');
-  const meterRow = (name: string): { bar: HTMLElement; num: HTMLElement } => {
+  const meterRow = (name: string): { track: HTMLElement; bar: HTMLElement; num: HTMLElement } => {
     const track = el('span', 'meter');
     track.setAttribute('aria-hidden', 'true');
     const bar = el('i');
     track.appendChild(bar);
     const num = el('b', 'meter-num');
     meters.append(el('span', 'meter-name', name), track, num);
-    return { bar, num };
+    return { track, bar, num };
   };
-  const energy = meterRow('Energy');
+  const energy = meterRow("Dogs' energy");
   const clean = meterRow('Cleanliness');
   const tired = meterRow('Crew fatigue');
+  const tiredOver = el('span', 'meter-over');
+  const tiredMark = el('span', 'meter-mark');
+  const tiredLimit = el('span', 'meter-limit');
+  tired.track.append(tiredOver, tiredMark, tiredLimit);
   const facts = el('div', 'live-facts');
   const tomorrow = fact('Tomorrow: ', ' asking');
-  const solo = fact('Days the crew ran solo: ', '');
-  const sickLine = el('p', 'fact-wide');
+  const solo = fact('Days in a row the crew ran solo, before today: ', '');
+  const sickLine = el('p');
   const sickWeek = el('b');
   const sickBlock = el('b');
   sickLine.append('Dogs sent home sick: ', sickWeek, ' this week, ', sickBlock, ' this block');
   facts.append(tomorrow.line, solo.line, sickLine);
+
   container.replaceChildren(whenBox, crowd, trio, meters, facts);
 
   const scale = (v: number): number => (Math.max(0, Math.min(gaugeMax, v)) / gaugeMax) * 100;
@@ -240,14 +266,19 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     over.style.left = `${scale(p.limit)}%`;
     over.style.width = p.over ? `${scale(ratio) - scale(p.limit)}%` : '0%';
     mark.style.left = `${scale(p.limit)}%`;
-    floor.textContent = floorWords(p.dogs, p.staff);
+    limitText.style.left = `${scale(p.limit)}%`;
     limitNum.textContent = String(p.limit);
+    floor.textContent = floorWords(p.dogs, p.staff);
 
     incVal.textContent = String(m.incidents.week);
     incBadgeText.textContent = `${m.incidents.thisBlock} this block`;
-    incSub.classList.toggle('quiet', m.incidents.thisBlock === 0);
+    incBadge.hidden = m.incidents.thisBlock === 0; // the badge only when the block had one (row 18)
+    incQuiet.hidden = m.incidents.thisBlock > 0;
     incBox.classList.toggle('hurt', m.incidents.week > 0);
     cashVal.textContent = m.cash.now;
+    cashToday.num.textContent = m.cash.today;
+    cashToday.line.hidden = m.cash.today === '';
+    cashToday.line.classList.toggle('loss', m.cash.today.startsWith('−'));
     cashSub.textContent = `Started the week at ${m.cash.start}`;
     cashBox.classList.toggle('loss', m.cash.now.startsWith('−'));
     repVal.textContent = String(m.reputation.now);
@@ -262,6 +293,15 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
       meter.bar.style.width = `${Math.max(0, Math.min(100, v))}%`;
       meter.num.textContent = String(v);
     }
+    const limit = Math.max(0, Math.min(100, m.fatigueLimit));
+    const tiredHigh = m.fatigue > limit;
+    tired.bar.style.width = `${Math.min(Math.max(0, m.fatigue), limit)}%`;
+    tiredOver.style.left = `${limit}%`;
+    tiredOver.style.width = tiredHigh ? `${Math.min(100, m.fatigue) - limit}%` : '0%';
+    tiredMark.style.left = `${limit}%`;
+    tiredLimit.style.left = `${limit}%`;
+    tiredLimit.textContent = `${limit}%`;
+    tired.num.classList.toggle('high', tiredHigh);
     tomorrow.num.textContent = String(m.tomorrow);
     solo.num.textContent = String(m.soloDays);
     sickWeek.textContent = String(m.sick.week);

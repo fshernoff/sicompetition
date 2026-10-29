@@ -29,6 +29,8 @@
   white-space: nowrap;
 }
 .tile-sub { margin-top: 6px; font-size: 15px; color: var(--ink-2); }
+.tile-of { font-size: 0.55em; font-stretch: 80%; letter-spacing: 0.01em; }
+.tile-after { margin-top: 2px; font-weight: 700; }
 .tile-profit { color: #fff; background: var(--navy); }
 .tile-profit .tile-label, .tile-profit .tile-sub { color: #c3ced8; }
 .tile-profit .tile-value { font-size: 56px; color: #fff; }
@@ -94,10 +96,26 @@
   border-bottom: 2px solid var(--navy);
 }
 #report-table tr.profit th[scope='row'] { box-shadow: inset 4px 0 0 var(--amber); }
+/* The owners' bottom line: the profit after the GM's bonus, under a double rule (round 1, row 8). */
+#report-table tr.bottom-line th, #report-table tr.bottom-line td {
+  height: 34px;
+  font-size: 17px;
+  font-weight: 850;
+  color: var(--navy);
+  border-top: 3px double var(--navy);
+  border-bottom: 2px solid var(--navy);
+}
+#report-table tr.bottom-line th[scope='row'] { font-size: 16px; white-space: nowrap; }
 #report-table td.warn { font-weight: 800; color: var(--red-ink); background: var(--red-wash); }
-#report-table td.chips { min-width: 150px; text-align: left; white-space: normal; vertical-align: top; }
-#report-table td.chips .chip { display: block; font-size: 15px; line-height: 1.3; white-space: normal; }
+/* The activities: each block on its own line, left and top aligned in the day's column, an activity's name never
+   broken, a fallback breaking only at its arrow with the rest hanging under it; the key under the row's label
+   (round 1, row 16). */
+#report-table tr.activities th, #report-table tr.activities td { vertical-align: top; padding-top: 6px; padding-bottom: 6px; }
+#report-table td.chips { min-width: 150px; text-align: left; white-space: normal; }
+#report-table td.chips .chip { display: block; padding-left: 0.9em; text-indent: -0.9em; font-size: 15px; line-height: 1.3; white-space: normal; }
 #report-table td.chips .chip.muted { color: var(--ink-3); }
+#report-table .phrase { white-space: nowrap; }
+#report-table .row-key { display: block; margin-top: 4px; font-size: 15px; color: var(--ink-3); }
 #report-table .sep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 @media (max-width: 1100px) {

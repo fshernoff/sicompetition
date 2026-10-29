@@ -28,7 +28,7 @@ import { mountEditor, roundFromSearch } from './editor.ts';
 import type { Editor } from './editor.ts';
 import { drawReplay, replayArtReady, replayClock, replayFrame } from './replay.ts';
 import type { ReplayColors, ReplayFonts, ReplayFrame, ReplayOptions } from './replay.ts';
-import { appendArrowed, headlineTiles, renderReport, renderTiles, reportTable } from './report.ts';
+import { appendArrowed, bonusWithCents, formatDollars, formatMoney, headlineTiles, renderReport, renderTiles, reportTable } from './report.ts';
 import { PICKS, PICKS_HINT, calledLine, checkPrediction, emptyPicks, picksComplete } from './prediction.ts';
 import type { PickField, PickResult, Picks } from './prediction.ts';
 import { describeBonusPlan } from '../world/bonusPlan.ts';
@@ -36,7 +36,7 @@ import { describeBonusPlan } from '../world/bonusPlan.ts';
 import gmDoneUrl from '../assets/art/set/gm-page-done.webp';
 import gmReadyUrl from '../assets/art/set/gm-page-ready.webp';
 import gmRunningUrl from '../assets/art/set/gm-page-running.webp';
-import { MEASURE_ICON_PATHS, UI_ICON_PATHS, iconSvg } from './icons.ts';
+import { BONUS_ICON_PATHS, MEASURE_ICON_PATHS, UI_ICON_PATHS, iconSvg } from './icons.ts';
 import { mountRail, railModel } from './rail.ts';
 import type { RailIcon, RailView } from './rail.ts';
 import { ROUND_NOTES } from './roundNotes.ts';
@@ -61,6 +61,10 @@ export const AGAIN = 'Put the GM to work again';
 /** The placeholder's background: clear, so the dimmed yard behind the canvas shows (G5c). */
 const CLEAR = 'rgba(0, 0, 0, 0)';
 const ERROR_LINE = 'The GM stopped because of a problem. Ask your teacher for help.';
+/** Four blocks a day (BRIEF section 2): the denominator of "blocks over the limit" (G5d round 1, row 15). */
+const BLOCKS_PER_DAY = 4;
+/** One line under the plan that says what a block is (G5d round 1, row 15). */
+const BLOCKS_NOTE = 'A day has four blocks: drop-off, late morning, afternoon and pickup.';
 const NO_RUN = 'No run yet.';
 const SEED_MESSAGE = `The seed must be a whole number from 0 to ${MAX_SEED}.`;
 
@@ -99,6 +103,9 @@ export interface Page {
   controlsEnabled: boolean;
   stagePlan: HTMLElement; // the plan the GM works to, beside the yard during and after a run
   stagePlanWords: HTMLElement;
+  stageWhy: HTMLElement; // the team's reasons beside the yard while the GM gets ready and runs the week (round 1, row 20)
+  stageWhyText: HTMLElement;
+  railRound: HTMLElement; // the round in the run's header, where the bar has scrolled away (row 33)
   stagePicks: HTMLElement; // the team's five picks beside the yard, so the class watches the week against them
   stagePicksList: HTMLElement;
   seed: HTMLInputElement;
@@ -295,7 +302,11 @@ function showBlock(page: Page, frame: ReplayFrame | null): void {
     page.stageWhen.hidden = true;
     return;
   }
-  const model = railModel(frame, page.world);
+  // Today's change of cash: from the day's opening cash, the week's start on Monday, the last pickup's after.
+  const trace = page.trace;
+  const openStep = frame.day * BLOCKS_PER_DAY - 1;
+  const dayStart = openStep < 0 || trace === null ? page.world.cash.weekStart : replayFrame(trace.steps, openStep, page.world).cash;
+  const model = railModel(frame, page.world, dayStart);
   page.railView(model);
   page.stageWhen.textContent = model.when;
   page.stageWhen.hidden = false;
@@ -415,44 +426,56 @@ function showStagePicks(page: Page, results: readonly PickResult[] | null = null
   page.stagePicks.hidden = false;
 }
 
+/** "Profit $5,393 before the GM's bonus · 7 incidents · reputation down 18": the week in one line (G5d round 1, row 6). */
+export function businessLine(totals: EpisodeTrace['report']['totals']): string {
+  const incidents = `${totals.incidents} ${totals.incidents === 1 ? 'incident' : 'incidents'}`;
+  const change = totals.reputationEnd - totals.reputationStart;
+  const reputation = change < 0 ? `reputation down ${-change}` : change > 0 ? `reputation up ${change}` : 'reputation unchanged';
+  return `Profit ${formatMoney(totals.profit)} before the GM's bonus · ${incidents} · ${reputation}`;
+}
+
 /**
- * How the business did (G5d, Acceptance 5): the week's profit (before the GM's bonus), incidents, reputation and the
- * blocks over the legal limit, in the report's own formats and words, each a hurt (a red figure and its icon) when it
- * went against the business. Beside the scorecard, with the same weight.
+ * How the business did (G5d, Acceptance 5; round 1, rows 6 and 15): a factual headline the size of "You called N of
+ * 5." (businessLine), then the week's figures as a table beside the picks' table, in the report's own formats and
+ * words: the profit before and after the GM's bonus, the bonus, incidents, reputation and the blocks over the legal
+ * limit out of the week's twenty. A figure that went against the business is a hurt (red, with its icon and words as
+ * the cue beyond colour).
  */
 function renderBusiness(page: Page, trace: EpisodeTrace): void {
   const t = trace.report.totals;
   const tiles = headlineTiles(trace.report, page.spec, page.world);
   const doc = page.business.ownerDocument;
-  const items: { tile: number; icon: string; sub: string; hurt: boolean }[] = [
-    { tile: 0, icon: MEASURE_ICON_PATHS.profit, sub: "Before the GM's bonus", hurt: t.profit < 0 },
-    { tile: 2, icon: MEASURE_ICON_PATHS.incidents, sub: '', hurt: t.incidents > 0 },
-    { tile: 3, icon: MEASURE_ICON_PATHS.reputation, sub: '', hurt: t.reputationEnd < t.reputationStart },
-    { tile: 4, icon: MEASURE_ICON_PATHS.overRatio, sub: '', hurt: t.blocksOverRatio > 0 },
+  const headline = doc.createElement('p');
+  headline.className = 'business-line';
+  headline.textContent = businessLine(t);
+  const blocks = trace.report.days.length * BLOCKS_PER_DAY;
+  const rows: { icon: string; label: string; value: string; hurt: boolean; strong?: boolean }[] = [
+    { icon: MEASURE_ICON_PATHS.profit, label: "Profit before the GM's bonus", value: tiles[0]?.value ?? '', hurt: t.profit < 0 },
+    { icon: BONUS_ICON_PATHS, label: "The GM's bonus", value: bonusWithCents(tiles[1]?.value ?? ''), hurt: false },
+    { icon: MEASURE_ICON_PATHS.profit, label: "Profit after the GM's bonus", value: formatDollars(t.profit - t.reward), hurt: t.profit - t.reward < 0, strong: true },
+    { icon: MEASURE_ICON_PATHS.incidents, label: tiles[2]?.label ?? '', value: tiles[2]?.value ?? '', hurt: t.incidents > 0 },
+    { icon: MEASURE_ICON_PATHS.reputation, label: tiles[3]?.label ?? '', value: tiles[3]?.value ?? '', hurt: t.reputationEnd < t.reputationStart },
+    { icon: MEASURE_ICON_PATHS.overRatio, label: tiles[4]?.label ?? '', value: `${tiles[4]?.value ?? ''} of ${blocks}`, hurt: t.blocksOverRatio > 0 },
   ];
-  const groups = items.map(({ tile, icon, sub, hurt }) => {
-    const data = tiles[tile];
-    const group = doc.createElement('div');
-    group.className = hurt ? 'biz hurt' : 'biz';
-    const dt = doc.createElement('dt');
+  const table = doc.createElement('table');
+  table.className = 'biz-table';
+  const body = table.createTBody();
+  for (const r of rows) {
+    const row = body.insertRow();
+    row.className = `${r.hurt ? 'hurt' : ''}${r.strong === true ? ' strong' : ''}`.trim();
+    const th = doc.createElement('th');
+    th.scope = 'row';
     const glyph = doc.createElement('span');
     glyph.className = 'biz-icon';
     glyph.setAttribute('aria-hidden', 'true');
-    glyph.innerHTML = iconSvg(icon, 18, 1.9);
-    dt.append(glyph, data?.label ?? '');
-    const value = doc.createElement('dd');
-    value.className = 'biz-val';
-    appendArrowed(value, data?.value ?? '');
-    group.append(dt, value);
-    if (sub !== '') {
-      const note = doc.createElement('dd');
-      note.className = 'biz-sub';
-      note.textContent = sub;
-      group.appendChild(note);
-    }
-    return group;
-  });
-  page.business.replaceChildren(...groups);
+    glyph.innerHTML = iconSvg(r.icon, 16, 1.9);
+    th.append(glyph, r.label);
+    const td = row.insertCell();
+    td.className = 'biz-val';
+    appendArrowed(td, r.value);
+    row.prepend(th);
+  }
+  page.business.replaceChildren(headline, table);
 }
 
 /**
@@ -526,6 +549,7 @@ function showScorecard(page: Page): void {
   page.scorecardShown = true;
   syncPicks(page);
   syncPhase(page);
+  page.prediction.scrollTop = 0; // the reasons are quoted from their first line (now that the phase shows them)
 }
 
 /** The scorecard goes (with the run, D37) and the picks come back as they were, unlocked unless a run holds them. */
@@ -710,14 +734,26 @@ export function showReadout(page: Page, label = ''): void {
   page.readout.textContent = describeWeek(trace.report);
   page.readoutLabel.textContent = READOUT_LABEL;
   page.replayCaption.textContent = REPLAY_CAPTION;
-  renderReport(page.reportTable, reportTable(trace.report, page.spec, page.world));
-  renderTiles(page.reportTiles, headlineTiles(trace.report, page.spec, page.world));
-  // The report is built now and laid out on the next frame, so the scorecard's layout and the report's are two short
-  // tasks, not one long one (G5d, acceptance 7). A clear in between keeps it hidden.
-  const token = page.token;
-  requestAnimationFrame(() => {
-    if (page.token === token && page.readoutShown) page.report.hidden = false;
-  });
+  const totals = trace.report.totals;
+  const build = (): void => {
+    renderReport(page.reportTable, reportTable(trace.report, page.spec, page.world));
+    renderTiles(page.reportTiles, headlineTiles(trace.report, page.spec, page.world), {
+      afterBonus: formatDollars(totals.profit - totals.reward),
+      blocks: trace.report.days.length * BLOCKS_PER_DAY,
+    });
+    page.report.hidden = false;
+  };
+  // A class's week: the report under the scorecard is built and shown on the next frame, so the scorecard's layout
+  // and the report's are two short tasks, not one long one (G5d, acceptance 7); a clear in between keeps it away. The
+  // pilot (a label) builds it at once: its clock stops after the readout's rendering (D6).
+  if (label !== '') {
+    build();
+  } else {
+    const token = page.token;
+    requestAnimationFrame(() => {
+      if (page.token === token && page.readoutShown) build();
+    });
+  }
   page.replayAgain.hidden = false;
   page.status.textContent = label + studentStatus('done');
   page.resultBox.hidden = false; // what the GM did, beside the scorecard
@@ -817,6 +853,7 @@ export function setControls(page: Page, enabled: boolean): void {
 export function showRound(page: Page, name: PresetName): void {
   for (const radio of page.rounds) radio.checked = radio.value === name;
   page.roundLabel.textContent = loadPreset(name).label;
+  page.railRound.textContent = page.roundLabel.textContent;
   page.roundNote.textContent = ROUND_NOTES[name] ?? '';
 }
 
@@ -827,9 +864,10 @@ export function showRound(page: Page, name: PresetName): void {
  * sentence and its label, the curve, the check line and the export button. The hidden rules are the config's, not the
  * run's, and the learning section is the teacher's: they stay (an empty curve). After a run the status says the plan
  * changed.
- * Called by an edit, a round change, the button's click before a run, and the pilot before each seed.
+ * Called by an edit, a round change, the button's click before a run, and the pilot before each seed. The click passes
+ * `draw` false: it draws the yard itself once the run's layout is in place, so the page is not laid out in between.
  */
-export function clearRun(page: Page): void {
+export function clearRun(page: Page, draw = true): void {
   const hadRun = page.trainer !== null;
   page.token++;
   page.trainer = null;
@@ -840,7 +878,6 @@ export function clearRun(page: Page): void {
   page.playback = null;
   page.readoutShown = false;
   page.keepYardSize = false;
-  page.watch.style.removeProperty('--yard-aspect');
   page.replay.dataset.week = 'none';
   page.replay.dataset.plays = '0';
   delete page.replay.dataset.key;
@@ -851,13 +888,15 @@ export function clearRun(page: Page): void {
   page.report.hidden = true;
   hideScorecard(page); // the scorecard goes with the run; the picks come back as they were (D56)
   page.stagePlan.hidden = true;
+  page.stageWhy.hidden = true;
+  page.stageWhyText.textContent = '';
   page.stagePicks.hidden = true;
   page.stagePicksList.replaceChildren();
   page.readout.textContent = '';
   page.readoutLabel.textContent = READOUT_LABEL;
   page.check.textContent = NO_RUN;
   page.exportButton.disabled = true;
-  redraw(page); // the replay's placeholder, and the empty curve if the teacher shows it
+  if (draw) redraw(page); // the replay's placeholder, and the empty curve if the teacher shows it
   if (hadRun) page.status.textContent = studentStatus('changed');
 }
 
@@ -906,6 +945,9 @@ export function mountApp(): Page {
     controlsEnabled: true,
     stagePlan: byId('stage-plan', HTMLElement),
     stagePlanWords: byId('stage-plan-words', HTMLElement),
+    stageWhy: byId('stage-why', HTMLElement),
+    stageWhyText: byId('stage-why-text', HTMLElement),
+    railRound: byId('rail-round', HTMLElement),
     stagePicks: byId('stage-picks', HTMLElement),
     stagePicksList: byId('stage-picks-list', HTMLElement),
     seed: byId('seed', HTMLInputElement),
@@ -957,6 +999,11 @@ export function mountApp(): Page {
     keepYardSize: false,
   };
   page.railView(null);
+  page.railRound.hidden = false; // shown by the stylesheet only on the run and the week's end, where the bar is gone
+  const blocksNote = document.createElement('p');
+  blocksNote.className = 'blocks-note';
+  blocksNote.textContent = BLOCKS_NOTE;
+  editor.element.appendChild(blocksNote);
   showRound(page, first);
   const hintText = page.picksHint.querySelector('.picks-hint-text');
   if (hintText) hintText.textContent = PICKS_HINT;
@@ -984,6 +1031,14 @@ export function mountApp(): Page {
     });
   };
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(stageResized).observe(replay);
+
+  // The round in the run's header only when the bar (which has it) is out of view (round 1, row 33).
+  const bar = document.querySelector('.topbar');
+  if (bar !== null && typeof IntersectionObserver !== 'undefined') {
+    new IntersectionObserver(([entry]) => {
+      document.documentElement.classList.toggle('bar-gone', entry !== undefined && !entry.isIntersecting);
+    }).observe(bar);
+  }
 
   // A pick is part of the prediction, not the plan: it never clears a run; it only lets the button on (D56).
   for (const radio of pickRadios) radio.addEventListener('change', () => syncPicks(page));
@@ -1021,7 +1076,7 @@ export function mountApp(): Page {
       return;
     }
     setControls(page, false);
-    clearRun(page);
+    clearRun(page, false);
     page.setup = {
       seed,
       round: page.editor.preset().name,
@@ -1030,6 +1085,8 @@ export function mountApp(): Page {
     };
     page.stagePlanWords.textContent = describeBonusPlan(page.spec, page.world);
     page.stagePlan.hidden = false;
+    page.stageWhyText.textContent = page.setup.prediction.trim();
+    page.stageWhy.hidden = page.stageWhyText.textContent === '';
     showStagePicks(page);
     page.status.textContent = studentStatus('preparing');
     page.replay.dataset.week = 'preparing';
@@ -1053,9 +1110,8 @@ export function mountApp(): Page {
         const played = await playWeek(page);
         if (!played || page.token !== owner) return;
         // The yard keeps the picture it played at while the page turns to the scorecard (no new caches at the week's
-        // end), in a box of the same proportions, so nothing moves when settleYard draws it at its own size.
+        // end: the canvas shows it fitted to the column), until settleYard draws it at the column's own size.
         page.keepYardSize = true;
-        if (page.replaySize !== null) page.watch.style.setProperty('--yard-aspect', `${page.replaySize.width} / ${page.replaySize.height}`);
         showReadout(page);
         showScorecard(page);
         // Friday's pickup with the orb in its done state, on the next frame (a redraw draws what the page holds, so it

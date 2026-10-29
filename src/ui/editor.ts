@@ -84,6 +84,35 @@ export function spokenAmount(key: KpiKey, weight: number, world: WorldConfig): s
   return `${sign}${n} ${n === 1 ? 'dollar' : 'dollars'} ${unit[key]}`;
 }
 
+/**
+ * Writes the plan in words into `el` one clause a line (G5d round 1, row 29): a line starts at each "earns $N" or
+ * "loses $N" (with the "and " before the last), the first line keeps "Each day, the GM", and each clause's amount is
+ * bold. The element's text is `sentence`, word for word (the e2e and the export read it).
+ */
+export function planLines(el: HTMLElement, sentence: string): void {
+  const doc = el.ownerDocument;
+  const starts = [0];
+  for (const m of sentence.matchAll(/(?:and )?(?:earns|loses) \$/g)) if (m.index > 0) starts.push(m.index);
+  // The first clause stays on the opening line with "Each day, the GM".
+  if (starts.length > 1) starts.splice(1, 1);
+  const lines = starts.map((at, i) => {
+    const text = sentence.slice(at, starts[i + 1] ?? sentence.length);
+    const line = doc.createElement('span');
+    line.className = 'plan-line';
+    const amount = /(?:earns|loses) (\$[\d,]+)/.exec(text);
+    if (amount === null || amount[1] === undefined) {
+      line.textContent = text;
+    } else {
+      const from = amount.index + amount[0].length - amount[1].length;
+      const b = doc.createElement('b');
+      b.textContent = amount[1];
+      line.append(text.slice(0, from), b, text.slice(from + amount[1].length));
+    }
+    return line;
+  });
+  el.replaceChildren(...lines);
+}
+
 /** "Round 1" from "Round 1: profit only"; the whole label when it has no colon. */
 function roundName(preset: RewardPreset): string {
   const colon = preset.label.indexOf(':');
@@ -94,14 +123,16 @@ function roundName(preset: RewardPreset): string {
  * Builds the editor inside `container` (#editor) for `preset` and returns its handle. Ids: #kpi-<key>-on (checkbox),
  * #kpi-<key>-weight (range −10..10 step 1), #kpi-<key>-value (the dollar amount: "+$10", "−$5", "$0"), #limit,
  * #plan-words, #plan-note. An off measure's slider is disabled and its row dimmed; a locked toggle is disabled; a
- * locked plan (Round 1) has every toggle and slider disabled and #limit reads "Round 1: the plan is set. Predict
- * what the GM will do, then put it to work."; otherwise #limit reads "N of M measures on." with " Turn one off to turn
+ * locked plan (Round 1) has every toggle and slider disabled and #limit reads "Round 1: the plan is set." (the round's
+ * note says what to do: G5d round 1, row 23); otherwise #limit reads "N of M measures on." with " Turn one off to turn
  * another on." appended when the limit is reached and a measure is still off.
  * The look (G5d, D59): #limit (with a padlock while the plan is set) under the heading, then the plan as a labelled
  * table, Measure / In the plan / Amount: a row per measure with its icon and its name (the toggle's label), whether
  * it is in the plan, and its dollar amount and unit. A set plan (Round 1) shows "In the plan" as a lamp and a word
  * (On, Off) and hides the controls; an editable plan shows the switch (a native checkbox) and the slider beside the
- * amount. Then the plan in words in a navy band and the note under it.
+ * amount, the slider filled from a marked zero, a pay in green and a penalty in red (row 13). Then the plan in words in
+ * a navy band, one clause a line with the amounts in bold (row 29; the text is describeBonusPlan's, word for word),
+ * and the note under it.
  */
 export function mountEditor(container: HTMLElement, world: WorldConfig, preset: RewardPreset): Editor {
   let current: RewardPreset = structuredClone(preset);
@@ -195,7 +226,12 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
       r.toggle.checked = setting.on;
       r.toggle.disabled = !enabled || locked || (!setting.on && full);
       r.slider.value = String(setting.weight);
-      r.slider.style.setProperty('--fill', `${((setting.weight + 10) / 20) * 100}%`); // the track's filled part
+      // The track is filled from its marked zero (the middle) to the amount: --lo and --hi are the filled part's ends.
+      const at = ((setting.weight + 10) / 20) * 100;
+      r.slider.style.setProperty('--lo', `${Math.min(at, 50)}%`);
+      r.slider.style.setProperty('--hi', `${Math.max(at, 50)}%`);
+      r.row.classList.toggle('pay', setting.weight > 0);
+      r.row.classList.toggle('penalty', setting.weight < 0);
       r.slider.disabled = !enabled || locked || !setting.on;
       r.value.textContent = signedDollars(setting.weight);
       r.slider.setAttribute('aria-valuetext', spokenAmount(r.key, setting.weight, world));
@@ -203,12 +239,12 @@ export function mountEditor(container: HTMLElement, world: WorldConfig, preset: 
       r.row.classList.toggle('off', !setting.on);
     }
     if (locked) {
-      limit.textContent = `${roundName(current)}: the plan is set. Predict what the GM will do, then put it to work.`;
+      limit.textContent = `${roundName(current)}: the plan is set.`;
     } else {
       const stillOff = on < rows.length;
       limit.textContent = `${on} of ${current.maxActive} measures on.${full && stillOff ? ' Turn one off to turn another on.' : ''}`;
     }
-    words.textContent = describeBonusPlan(plan, world);
+    planLines(words, describeBonusPlan(plan, world));
     note.textContent = signedNote(plan) ?? '';
   }
 

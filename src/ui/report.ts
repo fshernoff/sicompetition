@@ -50,6 +50,18 @@ export function formatBonus(dollars: number): string {
   return r > 0 ? `+$${body}` : `−$${body}`;
 }
 
+/**
+ * Dollars and cents with no plus sign (G5d: the owners' bottom line): rounded to cents, en-US commas, a typographic
+ * minus, and cents only when there are cents: "$4,853.70", "$1,017", "−$120", "−$35.50", "$0".
+ */
+export function formatDollars(dollars: number): string {
+  const r = Math.round(dollars * 100) / 100;
+  if (r === 0) return '$0';
+  const abs = Math.abs(r);
+  const body = Number.isInteger(abs) ? abs.toLocaleString('en-US') : abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return r < 0 ? `−$${body}` : `$${body}`;
+}
+
 const ACTIVITY_WORDS: Record<FloorActivity, string> = {
   freePlay: 'free play',
   structuredPlay: 'structured play',
@@ -167,14 +179,29 @@ export function bonusWithCents(text: string): string {
   return /^[+−]?\$[\d,]+$/.test(text) ? `${text}.00` : text;
 }
 
+/** What the headline adds to headlineTiles' five cells (G5d, round 1): the owners' bottom line and a week's blocks. */
+export interface TileNotes {
+  /** The week's profit after the GM's bonus, through formatDollars ("$4,853.70"). */
+  afterBonus: string;
+  /** The blocks in a week (five days of four), the denominator of the blocks over the limit ("16 of 20"). */
+  blocks: number;
+}
+
 /**
- * Renders the headline: one strip of five cells, profit first on navy with "Before the GM's bonus" under it, then the
- * GM's bonus (always with cents), then incidents, reputation and the blocks over the limit, each a hurt (a red wash
- * and figure, with its icon and label as the cue beyond colour) when it went against the business. The cells' values
- * and labels are headlineTiles' own.
+ * Renders the headline: one strip of five cells, profit first on navy with "Before the GM's bonus" and the bottom line
+ * ("After the GM's bonus: $4,853.70") under it, then the GM's bonus (always with cents, "Paid to the GM"), then
+ * incidents, reputation and the blocks over the limit ("16 of 20"), each a hurt (a red wash and figure, with its icon
+ * and label as the cue beyond colour) when it went against the business. The cells' values and labels are
+ * headlineTiles' own.
  */
-export function renderTiles(container: HTMLElement, tiles: HeadlineTile[]): void {
+export function renderTiles(container: HTMLElement, tiles: HeadlineTile[], notes?: TileNotes): void {
   const doc = container.ownerDocument;
+  const sub = (card: HTMLElement, text: string, cls = 'tile-sub'): void => {
+    const line = doc.createElement('div');
+    line.className = cls;
+    line.textContent = text;
+    card.appendChild(line);
+  };
   const nodes = tiles.map((tile, i) => {
     const card = doc.createElement('div');
     card.className = 'tile';
@@ -188,15 +215,22 @@ export function renderTiles(container: HTMLElement, tiles: HeadlineTile[]): void
     const value = doc.createElement('div');
     value.className = 'tile-value';
     appendArrowed(value, i === 1 ? bonusWithCents(tile.value) : tile.value);
+    if (i === 4 && notes !== undefined) {
+      const of = doc.createElement('span');
+      of.className = 'tile-of';
+      of.textContent = ` of ${notes.blocks}`;
+      value.appendChild(of);
+    }
     card.append(label, value);
     if (i === 0) {
       card.classList.add('tile-profit');
-      const sub = doc.createElement('div');
-      sub.className = 'tile-sub';
-      sub.textContent = "Before the GM's bonus";
-      card.appendChild(sub);
+      sub(card, "Before the GM's bonus");
+      if (notes !== undefined) sub(card, `After the GM's bonus: ${notes.afterBonus}`, 'tile-sub tile-after');
     }
-    if (i === 1) card.classList.add('tile-bonus');
+    if (i === 1) {
+      card.classList.add('tile-bonus');
+      sub(card, 'Paid to the GM');
+    }
     const hurt =
       (i === 2 && Number(tile.value) > 0) ||
       (i === 3 && /^(\d+) → (\d+)$/.test(tile.value) && Number(tile.value.split(' → ')[1]) < Number(tile.value.split(' → ')[0])) ||
@@ -217,8 +251,8 @@ export function renderTiles(container: HTMLElement, tiles: HeadlineTile[]): void
  * out" on a closed day; week "1 staffer on 4 days", "1 staffer on 1 day", from totals.daysOneStaffer); Activities (drop-off · late morning
  * · afternoon · pickup) (the four blocks joined with " · ", the drop-off always written "arrivals", a floor block
  * whose resolved activity differs from the requested one as "walk → free play", "closed" on a closed day; week
- * "nap 0, clean 0, walk 0" from the totals); Dogs per staffer (one decimal from DayReport.avgRatio, "—" when 0;
- * week avgDogsPerStaffer); Blocks over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits (fines
+ * "nap 0, clean 0, walk 0" from the totals); Dogs per staffer, the day's average (on the floor, over the day's
+ * blocks: one decimal from DayReport.avgRatio, "—" when 0; week avgDogsPerStaffer); Blocks over 15 dogs per staffer; Incidents; Dogs sent home sick; Inspector visits (fines
  * counted); Blocks with crew fatigue above 70%; Reputation at pickup (week "50 → 21 (−29)" from reputationStart to
  * reputationEnd); Cleanliness at pickup (Math.round; week "80 → 0 (−80)" from cleanliness.weekStart to Friday's
  * pickup); Crew fatigue at pickup (Math.round; week "20 → 100 (+80)" from fatigue.weekStart). Counts in the week
@@ -236,10 +270,12 @@ export function renderTiles(container: HTMLElement, tiles: HeadlineTile[]): void
  * day's deltas are DayReport.profit, accepted, incidents, blocksFatigueOver70, blocksOverRatio, and for reputation
  * the change since the previous pickup (reputationAtPickup[d] − reputationAtPickup[d − 1], Monday against
  * totals.reputationStart; a closed day's delta is its closure hit). The week cell is weight × totals.kpi[key] ÷
- * unit. Last, "Bonus this week ($)" (bold): the day cells sum the measures' day cells; the week cell is
- * totals.reward (authoritative; it equals the sum when `spec` is the plan the week was run under). A plan with
- * nothing on has the one row "No measure is on: the GM is paid nothing." with "$0" in every cell. All through
- * formatBonus ("+$113", "+$97.80", "−$35", "$0").
+ * unit. Then "The GM's bonus ($)" (bold): the day cells sum the measures' day cells; the week cell is
+ * totals.reward (authoritative; it equals the sum when `spec` is the plan the week was run under). Last, "Profit after
+ * the GM's bonus ($)" (bold, G5d): each day's profit less that day's bonus, and the week's profit less the week's
+ * reward, through formatDollars ("$4,853.70"). A plan with nothing on has the one row "No measure is on: the GM is
+ * paid nothing." with "$0" in every cell. The measures and the bonus through formatBonus ("+$113", "+$97.80",
+ * "−$35", "$0").
  *
  * The 15, the 70, the rates' prices and the $2,000 are world.bookings.legalRatio, world.fatigue.kpiThreshold,
  * world.rates and world.cash.weekStart. The rate words are low, standard, premium; the activity words free play,
@@ -288,7 +324,7 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
       week: `nap ${t.napBlocks}, clean ${t.cleanBlocks}, walk ${t.walkBlocks}`,
     },
     {
-      label: 'Dogs per staffer',
+      label: "Dogs per staffer, the day's average",
       days: perDay((d) => (d.avgRatio === 0 ? '—' : d.avgRatio.toFixed(1))),
       week: t.avgDogsPerStaffer.toFixed(1),
     },
@@ -355,7 +391,14 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
       week: formatBonus(0),
     });
   } else {
-    bonusRows.push({ label: 'Bonus this week ($)', days: dayTotals.map(formatBonus), week: formatBonus(t.reward), emphasis: true });
+    bonusRows.push({ label: "The GM's bonus ($)", days: dayTotals.map(formatBonus), week: formatBonus(t.reward), emphasis: true });
+    // The owners' bottom line (G5d): each day's profit less that day's bonus, and the week's.
+    bonusRows.push({
+      label: "Profit after the GM's bonus ($)",
+      days: days.map((d, i) => formatDollars(d.profit - (dayTotals[i] ?? 0))),
+      week: formatDollars(t.profit - t.reward),
+      emphasis: true,
+    });
   }
 
   return {
@@ -376,9 +419,10 @@ const ZERO = /^(\$0(\.00)?|0|—)$/;
  * then the groups money first, in this order: Money ($), the GM's pay under your plan, Operations. Per group a
  * <tbody> whose first row is a heading (<th scope="colgroup" colspan="7"> with the title, its parenthesis set as a
  * note) followed by one <tr> per row (<th scope="row"> label, five <td> day cells, one <td> week cell). Rows: Revenue
- * and the bonus total "emphasis", Profit "profit" (a ruled band); the GM's pay always with cents ("+$128.00"); a cell
- * that reads as nothing happened "zero"; a block over the legal limit "warn". The table gets a <caption> "Monday to
- * Friday, and the week".
+ * and the bonus total "emphasis", Profit "profit" (a ruled band), the profit after the GM's bonus "bottom-line"; the
+ * GM's pay always with cents ("+$128.00"); the activities with their key ("asked → ran") under the label, each block
+ * on its own line; a cell that reads as nothing happened "zero"; a block over the legal limit "warn". The table gets a
+ * <caption> "Monday to Friday, and the week".
  */
 export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   const doc = table.ownerDocument;
@@ -389,11 +433,17 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
     return e;
   };
 
-  // The activities cell: each block on its own line, the " · " kept (hidden) so textContent is unchanged.
+  // The activities cell: each block on its own line, the " · " kept (hidden) so textContent is unchanged; a fallback
+  // ("walk → free play") breaks only at its arrow, never inside an activity's name (G5d round 1, row 16).
   const chips = (td: HTMLElement, text: string): HTMLElement => {
     text.split(' · ').forEach((part, i) => {
       if (i > 0) td.append(el('span', ' · ', 'sep'));
-      td.append(el('span', part, i === 0 ? 'chip muted' : 'chip'));
+      const block = el('span', undefined, i === 0 ? 'chip muted' : 'chip');
+      part.split(' → ').forEach((phrase, k) => {
+        if (k > 0) appendArrowed(block, ' → ');
+        block.append(el('span', phrase, 'phrase'));
+      });
+      td.append(block);
     });
     td.classList.add('chips');
     return td;
@@ -427,9 +477,17 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
     for (const r of group.rows) {
       const tr = el('tr');
       if (r.label === 'Profit') tr.className = 'profit';
+      else if (r.label.startsWith('Profit after')) tr.className = 'bottom-line';
       else if (r.emphasis === true) tr.className = 'emphasis';
       const label = el('th', r.label);
       label.setAttribute('scope', 'row');
+      // The activities' key: a fallback is written as what was asked and what ran.
+      if (r.label.startsWith('Activities')) {
+        const key = el('span', undefined, 'row-key');
+        appendArrowed(key, 'asked → ran');
+        label.append(key);
+        tr.className = 'activities';
+      }
       tr.append(label);
       const overRatio = /^Blocks over /.test(r.label);
       const cell = (text: string, cls?: string): HTMLElement => {

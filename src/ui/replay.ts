@@ -14,7 +14,7 @@
 // shadow drawn in code (one spec: the silhouette thrown along the key light, and a contact ellipse), and kept clear of
 // every other figure where the lawn has room. D60: nothing moves to show an action the trace does not record. A day's
 // arrangement comes from its own seeded generator (never the engine's) and holds all day; only the GM's hover and the
-// incident's pulse move, and neither under reduced motion. If any image fails, the G4 vector drawing is the fallback.
+// incident's pulse move, and neither under reduced motion. If any image fails, the schematic yard is the fallback.
 import type { Bookings, FloorActivity, Rate, State, StepRecord, WorldConfig, WorldEvent } from '../world/types.ts';
 import { CAMERA } from '../assets/art/manifest.ts';
 import type { BoardMap, CastManifest, CastSprite, CrewPose, DogPose, Facing, SetManifest } from '../assets/art/manifest.ts';
@@ -302,10 +302,9 @@ export interface ReplayOptions {
   legalRatio: number;
   gaugeMax: number;
   /**
-   * Without a frame: when omitted, the default line ("The GM's week plays here once it is on the job."); '' draws
-   * nothing (the page shows the board behind the canvas); any other line means the GM is getting ready: the orb waits
-   * over the roof with its label, and the line itself is not drawn, since the page's status line says it (round 1,
-   * finding 20).
+   * Without a frame: when omitted, the default line ("The GM's week plays here once it is on the job."); given (''
+   * before the week, the getting-ready line while the GM gets ready), the GM's orb waits over the roof with its label,
+   * and the line itself is not drawn, since the page's status line says it (round 1, finding 20; round 2, finding 18).
    */
   placeholder?: string;
   /** The page's fonts; when omitted the yard uses the page's --font-ui. Load them (document.fonts) before the first frame. */
@@ -333,17 +332,6 @@ const PLACEHOLDER = "The GM's week plays here once it is on the job.";
 const MIN_LABEL_PX = 16;
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
-
-/** A small integer hash to [0, 1): the vector yard's jitter and coats, the same on every frame. No randomness. */
-function hash01(n: number): number {
-  let x = Math.imul(n ^ 0x5bd1e995, 0x9e3779b1);
-  x ^= x >>> 15;
-  x = Math.imul(x, 0x85ebca6b);
-  x ^= x >>> 13;
-  x = Math.imul(x, 0xc2b2ae35);
-  x ^= x >>> 16;
-  return (x >>> 0) / 4294967296;
-}
 
 /**
  * The yard's own generator (D60): a seeded mulberry32 for the arrangement, the breeds and the facings, from the day's
@@ -538,11 +526,16 @@ const uiFont = (tokens: Tokens, px: number, weight: number): string =>
 // --- The placeholder. -------------------------------------------------------------------------------------------------
 
 /**
- * The placeholder (before a run, and while the GM gets ready): the canvas cleared to transparent, so the page's stage
- * shows behind it, and one line of text with a soft white outline so it reads on whatever is behind. Nothing else: the
- * e2e holds the drawn pixels under 2% of the canvas while the GM gets ready.
+ * Without a frame (before the week, and while the GM gets ready): the canvas cleared to transparent, so the page's
+ * board shows behind it in the same camera as the week's, and the GM's orb waiting on the clubhouse's roof in its
+ * getting-ready state with its label (round 2, finding 18: the first frame has life; nothing else, D60: no dogs or
+ * crew before the week). Never the page's status line, which the page says (round 1, finding 20). The e2e holds these
+ * drawn pixels under 2% of the canvas. If the art could not load at all, the schematic plan is drawn under the orb,
+ * since the page's board cannot show either. Called without options.placeholder: the default line in the middle.
  */
 function drawPlaceholder(ctx: CanvasRenderingContext2D, width: number, height: number, options: ReplayOptions, art: ArtSet | null): void {
+  lastIdle = { ctx, width, height, options };
+  idleFull = options.placeholder !== undefined && options.placeholder !== '';
   ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
   ctx.globalAlpha = 1;
   ctx.shadowColor = 'transparent';
@@ -550,14 +543,16 @@ function drawPlaceholder(ctx: CanvasRenderingContext2D, width: number, height: n
   if (!(width > 0 && height > 0)) return;
   const tokens = readTokens(options.fonts);
   if (options.placeholder !== undefined) {
-    // The page's own line names the state it is in (the GM getting ready): the page's status line already says it, so
-    // the canvas does not (round 1, finding 20). While the GM gets ready, the orb waits over the roof of the board the
-    // page shows behind the canvas, in its getting-ready state, at the scale the week will play at.
-    if (options.placeholder !== '' && art !== null) {
+    if (art !== null) {
       const s = stageFor(width, height, options.pixelRatio, art);
       drawGm(ctx, s, gmDrawn(s, 'ready'), 0);
       ctx.setTransform(s.ratio, 0, 0, s.ratio, 0, 0);
-      drawGmLabel(ctx, options.fonts === undefined ? s.tokens : { ...s.tokens, font: options.fonts.body }, s.fs, s.label);
+      drawGmLabel(ctx, tokens, s.fs, s.label);
+    } else {
+      const s = plainScene(width, height);
+      if (artFailed) drawPlan(ctx, s, tokens);
+      drawSchematicGm(ctx, s, 'ready', 0, tokens);
+      drawGmLabel(ctx, tokens, s.fs, s.label);
     }
     return;
   }
@@ -580,464 +575,455 @@ function drawPlaceholder(ctx: CanvasRenderingContext2D, width: number, height: n
 }
 
 // ===============================================================================================================
-// The vector yard: the fallback while the art loads or if an image fails (round 1, finding 4). Drawn in code in the
-// page's tokens: a fenced lawn seen from the side, the dogs in profile (a muzzle and a dog's ears, floppy or pointed,
-// a tail, four legs), in varied sizes and coats, each in a cell of its own so none overlaps another; adult crew; the
-// GM's orb in the corner with its label; the block's events on the same chips as the set's yard; and a path along the
-// front of the fence where a walk's group goes. The numbers are the page's rail.
+// The schematic yard: the fallback while the art loads or if an image fails (round 2, finding 12). The same scene and
+// the same placement as the drawn yard, drawn as a plan in the page's palette: the board's isometric diamond in two
+// greens with its soil edge, the set's front path, the plantings, the clubhouse as a block, the fence on the two back
+// sides with its gate; the dogs as round tokens in their coats' colours (flat when asleep, in crates during a clean),
+// the crew as taller navy tokens with an amber ring, the GM as its orb over the roof; a Closed sign on a closed day;
+// the label, the chips and the incident's ring as on the drawn yard. No anatomy anywhere.
 
-interface Layout {
-  fs: number;
-  pad: number;
-  /** The band over the yard: the orb and its label at the left, the chips at the right. */
-  head: Box;
-  yard: Box;
-  path: Box;
+const PLAN = {
+  lawn: ['#D7E6C3', '#CCDDB6'] as const,
+  lawnEdge: '#A9C08C',
+  soilLeft: '#B49B74',
+  soilRight: '#9A825D',
+  path: '#E8DFCC',
+  pathJoint: 'rgba(120, 100, 70, 0.28)',
+  planting: '#B5CF9A',
+  plantingEdge: '#8FAF72',
+  fence: '#A9895C',
+  roof: '#8E979F',
+  roofEdge: '#6E7780',
+  wallLeft: '#E6DFD1',
+  wallRight: '#D2C9B8',
+  door: '#5B6670',
+} as const;
+/** The dogs' coats, by breed and coat; a coat the cast adds later takes the breed's first, then a warm tan. */
+const COAT_COLOURS: Readonly<Record<string, string>> = {
+  'golden|gold': '#D9A35B',
+  'golden|red': '#B5652E',
+  'lab|black': '#302C2A',
+  'lab|chocolate': '#62402B',
+  'lab|yellow': '#E4C88E',
+  'poodle|brown': '#8C5B3D',
+  'poodle|black': '#292625',
+  'poodle|cream': '#ECDFC2',
+  'corgi|red': '#C97A3B',
+  'corgi|mahogany': '#7C3B23',
+  'collie|black': '#2D2B2B',
+  'collie|red': '#9C512E',
+  'beagle|tricolour': '#B9834D',
+};
+/** A dog token's radius in metres, by breed (a corgi smallest, the retrievers largest), and its height. */
+const TOKEN_R: Readonly<Record<string, number>> = { corgi: 0.21, beagle: 0.23, collie: 0.26, poodle: 0.26, lab: 0.28, golden: 0.28 };
+const DOG_TOKEN_H = 0.16;
+const CREW_TOKEN = { r: 0.3, h: 0.62 } as const;
+/** The clubhouse block under the GM's spot (its roof is where the GM hovers): footprint and height in metres. */
+const CLUB = { w: 3.9, d: 2.1, h: 2.72 } as const;
+const FENCE_H = 1.0;
+/** The gate in the right-back fence (set.json's notes: y from 1.3 to 2.6). */
+const GATE: readonly [number, number] = [1.3, 2.6];
+
+function coatColour(breed: string | undefined, coat: string | undefined): string {
+  const exact = COAT_COLOURS[`${breed ?? ''}|${coat ?? ''}`];
+  if (exact !== undefined) return exact;
+  const first = Object.entries(COAT_COLOURS).find(([k]) => k.startsWith(`${breed ?? ''}|`));
+  return first?.[1] ?? '#B9834D';
 }
 
-function vectorLayout(width: number, height: number): Layout {
-  const fs = clamp(Math.round(width / 52), MIN_LABEL_PX, 22);
-  const pad = Math.max(10, Math.min(width, height) * 0.025);
-  const headH = Math.round(fs * 1.95) * 2 + fs * 0.4;
-  const pathH = Math.max(fs * 3, height * 0.12);
-  const head: Box = { x: pad, y: pad, w: width - 2 * pad, h: headH };
-  const yardY = head.y + head.h + fs * 0.5;
-  const yard: Box = { x: pad, y: yardY, w: width - 2 * pad, h: Math.max(1, height - yardY - pathH - pad) };
-  const path: Box = { x: pad, y: yard.y + yard.h, w: yard.w, h: pathH };
-  return { fs, pad, head, yard, path };
-}
-
-/** The dogs' coats (a body and a darker shade for the ears), sizes and ear shapes, dealt by a dog's number. */
-const COATS: readonly (readonly [string, string])[] = [
-  ['#D9A35B', '#B07A3A'], // golden
-  ['#EBD9B4', '#C9B285'], // cream
-  ['#34302E', '#1F1C1B'], // black
-  ['#74503A', '#523525'], // chocolate
-  ['#B9693D', '#8C4A27'], // red
-  ['#A3ABB0', '#6F777C'], // grey
-  ['#F1ECE3', '#B9A98F'], // white with tan ears
-];
-interface DogLook {
-  coat: readonly [string, string];
-  size: number; // 0.8 small to 1.15 large
-  floppy: boolean;
-}
-function dogLookOf(i: number): DogLook {
-  return {
-    coat: COATS[Math.floor(hash01(i * 3 + 11) * COATS.length)] ?? (COATS[0] as readonly [string, string]),
-    size: [0.8, 0.95, 1.05, 1.15][Math.floor(hash01(i * 7 + 5) * 4)] ?? 1,
-    floppy: hash01(i * 11 + 3) < 0.6,
-  };
-}
-const dirOf = (i: number): 1 | -1 => (hash01(i * 5 + 2) < 0.5 ? -1 : 1);
-
-/**
- * A dog in profile, its feet at (x, y), `u` its body length, facing `dir`: standing (four legs, the tail up) or lying
- * (the legs tucked, the chin on its paws, the eye closed). It is about 1.4 u long and 1.25 u tall standing.
- */
-function drawVDog(ctx: CanvasRenderingContext2D, x: number, y: number, u: number, dir: 1 | -1, look: DogLook, ink: string, lying: boolean): void {
-  const [coat, shade] = look.coat;
-  const line = Math.max(1, u * 0.035);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  const outline = (): void => {
-    ctx.globalAlpha = 0.45;
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = line;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-  };
-  const by = lying ? y - 0.22 * u : y - 0.6 * u; // the body's middle
-  const hx = x + dir * (lying ? 0.62 : 0.6) * u; // the head
-  const hy = lying ? y - 0.3 * u : y - 0.98 * u;
-  // The tail, behind the body.
-  ctx.strokeStyle = coat;
-  ctx.lineWidth = Math.max(1.5, 0.1 * u);
+/** A polygon of world points on the ground, `up` CSS px raised. */
+function worldPoly(ctx: CanvasRenderingContext2D, s: Scene, pts: readonly (readonly [number, number])[], up = 0): void {
   ctx.beginPath();
-  if (lying) {
-    ctx.moveTo(x - dir * 0.48 * u, y - 0.12 * u);
-    ctx.quadraticCurveTo(x - dir * 0.75 * u, y - 0.05 * u, x - dir * 0.6 * u, y - 0.02 * u);
-  } else {
-    ctx.moveTo(x - dir * 0.48 * u, by - 0.12 * u);
-    ctx.quadraticCurveTo(x - dir * 0.78 * u, by - 0.3 * u, x - dir * 0.72 * u, by - 0.58 * u);
+  pts.forEach(([mx, my], i) => {
+    const [x, y] = ground(s, mx, my);
+    if (i === 0) ctx.moveTo(x, y - up);
+    else ctx.lineTo(x, y - up);
+  });
+  ctx.closePath();
+}
+
+/** A vertical face standing on the ground edge a→b, `h` CSS px tall. */
+function face(ctx: CanvasRenderingContext2D, s: Scene, a: readonly [number, number], b: readonly [number, number], h: number, fill: string, down = false): void {
+  const [ax, ay] = ground(s, a[0], a[1]);
+  const [bx, by] = ground(s, b[0], b[1]);
+  const d = down ? h : -h;
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(bx, by);
+  ctx.lineTo(bx, by + d);
+  ctx.lineTo(ax, ay + d);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+/** The plan: the board's soil edge, the front path, the lawn's tiles, the plantings, the clubhouse and the fence. */
+function drawPlan(ctx: CanvasRenderingContext2D, s: Scene, tokens: Tokens): void {
+  const [lx, ly] = s.set.map.lawn;
+  const pathEnd = Math.max(lx, s.set.walk[0] + s.set.walk[2]);
+  const soil = 0.38 * s.hpm;
+  // The clubhouse's plot behind the lawn's left-back side, part of the board.
+  const [, , clubX1, clubY1] = clubFootprint(s);
+  const plot: [number, number] = [Math.min(lx, clubX1 + 0.25), Math.max(ly, clubY1 + 0.2)];
+  // The soil edge under the two front sides: the board's front-left side, the path's outer side and its end.
+  face(ctx, s, [0, 0], [0, plot[1]], soil, PLAN.soilLeft, true);
+  face(ctx, s, [0, -1], [0, 0], soil, PLAN.soilLeft, true);
+  face(ctx, s, [0, -1], [pathEnd, -1], soil, PLAN.soilRight, true);
+  // The path: flagstones a metre long.
+  worldPoly(ctx, s, [[0, -1], [pathEnd, -1], [pathEnd, 0], [0, 0]]);
+  ctx.fillStyle = PLAN.path;
+  ctx.fill();
+  ctx.strokeStyle = PLAN.pathJoint;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 1; x < pathEnd; x += 1) {
+    ctx.moveTo(...ground(s, x, -1));
+    ctx.lineTo(...ground(s, x, 0));
   }
+  ctx.moveTo(...ground(s, 0, -0.5));
+  ctx.lineTo(...ground(s, pathEnd, -0.5));
   ctx.stroke();
-  if (!lying) {
-    // Four legs: the far pair a shade darker, then the near pair.
-    for (const [lx, c] of [[0.3, shade], [-0.36, shade], [0.4, coat], [-0.26, coat]] as const) {
-      ctx.fillStyle = c;
-      roundRectPath(ctx, x + dir * lx * u - 0.065 * u, by, 0.13 * u, y - by, 0.05 * u);
+  worldPoly(ctx, s, [[0, ly], [plot[0], ly], [plot[0], plot[1]], [0, plot[1]]]);
+  ctx.fillStyle = PLAN.lawn[1];
+  ctx.fill();
+  // The lawn in tiles of 1.2 m, two greens.
+  const tile = lx / Math.max(1, Math.round(lx / 1.2));
+  for (let i = 0; i * tile < lx - 1e-6; i++) {
+    for (let j = 0; j * tile < ly - 1e-6; j++) {
+      worldPoly(ctx, s, [[i * tile, j * tile], [(i + 1) * tile, j * tile], [(i + 1) * tile, (j + 1) * tile], [i * tile, (j + 1) * tile]]);
+      ctx.fillStyle = PLAN.lawn[(i + j) % 2] as string;
       ctx.fill();
     }
-  } else {
-    // The front paws, out in front under the chin.
-    ctx.fillStyle = coat;
-    roundRectPath(ctx, Math.min(x + dir * 0.35 * u, x + dir * 0.85 * u), y - 0.1 * u, 0.5 * u, 0.1 * u, 0.05 * u);
+  }
+  worldPoly(ctx, s, [[0, 0], [lx, 0], [lx, ly], [0, ly]]);
+  ctx.strokeStyle = PLAN.lawnEdge;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // The plantings and props: the blocked footprints, soft rounded beds.
+  for (const [rx, ry, rw, rh] of s.set.map.blocked) {
+    const inset = Math.min(0.12, rw / 4, rh / 4);
+    worldPoly(ctx, s, [[rx + inset, ry + inset], [rx + rw - inset, ry + inset], [rx + rw - inset, ry + rh - inset], [rx + inset, ry + rh - inset]]);
+    ctx.fillStyle = PLAN.planting;
     ctx.fill();
-  }
-  // The body.
-  ctx.fillStyle = coat;
-  ctx.beginPath();
-  ctx.ellipse(x, by, 0.55 * u, lying ? 0.22 * u : 0.27 * u, 0, 0, Math.PI * 2);
-  ctx.fill();
-  outline();
-  // The neck, joining the body to the head.
-  if (!lying) {
-    ctx.fillStyle = coat;
-    ctx.beginPath();
-    ctx.moveTo(x + dir * 0.3 * u, by - 0.18 * u);
-    ctx.lineTo(hx - dir * 0.1 * u, hy - 0.05 * u);
-    ctx.lineTo(hx + dir * 0.05 * u, hy + 0.15 * u);
-    ctx.lineTo(x + dir * 0.48 * u, by + 0.05 * u);
-    ctx.closePath();
-    ctx.fill();
-  }
-  // The head and the muzzle, the nose at its tip.
-  ctx.fillStyle = coat;
-  ctx.beginPath();
-  ctx.arc(hx, hy, 0.2 * u, 0, Math.PI * 2);
-  ctx.fill();
-  outline();
-  const mx = hx + dir * 0.24 * u;
-  const my = hy + 0.06 * u;
-  ctx.fillStyle = coat;
-  ctx.beginPath();
-  ctx.ellipse(mx, my, 0.16 * u, 0.09 * u, 0, 0, Math.PI * 2);
-  ctx.fill();
-  outline();
-  ctx.fillStyle = ink;
-  ctx.beginPath();
-  ctx.arc(mx + dir * 0.14 * u, my - 0.02 * u, Math.max(1, 0.045 * u), 0, Math.PI * 2);
-  ctx.fill();
-  // The ears: a floppy one hanging at the back of the head, or a pointed one standing up.
-  ctx.fillStyle = shade;
-  ctx.beginPath();
-  if (look.floppy) {
-    ctx.ellipse(hx - dir * 0.08 * u, hy + 0.05 * u, 0.08 * u, 0.17 * u, dir * 0.25, 0, Math.PI * 2);
-  } else {
-    ctx.moveTo(hx - dir * 0.15 * u, hy - 0.1 * u);
-    ctx.lineTo(hx - dir * 0.06 * u, hy - 0.42 * u);
-    ctx.lineTo(hx + dir * 0.04 * u, hy - 0.14 * u);
-    ctx.closePath();
-  }
-  ctx.fill();
-  // The eye, open, or closed in a nap.
-  ctx.fillStyle = ink;
-  ctx.strokeStyle = ink;
-  if (lying) {
-    ctx.lineWidth = Math.max(1, 0.03 * u);
-    ctx.beginPath();
-    ctx.moveTo(hx + dir * 0.02 * u, hy - 0.04 * u);
-    ctx.lineTo(hx + dir * 0.12 * u, hy - 0.04 * u);
+    ctx.strokeStyle = PLAN.plantingEdge;
+    ctx.lineWidth = 1;
     ctx.stroke();
-  } else {
-    ctx.beginPath();
-    ctx.arc(hx + dir * 0.08 * u, hy - 0.05 * u, Math.max(0.8, 0.035 * u), 0, Math.PI * 2);
-    ctx.fill();
   }
+  drawFence(ctx, s, lx, ly);
+  drawClubhouse(ctx, s, tokens);
+}
+
+/** The clubhouse's footprint in world metres [x0, y0, x1, y1]: centred under the GM's spot, CLUB.h below its roof. */
+function clubFootprint(s: Scene): [number, number, number, number] {
+  const hpmImg = s.hpm / s.k;
+  const [cx, cy] = world(s, s.bx + s.set.gmSpot[0] * s.k, s.by + (s.set.gmSpot[1] + CLUB.h * hpmImg) * s.k);
+  return [cx - CLUB.w / 2, cy - CLUB.d / 2, cx + CLUB.w / 2, cy + CLUB.d / 2];
+}
+
+/** The clubhouse as a block: its two faces toward the camera (a door on the one facing the lawn) and its roof. */
+function drawClubhouse(ctx: CanvasRenderingContext2D, s: Scene, tokens: Tokens): void {
+  const [x0, y0, x1, y1] = clubFootprint(s);
+  const h = CLUB.h * s.hpm;
+  face(ctx, s, [x0, y0], [x0, y1], h, PLAN.wallLeft);
+  face(ctx, s, [x0, y0], [x1, y0], h, PLAN.wallRight);
+  // The door on the face toward the lawn, a little off centre.
+  const dx = x0 + (x1 - x0) * 0.62;
+  const [d0x, d0y] = ground(s, dx - 0.42, y0);
+  const [d1x, d1y] = ground(s, dx + 0.42, y0);
+  const dh = 2.0 * s.hpm;
+  ctx.beginPath();
+  ctx.moveTo(d0x, d0y);
+  ctx.lineTo(d1x, d1y);
+  ctx.lineTo(d1x, d1y - dh);
+  ctx.lineTo(d0x, d0y - dh);
+  ctx.closePath();
+  ctx.fillStyle = PLAN.door;
+  ctx.fill();
+  worldPoly(ctx, s, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], h);
+  ctx.fillStyle = PLAN.roof;
+  ctx.fill();
+  ctx.strokeStyle = PLAN.roofEdge;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // The block's vertical edges and its foot, so it reads as one solid.
+  ctx.strokeStyle = tokens.ink;
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const [mx, my] of [[x0, y1], [x0, y0], [x1, y0]] as const) {
+    const [x, y] = ground(s, mx, my);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - h);
+  }
+  ctx.moveTo(...ground(s, x0, y1));
+  ctx.lineTo(...ground(s, x0, y0));
+  ctx.lineTo(...ground(s, x1, y0));
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+/** The fence on the two back sides: posts every 1.2 m and two rails, with the gate in the right-back side. */
+function drawFence(ctx: CanvasRenderingContext2D, s: Scene, lx: number, ly: number): void {
+  const h = FENCE_H * s.hpm;
+  const [, , clubX1] = clubFootprint(s);
+  const runs: { from: [number, number]; to: [number, number] }[] = [
+    { from: [Math.min(lx, Math.max(0, clubX1)), ly], to: [lx, ly] },
+    { from: [lx, 0], to: [lx, GATE[0]] },
+    { from: [lx, GATE[1]], to: [lx, ly] },
+  ];
+  ctx.strokeStyle = PLAN.fence;
+  ctx.lineCap = 'round';
+  for (const { from, to } of runs) {
+    const len = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    if (len < 0.05) continue;
+    const n = Math.max(1, Math.round(len / 1.2));
+    ctx.lineWidth = Math.max(1.5, s.fs * 0.12);
+    ctx.beginPath();
+    for (let k = 0; k <= n; k++) {
+      const [x, y] = ground(s, from[0] + ((to[0] - from[0]) * k) / n, from[1] + ((to[1] - from[1]) * k) / n);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - h);
+    }
+    ctx.stroke();
+    ctx.lineWidth = Math.max(1, s.fs * 0.08);
+    ctx.beginPath();
+    for (const rail of [0.45, 0.85]) {
+      const [ax, ay] = ground(s, from[0], from[1]);
+      const [bx, by] = ground(s, to[0], to[1]);
+      ctx.moveTo(ax, ay - rail * h);
+      ctx.lineTo(bx, by - rail * h);
+    }
+    ctx.stroke();
+  }
+  // The gate: a lighter panel with a diagonal brace between its two posts.
+  const [g0x, g0y] = ground(s, lx, GATE[0]);
+  const [g1x, g1y] = ground(s, lx, GATE[1]);
+  ctx.globalAlpha = 0.75;
+  ctx.lineWidth = Math.max(1, s.fs * 0.07);
+  ctx.beginPath();
+  ctx.moveTo(g0x, g0y - 0.15 * h);
+  ctx.lineTo(g1x, g1y - 0.15 * h);
+  ctx.lineTo(g1x, g1y - 0.9 * h);
+  ctx.lineTo(g0x, g0y - 0.9 * h);
+  ctx.closePath();
+  ctx.moveTo(g0x, g0y - 0.15 * h);
+  ctx.lineTo(g1x, g1y - 0.9 * h);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
 }
 
 /**
- * A crew member, an adult (the head about a seventh of the height): shoes, trousers, a shirt in the page's teal, arms,
- * the head and hair; (x, y) is where the feet stand, `h` the height. With `broom`, a broom in the leading hand.
+ * A token standing on the ground at (mx, my): a disc `rM` metres across on the ground, `hM` metres tall, its side in
+ * `side`, its top in `top`, with a soft contact shadow; `ring` strokes the top's edge.
  */
-function drawVCrew(ctx: CanvasRenderingContext2D, x: number, y: number, h: number, dir: 1 | -1, broom: boolean): void {
-  const legW = h * 0.085;
-  ctx.fillStyle = '#2E3A46';
-  roundRectPath(ctx, x - legW * 1.2, y - h * 0.47, legW, h * 0.47, legW * 0.4);
-  ctx.fill();
-  roundRectPath(ctx, x + legW * 0.2, y - h * 0.47, legW, h * 0.47, legW * 0.4);
-  ctx.fill();
-  ctx.fillStyle = '#1C232B';
-  roundRectPath(ctx, x - legW * 1.4, y - h * 0.035, legW * 1.4, h * 0.035, h * 0.015);
-  ctx.fill();
-  roundRectPath(ctx, x + legW * 0.1, y - h * 0.035, legW * 1.4, h * 0.035, h * 0.015);
-  ctx.fill();
-  const torsoTop = y - h * 0.82;
-  ctx.fillStyle = '#1F7A8C';
-  roundRectPath(ctx, x - h * 0.14, torsoTop, h * 0.28, h * 0.38, h * 0.06);
-  ctx.fill();
-  ctx.strokeStyle = '#1F7A8C';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = h * 0.06;
+function puck(ctx: CanvasRenderingContext2D, s: Scene, mx: number, my: number, rM: number, hM: number, top: string, side: string, ring: string, ringW: number): void {
+  const [x, y] = ground(s, mx, my);
+  const P = s.set.map.ppm * s.k;
+  const rx = 1.265 * rM * P;
+  const ry = 0.632 * rM * P;
+  const h = hM * s.hpm;
+  ctx.fillStyle = 'rgba(19, 33, 47, 0.16)';
   ctx.beginPath();
-  ctx.moveTo(x - h * 0.12, torsoTop + h * 0.05);
-  ctx.lineTo(x - h * 0.16, torsoTop + h * 0.3);
-  ctx.moveTo(x + h * 0.12, torsoTop + h * 0.05);
-  ctx.lineTo(x + h * 0.16 * (broom ? 1.3 : 1), torsoTop + h * 0.3);
+  ctx.ellipse(x + rx * 0.18, y + ry * 0.08, rx * 1.12, ry * 1.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = side;
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI);
+  ctx.lineTo(x - rx, y - h);
+  ctx.lineTo(x + rx, y - h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = top;
+  ctx.beginPath();
+  ctx.ellipse(x, y - h, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = ring;
+  ctx.lineWidth = ringW;
   ctx.stroke();
-  ctx.fillStyle = '#E2B58F';
-  ctx.beginPath();
-  ctx.arc(x, torsoTop - h * 0.075, h * 0.07, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#5A3A26';
-  ctx.beginPath();
-  ctx.arc(x - dir * h * 0.01, torsoTop - h * 0.095, h * 0.07, Math.PI * 1.05, Math.PI * 1.95);
-  ctx.fill();
-  if (broom) {
-    const hx = x + h * 0.2;
-    const hy = torsoTop + h * 0.32;
-    ctx.strokeStyle = '#8A6A46';
-    ctx.lineWidth = Math.max(1.5, h * 0.025);
-    ctx.beginPath();
-    ctx.moveTo(hx - h * 0.05, hy - h * 0.15);
-    ctx.lineTo(hx + h * 0.12, y - h * 0.03);
-    ctx.stroke();
-    ctx.fillStyle = '#C9A15A';
-    roundRectPath(ctx, hx + h * 0.04, y - h * 0.06, h * 0.18, h * 0.06, h * 0.02);
-    ctx.fill();
-  }
 }
 
-/** The GM's orb in code: a dark sphere with one amber band and a soft shadow under it. */
-function drawVOrb(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, tokens: Tokens): void {
-  ctx.fillStyle = 'rgba(19, 33, 47, 0.18)';
+/** A shade of a hex colour: `f` below 1 darker. */
+function shade(hex: string, f: number): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const c = (v: number): number => Math.max(0, Math.min(255, Math.round(v * f)));
+  return `rgb(${c((n >> 16) & 255)}, ${c((n >> 8) & 255)}, ${c(n & 255)})`;
+}
+
+/** A crate around (mx, my) during a clean: a wire box 0.64 m square, its back edges, then (after the dog) its front. */
+function crate(ctx: CanvasRenderingContext2D, s: Scene, mx: number, my: number, tokens: Tokens, front: boolean): void {
+  const half = 0.32;
+  const h = 0.45 * s.hpm;
+  const c = [
+    [mx - half, my - half],
+    [mx + half, my - half],
+    [mx + half, my + half],
+    [mx - half, my + half],
+  ] as const;
+  const p = c.map(([x, y]) => ground(s, x, y));
+  ctx.strokeStyle = tokens.ink;
+  ctx.lineWidth = 1.2;
+  ctx.globalAlpha = front ? 0.7 : 0.35;
   ctx.beginPath();
-  ctx.ellipse(cx, cy + r * 1.55, r * 0.8, r * 0.22, 0, 0, Math.PI * 2);
-  ctx.fill();
-  const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r);
-  g.addColorStop(0, '#5B6670');
-  g.addColorStop(1, '#23292F');
-  ctx.fillStyle = g;
+  // Back: the far corner's two edges and its post; front: the near corner's two faces, with bars.
+  const [p0, p1, p2, p3] = p as [[number, number], [number, number], [number, number], [number, number]];
+  if (!front) {
+    ctx.moveTo(p3[0], p3[1] - h);
+    ctx.lineTo(p2[0], p2[1] - h);
+    ctx.lineTo(p1[0], p1[1] - h);
+    ctx.moveTo(p2[0], p2[1]);
+    ctx.lineTo(p2[0], p2[1] - h);
+    ctx.moveTo(p3[0], p3[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.lineTo(p1[0], p1[1]);
+  } else {
+    ctx.moveTo(p3[0], p3[1]);
+    ctx.lineTo(p0[0], p0[1]);
+    ctx.lineTo(p1[0], p1[1]);
+    ctx.lineTo(p1[0], p1[1] - h);
+    ctx.lineTo(p0[0], p0[1] - h);
+    ctx.lineTo(p3[0], p3[1] - h);
+    ctx.closePath();
+    for (let b = 1; b < 4; b++) {
+      for (const [a, z] of [[p3, p0], [p0, p1]] as const) {
+        const x = a[0] + ((z[0] - a[0]) * b) / 4;
+        const y = a[1] + ((z[1] - a[1]) * b) / 4;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - h);
+      }
+    }
+    ctx.moveTo(p0[0], p0[1]);
+    ctx.lineTo(p0[0], p0[1] - h);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+/** One figure as a token: a dog in its coat (flat when asleep, crated during a clean), or the crew in navy and amber. */
+function drawToken(ctx: CanvasRenderingContext2D, s: Scene, f: Fig, tokens: Tokens, crated: boolean): void {
+  const src = f.look.art.src;
+  if (src.kind === 'crew') {
+    puck(ctx, s, f.mx, f.my, CREW_TOKEN.r, CREW_TOKEN.h, tokens.ink, shade(TOKEN_DEFAULTS.ink, 1.6), tokens.amber, Math.max(2, s.fs * 0.16));
+    return;
+  }
+  const colour = coatColour(src.breed, src.coat);
+  const r = TOKEN_R[src.breed ?? ''] ?? 0.25;
+  if (crated) crate(ctx, s, f.mx, f.my, tokens, false);
+  const asleep = src.pose === 'asleep';
+  puck(ctx, s, f.mx, f.my, r, asleep ? 0.04 : DOG_TOKEN_H, colour, shade(colour, 0.72), asleep ? 'rgba(19, 33, 47, 0.45)' : 'rgba(255, 255, 255, 0.75)', 1.5);
+  if (crated) crate(ctx, s, f.mx, f.my, tokens, true);
+}
+
+/** The GM as its orb, over the roof: a dark sphere with one band (dim getting ready, amber at work, white when done). */
+function drawSchematicGm(ctx: CanvasRenderingContext2D, s: Scene, state: GmState, hover: number, tokens: Tokens): void {
+  const g = s.set.gm[state];
+  const r = ((g.orb[2] - g.orb[0]) / 2) * s.k;
+  const [gx, gy] = [s.bx + s.set.gmSpot[0] * s.k, s.by + s.set.gmSpot[1] * s.k];
+  const cy = gy - s.hoverImg * s.k - r + hover;
+  ctx.fillStyle = 'rgba(19, 33, 47, 0.22)';
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.ellipse(gx, gy, r * 0.8, r * 0.36, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = tokens.amber;
+  const body = ctx.createRadialGradient(gx - r * 0.35, cy - r * 0.4, r * 0.1, gx, cy, r);
+  body.addColorStop(0, '#5B6670');
+  body.addColorStop(1, '#23292F');
+  ctx.fillStyle = body;
+  circle(ctx, gx, cy, r);
+  ctx.fill();
+  ctx.strokeStyle = state === 'ready' ? shade(TOKEN_DEFAULTS.amber, 0.62) : state === 'done' ? '#F4F1E8' : tokens.amber;
   ctx.lineWidth = Math.max(2, r * 0.16);
   ctx.beginPath();
-  ctx.ellipse(cx, cy + r * 0.05, r * 0.98, r * 0.24, 0, 0, Math.PI);
+  ctx.ellipse(gx, cy + r * 0.05, r * 0.98, r * 0.26, 0, 0, Math.PI);
   ctx.stroke();
 }
 
-/** The vector frame: the head band (the orb, its label and the chips), the yard, the path in front of it. */
-function drawVectorReplay(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  frame: ReplayFrame,
-  options: ReplayOptions,
-): void {
-  ctx.setTransform(options.pixelRatio, 0, 0, options.pixelRatio, 0, 0);
+/** A Closed sign on a post in the middle of the empty lawn. */
+function drawClosedSign(ctx: CanvasRenderingContext2D, s: Scene, tokens: Tokens): void {
+  const [lx, ly] = s.set.map.lawn;
+  const [x, y] = ground(s, lx * 0.45, ly * 0.45);
+  const post = 1.5 * s.hpm;
+  const px = Math.max(MIN_LABEL_PX, s.fs * 1.15);
+  ctx.font = uiFont(tokens, px, 800);
+  const w = ctx.measureText('Closed').width + px * 1.4;
+  const h = px * 1.9;
+  ctx.fillStyle = 'rgba(19, 33, 47, 0.18)';
+  ctx.beginPath();
+  ctx.ellipse(x, y, px * 0.6, px * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = PLAN.fence;
+  ctx.fillRect(x - 2, y - post, 4, post);
+  ctx.fillStyle = tokens.ink;
+  roundRectPath(ctx, x - w / 2, y - post - h, w, h, 6);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Closed', x, y - post - h / 2 + px * 0.04);
+}
+
+/** The schematic frame: the plan, the incident's ring, the GM, the tokens back to front, the sign, the label, the chips. */
+function drawVectorReplay(ctx: CanvasRenderingContext2D, width: number, height: number, frame: ReplayFrame, options: ReplayOptions): void {
+  lastIdle = null;
+  const R = options.pixelRatio;
+  ctx.setTransform(R, 0, 0, R, 0, 0);
   ctx.globalAlpha = 1;
   ctx.shadowColor = 'transparent';
   ctx.setLineDash([]);
   ctx.clearRect(0, 0, width, height);
   if (!(width > 0 && height > 0)) return;
+  const s = plainScene(width, height);
   const tokens = readTokens(options.fonts);
-  const L = vectorLayout(width, height);
-  drawVectorYard(ctx, frame, L, options, tokens);
-
-  // The GM at the head's left with its label; the block's events at its right (none once the week is over).
-  const r = L.fs * 0.95;
-  const ocx = L.head.x + r;
-  const ocy = L.head.y + r + 2;
-  drawVOrb(ctx, ocx, ocy, r, tokens);
-  const labelH = Math.round(L.fs * 1.85);
-  ctx.font = uiFont(tokens, L.fs, 800);
-  const labelW = ctx.measureText('The GM').width + L.fs * 1.9;
-  const lx = ocx + r + L.fs * 1.2;
-  drawGmLabel(ctx, tokens, L.fs, { x: lx, y: ocy - labelH / 2, w: labelW, h: labelH, lineFrom: ocx + r + 3, lineTo: lx });
-  if (options.gm !== 'done') {
-    const captions = frame.closed && !frame.captions.some((c) => /closed/i.test(c)) ? ['Closed', ...frame.captions] : frame.captions;
-    const left = lx + labelW + L.fs;
-    drawChips(ctx, tokens, L.fs, L.head.x + L.head.w, L.head.y, Math.max(L.fs * 8, L.head.x + L.head.w - left), captions);
-  }
+  const motion = !reducedMotion(options);
+  const progress = clamp(options.progress, 0, 1);
+  const figs = figuresOf(s, frame).sort((a, b) => a.y - b.y || a.x - b.x);
+  drawPlan(ctx, s, tokens);
+  if (frame.events.some((e) => e.type === 'incident')) drawPulse(ctx, s, R, tokens, figs, motion ? progress : null);
+  ctx.setTransform(R, 0, 0, R, 0, 0);
+  const state: GmState = options.gm ?? 'running';
+  drawSchematicGm(ctx, s, state, gmHover(s, frame, progress, motion, state), tokens);
+  const crated = frame.activity === 'clean';
+  for (const f of figs) drawToken(ctx, s, f, tokens, crated);
+  if (frame.closed) drawClosedSign(ctx, s, tokens);
+  drawGmLabel(ctx, tokens, s.fs, s.label);
+  drawBlockChips(ctx, s, tokens, frame, state);
 }
 
-/** The yard's cells: a grid sized for the most figures it ever holds, in a fixed scattered order. */
-interface Cells {
-  cols: number;
-  rows: number;
-  cw: number;
-  ch: number;
-  order: number[];
-}
-function cellsFor(inner: Box, capacity: number): Cells {
-  const cap = Math.max(1, capacity);
-  // Cells about 1.5 times as wide as tall: a dog in profile is long.
-  const cols = Math.max(1, Math.round(Math.sqrt((cap * inner.w) / (1.5 * Math.max(1, inner.h)))));
-  const rows = Math.max(1, Math.ceil(cap / cols));
-  const order = Array.from({ length: cols * rows }, (_, c) => c).sort((a, b) => hash01(a + 7919) - hash01(b + 7919));
-  return { cols, rows, cw: inner.w / cols, ch: inner.h / rows, order };
-}
-/** A dog's body length for these cells (its whole profile, head to tail, is about 1.9 of it), and a staffer's height:
- * an adult about 1.9 times a standing dog. */
-const vUnit = (cells: Cells): number => Math.max(4, Math.min(cells.cw / 2.25, cells.ch / 1.6));
-const vCrewH = (u: number, cells: Cells): number => Math.min(u * 2.4, cells.ch * 1.85);
+// --- Before the week: the GM waiting on the roof; drawn again once the art arrives. ------------------------------
 
-/** The feet of whoever stands in cell `slot`: the cell's lower middle, jittered a little inside it (by `n`). */
-function cellFeet(cells: Cells, inner: Box, slot: number, n: number): { x: number; y: number } {
-  const col = slot % cells.cols;
-  const row = Math.floor(slot / cells.cols);
-  return {
-    x: inner.x + (col + 0.5 + (hash01(n * 2 + 101) - 0.5) * 0.15) * cells.cw,
-    y: inner.y + (row + 0.95 - hash01(n * 2 + 202) * 0.05) * cells.ch,
-  };
-}
+/** The last placeholder drawn and not yet replaced by a frame: drawn again when the art finishes loading. */
+let lastIdle: { ctx: CanvasRenderingContext2D; width: number; height: number; options: ReplayOptions } | null = null;
 
-function drawVectorYard(ctx: CanvasRenderingContext2D, frame: ReplayFrame, L: Layout, options: ReplayOptions, tokens: Tokens): void {
-  const { colors } = options;
-  const { yard, path, fs } = L;
-  // The lawn, a rail fence on posts round it, and the path along its front.
-  ctx.fillStyle = colors.grass;
-  roundRectPath(ctx, yard.x, yard.y, yard.w, yard.h, fs * 0.3);
-  ctx.fill();
-  ctx.fillStyle = '#E3D5B8';
-  ctx.fillRect(path.x, path.y + path.h * 0.3, path.w, path.h * 0.7);
-  ctx.fillStyle = 'rgba(19, 33, 47, 0.12)';
-  ctx.fillRect(path.x, path.y + path.h * 0.3, path.w, Math.max(1, fs * 0.08));
-  for (let jx = path.x + fs * 2.6; jx < path.x + path.w; jx += fs * 2.6) ctx.fillRect(jx, path.y + path.h * 0.3, 1, path.h * 0.7);
-  const fw = Math.max(2, fs * 0.16);
-  ctx.strokeStyle = colors.fence;
-  ctx.lineWidth = fw;
-  roundRectPath(ctx, yard.x + fw / 2, yard.y + fw / 2, yard.w - fw, yard.h - fw, fs * 0.25);
-  ctx.stroke();
-  ctx.fillStyle = colors.fence;
-  const post = fw * 1.8;
-  const nx = Math.max(1, Math.round(yard.w / (fs * 2.6)));
-  for (let i = 0; i <= nx; i++) {
-    const px = yard.x + ((yard.w - post) * i) / nx;
-    ctx.fillRect(px, yard.y, post, post);
-    ctx.fillRect(px, yard.y + yard.h - post, post, post);
-  }
-
-  const inset = fw + fs * 0.4;
-  const inner: Box = { x: yard.x + inset, y: yard.y + inset, w: yard.w - 2 * inset, h: yard.h - 2 * inset };
-  if (inner.w > 4 && inner.h > 4) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(yard.x, yard.y, yard.w, yard.h);
-    ctx.clip();
-    if (frame.closed || frame.activity === null) drawClosedSign(ctx, inner, fs, colors, tokens);
-    else if (frame.activity === 'clean') drawVClean(ctx, frame, inner, tokens, options);
-    else drawVFloor(ctx, frame, inner, tokens, options);
-    ctx.restore();
-  }
-  // A walk's group on the path: the staffer leading, the dogs following in single file.
-  if (frame.walkingStaff > 0) {
-    const n = frame.walkingDogs;
-    // The staffer no taller than the path, so the group stays on it.
-    const u = Math.min((path.h * 0.9) / 2.4, (path.w - fs * 4) / Math.max(1, n * 2.2 + 1.6));
-    const feet = path.y + path.h * 0.92;
-    const step = u * 2.2;
-    const x0 = path.x + (path.w - (n * step + u * 1.2)) / 2;
-    drawVCrew(ctx, x0 + u * 0.4, feet, u * 2.4, -1, false);
-    for (let k = 0; k < n; k++) {
-      const look = dogLookOf(frame.floorDogs + k);
-      drawVDog(ctx, x0 + u * 1.9 + k * step, feet, u * Math.min(1, look.size), -1, look, tokens.ink, false);
-    }
-  }
-}
-
-/** Free play, a nap, structured play and the floor a walk leaves: every dog and staffer in a cell of its own. */
-function drawVFloor(ctx: CanvasRenderingContext2D, frame: ReplayFrame, inner: Box, tokens: Tokens, options: ReplayOptions): void {
-  const staff = frame.floorStaff;
-  const cells = cellsFor(inner, Math.max(options.gaugeMax, frame.dogs) + 2 * Math.max(3, frame.staff));
-  const u = vUnit(cells);
-  const lying = frame.activity === 'nap';
-  const structured = frame.activity === 'structuredPlay';
-  const figs: { x: number; y: number; draw: () => void }[] = [];
-  // The crew first: a staffer is taller than a cell, so each takes a cell below the top row and the one above it.
-  // The dogs take the free cells in the scattered order; in structured play every dog faces the nearest staffer.
-  const taken = new Set<number>();
-  const crewAt: { x: number; y: number }[] = [];
-  for (const slot of cells.order) {
-    if (crewAt.length >= staff) break;
-    if (slot < cells.cols || taken.has(slot) || taken.has(slot - cells.cols)) continue;
-    taken.add(slot);
-    taken.add(slot - cells.cols);
-    const k = crewAt.length;
-    const p = cellFeet(cells, inner, slot, k);
-    crewAt.push(p);
-    figs.push({ ...p, draw: () => drawVCrew(ctx, p.x, p.y, vCrewH(u, cells), k % 2 === 0 ? 1 : -1, false) });
-  }
-  const free = cells.order.filter((slot) => !taken.has(slot));
-  for (let i = 0; i < frame.floorDogs; i++) {
-    const p = cellFeet(cells, inner, free[i % Math.max(1, free.length)] ?? i, staff + i);
-    let dir = dirOf(i);
-    if (structured && crewAt.length > 0) {
-      const near = crewAt.reduce((a, c) => (Math.abs(c.x - p.x) + Math.abs(c.y - p.y) < Math.abs(a.x - p.x) + Math.abs(a.y - p.y) ? c : a));
-      dir = near.x >= p.x ? 1 : -1;
-    }
-    const look = dogLookOf(i);
-    // Centred on its cell: a dog in profile reaches further forward (the head) than back (the tail).
-    const du = u * look.size;
-    figs.push({ ...p, draw: () => drawVDog(ctx, p.x - dir * 0.15 * du, p.y, du, dir, look, tokens.ink, lying) });
-  }
-  figs.sort((a, b) => a.y - b.y);
-  for (const f of figs) f.draw();
-}
-
-/** A clean: the dogs settled in a row of crates along the left, the crew sweeping the open floor. */
-function drawVClean(ctx: CanvasRenderingContext2D, frame: ReplayFrame, inner: Box, tokens: Tokens, options: ReplayOptions): void {
-  const n = frame.floorDogs;
-  const cells = cellsFor(inner, Math.max(options.gaugeMax, frame.dogs) + 3);
-  let cs = Math.min(cells.cw, cells.ch) * 0.95;
-  let perCol = Math.max(1, Math.floor(inner.h / cs));
-  for (let i = 0; i < 40 && n > 0 && Math.ceil(n / perCol) * cs * 1.3 > inner.w * 0.62; i++) {
-    cs *= 0.95;
-    perCol = Math.max(1, Math.floor(inner.h / cs));
-  }
-  const cw = cs * 1.3;
-  const colsUsed = n > 0 ? Math.ceil(n / perCol) : 0;
-  for (let i = 0; i < n; i++) {
-    const x = inner.x + Math.floor(i / perCol) * cw;
-    const y = inner.y + (i % perCol) * cs;
-    const gap = cs * 0.08;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.fillRect(x + gap, y + gap, cw - 2 * gap, cs - 2 * gap);
-    const look = dogLookOf(i);
-    drawVDog(ctx, x + cw / 2, y + cs - gap * 1.5, cs * 0.62 * look.size, dirOf(i), look, tokens.ink, true);
-    ctx.strokeStyle = tokens.ink;
-    ctx.globalAlpha = 0.55;
-    ctx.lineWidth = Math.max(1, cs * 0.03);
-    ctx.strokeRect(x + gap, y + gap, cw - 2 * gap, cs - 2 * gap);
-    ctx.beginPath();
-    for (let b = 1; b <= 4; b++) {
-      const bx = x + gap + ((cw - 2 * gap) * b) / 5;
-      ctx.moveTo(bx, y + gap);
-      ctx.lineTo(bx, y + cs - gap);
-    }
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-  }
-  const openX = inner.x + colsUsed * cw + cs * 0.3;
-  const openW = Math.max(1, inner.x + inner.w - openX);
-  const staff = frame.floorStaff;
-  const h = Math.min(vCrewH(vUnit(cells), cells), (openW / Math.max(1, staff)) * 1.6);
-  for (let k = 0; k < staff; k++) drawVCrew(ctx, openX + (openW * (k + 0.5)) / Math.max(1, staff), inner.y + inner.h * 0.72, h, k % 2 === 0 ? 1 : -1, true);
-}
-
-/** A closed day: the lawn empty and a "Closed" sign on a post. */
-function drawClosedSign(ctx: CanvasRenderingContext2D, inner: Box, fs: number, colors: ReplayColors, tokens: Tokens): void {
-  const px = clamp(Math.min(inner.w / 6, inner.h / 4), fs, fs * 2.4);
-  ctx.font = uiFont(tokens, px, 800);
-  const textW = ctx.measureText('Closed').width;
-  const boardW = Math.min(inner.w * 0.9, textW + px * 1.2);
-  const boardH = px * 1.7;
-  const cx = inner.x + inner.w / 2;
-  const boardY = inner.y + inner.h / 2 - boardH * 0.8;
-  ctx.fillStyle = colors.fence;
-  ctx.fillRect(cx - px * 0.15, boardY + boardH * 0.5, px * 0.3, Math.min(inner.y + inner.h - boardY - boardH * 0.5, boardH * 1.4));
-  ctx.fillStyle = tokens.ink;
-  roundRectPath(ctx, cx - boardW / 2, boardY, boardW, boardH, px * 0.2);
-  ctx.fill();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Closed', cx, boardY + boardH / 2);
+function redrawIdle(): void {
+  const l = lastIdle;
+  if (l !== null) drawPlaceholder(l.ctx, l.width, l.height, l.options, artSet);
 }
 
 // ===============================================================================================================
-// G5d: the yard on the set. The art is two JSON files in manifest.ts's shapes and the images they name, found by
-// Vite at build time (every WebP or PNG under src/assets/art/cast/ and set/); a file the JSON names and the build does
-// not have is a failed load, and the vector yard stands in.
+// The yard's data: the set and the cast as their two JSON files give them (src/assets/art/set.json, cast.json, in
+// manifest.ts's shapes), usable with or without their images. With the images, each sprite's silhouette is measured
+// on its pixels; without them (the schematic yard, and the tests), it is the ellipse inside the sprite's box. The
+// images are found by Vite at build time (every WebP or PNG under src/assets/art/cast/ and set/); a file the JSON
+// names and the build does not have is a failed load, and the schematic yard stands in.
 
 const ART_URLS: Record<string, string> = import.meta.glob<string>('../assets/art/{cast,set}/*.{webp,png}', {
   eager: true,
   query: '?url',
   import: 'default',
 });
+const CAST = castJson as unknown as CastManifest;
+const SET = setJson as unknown as SetManifest;
+
+/** The board's width over its height: a yard box of this shape shows the board with no surround (for the page). */
+export const YARD_ASPECT = SET.board.size[0] / SET.board.size[1];
+
+/** The yard's size at 1366 × 768 while the week plays (WP2's column, measured Oct 29): the scale the rules are set at. */
+export const REFERENCE_YARD: readonly [number, number] = [784, 690];
+/**
+ * The spacing rules (round 2, finding 9), in CSS px of REFERENCE_YARD, scaled with the board's drawn size: the same
+ * sprite (breed, coat and pose, either facing) never within SAME_SPRITE_PX of itself, the same breed in the same pose
+ * (any coat) never within SAME_BREED_POSE_PX, measured between their feet after the camera's projection.
+ */
+const SAME_SPRITE_PX = 160;
+const SAME_BREED_POSE_PX = 110;
 
 /** Gate 5: the cast is mirrored at run time for the other facing (manifest.ts); false draws every sprite as drawn. */
 const MIRROR_CAST = true;
@@ -1047,16 +1033,10 @@ const ALPHA_SOLID = 96;
 /** Where a figure's anchor keeps away from a blocked footprint, and how tall a prop is taken to be for hiding. */
 const BLOCK_PAD = 0.12;
 const PROP_H = 2.0;
-/**
- * The clone rule (round 1, finding 7): the same sprite in the same pose (mirrored or not) never stands within about
- * 150 CSS px of another at the 1366 × 768 yard, where the board is drawn at about 0.33 CSS px per image px; so the
- * distance is kept in image px and scales with the board.
- */
-const CLONE_IMAGE_PX = 450;
 /** The GM's hover over the roof, in metres between the orb's lowest point and its shadow (round 1, finding 27). */
 const GM_HOVER_M = 0.32;
 /** The shadow spec (gate 3) when set.json gives none, in the board image's pixels (2× the set's 1× numbers). */
-const SHADOW_DEFAULT = { throw: [0.72, -0.184], blur: 3.2, alpha: 0.3, contactBlur: 5.2, contactAlpha: 0.42, tint: '12, 30, 18' } as const;
+const SHADOW_DEFAULT: ShadowSpec = { throw: [0.72, -0.184], blur: 3.2, alpha: 0.3, contactBlur: 5.2, contactAlpha: 0.42, tint: '12, 30, 18' };
 
 interface Shape {
   /** The first band's index: band j covers [j × BAND, (j + 1) × BAND) image px from the anchor, downward. */
@@ -1066,21 +1046,6 @@ interface Shape {
   r: Float64Array;
   /** The bounds in image px from the anchor: left, top, right, bottom. */
   box: [number, number, number, number];
-}
-
-interface SpriteArt {
-  src: CastSprite;
-  img: HTMLImageElement;
-  shape: Shape;
-  mirrored: Shape;
-}
-
-interface GmArt {
-  img: HTMLImageElement;
-  size: [number, number];
-  anchor: [number, number];
-  /** The orb's opaque box in the image's pixels: left, top, right, bottom (the image also holds its hover gap). */
-  orb: [number, number, number, number];
 }
 
 /** The shadow spec in the board image's pixels: the throw per px of height, blurs, alphas and the tint. */
@@ -1093,25 +1058,127 @@ interface ShadowSpec {
   tint: string;
 }
 
-interface ArtSet {
-  board: HTMLImageElement;
+/** One cast sprite: its manifest entry, its silhouette as drawn and mirrored, and its image when there is one. */
+interface CastEntry {
+  src: CastSprite;
+  shape: Shape;
+  mirrored: Shape;
+  img: HTMLImageElement | null;
+}
+
+/** The cast by who and what: the dogs by identity (breed and coat) and pose, the crew by person and pose. */
+interface CastIndex {
+  dogs: Map<string, Partial<Record<DogPose, CastEntry[]>>>;
+  /** Each breed's identities ('golden|gold', 'golden|red'), sorted. */
+  breeds: Map<string, string[]>;
+  /** The crew by person ('crew', 'crew2': different staff), then by pose. */
+  crew: Map<string, Partial<Record<CrewPose, CastEntry[]>>>;
+  people: string[];
+  /** The days' arrangements, by day, dogs and staff, in world metres (the same at every size of the yard), and those
+   * begun in idle time and not finished yet. */
+  plans: Map<string, DayPlan>;
+  pendingPlans: Map<string, Generator<void, DayPlan, void>>;
+}
+
+/** The set as data: the board's size and map, the walk strip, the GM's spot, states and orb boxes, the shadow spec. */
+interface SetData {
   boardSize: [number, number];
   map: BoardMap;
-  gm: Record<GmState, GmArt>;
-  gmSpot: [number, number];
-  /** The dogs by identity (breed and coat), then by pose: every facing drawn. */
-  dogs: Map<string, Partial<Record<DogPose, SpriteArt[]>>>;
-  identities: string[];
-  /** The crew by person ('crew', 'crew2': different staff), then by pose. */
-  crew: Map<string, Partial<Record<CrewPose, SpriteArt[]>>>;
-  people: string[];
   /** Where the walking group stands: a strip on the set's own path, in world metres [x, y, w, h]. */
   walk: [number, number, number, number];
+  gmSpot: [number, number];
+  /** Each state's image size and anchor, and its orb's opaque box (left, top, right, bottom) in the image's pixels. */
+  gm: Record<GmState, { size: [number, number]; anchor: [number, number]; orb: [number, number, number, number] }>;
   shadow: ShadowSpec;
+}
+
+interface ArtSet {
+  board: HTMLImageElement;
+  set: SetData;
+  cast: CastIndex;
+  gm: Record<GmState, HTMLImageElement>;
+}
+
+const GM_STATES: readonly GmState[] = ['ready', 'running', 'done'];
+
+/** The set's data; the orbs' boxes measured on their images when given, otherwise the orb taken as the image's top square. */
+function setData(orbs?: Record<GmState, [number, number, number, number]>): SetData {
+  const lx = SET.board.map.lawn[0];
+  const s = SET.shadow;
+  const gm = {} as SetData['gm'];
+  for (const state of GM_STATES) {
+    const g = SET.gm[state];
+    gm[state] = { size: g.size, anchor: g.anchor, orb: orbs?.[state] ?? [0, 0, g.size[0], g.size[0]] };
+  }
+  return {
+    boardSize: SET.board.size,
+    map: SET.board.map,
+    // Without a strip in set.json, a band just outside the lawn's front-right edge.
+    walk: Array.isArray(SET.walk) && SET.walk.length === 4 ? SET.walk : [0.4, -0.65, lx - 0.4, 0.3],
+    gmSpot: SET.gmSpot,
+    gm,
+    shadow:
+      s === undefined
+        ? SHADOW_DEFAULT
+        : { throw: s.throw, blur: s.blur * 2, alpha: s.alpha, contactBlur: s.contactBlur * 2, contactAlpha: s.contactAlpha, tint: s.tint.join(', ') },
+  };
+}
+
+function indexCast(entries: readonly CastEntry[]): CastIndex {
+  const dogs = new Map<string, Partial<Record<DogPose, CastEntry[]>>>();
+  const crew = new Map<string, Partial<Record<CrewPose, CastEntry[]>>>();
+  const breeds = new Map<string, string[]>();
+  for (const e of entries) {
+    const { src } = e;
+    const [map, key] = src.kind === 'dog' ? [dogs, `${src.breed ?? 'dog'}|${src.coat ?? ''}`] : [crew, src.id.split('-')[0] ?? 'crew'];
+    const poses = (map.get(key) ?? {}) as Record<string, CastEntry[] | undefined>;
+    (poses[src.pose] ??= []).push(e);
+    map.set(key, poses);
+    if (src.kind === 'dog') {
+      const breed = src.breed ?? 'dog';
+      const ids = breeds.get(breed) ?? [];
+      if (!ids.includes(key)) ids.push(key);
+      breeds.set(breed, ids);
+    }
+  }
+  if (dogs.size === 0 || crew.size === 0) throw new Error('replay: the cast needs a dog and the crew');
+  for (const ids of breeds.values()) ids.sort();
+  return { dogs, breeds, crew, people: [...crew.keys()].sort(), plans: new Map(), pendingPlans: new Map() };
+}
+
+/** A sprite's silhouette without its pixels: the ellipse inside its box (the schematic yard and the tests). */
+function ellipseShape(src: CastSprite): Shape {
+  const [w, h] = src.size;
+  const [ax, ay] = src.anchor;
+  const j0 = Math.floor(-ay / BAND);
+  const n = Math.floor((h - 1 - ay) / BAND) - j0 + 1;
+  const l = new Float64Array(n).fill(Number.NaN);
+  const r = new Float64Array(n).fill(Number.NaN);
+  for (let j = 0; j < n; j++) {
+    const t = ((j0 + j + 0.5) * BAND + ay - h / 2) / (h / 2);
+    if (Math.abs(t) >= 1) continue;
+    const half = (w / 2) * Math.sqrt(1 - t * t) * 0.92;
+    l[j] = w / 2 - half - ax;
+    r[j] = w / 2 + half - ax;
+  }
+  return withBox({ j0, l, r, box: [0, 0, 0, 0] });
+}
+
+let plainCast: CastIndex | null = null;
+/** The cast without images: each sprite's ellipse (memoised). */
+function castWithoutImages(): CastIndex {
+  plainCast ??= indexCast(
+    CAST.sprites.map((src) => {
+      const shape = ellipseShape(src);
+      return { src, shape, mirrored: mirrorShape(shape), img: null };
+    }),
+  );
+  return plainCast;
 }
 
 let artLoad: Promise<void> | null = null;
 let artSet: ArtSet | null = null;
+let artFailed = false;
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   const img = new Image();
@@ -1128,7 +1195,7 @@ function artUrl(file: string): string {
 
 /**
  * Loads and decodes the set and the cast once (memoised): the page awaits it before the first week plays. It never
- * rejects: if a file is missing or an image fails, the yard stays the G4 vector drawing.
+ * rejects: if a file is missing or an image fails, the yard is the schematic one.
  */
 export function replayArtReady(): Promise<void> {
   if (artLoad !== null) return artLoad;
@@ -1139,10 +1206,16 @@ export function replayArtReady(): Promise<void> {
   artLoad = loadArt().then(
     (art) => {
       artSet = art;
+      // The schematic's scenes and cast are not needed again (until a test asks): let them go.
+      plainCast = null;
+      schematicScenes.clear();
       warmUp(art);
+      redrawIdle();
     },
     () => {
-      artSet = null; // the vector yard is the fallback
+      artSet = null; // the schematic yard is the fallback
+      artFailed = true;
+      redrawIdle();
     },
   );
   return artLoad;
@@ -1155,59 +1228,32 @@ function artOrStartLoading(): ArtSet | null {
 }
 
 async function loadArt(): Promise<ArtSet> {
-  const cast = castJson as unknown as CastManifest;
-  const set = setJson as unknown as SetManifest;
-  if (!Array.isArray(cast.sprites) || set.board === undefined || set.gm === undefined) throw new Error('replay: the art manifests are malformed');
+  if (!Array.isArray(CAST.sprites) || SET.board === undefined || SET.gm === undefined) throw new Error('replay: the art manifests are malformed');
   const [board, ready, running, done, images] = await Promise.all([
-    loadImage(artUrl(set.board.file)),
-    loadImage(artUrl(set.gm.ready.file)),
-    loadImage(artUrl(set.gm.running.file)),
-    loadImage(artUrl(set.gm.done.file)),
-    Promise.all(cast.sprites.map((s) => loadImage(artUrl(s.file)))),
+    loadImage(artUrl(SET.board.file)),
+    loadImage(artUrl(SET.gm.ready.file)),
+    loadImage(artUrl(SET.gm.running.file)),
+    loadImage(artUrl(SET.gm.done.file)),
+    Promise.all(CAST.sprites.map((s) => loadImage(artUrl(s.file)))),
   ]);
   const probe = newCanvas(1, 1, true);
-  const dogs = new Map<string, Partial<Record<DogPose, SpriteArt[]>>>();
-  const crew = new Map<string, Partial<Record<CrewPose, SpriteArt[]>>>();
-  cast.sprites.forEach((src, i) => {
-    const img = images[i] as HTMLImageElement;
-    const shape = shapeOf(img, src, probe);
-    const art: SpriteArt = { src, img, shape, mirrored: mirrorShape(shape) };
-    const [map, key] = src.kind === 'dog' ? [dogs, `${src.breed ?? 'dog'}|${src.coat ?? ''}`] : [crew, src.id.split('-')[0] ?? 'crew'];
-    const poses = (map.get(key) ?? {}) as Record<string, SpriteArt[] | undefined>;
-    (poses[src.pose] ??= []).push(art);
-    map.set(key, poses);
-  });
-  if (dogs.size === 0 || crew.size === 0) throw new Error('replay: the cast needs a dog and the crew');
-  const gm = {
-    ready: gmArt(ready, set.gm.ready, probe),
-    running: gmArt(running, set.gm.running, probe),
-    done: gmArt(done, set.gm.done, probe),
-  };
-  const lx = set.board.map.lawn[0];
-  const s = set.shadow;
-  return {
-    board,
-    boardSize: set.board.size,
-    map: set.board.map,
-    gm,
-    gmSpot: set.gmSpot,
-    dogs,
-    identities: [...dogs.keys()].sort(),
-    crew,
-    people: [...crew.keys()].sort(),
-    // Without a strip in set.json, a band just outside the lawn's front-right edge.
-    walk: Array.isArray(set.walk) && set.walk.length === 4 ? set.walk : [0.4, -0.65, lx - 0.4, 0.3],
-    shadow:
-      s === undefined
-        ? SHADOW_DEFAULT
-        : { throw: s.throw, blur: s.blur * 2, alpha: s.alpha, contactBlur: s.contactBlur * 2, contactAlpha: s.contactAlpha, tint: s.tint.join(', ') },
-  };
+  const cast = indexCast(
+    CAST.sprites.map((src, i) => {
+      const img = images[i] as HTMLImageElement;
+      const shape = shapeOf(img, src, probe);
+      return { src, img, shape, mirrored: mirrorShape(shape) };
+    }),
+  );
+  const gm = { ready, running, done };
+  const orbs = {} as Record<GmState, [number, number, number, number]>;
+  for (const state of GM_STATES) orbs[state] = orbBox(gm[state], SET.gm[state].size, probe);
+  return { board, set: setData(orbs), cast, gm };
 }
 
-/** The GM in a state, and its orb's opaque box measured on its pixels. */
-function gmArt(img: HTMLImageElement, spec: { size: [number, number]; anchor: [number, number] }, probe: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }): GmArt {
-  const w = img.naturalWidth || spec.size[0];
-  const h = img.naturalHeight || spec.size[1];
+/** The GM's orb: its opaque box in a state's image, in the manifest's pixels (the image also holds its hover gap). */
+function orbBox(img: HTMLImageElement, size: [number, number], probe: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }): [number, number, number, number] {
+  const w = img.naturalWidth || size[0];
+  const h = img.naturalHeight || size[1];
   probe.canvas.width = w;
   probe.canvas.height = h;
   probe.ctx.clearRect(0, 0, w, h);
@@ -1223,9 +1269,8 @@ function gmArt(img: HTMLImageElement, spec: { size: [number, number]; anchor: [n
       y1 = Math.max(y1, y + 1);
     }
   }
-  const k = spec.size[0] / w;
-  const orb: [number, number, number, number] = x1 > x0 ? [x0 * k, y0 * k, x1 * k, y1 * k] : [0, 0, spec.size[0], spec.size[1]];
-  return { img, size: spec.size, anchor: spec.anchor, orb };
+  const k = size[0] / w;
+  return x1 > x0 ? [x0 * k, y0 * k, x1 * k, y1 * k] : [0, 0, size[0], size[0]];
 }
 
 /** A sprite's silhouette in bands of BAND image px, measured on its own pixels. */
@@ -1295,30 +1340,23 @@ function mirrorShape(s: Shape): Shape {
   return { j0: s.j0, l, r, box: [-s.box[2], s.box[1], -s.box[0], s.box[3]] };
 }
 
-// --- The stage: the set fitted to the canvas, and everything drawn at that size. ------------------------------------
+// ===============================================================================================================
+// The scene: the set fitted to the canvas (one camera in every state, round 2, finding 30), as plain geometry. No DOM.
 
-/** One look of a figure: a sprite and whether it is drawn mirrored. */
-interface Look {
-  art: SpriteArt;
-  mirror: boolean;
+interface Label {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  lineFrom: number;
+  lineTo: number;
 }
 
-/** A sprite (or the GM) scaled for the stage, in device pixels, with its anchor and its shadow. */
-interface Drawn {
-  img: HTMLCanvasElement;
-  ax: number;
-  ay: number;
-  shadow: HTMLCanvasElement | null;
-  sx: number;
-  sy: number;
-}
-
-interface Stage {
-  key: string;
-  art: ArtSet;
+interface Scene {
+  set: SetData;
+  cast: CastIndex;
   width: number;
   height: number;
-  ratio: number;
   /** CSS px per board-image px, and the CSS position of the board image's top left. */
   k: number;
   bx: number;
@@ -1332,36 +1370,957 @@ interface Stage {
   hoverImg: number;
   fs: number;
   pad: number;
-  tokens: Tokens;
-  /** The board, at this size. */
-  layer: HTMLCanvasElement;
   /** The GM orb's box (any state, as it hovers) and its label's, in CSS px; figures keep clear of both. */
   orb: Box;
-  label: { x: number; y: number; w: number; h: number; lineFrom: number; lineTo: number };
+  label: Label;
   /** The corner the event chips use, kept clear of figures. */
   chips: Box;
   /** The blocked footprints on screen: each one's four ground corners (CSS px) and its horizontal extent. */
   props: { corners: [number, number][]; x0: number; x1: number }[];
   /** Each blocked footprint raised PROP_H, as its screen outline (cut out of the shadows' clip). */
   propHulls: [number, number][][];
+  /** The spacing rules at this size, in CSS px (round 2, finding 9). */
+  sameSprite: number;
+  sameBreedPose: number;
+}
+
+/**
+ * The set fitted to a canvas of `width` × `height` CSS px: the board image fitted whole and centred (`center /
+ * contain`), exactly as the page fits it behind the canvas before the week, so the yard has one camera in every state
+ * and only its size changes with its column; the GM's orb GM_HOVER_M over the roof; its label beside it; the chips'
+ * corner.
+ */
+function sceneFor(width: number, height: number, set: SetData, cast: CastIndex): Scene {
+  const map = set.map;
+  const [bw, bh] = set.boardSize;
+  const P = map.ppm;
+  const exImg: [number, number] = [(2 / Math.sqrt(5)) * P, (-1 / Math.sqrt(5)) * P];
+  const eyImg: [number, number] = [(-2 / Math.sqrt(5)) * P, (-1 / Math.sqrt(5)) * P];
+  const k = Math.max(0.01, Math.min(width / bw, height / bh));
+  const bx = (width - bw * k) / 2;
+  const by = (height - bh * k) / 2;
+  const pad = Math.max(10, Math.min(width, height) * 0.02);
+  const fs = clamp(Math.round(width / 52), MIN_LABEL_PX, 22);
+  const origin: [number, number] = [bx + map.origin[0] * k, by + map.origin[1] * k];
+  const el = (CAMERA.elevationDeg * Math.PI) / 180;
+  const groundLen = Math.hypot(Math.SQRT1_2, Math.SQRT1_2 * Math.sin(el));
+  const hpmImg = (P * Math.cos(el)) / groundLen; // image px per metre of height
+  const refK = Math.min(REFERENCE_YARD[0] / bw, REFERENCE_YARD[1] / bh);
+
+  // The GM (round 1, finding 27): its orb's lowest point GM_HOVER_M over the roof at gmSpot, its shadow under its
+  // centre; the box it may take in any state, with room for its hover.
+  const hoverImg = GM_HOVER_M * hpmImg;
+  const [gx, gy] = [bx + set.gmSpot[0] * k, by + set.gmSpot[1] * k];
+  let ox0 = Infinity;
+  let oy0 = Infinity;
+  let ox1 = -Infinity;
+  for (const g of Object.values(set.gm)) {
+    const half = ((g.orb[2] - g.orb[0]) / 2) * k;
+    ox0 = Math.min(ox0, gx - half);
+    ox1 = Math.max(ox1, gx + half);
+    oy0 = Math.min(oy0, gy - (hoverImg + g.orb[3] - g.orb[1]) * k);
+  }
+  const orb: Box = { x: ox0, y: oy0 - 4, w: ox1 - ox0, h: gy - oy0 + 4 };
+  const run = set.gm.running;
+  const orbMidY = gy - (hoverImg + (run.orb[3] - run.orb[1]) / 2) * k;
+
+  // "The GM" on a pill beside the orb, on the side with room; its width from the label's words at this size.
+  const labelW = fs * LABEL_EM;
+  const labelH = Math.round(fs * 1.85);
+  const lead = fs * 1.6;
+  const onRight = ox1 + lead + labelW <= width - pad;
+  const lx = onRight ? ox1 + lead : Math.max(pad, ox0 - lead - labelW);
+  const label: Label = {
+    x: lx,
+    y: clamp(orbMidY - labelH / 2, pad, height - pad - labelH),
+    w: labelW,
+    h: labelH,
+    lineFrom: onRight ? ox1 + 3 : ox0 - 3,
+    lineTo: onRight ? lx : lx + labelW,
+  };
+
+  const s: Scene = {
+    set,
+    cast,
+    width,
+    height,
+    k,
+    bx,
+    by,
+    origin,
+    ex: [exImg[0] * k, exImg[1] * k],
+    ey: [eyImg[0] * k, eyImg[1] * k],
+    hpm: hpmImg * k,
+    hoverImg,
+    fs,
+    pad,
+    orb,
+    label,
+    // The block's events go in the top right corner, the empty sky above the far fence (the clubhouse is top left).
+    chips: { x: width * 0.42, y: 0, w: width * 0.58, h: pad + 2 * Math.round(fs * 1.95) + fs * 0.4 },
+    props: [],
+    propHulls: [],
+    sameSprite: (SAME_SPRITE_PX * k) / refK,
+    sameBreedPose: (SAME_BREED_POSE_PX * k) / refK,
+  };
+  s.props = map.blocked.map(([rx, ry, rw, rh]) => {
+    const corners = [ground(s, rx, ry), ground(s, rx + rw, ry), ground(s, rx + rw, ry + rh), ground(s, rx, ry + rh)];
+    return { corners, x0: Math.min(...corners.map((c) => c[0])), x1: Math.max(...corners.map((c) => c[0])) };
+  });
+  const lift = PROP_H * s.hpm;
+  s.propHulls = s.props.map(({ corners }) => hull([...corners, ...corners.map(([x, y]): [number, number] => [x, y - lift])]));
+  return s;
+}
+
+/** "The GM" in the page's bold face, as em: its words (about 3.4 em) and the pill's padding and light (1.9 em). */
+const LABEL_EM = 5.4;
+
+/** The convex hull of a few points, counter-clockwise on screen (Andrew's monotone chain). */
+function hull(points: [number, number][]): [number, number][] {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: [number, number], a: [number, number], b: [number, number]): number =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list: [number, number][]): [number, number][] => {
+    const h: [number, number][] = [];
+    for (const p of list) {
+      while (h.length >= 2 && cross(h[h.length - 2] as [number, number], h[h.length - 1] as [number, number], p) <= 0) h.pop();
+      h.push(p);
+    }
+    h.pop();
+    return h;
+  };
+  return [...half(pts), ...half([...pts].reverse())];
+}
+
+/** A world point on the ground (metres) to CSS px. */
+function ground(s: Scene, mx: number, my: number): [number, number] {
+  return [s.origin[0] + mx * s.ex[0] + my * s.ey[0], s.origin[1] + mx * s.ex[1] + my * s.ey[1]];
+}
+
+/** A CSS point back to the ground (metres). */
+function world(s: Scene, x: number, y: number): [number, number] {
+  const dx = x - s.origin[0];
+  const dy = y - s.origin[1];
+  const det = s.ex[0] * s.ey[1] - s.ey[0] * s.ex[1];
+  return [(dx * s.ey[1] - dy * s.ey[0]) / det, (s.ex[0] * dy - s.ex[1] * dx) / det];
+}
+
+const schematicScenes = new Map<string, Scene>();
+/** The scene without images, for the schematic yard and the tests (a few sizes kept). */
+function plainScene(width: number, height: number): Scene {
+  const key = `${Math.round(width)}|${Math.round(height)}`;
+  let s = schematicScenes.get(key);
+  if (s === undefined) {
+    s = sceneFor(width, height, setData(), castWithoutImages());
+    schematicScenes.set(key, s);
+    while (schematicScenes.size > 4) schematicScenes.delete(schematicScenes.keys().next().value as string);
+  }
+  return s;
+}
+
+/** One figure of the yard as arrangeYard returns it: the sprite (its id names breed, coat and pose) and its feet. */
+export interface YardFigure {
+  id: string;
+  kind: 'dog' | 'crew';
+  breed: string | null;
+  coat: string | null;
+  pose: string;
+  /** The foot anchor in CSS px of a yard `width` × `height`. */
+  x: number;
+  y: number;
+}
+
+/**
+ * Where everyone stands in a frame on a yard of `width` × `height` CSS px, and `scale`, the board's drawn size against
+ * its size in REFERENCE_YARD: the yard's own placement, from the set's map and the cast's sizes alone (each sprite's
+ * silhouette taken as the ellipse in its box, as the schematic yard takes it). For the tests (round 2, finding 9).
+ */
+export function arrangeYard(frame: ReplayFrame, width: number, height: number): { figures: YardFigure[]; scale: number } {
+  const s = plainScene(width, height);
+  const [bw, bh] = s.set.boardSize;
+  const refK = Math.min(REFERENCE_YARD[0] / bw, REFERENCE_YARD[1] / bh);
+  const figures = figuresOf(s, frame).map((f): YardFigure => {
+    const src = f.look.art.src;
+    return { id: src.id, kind: src.kind, breed: src.breed ?? null, coat: src.coat ?? null, pose: src.pose, x: f.x, y: f.y };
+  });
+  return { figures, scale: s.k / refK };
+}
+
+// ===============================================================================================================
+// Where everyone stands: a day's arrangement, from the yard's own seeded generator (D60), in world metres. Pure: a
+// Scene and a frame in, figures out. Two rules hold in screen space (round 2, finding 9), before any overlap: the same
+// sprite never within scene.sameSprite of itself, the same breed in the same pose never within scene.sameBreedPose.
+
+/** One look of a figure: a sprite and whether it is drawn mirrored. */
+interface Look {
+  art: CastEntry;
+  mirror: boolean;
+}
+
+/** A figure standing somewhere: its look, its ground point in metres and its anchor in CSS px. */
+interface Fig {
+  look: Look;
+  mx: number;
+  my: number;
+  x: number;
+  y: number;
+}
+
+/** One dog of the day: who it is (breed and coat), the way it faces, its pose in free play, and where it stands. */
+interface DogCard {
+  id: string;
+  breed: string;
+  facing: Facing;
+  play: DogPose;
+  mx: number;
+  my: number;
+}
+
+interface CrewCard {
+  facing: Facing;
+  mx: number;
+  my: number;
+}
+
+interface DayPlan {
+  dogs: DogCard[];
+  crew: CrewCard[];
+  /** The organised arrangements, made the first time the day needs one: structured play, a clean, a walk, a nap. */
+  more: Map<string, { look: Look; mx: number; my: number }[]>;
+}
+
+/** A placed figure for the spacing tests: its silhouette at its anchor (CSS px), bounds, sprite and breed-in-pose. */
+interface Placed {
+  shape: Shape;
+  alt: number;
+  x: number;
+  y: number;
+  box: [number, number, number, number];
+  /** The sprite (breed, coat, pose; or the staffer in a pose), and the dog's breed in its pose ('' for the crew). */
+  sprite: string;
+  breedPose: string;
+  mx: number;
+  my: number;
+}
+
+/** Where a figure may stand: a world rectangle on the lawn or on the walk path, and an optional preference. */
+interface Region {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+  path: boolean;
+  prefer?: (mx: number, my: number) => boolean;
+}
+
+interface Item {
+  /** The looks the figure may take here (a pose and a facing each); the placer takes the first that fits best. */
+  looks: Look[];
+  region: Region;
+  /** A spot to stand as near as the room allows (an organised activity); null to spread out (free play). */
+  target: [number, number] | null;
+}
+
+const lawnRegion = (s: Scene): Region => {
+  const [lx, ly] = s.set.map.lawn;
+  const m = s.set.map.margin;
+  return { x0: m, x1: lx - m, y0: m, y1: ly - m, path: false };
+};
+/** The walking group's strip on the set's own path (set.json's walk), where their anchors stand. */
+const pathRegion = (s: Scene): Region => {
+  const [x, y, w, h] = s.set.walk;
+  return { x0: x, x1: x + w, y0: y, y1: y + h, path: true };
+};
+/** The path's whole width around the strip (where feet and shadows may fall): set.json's path runs y from -1 to 0. */
+const pathGround = (s: Scene): Region => {
+  const [x, y, w, h] = s.set.walk;
+  return { x0: x - 0.4, x1: x + w + 0.3, y0: y - 0.35, y1: Math.min(0, y + h + 0.35), path: true };
+};
+
+function lookShape(look: Look): Shape {
+  return look.mirror ? look.art.mirrored : look.art.shape;
+}
+
+/** The sprite list's look for a facing: the one drawn that way, or another mirrored (gate 5). */
+function faceLook(list: CastEntry[], facing: Facing): Look {
+  const exact = list.find((a) => a.src.facing === facing);
+  if (exact !== undefined) return { art: exact, mirror: false };
+  const other = list[0] as CastEntry;
+  return { art: other, mirror: MIRROR_CAST && other.src.facing !== facing };
+}
+
+const DOG_FALLBACK: Readonly<Record<DogPose, DogPose[]>> = {
+  moving: ['moving', 'sitting', 'asleep'],
+  sitting: ['sitting', 'moving', 'asleep'],
+  asleep: ['asleep', 'sitting', 'moving'],
+};
+const CREW_FALLBACK: Readonly<Record<CrewPose, CrewPose[]>> = {
+  ball: ['ball', 'leash', 'mop'],
+  leash: ['leash', 'ball', 'mop'],
+  mop: ['mop', 'ball', 'leash'],
+};
+const other = (f: Facing): Facing => (f === 'right' ? 'left' : 'right');
+
+function dogLook(cast: CastIndex, id: string, pose: DogPose, facing: Facing): Look {
+  const poses = cast.dogs.get(id) ?? (cast.dogs.values().next().value as Partial<Record<DogPose, CastEntry[]>>);
+  for (const p of DOG_FALLBACK[pose]) {
+    const list = poses[p];
+    if (list !== undefined && list.length > 0) return faceLook(list, facing);
+  }
+  throw new Error(`replay: no sprite for ${id}`);
+}
+
+/** A dog's looks in the given poses, each facing its own way first and then the other: the placer's choices. */
+const dogLooks = (cast: CastIndex, d: DogCard, poses: readonly DogPose[], facing: Facing = d.facing): Look[] =>
+  poses.flatMap((p) => [dogLook(cast, d.id, p, facing), dogLook(cast, d.id, p, other(facing))]);
+
+/** Staffer k's person: the cast's staff in turn ('crew', 'crew2'), so two staffers on the floor are two people. */
+const personOf = (cast: CastIndex, k: number): string => cast.people[k % cast.people.length] ?? 'crew';
+
+/**
+ * Staffer k's pose in an activity (round 1, finding 7): chosen so no two staffers are the same sprite in the same pose
+ * (the third staffer is the first person again, in another pose).
+ */
+const CREW_POSES: Readonly<Record<'free' | 'nap' | 'structured' | 'clean', readonly CrewPose[]>> = {
+  free: ['ball', 'leash', 'leash'],
+  nap: ['leash', 'leash', 'ball'],
+  structured: ['ball', 'ball', 'leash'],
+  clean: ['mop', 'mop', 'leash'],
+};
+const crewPose = (activity: keyof typeof CREW_POSES, k: number): CrewPose => CREW_POSES[activity][k % 3] ?? 'leash';
+
+function crewLook(cast: CastIndex, person: string, pose: CrewPose, facing: Facing): Look {
+  const poses = cast.crew.get(person) ?? (cast.crew.values().next().value as Partial<Record<CrewPose, CastEntry[]>>);
+  for (const p of CREW_FALLBACK[pose]) {
+    const list = poses[p];
+    if (list !== undefined && list.length > 0) return faceLook(list, facing);
+  }
+  const any = Object.values(poses).find((l) => l !== undefined && l.length > 0) as CastEntry[];
+  return faceLook(any, facing);
+}
+
+/** The rules' keys for a look: its sprite, and a dog's breed in its pose. */
+const spriteKey = (look: Look): string => look.art.src.id;
+const breedPoseKey = (look: Look): string => (look.art.src.kind === 'dog' ? `${look.art.src.breed ?? ''}|${look.art.src.pose}` : '');
+
+/** The bounds in CSS px of a shape whose anchor is at (x, y). */
+function boxAt(s: Scene, shape: Shape, x: number, y: number): [number, number, number, number] {
+  const k = s.k;
+  return [x + shape.box[0] * k, y + shape.box[1] * k, x + shape.box[2] * k, y + shape.box[3] * k];
+}
+
+/** How much two placed silhouettes overlap, in CSS px², counting `gap` px of air around each as overlap. */
+function overlapArea(s: Scene, a: Placed, b: Placed, gap: number): number {
+  if (a.box[2] + gap <= b.box[0] || b.box[2] + gap <= a.box[0] || a.box[3] + gap <= b.box[1] || b.box[3] + gap <= a.box[1]) return 0;
+  const k = s.k;
+  const bh = BAND * k;
+  const A = a.shape;
+  const B = b.shape;
+  let area = 0;
+  for (let i = 0; i < A.l.length; i++) {
+    const la = A.l[i] as number;
+    if (Number.isNaN(la)) continue;
+    const top = a.y + (A.j0 + i) * bh;
+    const jb0 = Math.max(0, Math.floor((top - gap - b.y) / bh) - B.j0);
+    const jb1 = Math.min(B.l.length - 1, Math.floor((top + bh + gap - b.y) / bh) - B.j0);
+    const ax0 = a.x + la * k;
+    const ax1 = a.x + (A.r[i] as number) * k;
+    let widest = 0;
+    for (let j = jb0; j <= jb1; j++) {
+      const lb = B.l[j] as number;
+      if (Number.isNaN(lb)) continue;
+      const o = Math.min(ax1, b.x + (B.r[j] as number) * k) - Math.max(ax0, b.x + lb * k) + gap;
+      if (o > widest) widest = o;
+    }
+    area += widest * bh;
+  }
+  return area;
+}
+
+function boxOverlap(a: [number, number, number, number], b: Box): number {
+  const w = Math.min(a[2], b.x + b.w) - Math.max(a[0], b.x);
+  const h = Math.min(a[3], b.y + b.h) - Math.max(a[1], b.y);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+/**
+ * How much of a figure standing at (x, y) a prop would hide: the screen width of the figure that a blocked footprint
+ * (taken PROP_H tall) covers from in front. A figure the set's scenery should hide must not stand there, since the
+ * board is one image drawn under every figure.
+ */
+function hiddenBehindProps(s: Scene, box: [number, number, number, number], y: number): number {
+  let hidden = 0;
+  for (const { corners, x0, x1 } of s.props) {
+    const xa = Math.max(box[0], x0);
+    const xb = Math.min(box[2], x1);
+    if (xb <= xa) continue;
+    // The footprint's nearest ground point (the largest screen y) within the figure's columns.
+    let nearest = -Infinity;
+    for (let i = 0; i < 4; i++) {
+      const p = corners[i] as [number, number];
+      const q = corners[(i + 1) % 4] as [number, number];
+      if (p[0] >= xa && p[0] <= xb) nearest = Math.max(nearest, p[1]);
+      for (const xe of [xa, xb]) {
+        if ((p[0] - xe) * (q[0] - xe) <= 0 && p[0] !== q[0]) nearest = Math.max(nearest, p[1] + ((q[1] - p[1]) * (xe - p[0])) / (q[0] - p[0]));
+      }
+    }
+    if (nearest > y && nearest - PROP_H * s.hpm < y) hidden += xb - xa;
+  }
+  return hidden;
+}
+
+/** True when the anchor is on its ground (the lawn inside its margin and off the blocked footprints, or the path). */
+function standable(s: Scene, region: Region, mx: number, my: number): boolean {
+  if (mx < region.x0 || mx > region.x1 || my < region.y0 || my > region.y1) return false;
+  if (region.path) return true;
+  for (const [rx, ry, rw, rh] of s.set.map.blocked) {
+    if (mx > rx - BLOCK_PAD && mx < rx + rw + BLOCK_PAD && my > ry - BLOCK_PAD && my < ry + rh + BLOCK_PAD) return false;
+  }
+  return true;
+}
+
+/** True when the silhouette's lowest band (the feet) lies on its ground: no paw over the board's edge or the path's. */
+function feetOnGround(s: Scene, region: Region, shape: Shape, x: number, y: number): boolean {
+  let last = shape.l.length - 1;
+  while (last >= 0 && Number.isNaN(shape.l[last] as number)) last--;
+  if (last < 0) return true;
+  const fy = y + (shape.j0 + last + 0.5) * BAND * s.k;
+  const [lx, ly] = s.set.map.lawn;
+  for (const fx of [x + (shape.l[last] as number) * s.k, x + (shape.r[last] as number) * s.k]) {
+    const [mx, my] = world(s, fx, fy);
+    if (region.path) {
+      const g = pathGround(s);
+      if (mx < g.x0 || mx > g.x1 || my < g.y0 || my > g.y1) return false;
+    } else if (mx < 0.04 || my < 0.04 || mx > lx - 0.04 || my > ly - 0.04) return false;
+  }
+  return true;
+}
+
+/** [rule breaches, overlap cost, spread or distance to target]: lower is better, compared in that order. */
+type Score = [number, number, number];
+const better = (a: Score, b: Score): boolean => a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || (a[1] === b[1] && a[2] < b[2])));
+
+/**
+ * Places each item in turn: of a few dozen candidate spots on its ground (seeded) and each of its looks, the one that
+ * breaks neither spacing rule against the figures already placed, then overlaps nothing (those figures with a little
+ * air, the GM, the event chips, the canvas's edges, a prop that would hide it), then spreads out most (free play) or
+ * stands nearest its target (an organised activity). Then up to three passes move each figure that still breaks a
+ * rule or overlaps to the best of a grid over its ground. Every item is placed: where the yard is too full for both
+ * rules and clear air, the fewest breaches, then the least overlap. `fixed` figures (a walk's group, placed first) are
+ * obstacles that do not move.
+ */
+function placeAll(s: Scene, items: readonly Item[], rand: () => number, fixed: readonly Placed[] = []): Placed[] {
+  return drain(placeSteps(s, items, rand, fixed));
+}
+
+/** Runs a resumable computation to its end. */
+function drain<T>(gen: Generator<void, T, void>): T {
+  let r = gen.next();
+  while (r.done !== true) r = gen.next();
+  return r.value;
+}
+
+/** placeAll as a resumable computation: it pauses after each figure, so the work can be spread over idle time. */
+function* placeSteps(s: Scene, items: readonly Item[], rand: () => number, fixed: readonly Placed[] = []): Generator<void, Placed[], void> {
+  const gap = Math.max(1.5, 0.05 * s.set.map.ppm * s.k);
+  const keepClear: Box[] = [s.orb, { x: s.label.x - gap, y: s.label.y - gap, w: s.label.w + 2 * gap, h: s.label.h + 2 * gap }, s.chips];
+  const out: (Placed | null)[] = items.map(() => null);
+  const shapes = items.map((item) => item.looks.map(lookShape));
+  const sprites = items.map((item) => item.looks.map(spriteKey));
+  const breedPoses = items.map((item) => item.looks.map(breedPoseKey));
+  // The search shrinks as the yard fills, so a full day's arrangement stays a short task on a Chromebook.
+  const crowd = items.length + fixed.length;
+  const spread = clamp(Math.round(1500 / Math.max(1, crowd)), 32, 64);
+  const passes = crowd > 24 ? 2 : 3;
+  const r1 = s.sameSprite ** 2;
+  const r2 = s.sameBreedPose ** 2;
+  const others = (i: number): Placed[] => {
+    const list: Placed[] = [...fixed];
+    out.forEach((q, j) => {
+      if (q !== null && j !== i) list.push(q);
+    });
+    return list;
+  };
+
+  /** Look `alt` of item i at screen (x, y): how many figures among `near` it breaks a rule with. */
+  const breaches = (i: number, alt: number, near: readonly { q: Placed; d2: number }[]): number => {
+    const sprite = (sprites[i] as string[])[alt] as string;
+    const bp = (breedPoses[i] as string[])[alt] as string;
+    let n = 0;
+    for (const { q, d2 } of near) {
+      if (q.sprite === sprite && d2 < r1) n += 1;
+      if (bp !== '' && q.breedPose === bp && d2 < r2) n += 1;
+    }
+    return n;
+  };
+
+  /**
+   * Item i's best look at (mx, my) among the others, or null where it cannot stand or cannot beat `bound`. The spread
+   * or the distance to the target is the same for every look; the breaches and the overlaps are each look's own. With
+   * `only`, that look alone.
+   */
+  const evaluate = (i: number, mx: number, my: number, bound: Score, list: readonly Placed[], only = -1): { p: Placed; score: Score } | null => {
+    const item = items[i] as Item;
+    const { region, target } = item;
+    if (!standable(s, region, mx, my)) return null;
+    const [x, y] = ground(s, mx, my);
+    let nearest2 = Infinity;
+    const near: { q: Placed; d2: number }[] = [];
+    for (const q of list) {
+      const d2w = (q.mx - mx) ** 2 + (q.my - my) ** 2;
+      if (d2w < nearest2) nearest2 = d2w;
+      const d2 = (q.x - x) ** 2 + (q.y - y) ** 2;
+      if (d2 < r1) near.push({ q, d2 });
+    }
+    const third =
+      target === null
+        ? -Math.min(Math.sqrt(nearest2), 2 * Math.min(mx - region.x0, region.x1 - mx, my - region.y0, region.y1 - my) + 0.6)
+        : Math.sqrt((mx - target[0]) ** 2 + (my - target[1]) ** 2);
+    let best: { p: Placed; score: Score } | null = null;
+    const alts = shapes[i] as Shape[];
+    for (let alt = 0; alt < alts.length; alt++) {
+      if (only >= 0 && alt !== only) continue;
+      const limitScore = best === null ? bound : better(best.score, bound) ? best.score : bound;
+      const viol = breaches(i, alt, near);
+      if (viol > limitScore[0]) continue;
+      const shape = alts[alt] as Shape;
+      if (!feetOnGround(s, region, shape, x, y)) continue;
+      const box = boxAt(s, shape, x, y);
+      const p: Placed = { shape, alt, x, y, box, sprite: (sprites[i] as string[])[alt] as string, breedPose: (breedPoses[i] as string[])[alt] as string, mx, my };
+      const limit = viol < limitScore[0] ? Infinity : limitScore[1] + 0.5;
+      let cost = 0;
+      for (const zone of keepClear) cost += boxOverlap(box, zone) * 4;
+      if (box[0] < 0 || box[1] < 0 || box[2] > s.width || box[3] > s.height) cost += 1e6;
+      if (!region.path) cost += hiddenBehindProps(s, box, y) * 1e4;
+      if (region.prefer !== undefined && !region.prefer(mx, my)) cost += 50;
+      for (let j = 0; j < list.length && cost <= limit; j++) cost += overlapArea(s, p, list[j] as Placed, gap);
+      if (cost > limit) continue;
+      const score: Score = [viol, Math.round(cost), third];
+      if (best === null || better(score, best.score)) best = { p, score };
+      if (viol === 0 && score[1] === 0) break; // clear: a later look cannot do better here
+    }
+    return best;
+  };
+
+  /**
+   * Item i's best spot among fresh candidates (and its current one, if it has one): seeded random spots near its target
+   * or over its ground, or, for the few figures a pass is still moving, the best points of a jittered grid over its
+   * whole ground (those clear of the rules first, then the most open), which finds the narrow gaps.
+   */
+  const settle = (i: number, thorough = false): Score => {
+    const item = items[i] as Item;
+    const { region, target } = item;
+    const list = others(i);
+    const candidates: [number, number][] = [];
+    const current = out[i];
+    if (current != null) candidates.push([current.mx, current.my]);
+    if (target !== null) {
+      candidates.push(target);
+      for (const r of [0.15, 0.3, 0.45, 0.6, 0.8, 1.05, 1.35, 1.7, 2.1]) {
+        const turn = rand() * Math.PI * 2;
+        for (let a = 0; a < 6; a++) {
+          const t = turn + (a * Math.PI) / 3;
+          candidates.push([target[0] + r * Math.cos(t), target[1] + r * Math.sin(t)]);
+        }
+      }
+    }
+    if (thorough) {
+      const step = 0.3;
+      const grid: [number, number, number, number][] = [];
+      const alts = (shapes[i] as Shape[]).length;
+      for (let gx = region.x0; gx <= region.x1; gx += step) {
+        for (let gy = region.y0; gy <= region.y1; gy += step) {
+          const mx = gx + (rand() - 0.5) * step;
+          const my = gy + (rand() - 0.5) * step;
+          const [x, y] = ground(s, mx, my);
+          let d2 = Infinity;
+          const near: { q: Placed; d2: number }[] = [];
+          for (const q of list) {
+            d2 = Math.min(d2, (q.mx - mx) ** 2 + (q.my - my) ** 2);
+            const ds = (q.x - x) ** 2 + (q.y - y) ** 2;
+            if (ds < r1) near.push({ q, d2: ds });
+          }
+          let viol = Infinity;
+          for (let alt = 0; alt < alts; alt++) viol = Math.min(viol, breaches(i, alt, near));
+          grid.push([mx, my, viol, d2]);
+        }
+      }
+      grid.sort((a, b) => a[2] - b[2] || b[3] - a[3]);
+      for (const [mx, my] of grid.slice(0, 80)) candidates.push([mx, my]);
+    } else {
+      for (let c = 0; c < (target === null ? spread : 12); c++) {
+        candidates.push([region.x0 + rand() * (region.x1 - region.x0), region.y0 + rand() * (region.y1 - region.y0)]);
+      }
+    }
+    let best: Placed | null = null;
+    let bestScore: Score = [Infinity, Infinity, Infinity];
+    for (const [mx, my] of candidates) {
+      const e = evaluate(i, mx, my, bestScore, list);
+      if (e !== null && better(e.score, bestScore)) {
+        best = e.p;
+        bestScore = e.score;
+      }
+    }
+    if (best === null) {
+      // Nothing standable among the candidates (a cramped board): the region's middle.
+      const mx = (region.x0 + region.x1) / 2;
+      const my = (region.y0 + region.y1) / 2;
+      const [x, y] = ground(s, mx, my);
+      const shape = (shapes[i] as Shape[])[0] as Shape;
+      const sp = (sprites[i] as string[])[0] as string;
+      best = { shape, alt: 0, x, y, box: boxAt(s, shape, x, y), sprite: sp, breedPose: (breedPoses[i] as string[])[0] as string, mx, my };
+    }
+    out[i] = best;
+    return bestScore;
+  };
+
+  for (let i = 0; i < items.length; i++) {
+    settle(i);
+    yield;
+  }
+  for (let pass = 0; pass < passes; pass++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) {
+      const current = out[i] as Placed;
+      const now = evaluate(i, current.mx, current.my, [Infinity, Infinity, Infinity], others(i), current.alt);
+      if (now === null || (now.score[0] === 0 && now.score[1] === 0)) continue;
+      if (better(settle(i, true), now.score)) moved = true;
+      yield;
+    }
+    if (!moved) break;
+  }
+  return out as Placed[];
+}
+
+/**
+ * The day's cast and where each stands in free play, in world metres, kept all day: the dogs dealt so the breeds come
+ * evenly (the breeds in a shuffled turn, each breed's coats in turn), each with a facing and a free-play pose (moving
+ * or sitting) the placer may change, the other pose or facing, where the spacing rules need it; the crew first, near
+ * the middle. Cached on the cast by day, dogs and staff.
+ */
+function dayPlan(s: Scene, day: number, dogCount: number, staffCount: number): DayPlan {
+  const key = `${day}|${dogCount}|${staffCount}`;
+  const cached = s.cast.plans.get(key);
+  if (cached !== undefined) return cached;
+  // Started ahead of time and not done yet: finish it here rather than start again.
+  const started = s.cast.pendingPlans.get(key);
+  s.cast.pendingPlans.delete(key);
+  return drain(started ?? daySteps(s, day, dogCount, staffCount));
+}
+
+/** dayPlan's work, resumable; it files the plan under its key when it is done. */
+function* daySteps(s: Scene, day: number, dogCount: number, staffCount: number): Generator<void, DayPlan, void> {
+  const key = `${day}|${dogCount}|${staffCount}`;
+  const cast = s.cast;
+  const rand = seeded(day, dogCount, staffCount, 1);
+  const breedOrder = shuffle([...cast.breeds.keys()].sort(), rand);
+  const coats = new Map(breedOrder.map((b) => [b, shuffle([...(cast.breeds.get(b) ?? [])], rand)] as const));
+  const ids: string[] = [];
+  for (let turn = 0; ids.length < dogCount; turn++) {
+    for (const b of breedOrder) {
+      if (ids.length >= dogCount) break;
+      const list = coats.get(b) ?? [];
+      if (list.length > 0) ids.push(list[turn % list.length] as string);
+    }
+  }
+  const face = (): Facing => (rand() < 0.5 ? 'right' : 'left');
+  const dogs: DogCard[] = ids.map((id) => ({
+    id,
+    breed: id.split('|')[0] ?? id,
+    facing: face(),
+    play: (rand() < 0.62 ? 'moving' : 'sitting') as DogPose,
+    mx: 0,
+    my: 0,
+  }));
+  // The crew face alternate ways, so two staffers drawn from the one model never stand as copies.
+  const first = face();
+  const crew: CrewCard[] = Array.from({ length: staffCount }, (_, k) => ({ facing: k % 2 === 0 ? first : other(first), mx: 0, my: 0 }));
+  const [lx, ly] = s.set.map.lawn;
+  const CREW_AT: readonly [number, number][] = [
+    [0.4, 0.38],
+    [0.66, 0.3],
+    [0.2, 0.5],
+  ];
+  const region = lawnRegion(s);
+  const playPoses = (d: DogCard): DogPose[] => (d.play === 'moving' ? ['moving', 'sitting'] : ['sitting', 'moving']);
+  const items: Item[] = [
+    ...crew.map((c, k): Item => {
+      const at = CREW_AT[k % CREW_AT.length] as [number, number];
+      return { looks: [crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing)], region, target: [at[0] * lx, at[1] * ly] };
+    }),
+    ...dogs.map((d): Item => ({ looks: dogLooks(cast, d, playPoses(d)), region, target: null })),
+  ];
+  const spots = yield* placeSteps(s, items, rand);
+  crew.forEach((c, k) => {
+    const p = spots[k] as Placed;
+    c.mx = p.mx;
+    c.my = p.my;
+  });
+  dogs.forEach((d, i) => {
+    const p = spots[crew.length + i] as Placed;
+    d.mx = p.mx;
+    d.my = p.my;
+    // The look the placer took: its pose and its facing (dogLooks' order: each pose, its own facing then the other).
+    d.play = (playPoses(d)[Math.floor(p.alt / 2)] ?? d.play) as DogPose;
+    if (p.alt % 2 === 1) d.facing = other(d.facing);
+  });
+  const plan: DayPlan = { dogs, crew, more: new Map() };
+  cast.plans.set(key, plan);
+  return plan;
+}
+
+function fig(s: Scene, look: Look, mx: number, my: number): Fig {
+  const [x, y] = ground(s, mx, my);
+  return { look, mx, my, x, y };
+}
+
+const placedOf = (s: Scene, f: Fig): Placed => {
+  const shape = lookShape(f.look);
+  return { shape, alt: 0, x: f.x, y: f.y, box: boxAt(s, shape, f.x, f.y), sprite: spriteKey(f.look), breedPose: breedPoseKey(f.look), mx: f.mx, my: f.my };
+};
+
+/** An arrangement made once for the day and kept on its plan in world metres, as figures at this scene's size. */
+function cachedFigs(s: Scene, plan: DayPlan, key: string, make: () => Fig[]): Fig[] {
+  const cached = plan.more.get(key);
+  if (cached !== undefined) return cached.map((c) => fig(s, c.look, c.mx, c.my));
+  const figs = make();
+  plan.more.set(key, figs.map(({ look, mx, my }) => ({ look, mx, my })));
+  return figs;
+}
+
+/** The figures for placed items: each item in the look the placer took. */
+const figsOf = (s: Scene, items: readonly Item[], spots: readonly Placed[]): Fig[] =>
+  spots.map((p, i) => fig(s, (items[i] as Item).looks[p.alt] as Look, p.mx, p.my));
+
+/**
+ * Hands `dogs` to `slots` (world points) so that the same breed sits as far apart as it can: each slot in turn takes
+ * the dog whose nearest same-breed neighbour (and same-identity neighbour, weighted by the stricter rule) is farthest
+ * away on screen. All sit in one pose, so the breed is what the rules see.
+ */
+function dealToSlots(s: Scene, dogs: readonly DogCard[], slots: readonly [number, number][]): DogCard[] {
+  const left = [...dogs];
+  const placed: { d: DogCard; x: number; y: number }[] = [];
+  for (const [mx, my] of slots) {
+    const [x, y] = ground(s, mx, my);
+    let bestK = 0;
+    let bestScore = -Infinity;
+    left.forEach((d, k) => {
+      let score = Infinity;
+      for (const p of placed) {
+        const dist = Math.hypot(p.x - x, p.y - y);
+        if (p.d.id === d.id) score = Math.min(score, dist / s.sameSprite);
+        else if (p.d.breed === d.breed) score = Math.min(score, dist / s.sameBreedPose);
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestK = k;
+      }
+    });
+    const d = left.splice(bestK, 1)[0] as DogCard;
+    placed.push({ d, x, y });
+  }
+  return placed.map((p) => p.d);
+}
+
+/**
+ * Structured play: each staffer on the floor with a ball, their dogs sitting in short rows either side of them, every
+ * dog facing its staffer (the rows to the screen's left face right, those to its right face left). The groups stand
+ * side by side across the lawn; the dogs are dealt to the rows so the same breed sits apart.
+ */
+function structured(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  return cachedFigs(s, plan, `structured|${frame.floorDogs}|${frame.floorStaff}`, () => {
+    const cast = s.cast;
+    const rand = seeded(frame.day, frame.dogs, frame.staff, 2);
+    const [lx, ly] = s.set.map.lawn;
+    const groups = Math.max(1, frame.floorStaff);
+    const side: [number, number] = [-Math.SQRT1_2, Math.SQRT1_2]; // one metre toward the screen's left
+    const back: [number, number] = [Math.SQRT1_2, Math.SQRT1_2]; // one metre away from the viewer
+    const centre: [number, number] = [lx * 0.43, ly * 0.43];
+    const spread = Math.min(3.4, (Math.hypot(lx, ly) * 0.8) / groups);
+    const region = lawnRegion(s);
+    const crewItems: Item[] = [];
+    const slots: { at: [number, number]; facing: Facing }[] = [];
+    for (let g = 0; g < groups; g++) {
+      const off = (g - (groups - 1) / 2) * spread;
+      const cx = centre[0] - side[0] * off;
+      const cy = centre[1] - side[1] * off;
+      if (frame.floorStaff > 0) crewItems.push({ looks: [crewLook(cast, personOf(cast, g), crewPose('structured', g), g % 2 === 0 ? 'right' : 'left')], region, target: [cx, cy] });
+      const first = Math.floor((g * frame.floorDogs) / groups);
+      const m = Math.floor(((g + 1) * frame.floorDogs) / groups) - first;
+      const perSide = Math.ceil(m / 2);
+      const rows = Math.max(1, Math.ceil(Math.sqrt(perSide * 1.3)));
+      const cols = Math.max(1, Math.ceil(perSide / rows));
+      for (let j = 0; j < m; j++) {
+        const leftSide = j % 2 === 0;
+        const n = Math.floor(j / 2);
+        const dist = 0.95 + (n % cols) * 0.85;
+        const depth = (Math.floor(n / cols) - (rows - 1) / 2) * 0.75;
+        const sign = leftSide ? 1 : -1;
+        slots.push({ at: [cx + sign * side[0] * dist + back[0] * depth, cy + sign * side[1] * dist + back[1] * depth], facing: leftSide ? 'right' : 'left' });
+      }
+    }
+    const dealt = dealToSlots(s, plan.dogs.slice(0, frame.floorDogs), slots.map((sl) => sl.at));
+    const items: Item[] = [
+      ...crewItems,
+      ...dealt.map((d, j): Item => {
+        const slot = slots[j] as { at: [number, number]; facing: Facing };
+        return { looks: [dogLook(cast, d.id, 'sitting', slot.facing)], region, target: slot.at };
+      }),
+    ];
+    return figsOf(s, items, placeAll(s, items, rand));
+  });
+}
+
+/**
+ * A clean: the crew with the mop on the open floor at the screen's left, the dogs settled out of the way at its right,
+ * sitting or asleep (a dog that moved in free play rests asleep, one that sat stays sitting, unless the rules need the
+ * other).
+ */
+function cleaning(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  return cachedFigs(s, plan, `clean|${frame.floorDogs}|${frame.floorStaff}`, () => {
+    const cast = s.cast;
+    const rand = seeded(frame.day, frame.dogs, frame.staff, 3);
+    const [lx, ly] = s.set.map.lawn;
+    const lawn = lawnRegion(s);
+    const right: Region = { ...lawn, prefer: (mx, my) => mx - my > -0.4 };
+    const CREW_AT: readonly [number, number][] = [
+      [0.22, 0.6],
+      [0.18, 0.32],
+      [0.38, 0.78],
+    ];
+    const items: Item[] = [];
+    for (let k = 0; k < frame.floorStaff; k++) {
+      const at = CREW_AT[k % CREW_AT.length] as [number, number];
+      items.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('clean', k), (plan.crew[k] as CrewCard).facing)], region: lawn, target: [at[0] * lx, at[1] * ly] });
+    }
+    for (const d of plan.dogs.slice(0, frame.floorDogs)) {
+      const poses: DogPose[] = d.play === 'moving' ? ['asleep', 'sitting'] : ['sitting', 'asleep'];
+      items.push({ looks: dogLooks(cast, d, poses), region: right, target: null });
+    }
+    return figsOf(s, items, placeAll(s, items, rand));
+  });
+}
+
+/**
+ * A walk: the walking group on the set's own path (set.json's walk strip, along the lawn's front-right edge), the
+ * staffer in front with the leash and the dogs behind in single file, all heading along the path toward the lawn's
+ * front corner (the camera-facing diagonal down and left, so every sprite faces left); placed first, in formation. The
+ * walkers are chosen breed by breed, so no two in the file are the same breed. Then the floor makes room for it: each
+ * dog and staffer left behind stands as near its free-play spot as it can, in its own pose or the other where the
+ * rules need it.
+ */
+function walking(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  return cachedFigs(s, plan, `walk|${frame.floorDogs}|${frame.floorStaff}|${frame.walkingDogs}|${frame.walkingStaff}`, () => {
+    const cast = s.cast;
+    const rand = seeded(frame.day, frame.dogs, frame.staff, 4);
+    const path = pathRegion(s);
+    const mid = (path.y0 + path.y1) / 2;
+    // The walkers: in a seeded order, a dog of a breed not yet walking, until the group is full.
+    const order = shuffle(plan.dogs.map((_, i) => i), rand);
+    const walkers: number[] = [];
+    const breedsWalking = new Set<string>();
+    for (const i of order) {
+      const d = plan.dogs[i] as DogCard;
+      if (walkers.length < frame.walkingDogs && !breedsWalking.has(d.breed)) {
+        walkers.push(i);
+        breedsWalking.add(d.breed);
+      }
+    }
+    for (const i of order) if (walkers.length < frame.walkingDogs && !walkers.includes(i)) walkers.push(i);
+    const group: Item[] = [];
+    if (frame.walkingStaff > 0) group.push({ looks: [crewLook(cast, personOf(cast, frame.staff - 1), 'leash', 'left')], region: path, target: [path.x0 + 0.25, mid] });
+    walkers.forEach((i, j) => {
+      const d = plan.dogs[i] as DogCard;
+      group.push({ looks: [dogLook(cast, d.id, 'moving', 'left')], region: path, target: [path.x0 + 1.05 + j * 0.95, mid + (j % 2 === 0 ? -0.05 : 0.05)] });
+    });
+    const walked = placeAll(s, group, rand);
+    const lawn = lawnRegion(s);
+    const floor: Item[] = [];
+    plan.dogs.forEach((d, i) => {
+      if (walkers.includes(i)) return;
+      const poses: DogPose[] = d.play === 'moving' ? ['moving', 'sitting'] : ['sitting', 'moving'];
+      floor.push({ looks: dogLooks(cast, d, poses), region: lawn, target: [d.mx, d.my] });
+    });
+    for (let k = 0; k < frame.floorStaff; k++) {
+      const c = plan.crew[k] as CrewCard;
+      floor.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing)], region: lawn, target: [c.mx, c.my] });
+    }
+    const stay = placeAll(s, floor, rand, walked);
+    return [...figsOf(s, group, walked), ...figsOf(s, floor, stay)];
+  });
+}
+
+/** A nap: every dog lies down as near its free-play spot as the rules and the room allow; the crew stay where they stood. */
+function napping(s: Scene, plan: DayPlan, frame: ReplayFrame): Fig[] {
+  return cachedFigs(s, plan, `nap|${frame.floorDogs}|${frame.floorStaff}`, () => {
+    const cast = s.cast;
+    const rand = seeded(frame.day, frame.dogs, frame.staff, 5);
+    const region = lawnRegion(s);
+    const items: Item[] = [];
+    for (let k = 0; k < frame.floorStaff; k++) {
+      const c = plan.crew[k] as CrewCard;
+      items.push({ looks: [crewLook(cast, personOf(cast, k), crewPose('nap', k), c.facing)], region, target: [c.mx, c.my] });
+    }
+    for (const d of plan.dogs.slice(0, frame.floorDogs)) items.push({ looks: dogLooks(cast, d, ['asleep']), region, target: [d.mx, d.my] });
+    return figsOf(s, items, placeAll(s, items, rand));
+  });
+}
+
+/** Everyone on the yard in this block: the floor as the activity has it (a walk's group on the path beside it). */
+function figuresOf(s: Scene, frame: ReplayFrame): Fig[] {
+  if (frame.closed || frame.activity === null) return [];
+  const plan = dayPlan(s, frame.day, frame.dogs, frame.staff);
+  const cast = s.cast;
+  if (frame.activity === 'structuredPlay') return structured(s, plan, frame);
+  if (frame.activity === 'clean') return cleaning(s, plan, frame);
+  if (frame.activity === 'nap') return napping(s, plan, frame);
+  if (frame.walkingStaff > 0 || frame.walkingDogs > 0) return walking(s, plan, frame);
+  const floor: Fig[] = [];
+  for (const d of plan.dogs.slice(0, frame.floorDogs)) floor.push(fig(s, dogLook(cast, d.id, d.play, d.facing), d.mx, d.my));
+  for (let k = 0; k < frame.floorStaff; k++) {
+    const c = plan.crew[k] as CrewCard;
+    floor.push(fig(s, crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing), c.mx, c.my));
+  }
+  return floor;
+}
+
+// ===============================================================================================================
+// The stage: a scene of the set with its images, and everything drawn at that size (the board, each sprite and its
+// shadow, the GM), kept per size; prepared in idle time where it can be.
+
+/** A sprite (or the GM) scaled for the stage, in device pixels, with its anchor and its shadow. */
+interface Drawn {
+  img: HTMLCanvasElement;
+  ax: number;
+  ay: number;
+  shadow: HTMLCanvasElement | null;
+  sx: number;
+  sy: number;
+}
+
+interface Stage extends Scene {
+  key: string;
+  art: ArtSet;
+  ratio: number;
+  tokens: Tokens;
+  /** The board, at this size. */
+  layer: HTMLCanvasElement;
   drawn: Map<string, Drawn>;
   gmShadow: HTMLCanvasElement | null;
-  /** The stage's preparation while it runs (startWarm), and whether it has finished. */
-  warmWork: Generator<void, void, void> | null;
-  warm: boolean;
+  /** The stage's preparation (startWarm): the job running, the level it is doing, the level reached, the level asked. */
+  warmWork: Generator<void, number, void> | null;
+  warmDoing: number;
+  warmLevel: number;
+  warmTarget: number;
 }
 
 /** The stages made lately, by size (the page shows the yard at a few sizes: on load, while the week plays, after it). */
 const stages = new Map<string, Stage>();
 const STAGES_KEPT = 3;
-/**
- * The days' arrangements, by day, dogs and staff, in world metres: the same at every size of the yard, so the week
- * keeps its places when the page shows it smaller after the week; and those begun in idle time, not finished yet.
- */
-const plans = new Map<string, DayPlan>();
-const pendingPlans = new Map<string, Generator<void, DayPlan, void>>();
 let pendingSize: { width: number; height: number; ratio: number } | null = null;
 let warmTimer: ReturnType<typeof setTimeout> | null = null;
+/** True while the page shows the GM getting ready (the last placeholder had its line): the week plays at this size. */
+let idleFull = false;
 
 const stageKey = (width: number, height: number, ratio: number): string => `${Math.round(width)}|${Math.round(height)}|${ratio}`;
 
@@ -1377,7 +2336,7 @@ function warmUp(art: ArtSet): void {
   const size = pendingSize;
   if (size === null || warmTimer !== null || !(size.width > 0 && size.height > 0)) return;
   const known = stages.get(stageKey(size.width, size.height, size.ratio));
-  if (known !== undefined && known.art === art && (known.warm || known.warmWork !== null)) return;
+  if (known !== undefined && known.art === art && known.warmTarget >= (idleFull ? 2 : 1)) return;
   warmTimer = setTimeout(() => {
     warmTimer = null;
     startWarm(stageFor(size.width, size.height, size.ratio, art));
@@ -1385,43 +2344,60 @@ function warmUp(art: ArtSet): void {
 }
 
 /**
- * Starts the stage's preparation in idle time, most needed first: the GM in its three states; the default Monday's
- * arrangement; the looks that Monday shows; then every other look of the cast (each sprite and its shadow, as drawn
- * and mirrored). A getting-ready redraw also advances it a little (advanceWarm), in case the browser has no idle time.
+ * Starts the stage's preparation in idle time, most needed first. Level 1: the GM in its three states and the default
+ * Monday's arrangement (in world metres, good at every size). Level 2, `full`: that Monday's looks, then every other
+ * look of the cast (each sprite and its shadow, as drawn and mirrored) at this size: asked for while the GM gets
+ * ready (the week plays at the getting-ready size) or once a frame is drawn at this size, not on the load screen,
+ * whose size the week does not play at. A getting-ready redraw also advances it a little (advanceWarm), in case the
+ * browser has no idle time.
  */
-function startWarm(s: Stage): void {
-  if (s.warm || s.warmWork !== null) return;
-  const work = prepare(s);
+function startWarm(s: Stage, full = idleFull): void {
+  const target = full ? 2 : 1;
+  if (s.warmLevel >= target) return;
+  s.warmTarget = Math.max(s.warmTarget, target);
+  if (s.warmWork !== null) return; // the job running goes on to the new target when it finishes (warmDone)
+  const work = prepare(s, s.warmLevel, s.warmTarget);
   s.warmWork = work;
-  idle(s, work, () => s.warmWork === work, () => {
-    s.warmWork = null;
-    s.warm = true;
-  });
+  idle(s, work, () => s.warmWork === work, () => warmDone(s, work));
 }
 
-function* prepare(s: Stage): Generator<void, void, void> {
-  for (const state of ['ready', 'running', 'done'] as const) gmDrawn(s, state);
-  yield;
+/** A preparation finished: the stage is at its target, and starts the next level if one was asked for meanwhile. */
+function warmDone(s: Stage, work: Generator<void, number, void>): void {
+  if (s.warmWork !== work) return;
+  s.warmWork = null;
+  s.warmLevel = Math.max(s.warmLevel, s.warmDoing);
+  if (s.warmTarget > s.warmLevel) startWarm(s, true);
+}
+
+function* prepare(s: Stage, from: number, to: number): Generator<void, number, void> {
+  s.warmDoing = to;
+  const cast = s.cast;
   const key = `0|${WARM_DAY.dogs}|${WARM_DAY.staff}`;
-  if (!plans.has(key)) {
-    const gen = pendingPlans.get(key) ?? daySteps(s, 0, WARM_DAY.dogs, WARM_DAY.staff);
-    pendingPlans.set(key, gen);
-    // A frame may finish it first (dayPlan); then the next step reports done at once.
-    for (let r = gen.next(); r.done !== true; r = gen.next()) yield;
-    pendingPlans.delete(key);
+  if (from < 1) {
+    for (const state of GM_STATES) gmDrawn(s, state);
+    yield;
+    if (!cast.plans.has(key)) {
+      const gen = cast.pendingPlans.get(key) ?? daySteps(s, 0, WARM_DAY.dogs, WARM_DAY.staff);
+      cast.pendingPlans.set(key, gen);
+      // A frame may finish it first (dayPlan); then the next step reports done at once.
+      for (let r = gen.next(); r.done !== true; r = gen.next()) yield;
+      cast.pendingPlans.delete(key);
+    }
   }
-  const plan = plans.get(key);
+  if (to < 2) return to;
+  const plan = cast.plans.get(key);
   if (plan !== undefined) {
-    for (const [k, c] of plan.crew.entries()) drawnOf(s, crewLook(s.art, personOf(s.art, k), crewPose('free', k), c.facing));
+    for (const [k, c] of plan.crew.entries()) drawnOf(s, crewLook(cast, personOf(cast, k), crewPose('free', k), c.facing));
     for (const d of plan.dogs) {
-      drawnOf(s, dogLook(s.art, d.id, d.play, d.facing));
+      drawnOf(s, dogLook(cast, d.id, d.play, d.facing));
       yield;
     }
   }
-  for (const look of allLooks(s.art)) {
+  for (const look of allLooks(cast)) {
     drawnOf(s, look);
     yield;
   }
+  return to;
 }
 
 /** Advances the stage's preparation for up to `ms` milliseconds now. */
@@ -1431,10 +2407,7 @@ function advanceWarm(s: Stage, ms: number): void {
   const t0 = performance.now();
   let r = work.next();
   while (r.done !== true && performance.now() - t0 < ms) r = work.next();
-  if (r.done === true && s.warmWork === work) {
-    s.warmWork = null;
-    s.warm = true;
-  }
+  if (r.done === true) warmDone(s, work);
 }
 
 /**
@@ -1450,10 +2423,11 @@ function planAhead(s: Stage, frame: ReplayFrame): void {
 /** Starts a day's arrangement in idle time; a frame that needs it before it is done finishes what is left (dayPlan). */
 function inIdleTime(s: Stage, day: number, dogs: number, staff: number): void {
   const key = `${day}|${dogs}|${staff}`;
-  if (plans.has(key) || pendingPlans.has(key)) return;
+  const cast = s.cast;
+  if (cast.plans.has(key) || cast.pendingPlans.has(key)) return;
   const gen = daySteps(s, day, dogs, staff);
-  pendingPlans.set(key, gen);
-  idle(s, gen, () => pendingPlans.get(key) === gen, () => pendingPlans.delete(key));
+  cast.pendingPlans.set(key, gen);
+  idle(s, gen, () => cast.pendingPlans.get(key) === gen, () => cast.pendingPlans.delete(key));
 }
 
 /**
@@ -1480,16 +2454,16 @@ function idle(s: Stage, work: Generator<void, unknown, void>, wanted: () => bool
 }
 
 /** Every look the cast can be drawn in: each sprite as drawn and, if the cast mirrors, mirrored. */
-function allLooks(art: ArtSet): Look[] {
+function allLooks(cast: CastIndex): Look[] {
   const looks: Look[] = [];
-  const add = (list: SpriteArt[] | undefined): void => {
+  const add = (list: CastEntry[] | undefined): void => {
     for (const a of list ?? []) {
       looks.push({ art: a, mirror: false });
       if (MIRROR_CAST) looks.push({ art: a, mirror: true });
     }
   };
-  for (const poses of art.dogs.values()) for (const list of Object.values(poses)) add(list);
-  for (const list of Object.values(art.crew)) add(list);
+  for (const poses of cast.dogs.values()) for (const list of Object.values(poses)) add(list);
+  for (const poses of cast.crew.values()) for (const list of Object.values(poses)) add(list);
   return looks;
 }
 
@@ -1497,127 +2471,25 @@ function stageFor(width: number, height: number, ratio: number, art: ArtSet): St
   const key = stageKey(width, height, ratio);
   const known = stages.get(key);
   if (known !== undefined && known.art === art) return known;
-  const map = art.map;
-  const [bw, bh] = art.boardSize;
-  const P = map.ppm;
-  const exImg: [number, number] = [(2 / Math.sqrt(5)) * P, (-1 / Math.sqrt(5)) * P];
-  const eyImg: [number, number] = [(-2 / Math.sqrt(5)) * P, (-1 / Math.sqrt(5)) * P];
-  // One scale in every state (round 1, finding 19): the board image fitted to the canvas exactly as the page's CSS fits
-  // it behind the canvas while the GM is idle or getting ready (`center / contain`), so the yard never jumps.
-  const k = Math.max(0.01, Math.min(width / bw, height / bh));
-  const bx = (width - bw * k) / 2;
-  const by = (height - bh * k) / 2;
-  const pad = Math.max(10, Math.min(width, height) * 0.02);
-  const fs = clamp(Math.round(width / 52), MIN_LABEL_PX, 22);
-  const origin: [number, number] = [bx + map.origin[0] * k, by + map.origin[1] * k];
-  const el = (CAMERA.elevationDeg * Math.PI) / 180;
-  const groundLen = Math.hypot(Math.SQRT1_2, Math.SQRT1_2 * Math.sin(el));
-  const hpmImg = (P * Math.cos(el)) / groundLen; // image px per metre of height
-  const tokens = readTokens(undefined);
-
-  // The GM (round 1, finding 27): its orb's lowest point GM_HOVER_M over the roof at gmSpot, its shadow under its
-  // centre; the box it may take in any state, with room for its hover.
-  const hoverImg = GM_HOVER_M * hpmImg;
-  const [gx, gy] = [bx + art.gmSpot[0] * k, by + art.gmSpot[1] * k];
-  let ox0 = Infinity;
-  let oy0 = Infinity;
-  let ox1 = -Infinity;
-  for (const g of Object.values(art.gm)) {
-    ox0 = Math.min(ox0, gx + (g.orb[0] - g.anchor[0]) * k);
-    ox1 = Math.max(ox1, gx + (g.orb[2] - g.anchor[0]) * k);
-    oy0 = Math.min(oy0, gy - (hoverImg + g.orb[3] - g.orb[1]) * k);
-  }
-  const orb: Box = { x: ox0, y: oy0 - 4, w: ox1 - ox0, h: gy - oy0 + 4 };
-  const run = art.gm.running;
-  const orbMidY = gy - (hoverImg + (run.orb[3] - run.orb[1]) / 2) * k;
-
-  // "The GM" on a pill beside the orb, on the side with room.
-  const probe = newCanvas(1, 1);
-  probe.ctx.font = uiFont(tokens, fs, 800);
-  const labelW = probe.ctx.measureText('The GM').width + fs * 1.9;
-  const labelH = Math.round(fs * 1.85);
-  const lead = fs * 1.6;
-  const onRight = ox1 + lead + labelW <= width - pad;
-  const lx = onRight ? ox1 + lead : Math.max(pad, ox0 - lead - labelW);
-  const label = {
-    x: lx,
-    y: clamp(orbMidY - labelH / 2, pad, height - pad - labelH),
-    w: labelW,
-    h: labelH,
-    lineFrom: onRight ? ox1 + 3 : ox0 - 3,
-    lineTo: onRight ? lx : lx + labelW,
-  };
-
   const s: Stage = {
+    ...sceneFor(width, height, art.set, art.cast),
     key,
     art,
-    width,
-    height,
     ratio,
-    k,
-    bx,
-    by,
-    origin,
-    ex: [exImg[0] * k, exImg[1] * k],
-    ey: [eyImg[0] * k, eyImg[1] * k],
-    hpm: hpmImg * k,
-    hoverImg,
-    fs,
-    pad,
-    tokens,
+    tokens: readTokens(undefined),
     layer: newCanvas(width * ratio, height * ratio).canvas,
-    orb,
-    label,
-    // The block's events go in the top right corner, the empty sky above the far fence (the clubhouse is top left).
-    chips: { x: width * 0.42, y: 0, w: width * 0.58, h: pad + 2 * Math.round(fs * 1.95) + fs * 0.4 },
-    props: [],
-    propHulls: [],
     drawn: new Map(),
     gmShadow: null,
     warmWork: null,
-    warm: false,
+    warmDoing: 0,
+    warmLevel: 0,
+    warmTarget: 0,
   };
-  s.props = map.blocked.map(([rx, ry, rw, rh]) => {
-    const corners = [ground(s, rx, ry), ground(s, rx + rw, ry), ground(s, rx + rw, ry + rh), ground(s, rx, ry + rh)];
-    return { corners, x0: Math.min(...corners.map((c) => c[0])), x1: Math.max(...corners.map((c) => c[0])) };
-  });
-  const lift = PROP_H * s.hpm;
-  s.propHulls = s.props.map(({ corners }) => hull([...corners, ...corners.map(([x, y]): [number, number] => [x, y - lift])]));
   paintLayer(s);
   stages.delete(key);
   stages.set(key, s);
   while (stages.size > STAGES_KEPT) stages.delete(stages.keys().next().value as string);
   return s;
-}
-
-/** The convex hull of a few points, counter-clockwise on screen (Andrew's monotone chain). */
-function hull(points: [number, number][]): [number, number][] {
-  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const cross = (o: [number, number], a: [number, number], b: [number, number]): number =>
-    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const half = (list: [number, number][]): [number, number][] => {
-    const h: [number, number][] = [];
-    for (const p of list) {
-      while (h.length >= 2 && cross(h[h.length - 2] as [number, number], h[h.length - 1] as [number, number], p) <= 0) h.pop();
-      h.push(p);
-    }
-    h.pop();
-    return h;
-  };
-  return [...half(pts), ...half([...pts].reverse())];
-}
-
-/** A world point on the ground (metres) to CSS px. */
-function ground(s: Stage, mx: number, my: number): [number, number] {
-  return [s.origin[0] + mx * s.ex[0] + my * s.ey[0], s.origin[1] + mx * s.ex[1] + my * s.ey[1]];
-}
-
-/** A CSS point back to the ground (metres). */
-function world(s: Stage, x: number, y: number): [number, number] {
-  const dx = x - s.origin[0];
-  const dy = y - s.origin[1];
-  const det = s.ex[0] * s.ey[1] - s.ey[0] * s.ex[1];
-  return [(dx * s.ey[1] - dy * s.ey[0]) / det, (s.ex[0] * dy - s.ex[1] * dx) / det];
 }
 
 /** `src` (w × h px) at w·f × h·f device px, halving first so a big downscale stays smooth; mirrored if asked. */
@@ -1652,7 +2524,7 @@ function paintLayer(s: Stage): void {
   const { art, ratio, k } = s;
   const ctx = s.layer.getContext('2d');
   if (ctx === null) throw new Error('replay: no 2D context for the yard cache');
-  const [bw, bh] = art.boardSize;
+  const [bw, bh] = art.set.boardSize;
   const nw = art.board.naturalWidth || bw;
   const nh = art.board.naturalHeight || bh;
   const target = bw * k * ratio; // device px wide
@@ -1666,7 +2538,6 @@ function paintLayer(s: Stage): void {
   ctx.drawImage(scaled(art.board, nw, nh, target / nw, false), Math.round(s.bx * ratio), Math.round(s.by * ratio));
 }
 
-/** A look at this stage's size: the sprite scaled (and mirrored), its anchor, and its shadow. Made once, then reused. */
 /** Draws a pre-rendered canvas with its anchor (ax, ay) at device point (x, y): pixel for pixel, or scaled. */
 function blit(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, y: number, ax: number, ay: number, scale: number): void {
   if (scale === 1) ctx.drawImage(img, Math.round(x - ax), Math.round(y - ay));
@@ -1687,7 +2558,7 @@ function drawnFor(s: Stage, look: Look): { d: Drawn; scale: number } {
   for (const other of stages.values()) {
     const d = other === s || other.art !== s.art ? undefined : other.drawn.get(key);
     if (d === undefined) continue;
-    startWarm(s);
+    startWarm(s, true);
     return { d, scale: (s.k * s.ratio) / (other.k * other.ratio) };
   }
   return { d: drawnOf(s, look), scale: 1 };
@@ -1698,6 +2569,7 @@ function drawnOf(s: Stage, look: Look): Drawn {
   const cached = s.drawn.get(key);
   if (cached !== undefined) return cached;
   const { src, img } = look.art;
+  if (img === null) throw new Error(`replay: no image for ${src.id}`);
   const f = s.k * s.ratio;
   const nw = img.naturalWidth || src.size[0];
   const nh = img.naturalHeight || src.size[1];
@@ -1706,7 +2578,7 @@ function drawnOf(s: Stage, look: Look): Drawn {
   const fy = canvas.height / src.size[1];
   const ax = (look.mirror ? src.size[0] - src.anchor[0] : src.anchor[0]) * fx;
   const ay = src.anchor[1] * fy;
-  const shadow = castShadow(canvas, ax, ay, f, s.art.shadow);
+  const shadow = castShadow(canvas, ax, ay, f, s.set.shadow);
   const drawn: Drawn = { img: canvas, ax, ay, shadow: shadow.canvas, sx: shadow.ax, sy: shadow.ay };
   s.drawn.set(key, drawn);
   return drawn;
@@ -1761,706 +2633,35 @@ function gmDrawn(s: Stage, state: GmState): Drawn {
   const key = `gm|${state}`;
   const cached = s.drawn.get(key);
   if (cached !== undefined) return cached;
-  const g = s.art.gm[state];
+  const g = s.set.gm[state];
+  const img = s.art.gm[state];
   const f = s.k * s.ratio;
-  const nw = g.img.naturalWidth || g.size[0];
-  const nh = g.img.naturalHeight || g.size[1];
-  const canvas = scaled(g.img, nw, nh, (g.size[0] * f) / nw, false);
+  const nw = img.naturalWidth || g.size[0];
+  const nh = img.naturalHeight || g.size[1];
+  const canvas = scaled(img, nw, nh, (g.size[0] * f) / nw, false);
   const ax = ((g.orb[0] + g.orb[2]) / 2) * (canvas.width / g.size[0]);
   const drawn: Drawn = { img: canvas, ax, ay: (g.orb[3] + s.hoverImg) * (canvas.height / g.size[1]), shadow: null, sx: 0, sy: 0 };
   s.drawn.set(key, drawn);
-  if (s.gmShadow === null) {
-    const spec = s.art.shadow;
-    const rx = (g.orb[2] - g.orb[0]) * f * 0.4;
-    const ry = rx * 0.45; // a disc on the flat roof, foreshortened by the camera
-    const blur = spec.contactBlur * f;
-    const c = newCanvas(rx * 2 + blur * 6, ry * 2 + blur * 6);
-    if (typeof c.ctx.filter === 'string') c.ctx.filter = `blur(${blur.toFixed(2)}px)`;
-    c.ctx.fillStyle = `rgba(${spec.tint}, ${spec.contactAlpha * 0.85})`;
-    c.ctx.beginPath();
-    c.ctx.ellipse(c.canvas.width / 2, c.canvas.height / 2, rx, ry, 0, 0, Math.PI * 2);
-    c.ctx.fill();
-    s.gmShadow = c.canvas;
-  }
+  if (s.gmShadow === null) s.gmShadow = roofShadow(s.set.shadow, (g.orb[2] - g.orb[0]) * f, f);
   return drawn;
 }
 
-// --- Where everyone stands: a day's arrangement, from the yard's own generator. ----------------------------------
-
-/** A figure standing somewhere: its look, its ground point in metres and its anchor in CSS px. */
-interface Fig {
-  look: Look;
-  mx: number;
-  my: number;
-  x: number;
-  y: number;
+/** The GM's soft shadow on the roof under its centre, for an orb `wide` device px across (`f` device px per image px). */
+function roofShadow(spec: ShadowSpec, wide: number, f: number): HTMLCanvasElement {
+  const rx = wide * 0.4;
+  const ry = rx * 0.45; // a disc on the flat roof, foreshortened by the camera
+  const blur = spec.contactBlur * f;
+  const c = newCanvas(rx * 2 + blur * 6, ry * 2 + blur * 6);
+  if (typeof c.ctx.filter === 'string') c.ctx.filter = `blur(${blur.toFixed(2)}px)`;
+  c.ctx.fillStyle = `rgba(${spec.tint}, ${spec.contactAlpha * 0.85})`;
+  c.ctx.beginPath();
+  c.ctx.ellipse(c.canvas.width / 2, c.canvas.height / 2, rx, ry, 0, 0, Math.PI * 2);
+  c.ctx.fill();
+  return c.canvas;
 }
 
-/** One dog of the day: who it is (breed and coat), the way it faces, its pose in free play, and where it stands. */
-interface DogCard {
-  id: string;
-  facing: Facing;
-  play: DogPose;
-  mx: number;
-  my: number;
-}
-
-interface CrewCard {
-  facing: Facing;
-  mx: number;
-  my: number;
-}
-
-interface DayPlan {
-  dogs: DogCard[];
-  crew: CrewCard[];
-  /** The organised arrangements, made the first time the day needs one: structured play, a clean, a walk. */
-  more: Map<string, { look: Look; mx: number; my: number }[]>;
-}
-
-/** A placed figure for the spacing test: its silhouette at its anchor (CSS px), its bounds, and which look it took. */
-interface Placed {
-  shape: Shape;
-  alt: number;
-  x: number;
-  y: number;
-  box: [number, number, number, number];
-  clone: string;
-  mx: number;
-  my: number;
-}
-
-/** Where a figure may stand: a world rectangle on the lawn or on the walk path, and an optional preference. */
-interface Region {
-  x0: number;
-  x1: number;
-  y0: number;
-  y1: number;
-  path: boolean;
-  prefer?: (mx: number, my: number) => boolean;
-}
-
-interface Item {
-  /** The looks the figure may take here (one, or a facing each way); the placer picks the one that fits. */
-  looks: Look[];
-  clone: string;
-  region: Region;
-  /** A spot to stand as near as the room allows (an organised activity); null to spread out (free play). */
-  target: [number, number] | null;
-}
-
-const lawnRegion = (s: Stage): Region => {
-  const [lx, ly] = s.art.map.lawn;
-  const m = s.art.map.margin;
-  return { x0: m, x1: lx - m, y0: m, y1: ly - m, path: false };
-};
-/** The walking group's strip on the set's own path (set.json's walk), where their anchors stand. */
-const pathRegion = (s: Stage): Region => {
-  const [x, y, w, h] = s.art.walk;
-  return { x0: x, x1: x + w, y0: y, y1: y + h, path: true };
-};
-/** The path's whole width around the strip (where feet and shadows may fall): set.json's path runs y from -1 to 0. */
-const pathGround = (s: Stage): Region => {
-  const [x, y, w, h] = s.art.walk;
-  return { x0: x - 0.4, x1: x + w + 0.3, y0: y - 0.35, y1: Math.min(0, y + h + 0.35), path: true };
-};
-
-function lookShape(look: Look): Shape {
-  return look.mirror ? look.art.mirrored : look.art.shape;
-}
-
-/** The sprite list's look for a facing: the one drawn that way, or another mirrored (gate 5). */
-function faceLook(list: SpriteArt[], facing: Facing): Look {
-  const exact = list.find((a) => a.src.facing === facing);
-  if (exact !== undefined) return { art: exact, mirror: false };
-  const other = list[0] as SpriteArt;
-  return { art: other, mirror: MIRROR_CAST && other.src.facing !== facing };
-}
-
-const DOG_FALLBACK: Readonly<Record<DogPose, DogPose[]>> = {
-  moving: ['moving', 'sitting', 'asleep'],
-  sitting: ['sitting', 'moving', 'asleep'],
-  asleep: ['asleep', 'sitting', 'moving'],
-};
-const CREW_FALLBACK: Readonly<Record<CrewPose, CrewPose[]>> = {
-  ball: ['ball', 'leash', 'mop'],
-  leash: ['leash', 'ball', 'mop'],
-  mop: ['mop', 'ball', 'leash'],
-};
-
-function dogLook(art: ArtSet, id: string, pose: DogPose, facing: Facing): Look {
-  const poses = art.dogs.get(id) ?? (art.dogs.values().next().value as Partial<Record<DogPose, SpriteArt[]>>);
-  for (const p of DOG_FALLBACK[pose]) {
-    const list = poses[p];
-    if (list !== undefined && list.length > 0) return faceLook(list, facing);
-  }
-  throw new Error(`replay: no sprite for ${id}`);
-}
-
-/** Staffer k's person: the cast's staff in turn ('crew', 'crew2'), so two staffers on the floor are two people. */
-const personOf = (art: ArtSet, k: number): string => art.people[k % art.people.length] ?? 'crew';
-
-/**
- * Staffer k's pose in an activity (round 1, finding 7): chosen so no two staffers are the same sprite in the same pose
- * (the third staffer is the first person again, in another pose).
- */
-const CREW_POSES: Readonly<Record<'free' | 'nap' | 'structured' | 'clean', readonly CrewPose[]>> = {
-  free: ['ball', 'leash', 'leash'],
-  nap: ['leash', 'leash', 'ball'],
-  structured: ['ball', 'ball', 'leash'],
-  clean: ['mop', 'mop', 'leash'],
-};
-const crewPose = (activity: keyof typeof CREW_POSES, k: number): CrewPose => CREW_POSES[activity][k % 3] ?? 'leash';
-
-function crewLook(art: ArtSet, person: string, pose: CrewPose, facing: Facing): Look {
-  const poses = art.crew.get(person) ?? (art.crew.values().next().value as Partial<Record<CrewPose, SpriteArt[]>>);
-  for (const p of CREW_FALLBACK[pose]) {
-    const list = poses[p];
-    if (list !== undefined && list.length > 0) return faceLook(list, facing);
-  }
-  const any = Object.values(poses).find((l) => l !== undefined && l.length > 0) as SpriteArt[];
-  return faceLook(any, facing);
-}
-
-/** The clone rule's key: the sprite in its pose, whichever way it faces. */
-const cloneKey = (look: Look): string => look.art.src.id;
-
-/** The bounds in CSS px of a shape whose anchor is at (x, y). */
-function boxAt(s: Stage, shape: Shape, x: number, y: number): [number, number, number, number] {
-  const k = s.k;
-  return [x + shape.box[0] * k, y + shape.box[1] * k, x + shape.box[2] * k, y + shape.box[3] * k];
-}
-
-/** How much two placed silhouettes overlap, in CSS px², counting `gap` px of air around each as overlap. */
-function overlapArea(s: Stage, a: Placed, b: Placed, gap: number): number {
-  if (a.box[2] + gap <= b.box[0] || b.box[2] + gap <= a.box[0] || a.box[3] + gap <= b.box[1] || b.box[3] + gap <= a.box[1]) return 0;
-  const k = s.k;
-  const bh = BAND * k;
-  const A = a.shape;
-  const B = b.shape;
-  let area = 0;
-  for (let i = 0; i < A.l.length; i++) {
-    const la = A.l[i] as number;
-    if (Number.isNaN(la)) continue;
-    const top = a.y + (A.j0 + i) * bh;
-    const jb0 = Math.max(0, Math.floor((top - gap - b.y) / bh) - B.j0);
-    const jb1 = Math.min(B.l.length - 1, Math.floor((top + bh + gap - b.y) / bh) - B.j0);
-    const ax0 = a.x + la * k;
-    const ax1 = a.x + (A.r[i] as number) * k;
-    let widest = 0;
-    for (let j = jb0; j <= jb1; j++) {
-      const lb = B.l[j] as number;
-      if (Number.isNaN(lb)) continue;
-      const o = Math.min(ax1, b.x + (B.r[j] as number) * k) - Math.max(ax0, b.x + lb * k) + gap;
-      if (o > widest) widest = o;
-    }
-    area += widest * bh;
-  }
-  return area;
-}
-
-function boxOverlap(a: [number, number, number, number], b: Box): number {
-  const w = Math.min(a[2], b.x + b.w) - Math.max(a[0], b.x);
-  const h = Math.min(a[3], b.y + b.h) - Math.max(a[1], b.y);
-  return w > 0 && h > 0 ? w * h : 0;
-}
-
-/**
- * How much of a figure standing at (x, y) a prop would hide: the screen width of the figure that a blocked footprint
- * (taken PROP_H tall) covers from in front. A figure the set's scenery should hide must not stand there, since the
- * board is one image drawn under every figure.
- */
-function hiddenBehindProps(s: Stage, box: [number, number, number, number], y: number): number {
-  let hidden = 0;
-  for (const { corners, x0, x1 } of s.props) {
-    const xa = Math.max(box[0], x0);
-    const xb = Math.min(box[2], x1);
-    if (xb <= xa) continue;
-    // The footprint's nearest ground point (the largest screen y) within the figure's columns.
-    let nearest = -Infinity;
-    for (let i = 0; i < 4; i++) {
-      const p = corners[i] as [number, number];
-      const q = corners[(i + 1) % 4] as [number, number];
-      if (p[0] >= xa && p[0] <= xb) nearest = Math.max(nearest, p[1]);
-      for (const xe of [xa, xb]) {
-        if ((p[0] - xe) * (q[0] - xe) <= 0 && p[0] !== q[0]) nearest = Math.max(nearest, p[1] + ((q[1] - p[1]) * (xe - p[0])) / (q[0] - p[0]));
-      }
-    }
-    if (nearest > y && nearest - PROP_H * s.hpm < y) hidden += xb - xa;
-  }
-  return hidden;
-}
-
-/** True when the anchor is on its ground (the lawn inside its margin and off the blocked footprints, or the path). */
-function standable(s: Stage, region: Region, mx: number, my: number): boolean {
-  if (mx < region.x0 || mx > region.x1 || my < region.y0 || my > region.y1) return false;
-  if (region.path) return true;
-  for (const [rx, ry, rw, rh] of s.art.map.blocked) {
-    if (mx > rx - BLOCK_PAD && mx < rx + rw + BLOCK_PAD && my > ry - BLOCK_PAD && my < ry + rh + BLOCK_PAD) return false;
-  }
-  return true;
-}
-
-/** True when the silhouette's lowest band (the feet) lies on its ground: no paw over the board's edge or the path's. */
-function feetOnGround(s: Stage, region: Region, shape: Shape, x: number, y: number): boolean {
-  let last = shape.l.length - 1;
-  while (last >= 0 && Number.isNaN(shape.l[last] as number)) last--;
-  if (last < 0) return true;
-  const fy = y + (shape.j0 + last + 0.5) * BAND * s.k;
-  const [lx, ly] = s.art.map.lawn;
-  for (const fx of [x + (shape.l[last] as number) * s.k, x + (shape.r[last] as number) * s.k]) {
-    const [mx, my] = world(s, fx, fy);
-    if (region.path) {
-      const g = pathGround(s);
-      if (mx < g.x0 || mx > g.x1 || my < g.y0 || my > g.y1) return false;
-    } else if (mx < 0.04 || my < 0.04 || mx > lx - 0.04 || my > ly - 0.04) return false;
-  }
-  return true;
-}
-
-type Score = [number, number, number];
-const better = (a: Score, b: Score): boolean => a[0] < b[0] || (a[0] === b[0] && (a[1] < b[1] || (a[1] === b[1] && a[2] < b[2])));
-
-/**
- * Places each item in turn: of a few dozen candidate spots on its ground (seeded), the one that overlaps nothing (the
- * figures already placed with a little air, the GM, the event chips, the canvas's edges, a prop that would hide it),
- * then has the fewest same-sprite neighbours (the clone rule), then spreads out most (free play) or stands nearest
- * its target (an organised activity). Then up to three passes move each figure that still overlaps another to the
- * most open spots of a grid over its ground. Every item is placed: in a yard too full for clear air, the least
- * overlap. `fixed` figures (a walk's group, placed first) are obstacles that do not move.
- */
-function placeAll(s: Stage, items: readonly Item[], rand: () => number, fixed: readonly Placed[] = []): Placed[] {
-  return drain(placeSteps(s, items, rand, fixed));
-}
-
-/** Runs a resumable computation to its end. */
-function drain<T>(gen: Generator<void, T, void>): T {
-  let r = gen.next();
-  while (r.done !== true) r = gen.next();
-  return r.value;
-}
-
-/** placeAll as a resumable computation: it pauses after each figure, so the work can be spread over idle time. */
-function* placeSteps(s: Stage, items: readonly Item[], rand: () => number, fixed: readonly Placed[] = []): Generator<void, Placed[], void> {
-  const gap = Math.max(1.5, 0.05 * s.art.map.ppm * s.k);
-  const keepClear: Box[] = [s.orb, { x: s.label.x - gap, y: s.label.y - gap, w: s.label.w + 2 * gap, h: s.label.h + 2 * gap }, s.chips];
-  const out: (Placed | null)[] = items.map(() => null);
-  const shapes = items.map((item) => item.looks.map(lookShape));
-  // The search shrinks as the yard fills, so a full day's arrangement stays a short task on a Chromebook.
-  const crowd = items.length + fixed.length;
-  const spread = clamp(Math.round(1500 / Math.max(1, crowd)), 32, 64);
-  const passes = crowd > 24 ? 2 : 3;
-  const cloneR2 = (CLONE_IMAGE_PX * s.k) ** 2; // on screen, CSS px
-
-  /**
-   * Item i's best look at (mx, my) among everyone else placed, or null where it cannot stand or cannot beat `bound`.
-   * The position's own terms (the clone rule, the spread or the target) are the same for every look; each look adds
-   * its overlaps, and a later look is tried only while the first still overlaps something.
-   */
-  const evaluate = (i: number, mx: number, my: number, bound: number, only = -1): { p: Placed; score: Score } | null => {
-    const item = items[i] as Item;
-    const { region, target } = item;
-    if (!standable(s, region, mx, my)) return null;
-    const [x, y] = ground(s, mx, my);
-    let clones = 0;
-    let nearest2 = Infinity;
-    for (let j = 0; j < fixed.length + out.length; j++) {
-      const q = j < fixed.length ? (fixed[j] as Placed) : out[j - fixed.length];
-      if (q == null || j - fixed.length === i) continue;
-      const dx = q.mx - mx;
-      const dy = q.my - my;
-      const d2 = dx * dx + dy * dy;
-      if (item.clone !== '' && q.clone === item.clone && (q.x - x) ** 2 + (q.y - y) ** 2 < cloneR2) clones += 1;
-      if (d2 < nearest2) nearest2 = d2;
-    }
-    const third =
-      target === null
-        ? -Math.min(Math.sqrt(nearest2), 2 * Math.min(mx - region.x0, region.x1 - mx, my - region.y0, region.y1 - my) + 0.6)
-        : Math.sqrt((mx - target[0]) ** 2 + (my - target[1]) ** 2);
-    let best: { p: Placed; score: Score } | null = null;
-    const alts = shapes[i] as Shape[];
-    for (let alt = 0; alt < alts.length; alt++) {
-      if (only >= 0 && alt !== only) continue;
-      const shape = alts[alt] as Shape;
-      if (!feetOnGround(s, region, shape, x, y)) continue;
-      const box = boxAt(s, shape, x, y);
-      const p: Placed = { shape, alt, x, y, box, clone: item.clone, mx, my };
-      const limit = Math.min(bound, best === null ? Infinity : best.score[0]) + 0.5;
-      let cost = 0;
-      for (const zone of keepClear) cost += boxOverlap(box, zone) * 4;
-      if (box[0] < 0 || box[1] < 0 || box[2] > s.width || box[3] > s.height) cost += 1e6;
-      if (!region.path) cost += hiddenBehindProps(s, box, y) * 1e4;
-      if (region.prefer !== undefined && !region.prefer(mx, my)) cost += 50;
-      for (let j = 0; j < fixed.length + out.length && cost <= limit; j++) {
-        const q = j < fixed.length ? (fixed[j] as Placed) : out[j - fixed.length];
-        if (q == null || j - fixed.length === i) continue;
-        cost += overlapArea(s, p, q, gap);
-      }
-      if (cost > limit) continue;
-      const score: Score = [Math.round(cost), clones, third];
-      if (best === null || better(score, best.score)) best = { p, score };
-      if (score[0] === 0) break; // clear air: the other facing cannot do better here
-    }
-    return best;
-  };
-
-  /**
-   * Item i's best spot among fresh candidates (and its current one, if it has one): seeded random spots, or, for the
-   * few figures a pass is still moving, a jittered grid over its whole ground, which finds the narrow gaps.
-   */
-  const settle = (i: number, thorough = false): Score => {
-    const item = items[i] as Item;
-    const { region, target } = item;
-    const candidates: [number, number][] = [];
-    const current = out[i];
-    if (current != null) candidates.push([current.mx, current.my]);
-    if (target !== null) {
-      candidates.push(target);
-      for (const r of [0.15, 0.3, 0.45, 0.6, 0.8, 1.05, 1.35, 1.7, 2.1]) {
-        const turn = rand() * Math.PI * 2;
-        for (let a = 0; a < 6; a++) {
-          const t = turn + (a * Math.PI) / 3;
-          candidates.push([target[0] + r * Math.cos(t), target[1] + r * Math.sin(t)]);
-        }
-      }
-    }
-    if (thorough) {
-      // The grid's 80 most open points (farthest from every other figure's feet) are the ones worth scoring.
-      const step = 0.3;
-      const open: [number, number, number][] = [];
-      for (let gx = region.x0; gx <= region.x1; gx += step) {
-        for (let gy = region.y0; gy <= region.y1; gy += step) {
-          const mx = gx + (rand() - 0.5) * step;
-          const my = gy + (rand() - 0.5) * step;
-          let d2 = Infinity;
-          for (let j = 0; j < fixed.length + out.length; j++) {
-            const q = j < fixed.length ? (fixed[j] as Placed) : out[j - fixed.length];
-            if (q == null || j - fixed.length === i) continue;
-            d2 = Math.min(d2, (q.mx - mx) ** 2 + (q.my - my) ** 2);
-          }
-          open.push([mx, my, d2]);
-        }
-      }
-      open.sort((a, b) => b[2] - a[2]);
-      for (const [mx, my] of open.slice(0, 80)) candidates.push([mx, my]);
-    } else {
-      for (let c = 0; c < (target === null ? spread : 12); c++) {
-        candidates.push([region.x0 + rand() * (region.x1 - region.x0), region.y0 + rand() * (region.y1 - region.y0)]);
-      }
-    }
-    let best: Placed | null = null;
-    let bestScore: Score = [Infinity, Infinity, Infinity];
-    for (const [mx, my] of candidates) {
-      const e = evaluate(i, mx, my, bestScore[0]);
-      if (e !== null && better(e.score, bestScore)) {
-        best = e.p;
-        bestScore = e.score;
-      }
-    }
-    if (best === null) {
-      // Nothing standable among the candidates (a cramped board): the region's middle.
-      const mx = (region.x0 + region.x1) / 2;
-      const my = (region.y0 + region.y1) / 2;
-      const [x, y] = ground(s, mx, my);
-      const shape = (shapes[i] as Shape[])[0] as Shape;
-      best = { shape, alt: 0, x, y, box: boxAt(s, shape, x, y), clone: item.clone, mx, my };
-    }
-    out[i] = best;
-    return bestScore;
-  };
-
-  for (let i = 0; i < items.length; i++) {
-    settle(i);
-    yield;
-  }
-  for (let pass = 0; pass < passes; pass++) {
-    let moved = false;
-    for (let i = 0; i < items.length; i++) {
-      const current = out[i] as Placed;
-      const now = evaluate(i, current.mx, current.my, Infinity, current.alt);
-      if (now === null || (now.score[0] === 0 && now.score[1] === 0)) continue;
-      if (better(settle(i, true), now.score)) moved = true;
-      yield;
-    }
-    if (!moved) break;
-  }
-  return out as Placed[];
-}
-
-/**
- * The day's cast and where each stands in free play: the dogs' breeds and coats dealt evenly from the cast (shuffled),
- * each dog's facing and its free-play pose (moving or sitting), and its spot, kept all day (a walk's floor too). The
- * crew stand first, near the middle.
- */
-function dayPlan(s: Stage, day: number, dogCount: number, staffCount: number): DayPlan {
-  const key = `${day}|${dogCount}|${staffCount}`;
-  const cached = plans.get(key);
-  if (cached !== undefined) return cached;
-  // Started ahead of time and not done yet: finish it here rather than start again.
-  const started = pendingPlans.get(key);
-  pendingPlans.delete(key);
-  return drain(started ?? daySteps(s, day, dogCount, staffCount));
-}
-
-/** dayPlan's work, resumable; it files the plan under its key when it is done. */
-function* daySteps(s: Stage, day: number, dogCount: number, staffCount: number): Generator<void, DayPlan, void> {
-  const key = `${day}|${dogCount}|${staffCount}`;
-  const art = s.art;
-  const rand = seeded(day, dogCount, staffCount, 1);
-  const ids: string[] = [];
-  while (ids.length < dogCount) ids.push(...shuffle([...art.identities], rand));
-  const face = (): Facing => (rand() < 0.5 ? 'right' : 'left');
-  // A breed and coat the day deals twice plays in the other pose the second time, so no two dogs are the same sprite
-  // in free play (round 1, finding 7); a dog dealt once moves or sits by chance.
-  const firstPose = new Map<string, DogPose>();
-  const dogs: DogCard[] = Array.from({ length: dogCount }, (_, i) => {
-    const id = ids[i] as string;
-    const chance: DogPose = rand() < 0.62 ? 'moving' : 'sitting';
-    const before = firstPose.get(id);
-    const play: DogPose = before === undefined ? chance : before === 'moving' ? 'sitting' : 'moving';
-    if (before === undefined) firstPose.set(id, play);
-    return { id, facing: face(), play, mx: 0, my: 0 };
-  });
-  // The crew face alternate ways, so two staffers drawn from the one model never stand as copies.
-  const first = face();
-  const crew: CrewCard[] = Array.from({ length: staffCount }, (_, k) => ({ facing: k % 2 === 0 ? first : first === 'right' ? 'left' : 'right', mx: 0, my: 0 }));
-  const [lx, ly] = art.map.lawn;
-  const CREW_AT: readonly [number, number][] = [
-    [0.4, 0.38],
-    [0.66, 0.3],
-    [0.2, 0.5],
-  ];
-  const region = lawnRegion(s);
-  // Each dog may face either way; the placer takes the facing that fits (the seeded one first, when both do).
-  const facings = dogs.map((d): Facing[] => (d.facing === 'right' ? ['right', 'left'] : ['left', 'right']));
-  const items: Item[] = [
-    ...crew.map((c, k): Item => {
-      const at = CREW_AT[k % CREW_AT.length] as [number, number];
-      const look = crewLook(art, personOf(art, k), crewPose('free', k), c.facing);
-      return { looks: [look], clone: cloneKey(look), region, target: [at[0] * lx, at[1] * ly] };
-    }),
-    ...dogs.map((d, i): Item => {
-      const looks = (facings[i] as Facing[]).map((f) => dogLook(art, d.id, d.play, f));
-      return { looks, clone: cloneKey(looks[0] as Look), region, target: null };
-    }),
-  ];
-  const spots = yield* placeSteps(s, items, rand);
-  crew.forEach((c, k) => {
-    const p = spots[k] as Placed;
-    c.mx = p.mx;
-    c.my = p.my;
-  });
-  dogs.forEach((d, i) => {
-    const p = spots[crew.length + i] as Placed;
-    d.mx = p.mx;
-    d.my = p.my;
-    d.facing = (facings[i] as Facing[])[p.alt] as Facing;
-  });
-  const plan: DayPlan = { dogs, crew, more: new Map() };
-  plans.set(key, plan);
-  return plan;
-}
-
-function fig(s: Stage, look: Look, mx: number, my: number): Fig {
-  const [x, y] = ground(s, mx, my);
-  return { look, mx, my, x, y };
-}
-
-const placedOf = (s: Stage, f: Fig, clone = ''): Placed => {
-  const shape = lookShape(f.look);
-  return { shape, alt: 0, x: f.x, y: f.y, box: boxAt(s, shape, f.x, f.y), clone, mx: f.mx, my: f.my };
-};
-
-/**
- * Structured play: each staffer on the floor with a ball, their dogs sitting in short rows either side of them, every
- * dog facing its staffer (the rows to the screen's left face right, those to its right face left). The groups stand
- * side by side across the lawn.
- */
-function structured(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
-  const key = `structured|${frame.floorDogs}|${frame.floorStaff}`;
-  const cached = plan.more.get(key);
-  if (cached !== undefined) return cached.map((c) => fig(s, c.look, c.mx, c.my));
-  const art = s.art;
-  const rand = seeded(frame.day, frame.dogs, frame.staff, 2);
-  const [lx, ly] = art.map.lawn;
-  const groups = Math.max(1, frame.floorStaff);
-  const side: [number, number] = [-Math.SQRT1_2, Math.SQRT1_2]; // one metre toward the screen's left
-  const back: [number, number] = [Math.SQRT1_2, Math.SQRT1_2]; // one metre away from the viewer
-  const centre: [number, number] = [lx * 0.43, ly * 0.43];
-  const spread = Math.min(3.4, (Math.hypot(lx, ly) * 0.8) / groups);
-  const region = lawnRegion(s);
-  const items: Item[] = [];
-  for (let g = 0; g < groups; g++) {
-    const off = (g - (groups - 1) / 2) * spread;
-    const cx = centre[0] - side[0] * off;
-    const cy = centre[1] - side[1] * off;
-    if (frame.floorStaff > 0) {
-      const look = crewLook(art, personOf(art, g), crewPose('structured', g), g % 2 === 0 ? 'right' : 'left');
-      items.push({ looks: [look], clone: cloneKey(look), region, target: [cx, cy] });
-    }
-    const first = Math.floor((g * frame.floorDogs) / groups);
-    const m = Math.floor(((g + 1) * frame.floorDogs) / groups) - first;
-    const perSide = Math.ceil(m / 2);
-    const rows = Math.max(1, Math.ceil(Math.sqrt(perSide * 1.3)));
-    const cols = Math.max(1, Math.ceil(perSide / rows));
-    for (let j = 0; j < m; j++) {
-      const d = plan.dogs[first + j] as DogCard;
-      const left = j % 2 === 0;
-      const n = Math.floor(j / 2);
-      const c = n % cols;
-      const r = Math.floor(n / cols);
-      const dist = 0.95 + c * 0.85;
-      const depth = (r - (rows - 1) / 2) * 0.75;
-      const sign = left ? 1 : -1;
-      const look = dogLook(art, d.id, 'sitting', left ? 'right' : 'left');
-      items.push({
-        looks: [look],
-        clone: cloneKey(look),
-        region,
-        target: [cx + sign * side[0] * dist + back[0] * depth, cy + sign * side[1] * dist + back[1] * depth],
-      });
-    }
-  }
-  const spots = placeAll(s, items, rand);
-  const figs = spots.map((p, i) => fig(s, (items[i] as Item).looks[p.alt] as Look, p.mx, p.my));
-  plan.more.set(key, figs.map(({ look, mx, my }) => ({ look, mx, my })));
-  return figs;
-}
-
-/**
- * A clean: the crew with the mop on the open floor at the screen's left, the dogs settled out of the way at its right,
- * sitting or asleep.
- */
-function cleaning(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
-  const key = `clean|${frame.floorDogs}|${frame.floorStaff}`;
-  const cached = plan.more.get(key);
-  if (cached !== undefined) return cached.map((c) => fig(s, c.look, c.mx, c.my));
-  const art = s.art;
-  const rand = seeded(frame.day, frame.dogs, frame.staff, 3);
-  const [lx, ly] = art.map.lawn;
-  const lawn = lawnRegion(s);
-  const right: Region = { ...lawn, prefer: (mx, my) => mx - my > -0.4 };
-  const items: Item[] = [];
-  const CREW_AT: readonly [number, number][] = [
-    [0.22, 0.6],
-    [0.18, 0.32],
-    [0.38, 0.78],
-  ];
-  for (let k = 0; k < frame.floorStaff; k++) {
-    const at = CREW_AT[k % CREW_AT.length] as [number, number];
-    const look = crewLook(art, personOf(art, k), crewPose('clean', k), (plan.crew[k] as CrewCard).facing);
-    items.push({ looks: [look], clone: cloneKey(look), region: lawn, target: [at[0] * lx, at[1] * ly] });
-  }
-  for (let i = 0; i < frame.floorDogs; i++) {
-    const d = plan.dogs[i] as DogCard;
-    // As in free play, a breed and coat dealt twice rests in the other pose the second time.
-    const pose: DogPose = d.play === 'moving' ? 'asleep' : 'sitting';
-    const other: Facing = d.facing === 'right' ? 'left' : 'right';
-    const looks = [dogLook(art, d.id, pose, d.facing), dogLook(art, d.id, pose, other)];
-    items.push({ looks, clone: cloneKey(looks[0] as Look), region: right, target: null });
-  }
-  const spots = placeAll(s, items, rand);
-  const figs = spots.map((p, i) => fig(s, (items[i] as Item).looks[p.alt] as Look, p.mx, p.my));
-  plan.more.set(key, figs.map(({ look, mx, my }) => ({ look, mx, my })));
-  return figs;
-}
-
-/**
- * A walk: the walking group on the set's own path (set.json's walk strip, along the lawn's front-right edge), the
- * staffer in front with the leash and the dogs behind in single file, all heading along the path toward the lawn's
- * front corner (the camera-facing diagonal down and left, so every sprite faces left); placed first, in formation. Then
- * the floor makes room for it: each dog and staffer left behind stands as near its free-play spot as it can without
- * crowding the group, so the group reads as its own.
- */
-function walking(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
-  const key = `walk|${frame.floorDogs}|${frame.floorStaff}|${frame.walkingDogs}|${frame.walkingStaff}`;
-  const cached = plan.more.get(key);
-  if (cached !== undefined) return cached.map((c) => fig(s, c.look, c.mx, c.my));
-  const art = s.art;
-  const rand = seeded(frame.day, frame.dogs, frame.staff, 4);
-  const path = pathRegion(s);
-  const mid = (path.y0 + path.y1) / 2;
-  const group: Item[] = [];
-  const walker = frame.staff - 1; // the staffer the walk takes off the floor
-  if (frame.walkingStaff > 0) {
-    const look = crewLook(art, personOf(art, walker), 'leash', 'left');
-    group.push({ looks: [look], clone: cloneKey(look), region: path, target: [path.x0 + 0.25, mid] });
-  }
-  for (let j = 0; j < frame.walkingDogs; j++) {
-    const d = plan.dogs[frame.floorDogs + j] as DogCard;
-    const look = dogLook(art, d.id, 'moving', 'left');
-    group.push({ looks: [look], clone: cloneKey(look), region: path, target: [path.x0 + 1.05 + j * 0.95, mid + (j % 2 === 0 ? -0.05 : 0.05)] });
-  }
-  const walkers = placeAll(s, group, rand);
-  const lawn = lawnRegion(s);
-  const floor: Item[] = [];
-  for (let i = 0; i < frame.floorDogs; i++) {
-    const d = plan.dogs[i] as DogCard;
-    const look = dogLook(art, d.id, d.play, d.facing);
-    floor.push({ looks: [look], clone: cloneKey(look), region: lawn, target: [d.mx, d.my] });
-  }
-  for (let k = 0; k < frame.floorStaff; k++) {
-    const c = plan.crew[k] as CrewCard;
-    const look = crewLook(art, personOf(art, k), crewPose('free', k), c.facing);
-    floor.push({ looks: [look], clone: cloneKey(look), region: lawn, target: [c.mx, c.my] });
-  }
-  const stay = placeAll(s, floor, rand, walkers);
-  const figs = [
-    ...walkers.map((p, i) => fig(s, (group[i] as Item).looks[p.alt] as Look, p.mx, p.my)),
-    ...stay.map((p, i) => fig(s, (floor[i] as Item).looks[p.alt] as Look, p.mx, p.my)),
-  ];
-  plan.more.set(key, figs.map(({ look, mx, my }) => ({ look, mx, my })));
-  return figs;
-}
-
-/** A nap: every dog lies down as near its free-play spot as the room allows; the crew stay where they stood. */
-function napping(s: Stage, plan: DayPlan, frame: ReplayFrame): Fig[] {
-  const key = `nap|${frame.floorDogs}|${frame.floorStaff}`;
-  const cached = plan.more.get(key);
-  if (cached !== undefined) return cached.map((c) => fig(s, c.look, c.mx, c.my));
-  const art = s.art;
-  const rand = seeded(frame.day, frame.dogs, frame.staff, 5);
-  const region = lawnRegion(s);
-  const items: Item[] = [];
-  for (let k = 0; k < frame.floorStaff; k++) {
-    const c = plan.crew[k] as CrewCard;
-    const look = crewLook(art, personOf(art, k), crewPose('nap', k), c.facing);
-    items.push({ looks: [look], clone: cloneKey(look), region, target: [c.mx, c.my] });
-  }
-  for (let i = 0; i < frame.floorDogs; i++) {
-    const d = plan.dogs[i] as DogCard;
-    const other: Facing = d.facing === 'right' ? 'left' : 'right';
-    const looks = [dogLook(art, d.id, 'asleep', d.facing), dogLook(art, d.id, 'asleep', other)];
-    items.push({ looks, clone: cloneKey(looks[0] as Look), region, target: [d.mx, d.my] });
-  }
-  const spots = placeAll(s, items, rand);
-  const figs = spots.map((p, i) => fig(s, (items[i] as Item).looks[p.alt] as Look, p.mx, p.my));
-  plan.more.set(key, figs.map(({ look, mx, my }) => ({ look, mx, my })));
-  return figs;
-}
-
-/** Everyone on the yard in this block: the floor as the activity has it (a walk's group on the path beside it). */
-function figuresOf(s: Stage, frame: ReplayFrame): Fig[] {
-  if (frame.closed || frame.activity === null) return [];
-  const plan = dayPlan(s, frame.day, frame.dogs, frame.staff);
-  const art = s.art;
-  if (frame.activity === 'structuredPlay') return structured(s, plan, frame);
-  if (frame.activity === 'clean') return cleaning(s, plan, frame);
-  if (frame.activity === 'nap') return napping(s, plan, frame);
-  if (frame.walkingStaff > 0 || frame.walkingDogs > 0) return walking(s, plan, frame);
-  const floor: Fig[] = [];
-  for (let i = 0; i < frame.floorDogs; i++) {
-    const d = plan.dogs[i] as DogCard;
-    floor.push(fig(s, dogLook(art, d.id, d.play, d.facing), d.mx, d.my));
-  }
-  for (let k = 0; k < frame.floorStaff; k++) {
-    const c = plan.crew[k] as CrewCard;
-    floor.push(fig(s, crewLook(art, personOf(art, k), crewPose('free', k), c.facing), c.mx, c.my));
-  }
-  return floor;
-}
-
-// --- The frame on the set. ------------------------------------------------------------------------------------------
+// ===============================================================================================================
+// The frame on the set.
 
 function drawYard(
   ctx: CanvasRenderingContext2D,
@@ -2471,6 +2672,7 @@ function drawYard(
   art: ArtSet,
   motion: boolean,
 ): void {
+  lastIdle = null;
   const s = stageFor(width, height, options.pixelRatio, art);
   const tokens = options.fonts === undefined ? s.tokens : { ...s.tokens, font: options.fonts.body };
   const R = s.ratio;
@@ -2488,40 +2690,17 @@ function drawYard(
   ctx.drawImage(s.layer, 0, 0);
 
   // The incident: a ring on the lawn around the floor, never on a dog (D60).
-  if (frame.events.some((e) => e.type === 'incident')) drawPulse(ctx, s, tokens, figs, motion ? progress : null);
+  if (frame.events.some((e) => e.type === 'incident')) drawPulse(ctx, s, R, tokens, figs, motion ? progress : null);
 
   // The GM over the clubhouse: its soft shadow on the roof, then the orb, hovering gently while the week plays.
   const state: GmState = options.gm ?? 'running';
-  const gm = gmDrawn(s, state);
-  const hover = motion && state === 'running' ? Math.sin(((frame.day * 4 + frame.block + progress) / 8) * Math.PI * 2) * 2.5 * s.k * 2 : 0;
-  drawGm(ctx, s, gm, hover);
+  drawGm(ctx, s, gmDrawn(s, state), gmHover(s, frame, progress, motion, state));
 
   // The figures: every shadow first, so none falls across another figure, and only on the ground (the lawn and the
   // set's path: a shadow thrown past the fence would land on the page); then the figures back to front.
   const drawn = figs.map((f) => drawnFor(s, f.look));
-  const [lx, ly] = s.art.map.lawn;
-  const pg = pathGround(s);
   ctx.save();
-  ctx.setTransform(R, 0, 0, R, 0, 0);
-  ctx.beginPath();
-  const quads: [number, number][][] = [
-    [[0, 0], [lx, 0], [lx, ly], [0, ly]],
-    [[pg.x0, pg.y0], [pg.x1, pg.y0], [pg.x1, pg.y1], [pg.x0, pg.y1]],
-  ];
-  for (const quad of quads) {
-    quad.forEach(([mx, my], i) => (i === 0 ? ctx.moveTo(...ground(s, mx, my)) : ctx.lineTo(...ground(s, mx, my))));
-    ctx.closePath();
-  }
-  ctx.clip();
-  // Less the scenery standing on the lawn (each blocked footprint raised PROP_H): no shadow on a wall or a bush. Each is
-  // its own clip (the canvas with that outline cut out), since clips intersect.
-  for (const outline of s.propHulls) {
-    ctx.beginPath();
-    ctx.rect(0, 0, s.width, s.height);
-    outline.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
-    ctx.closePath();
-    ctx.clip('evenodd');
-  }
+  clipToGround(ctx, s, R);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   figs.forEach((f, i) => {
     const { d, scale } = drawn[i] as { d: Drawn; scale: number };
@@ -2535,19 +2714,53 @@ function drawYard(
 
   ctx.setTransform(R, 0, 0, R, 0, 0);
   drawGmLabel(ctx, tokens, s.fs, s.label);
-  // The block's events while the week plays; none once it is over (round 1, finding 5: a stale event reads as current).
-  if (state !== 'done') {
-    const captions = frame.closed && !frame.captions.some((c) => /closed/i.test(c)) ? ['Closed', ...frame.captions] : frame.captions;
-    drawChips(ctx, tokens, s.fs, s.width - s.pad, s.pad, s.chips.w - s.pad, captions);
+  drawBlockChips(ctx, s, tokens, frame, state);
+}
+
+/** The GM's hover while the week plays: a slow bob over the roof, none under reduced motion or in its other states. */
+const gmHover = (s: Scene, frame: ReplayFrame, progress: number, motion: boolean, state: GmState): number =>
+  motion && state === 'running' ? Math.sin(((frame.day * 4 + frame.block + progress) / 8) * Math.PI * 2) * 2.5 * s.k * 2 : 0;
+
+/** The block's events while the week plays; none once it is over (round 1, finding 5: a stale event reads as current). */
+function drawBlockChips(ctx: CanvasRenderingContext2D, s: Scene, tokens: Tokens, frame: ReplayFrame, state: GmState): void {
+  if (state === 'done') return;
+  const captions = frame.closed && !frame.captions.some((c) => /closed/i.test(c)) ? ['Closed', ...frame.captions] : frame.captions;
+  drawChips(ctx, tokens, s.fs, s.width - s.pad, s.pad, s.chips.w - s.pad, captions);
+}
+
+/**
+ * Clips to the ground a shadow may fall on: the lawn and the set's path, less the scenery standing on the lawn (each
+ * blocked footprint raised PROP_H), each its own clip (the canvas with that outline cut out), since clips intersect.
+ */
+function clipToGround(ctx: CanvasRenderingContext2D, s: Scene, R: number): void {
+  const [lx, ly] = s.set.map.lawn;
+  const pg = pathGround(s);
+  ctx.setTransform(R, 0, 0, R, 0, 0);
+  ctx.beginPath();
+  const quads: [number, number][][] = [
+    [[0, 0], [lx, 0], [lx, ly], [0, ly]],
+    [[pg.x0, pg.y0], [pg.x1, pg.y0], [pg.x1, pg.y1], [pg.x0, pg.y1]],
+  ];
+  for (const quad of quads) {
+    quad.forEach(([mx, my], i) => (i === 0 ? ctx.moveTo(...ground(s, mx, my)) : ctx.lineTo(...ground(s, mx, my))));
+    ctx.closePath();
+  }
+  ctx.clip();
+  for (const outline of s.propHulls) {
+    ctx.beginPath();
+    ctx.rect(0, 0, s.width, s.height);
+    outline.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    ctx.closePath();
+    ctx.clip('evenodd');
   }
 }
 
-/** Development only (stripped from the build): how many pairs of figures overlap, and how many clone neighbours. */
-function yardStats(s: Stage, figs: readonly Fig[]): { figures: number; overlaps: number; worst: number; clones: number } {
-  const placed = figs.map((f) => placedOf(s, f, cloneKey(f.look)));
+/** Development only (stripped from the build): overlapping pairs, and pairs that break a spacing rule. */
+function yardStats(s: Scene, figs: readonly Fig[]): { figures: number; overlaps: number; worst: number; breaches: number } {
+  const placed = figs.map((f) => placedOf(s, f));
   let overlaps = 0;
   let worst = 0;
-  let clones = 0;
+  let breaches = 0;
   for (let i = 0; i < placed.length; i++) {
     for (let j = i + 1; j < placed.length; j++) {
       const a = placed[i] as Placed;
@@ -2555,19 +2768,20 @@ function yardStats(s: Stage, figs: readonly Fig[]): { figures: number; overlaps:
       const o = overlapArea(s, a, b, 0);
       if (o > 4) overlaps += 1;
       worst = Math.max(worst, o);
-      if (a.clone !== '' && a.clone === b.clone && Math.hypot(a.x - b.x, a.y - b.y) < CLONE_IMAGE_PX * s.k) clones += 1;
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if ((a.sprite === b.sprite && d < s.sameSprite) || (a.breedPose !== '' && a.breedPose === b.breedPose && d < s.sameBreedPose)) breaches += 1;
     }
   }
-  return { figures: figs.length, overlaps, worst: Math.round(worst), clones };
+  return { figures: figs.length, overlaps, worst: Math.round(worst), breaches };
 }
 
 /**
  * The incident's pulse: a ring on the lawn round the dogs on the floor (their middle, wide enough to take them in),
  * clipped to the lawn, growing and fading through the block; a steady ring under reduced motion (`progress` null).
  */
-function drawPulse(ctx: CanvasRenderingContext2D, s: Stage, tokens: Tokens, figs: readonly Fig[], progress: number | null): void {
-  const [lx, ly] = s.art.map.lawn;
-  const onLawn = figs.filter((f) => f.mx >= 0);
+function drawPulse(ctx: CanvasRenderingContext2D, s: Scene, R: number, tokens: Tokens, figs: readonly Fig[], progress: number | null): void {
+  const [lx, ly] = s.set.map.lawn;
+  const onLawn = figs.filter((f) => f.mx >= 0 && f.my >= 0);
   let cx = lx * 0.45;
   let cy = ly * 0.45;
   let radius = Math.min(lx, ly) * 0.3;
@@ -2577,7 +2791,6 @@ function drawPulse(ctx: CanvasRenderingContext2D, s: Stage, tokens: Tokens, figs
     const rms = Math.sqrt(onLawn.reduce((t, f) => t + (f.mx - cx) ** 2 + (f.my - cy) ** 2, 0) / onLawn.length);
     radius = clamp(rms * 1.35, 1.1, Math.min(lx, ly) * 0.48);
   }
-  const R = s.ratio;
   ctx.save();
   ctx.setTransform(R, 0, 0, R, 0, 0);
   ctx.beginPath();
@@ -2613,15 +2826,17 @@ function drawPulse(ctx: CanvasRenderingContext2D, s: Stage, tokens: Tokens, figs
 /** The GM over the roof: its soft shadow at gmSpot, under the orb's centre, then the orb, `hover` CSS px off its place. */
 function drawGm(ctx: CanvasRenderingContext2D, s: Stage, gm: Drawn, hover: number): void {
   const R = s.ratio;
-  const [gx, gy] = [s.bx + s.art.gmSpot[0] * s.k, s.by + s.art.gmSpot[1] * s.k];
+  const [gx, gy] = [s.bx + s.set.gmSpot[0] * s.k, s.by + s.set.gmSpot[1] * s.k];
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (s.gmShadow !== null) ctx.drawImage(s.gmShadow, Math.round(gx * R - s.gmShadow.width / 2), Math.round(gy * R - s.gmShadow.height / 2));
   ctx.drawImage(gm.img, Math.round(gx * R - gm.ax), Math.round((gy + hover) * R - gm.ay));
 }
 
 /** "The GM" on a navy pill with the amber light, a short line to the orb (Floor's callout). */
-function drawGmLabel(ctx: CanvasRenderingContext2D, tokens: Tokens, fs: number, label: Stage['label']): void {
-  const { x, y, w, h, lineFrom, lineTo } = label;
+function drawGmLabel(ctx: CanvasRenderingContext2D, tokens: Tokens, fs: number, label: Label): void {
+  const { x, y, h, lineFrom, lineTo } = label;
+  ctx.font = uiFont(tokens, fs, 800);
+  const w = Math.max(label.w, ctx.measureText('The GM').width + fs * 1.9);
   const mid = y + h / 2;
   ctx.strokeStyle = tokens.ink;
   ctx.lineWidth = 2;
@@ -2636,7 +2851,6 @@ function drawGmLabel(ctx: CanvasRenderingContext2D, tokens: Tokens, fs: number, 
   circle(ctx, x + h * 0.52, mid, fs * 0.26);
   ctx.fill();
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = uiFont(tokens, fs, 800);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText('The GM', x + h * 0.52 + fs * 0.62, mid + fs * 0.04);

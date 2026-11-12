@@ -2,23 +2,19 @@
 
 Team code: ____
 
-Read the five cases. For each one, answer the three questions. In every case, "the GM" means whoever is being paid, a person or a system.
-
-- What did the owners actually want?
-- What did we pay the GM for?
-- What was the cheapest way to earn it?
+Read the five cases. For each one, answer the three questions ("the GM" means whoever is paid, a person or a system): What did the owners actually want? What did we pay the GM for? What was the cheapest way to earn it?
 
 Then a fourth question, about the week your SI GM ran in Round 1: Would a human GM have run this week? What would have stopped a person that did not stop the SI?
 
 ### 1. A bank paid on accounts opened (Wells Fargo)
 
-Wells Fargo set aggressive sales goals for its branch employees, and those goals were tied to pay. Employees opened bank and credit card accounts that customers had not asked for. On September 8, 2016 the Consumer Financial Protection Bureau (CFPB) fined the bank $100 million for it. That was the CFPB's penalty; other agencies acted too. An account opened without a customer asking for it still adds one to the count.
+Wells Fargo set aggressive sales goals for its branch employees, and those goals were tied to pay. Employees opened bank and credit card accounts that customers had not asked for. On September 8, 2016 the Consumer Financial Protection Bureau (CFPB) fined the bank $100 million for it; other agencies acted too. An account opened without a customer asking for it still adds one to the count.
 
 With an SI in that seat, what would have been different? → ______________________________
 
 ### 2. A call centre paid on average handle time (a made-up example)
 
-A call centre wants customers whose problems get solved. It pays its agents a bonus for a low average handle time, the minutes spent per call. Soon calls get short. Agents transfer callers to other desks, or end the call early with the problem still open. The customer calls back and reaches a different agent. Each call is short and the bonus is paid. The average looks wonderful, and the customers are still stuck.
+A call centre wants customers whose problems get solved. It pays its agents a bonus for a low average handle time, the minutes spent per call. Soon calls get short. Agents transfer callers to other desks, or end the call early with the problem still open, and the customer calls back. Each call is short and the bonus is paid. The average looks wonderful, and the customers are still stuck.
 
 With an SI in that seat, what would have been different? → ______________________________
 
@@ -30,7 +26,7 @@ With an SI in that seat, what would have been different? → ___________________
 
 ### 4. A school judged on attendance (a made-up example)
 
-A school wants students who learn. Its funding and its ranking depend on attendance, so attendance is what gets managed. A student who sits in a seat all day counts as present. So does one who is asleep, lost, or not taking anything in. The school can raise the number with prizes for showing up, and the number rises. It counts bodies in the room, which is not the same as counting what students know. Attendance can climb while learning does not.
+A school wants students who learn. Its funding and its ranking depend on attendance, so attendance is what gets managed. A student who sits in a seat all day counts as present, even one who is asleep or lost. Prizes for showing up raise the number. It counts bodies in the room, not what students know, so attendance can climb while learning does not.
 
 If an SI ran the school, what would have been different? → ______________________________
 
@@ -56,7 +52,7 @@ Goodhart's law says, in plain words, that when a measure becomes a target, it st
 
 Fill in a row for each case. Use the three questions above.
 
-| Case | What did the owners actually want? | What did we pay the GM for? | What was the cheapest way to earn it? |
+| Case | What the owners wanted | What we paid the GM for | The cheapest way to earn it |
 |---|---|---|---|
 | 1. Wells Fargo | | | |
 | 2. Call centre | | | |

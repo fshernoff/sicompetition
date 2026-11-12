@@ -373,6 +373,24 @@ describe('the concept check and its key', () => {
     expect(q5).toMatch(/\bboth\b/i);
   });
 
+  // Astra, G11: the bakery still made $300; the full-credit example must not claim a loss the report does not show.
+  it("question 6's key claims no loss the report does not show", () => {
+    expect(question(key(), 6)).not.toMatch(/\bat a loss\b/i);
+  });
+
+  // Astra, G11: the gym (question 7) is near the readings' salesperson case, so the kit says so instead of "not recall".
+  it('the key and the evidence README call question 7 near transfer from the readings', () => {
+    for (const text of [key(), readFileSync('docs/evidence/README.md', 'utf8')]) expect(text).toMatch(/\bQuestion 7\b[^.]*\bnear\b/i);
+  });
+
+  // Astra, G11: the report leads with the profit after the GM's bonus; each brief says which profit to copy.
+  it("each brief says which profit to copy from the report", () => {
+    for (const file of ['brief-round1.md', 'brief-round2.md', 'brief-round3.md']) {
+      const line = read(file).split('\n').find((l) => l.includes('From the report:')) ?? '';
+      expect(line, file).toMatch(/\bprofit after the GM's bonus\b/);
+    }
+  });
+
   it('the key says where to print the earlier form: the evidence README', () => {
     expect(key()).toContain('docs/evidence/README.md');
   });
@@ -418,6 +436,23 @@ describe('the teacher guide', () => {
     expect(diff).toMatch(/\btwo measures\b/i);
     expect(diff).toMatch(/\bsecond seed\b[^.]*\bTeacher\b|\bTeacher\b[^.]*\bsecond seed\b/i);
     expect(diff).toMatch(/\bsame (thing|week)\b/i);
+  });
+
+  // Astra, G11: the page leads with the profit after the GM's bonus; the guide's figure is the one before it.
+  it("says which profit Round 1's figure is: before the GM's bonus", () => {
+    expect(guide()).toMatch(/\$5,393 before the GM's bonus/);
+  });
+
+  // Astra, G11: the button waits for the five picks only; the page says the Why is "Not needed to start".
+  it('does not say the button waits for a Why', () => {
+    expect(guide()).not.toMatch(/\bwaits for five picks and a Why\b/i);
+    expect(guide()).toMatch(/\bwaits for the five picks\b/i);
+  });
+
+  // Astra, G11: the page keeps no run after a reload, so the gallery walk reruns each team's Round 2 plan first.
+  it('period 4 reruns each team\'s Round 2 plan before the gallery walk', () => {
+    const row = guide().split('\n').find((l) => /^\|\s*Period 4\s*\|/.test(l)) ?? '';
+    expect(row).toMatch(/\brerun\b[^.]*\bRound 2\b/i);
   });
 
   it("carries Round 1's week on seed 1 as the engine writes it", () => {
@@ -512,13 +547,39 @@ describe("the teacher's key (BRIEF section 14)", () => {
       const head = `${rule.id}. ${rule.title}`;
       expect(line.startsWith(head), `${rule.id}: "${head}"`).toBe(true);
       const own = new Set(sentences(rule.words));
-      for (const s of sentences(line.slice(head.length))) expect(own.has(s), `${rule.id}: "${s}" is the page's`).toBe(true);
-      expect(line, `${rule.id}: a number`).toMatch(/\d/);
+      const body = sentences(line.slice(head.length));
+      // Astra, G11: a title alone passed; each rule carries at least one of the page's sentences beyond its title.
+      expect(body.length, `${rule.id}: a sentence beyond the title`).toBeGreaterThan(0);
+      for (const s of body) expect(own.has(s), `${rule.id}: "${s}" is the page's`).toBe(true);
+      // The id "H1" is not the rule's number.
+      expect(line.slice(rule.id.length + 1), `${rule.id}: a number`).toMatch(/\d/);
     });
+  });
+
+  // Astra, G11: "2 in 100" is the ratio's chance, which energy and the activity multiply; H3 carries the page's sentence
+  // that says so, so a teacher does not read 2 in 100 as the chance during a nap or a walk.
+  it("qualifies H1's chance with H3's sentence of how a block's chance is made", () => {
+    const rules = sectionOf(key(), /^##\s+The hidden rules\s*$/m);
+    const h3 = rules.split('\n').find((l) => /^\s*-\s+\*\*H3\./.test(l)) ?? '';
+    const made = hiddenRules(config).find((r) => r.id === 'H3')?.words.split(/(?<=\.)\s+(?=[A-Z])/).find((s) => s.startsWith("A block's incident chance")) ?? '';
+    expect(made).not.toBe('');
+    expect(h3).toContain(made);
   });
 
   it('quotes Round 1 on seed 1 as the engine plays it', () => {
     quotes(family(/Round 1/), weekOf('P10').week, ['profit', 'incidents', 'reputation', 'solo']);
+  });
+
+  // Astra, G11: "help on the fifth" reads as Friday, and help on Friday would not stop Thursday's call-out.
+  it('names the day Round 1 gets its help on seed 1, and says its profit is before the GM\'s bonus', () => {
+    const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const days = weekOf('P10').week.days.map((d) => d.floorStaff);
+    const helped = days.flatMap((n, i) => (n > 1 ? [DAYS[i] ?? ''] : []));
+    expect(helped.length).toBe(1);
+    const line = family(/Round 1/);
+    expect(line).toContain(`help on ${helped[0]}`);
+    expect(line).not.toMatch(/\bthe fifth\b/i);
+    expect(line).toMatch(/\bbefore the GM's bonus\b/);
   });
 
   it('quotes the Round 3 exhibit, Profit today ($) +$10 and Reputation change +$5 on seed 1, and asks who paid for it', () => {
@@ -533,6 +594,24 @@ describe("the teacher's key (BRIEF section 14)", () => {
     const week = (p: string): string => JSON.stringify({ ...weekOf(p).week.totals, reward: 0 });
     for (const p of ['P10R2', 'P10R10', 'P5R5', 'P10I-10R5', 'P10D10I-10R10F-10O-10', 'P10D2I-8R6F-4O-6']) expect(week(p), p).toBe(week('P10R5'));
     expect(sectionOf(key(), /^##\s+What the GM tends to do\b.*$/m)).toMatch(/\bwhich measures\b[^.]*\bmatters more than how much\b/i);
+  });
+
+  // Astra, G11: the walk week is a finding over the plans measured, not a rule for every amount: with Profit small
+  // beside Reputation change the GM hires a third staffer, and the key says where the finding stops.
+  it('says where the walk week stops: Profit small beside Reputation change gives another week', () => {
+    const rest = (p: string): string => JSON.stringify({ ...weekOf(p).week.totals, reward: 0 });
+    expect(rest('P2R10')).not.toBe(rest('P10R5'));
+    expect(weekOf('P2R10').week.days.some((d) => d.floorStaff === 3), 'a third staffer').toBe(true);
+    const same = family(/Same week/i);
+    expect(same).toMatch(/\bthird staffer\b/i);
+    expect(same, 'no count of plans the test cannot check').not.toMatch(/\bNine plans\b/i);
+  });
+
+  // Astra, G11: the plan does not pay for a clean floor directly, but sick dogs cost reputation; the walk photos pay more.
+  it('says the exhibit\'s clean floor is unpaid directly, and no sheet says the GM protects nothing the plan leaves out', () => {
+    expect(family(/Reputation change/)).toMatch(/\bdirectly\b/i);
+    for (const file of ALL_FILES) expect(read(file), file).not.toMatch(/\bprotects nothing\b/i);
+    expect(read('board-memo.md')).not.toMatch(/\bdoes only what the plan pays for\b/i);
   });
 
   it('quotes a plan paying for profit with Incidents and Blocks over 15 but not reputation, and that reputation still falls', () => {
@@ -555,8 +634,13 @@ describe("the teacher's key (BRIEF section 14)", () => {
     expect(line).toContain('"not stable"');
   });
 
-  it('is right that no plan with Profit on has the dogs nap or clean, on seed 1', () => {
-    expect(family(/\bnap\b/i)).toMatch(/\bno plan with profit\b/i);
+  // Astra, G11: Profit can be on at $0 or less, and then the GM does nap or clean (Profit −$1 cleans every block).
+  it('scopes "no naps or cleans" to plans paying a positive amount for Profit, and is right on seed 1', () => {
+    const line = family(/\bnap\b/i);
+    expect(line).not.toMatch(/\bno plan with profit\b/i);
+    expect(line).toMatch(/\bProfit at \+\$1 or more\b/);
+    expect(weekOf('P-1').week.totals.cleanBlocks, 'Profit −$1 alone').toBeGreaterThan(0);
+    expect(line).toMatch(/Profit (at )?−\$1\b[^.]*\bclean/);
     for (const p of ['P10', 'P10I-5O-5', 'P10R5', 'P10I-10', 'P3I-10', 'P10I-5F-5O-5', 'P10O-5', 'P10I-5', 'P10F-5', 'P1R10', 'P10D10I-10R10F-10O-10']) {
       const t = weekOf(p).week.totals;
       expect([t.napBlocks, t.cleanBlocks], p).toEqual([0, 0]);
@@ -575,6 +659,10 @@ describe("the teacher's key (BRIEF section 14)", () => {
     expect(check).toMatch(/\bdiffer\b[^.]*\banother computer\b/i);
     expect(check, 'the page\'s budget and cap, as the code has them').toContain('60 seconds');
     expect(check).toContain(trainer.config.maxEpisodes.toLocaleString('en-US'));
+    // Astra, G11: stable is the same kind of week on five checks in a row, not choices that stopped changing.
+    expect(trainer.config.stableEvals).toBe(5);
+    expect(check).not.toMatch(/\bchoices stop changing\b/i);
+    expect(check).toMatch(/\bsame kind of week\b[^.]*\bfive checks in a row\b/i);
   });
 
   it('says how to judge "Which rule did your GM find?" from the Round 3 brief', () => {

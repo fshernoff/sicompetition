@@ -65,7 +65,7 @@ SI let it, so it measures reading a week for what the plan left out; what the ow
 whether a person in that job would have needed it written down); 3, 4 and 8 are about people, the comparison (read a
 store's falling costs back to its plan; a measure that becomes a target; a hardware chain's staff paid on surveys,
 mapped with the debrief's three questions). No item uses the daycare or a case the readings teach, so a gain is not
-recall. Question 5 is still the one that predicts a gaming behaviour. A class that sat the `oct28` sheet as its
+recall, though Question 7 is near transfer from the readings' salesperson case (signed deals, cancellations). Question 5 is still the one that predicts a gaming behaviour. A class that sat the `oct28` sheet as its
 pre-check sits it again as its post-check. Print that sheet and its key from commit `0b33197`, the last version a
 class could have sat (it says "AI"; later commits changed it):
 

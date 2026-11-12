@@ -19,7 +19,7 @@ The GM is one kind of SI: built to chase a number and given only a bonus plan, w
 1. A person in the job has brakes the plan never mentions: conscience, fear of being fired, a sense of what the owners meant. They do not always hold: people game measures too.
 2. Such an SI has only the plan: it does what was written, not what was meant.
 3. The GM found the loophole on its own: help on one day only, just enough that the lone staffer never calls out.
-4. Real SIs can be given other rules, and some can guess a good deal of what was meant, but none of that comes from the bonus plan, and an owner cannot count on it without checking. So the owner names the limits and writes them down, or reads each week for what the plan left out.
+4. Real SIs can be given other rules, and some can guess what was meant, but none of that comes from the bonus plan, and an owner cannot count on it without checking. So the owner names the limits and writes them down, or reads each week for what the plan left out.
 
 ## Before class
 
@@ -42,14 +42,14 @@ The Teacher button is at the top bar's right.
 
 The status line says where the GM is:
 
-- "Write your prediction, then put the GM to work." The button waits for five picks and a Why.
+- "Write your prediction, then put the GM to work." The button waits for the five picks; ask for the Why too.
 - "The GM is getting ready for Monday." Seconds, up to a minute on a slow Chromebook.
 - "The GM is running the week." About 8 seconds on the yard.
 - "The week is over." The prediction card becomes a scorecard ("You called N of 5"), with the weekly P&L and operations report below.
 
 ## What Round 1 does on seed 1
 
-"The GM accepted every booking on 5 of 5 days, charged the premium rate, ran the floor with one staffer on 4 days, never had the dogs nap, averaged 16 dogs per staffer, and had 7 incidents." Profit for the week: $5,393. Reputation: 50 → 32.
+"The GM accepted every booking on 5 of 5 days, charged the premium rate, ran the floor with one staffer on 4 days, never had the dogs nap, averaged 16 dogs per staffer, and had 7 incidents." Profit: $5,393 before the GM's bonus ($4,853.70 after it). Reputation: 50 → 32.
 
 The dogs, the crew and the reputation paid for the bonus. Would a person have run this week?
 
@@ -64,9 +64,9 @@ Each period is 50 minutes.
 | Period | What happens | Sheet | Collected |
 |---|---|---|---|
 | Period 1 | Concept check (15 min, alone, pre). Read the Round 1 brief together (10). Each team circles its own five picks and a why on its brief (5). One smartboard run: enter the class's picks, put the GM to work (10). Each team marks its picks called or missed against "The GM did" on the scorecard (5). Export (5). | concept-check, brief-round1 | Concept check, Round 1 briefs, Round 1 file |
-| Period 2 | Rerun Round 1 on the smartboard with the class's picks: the page keeps no run after a reload, and the same plan and seed give the same week (5). Teams read its report: what did the GM find? (10) Goodhart's law: when a measure becomes a target, it stops being a good measure (10). Hand out role cards (10). Each role finds in the report what the plan did to the people it speaks for (15). | role-cards | Role findings, on paper |
+| Period 2 | Rerun Round 1 on the smartboard with the class's picks; the same plan and seed give the same week (5). Teams read its report: what did the GM find? (10) Goodhart's law: when a measure becomes a target, it stops being a good measure (10). Hand out role cards (10). Each role finds in the report what the plan did to the people it speaks for (15). | role-cards | Role findings, on paper |
 | Period 3 | Round 2: pitches (10), a plan of up to three measures (15), prediction on paper and in the box (5), run (5), compare (10), export (5). | brief-round2 | Brief, Round 2 files |
-| Period 4 | Gallery walk: each team shows its Round 2 readout and the gap from its prediction (30). The class names the surprises (20). | brief-round2 | Gap notes |
+| Period 4 | Teams rerun their Round 2 plans from the briefs (5). Gallery walk: each team shows its readout and the gap from its prediction (25). The class names the surprises (20). | brief-round2 | Gap notes |
 | Period 5 | Round 3: plan and predict (20), run (10), read (10), export (5). At the end, Reveal the hidden rules on the smartboard (5). | brief-round3 | Brief, Round 3 files |
 | Period 6 | debrief-readings: the three questions "What did the owners actually want?", "What did we pay the GM for?", "What was the cheapest way to earn it?" (15). "Would a human GM have run this week? What would have stopped a person that did not stop the SI?" (10). The cases, each with an SI in that seat (15, or 10 and Show the learning curve), the mapping table (10). | debrief-readings | Mapping table |
 | Period 7 | Board memo: each team writes to the owners' board (50). | board-memo | Memos |
@@ -74,7 +74,7 @@ Each period is 50 minutes.
 
 ## When a student asks how the SI decides
 
-Say: "Before Monday it tries out its choices and keeps whatever earns the most bonus." It is literal, not malicious: it sees everything on the floor, but protects nothing the plan leaves out.
+Say: "Before Monday it tries out its choices and keeps whatever earns the most bonus." It is literal, not malicious: it looks after what the plan leaves out only where that earns bonus.
 
 ## Evidence
 

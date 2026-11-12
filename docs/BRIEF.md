@@ -53,8 +53,8 @@ browser with the tabs and the shelf), 1024 × 768 and the projector at 1920 × 1
 "Good Dog Daycare", the round, the "Teacher" button) is 40 px high in every phase. At 640 px of height, with no
 scrolling: on the load screen the five picks and the whole of Put the GM to work; while the week plays, the status line
 and the three meters at every block (the facts under them may sit below); with the scorecard up, "You called N of 5."
-and the whole of "Put the GM to work again". The room comes from spacing under 700 px of height, never from type
-below the page's sizes. Under the yard on the load screen, "What happens next" lists its three steps with plain dots,
+and the whole of "Put the GM to work again". The room comes from spacing and a few box heights (the picks' chips,
+the orb, the three ways on) under 700 px of height, never from type below the page's sizes. Under the yard on the load screen, "What happens next" lists its three steps with plain dots,
 not numerals: the console's steps 1 to 3 are the screen's one numbered sequence.
 
 ### 1.1 The prediction and the scorecard (G5c, D56)

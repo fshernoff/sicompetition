@@ -16,6 +16,7 @@ owner gate before it is merged.
 | G5d | The look, reopened (the owner, Oct 28: a two-headed dog in the header; "looks like a nice ai generated web app"): D58 figure-by-figure art QA by three readers, a direction sprint, the brand, the page, the yard, the art; the stop rule; fallback `g5c-fallback` at `611145a` | The owner's checkpoint on the directions; the gate on the Mac, the Chromebook and the projector before the freeze | Oct 28 to Nov 5; shipped to `main` Oct 29 by the owner's call after four review rounds (the stop rule not met; the owner's device gate next) |
 | G6 | Fixes from the pilot's three confusions | Full unit, Nov 16 | Nov 10 to 13 (branch `g6-pilot-fixes` from `main`) |
 | G7 | Lesson materials: teacher guide, round briefs, role cards, concept check, memo template, debrief readings (Sonnet packages; Astra reviews for clarity); the GM is openly an AI (D53) | Fred prints the sheets, confirms the disclosure line and teaches period 1 | Nov 2 to 13 (built Oct 28 on `g7-lesson`, merged to `main` Oct 28) |
+| G11 | The SI frame (D67 to D69): the word is SI; the unit teaches managing an SI, the human cases as the comparison; a balance lab that kept the rules; a tenth sheet, the teacher's key; two independent review rounds | Fred reads and prints the ten sheets, then merges | Nov 12 (built on `claude/stoic-keller-lfb14w`, pushed, awaiting the gate) |
 
 ## What each group leaves behind
 

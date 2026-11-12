@@ -2,6 +2,32 @@
 
 Status only. Updated at the end of every thread; read first by the next one.
 
+## Session 8 (2026-11-12, a cloud session): G11, the SI frame (on `claude/stoic-keller-lfb14w`, pushed, not merged)
+
+The owner asked for a review of the whole entry, then gave three calls: the word is always SI; lean into the story
+that the owners put an SI in charge; "the plan is yours", with full permissions inside this repo (pushing to the
+branch included). Plan and result: `.claude/docs/plans/g11-si-frame.md`. Read its Result first.
+
+- **Done:** D67 (SI everywhere, a ban test), D68 (the unit teaches managing an SI, scoped to what this GM is: one
+  kind of SI, given only a bonus plan), D69 (the rules stand after a balance lab; the walk week is the Round 3
+  exhibit). The sheets are revised, the concept check is a new form, and there is a tenth sheet,
+  `docs/lesson/teacher-key.md`. Two independent review rounds, triaged in
+  `.claude/docs/reviews/g11-review-triage.md`. A new tool: `node Tools/balance/probe.ts` trains any plan by its short
+  name and prints its week.
+- **Green on `3c52b00`:** 668 tests, lint, build; e2e 11 of 11 and the pilot 20 of 20 (commands and the one caveat in
+  the plan's Result).
+- **Nothing in the engine or the rules changed.** The page changed by one word in the tagline and in the teacher's
+  curve caption.
+- **Waiting on the owner:** read the ten sheets (every word goes out under his name), print them and check the page
+  counts; say whether any class has sat a concept check (`docs/evidence/README.md` has the forms); confirm Round 1 as
+  one smartboard run; the official expansion of SI if he wants it on a sheet; merge to `main` when satisfied (the
+  merge deploys the page the class uses from Nov 16).
+- **Not known to this thread:** how the Nov 9 pilot went. Nothing about it is in the repo; G6 (the pilot's fixes) is
+  still to be written from the owner's notes.
+- **Gotchas:** this container cannot reach `orise.orau.gov`; `codex` (Astra) is not installed; Playwright needs
+  `PLAYWRIGHT_BROWSERS_PATH` pointed at the installed Chromium; an agent cannot create `.md` files, so the main
+  thread writes reports from an agent's data; a worktree agent leaves its worktree behind if it ran `npm ci`.
+
 ## Session 7, later (2026-10-28): G5d, the look reopened (in progress on `g5d-look`)
 
 The owner found a two-headed poodle in the live header and said the page "looks like a nice ai generated web app";

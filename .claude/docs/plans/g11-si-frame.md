@@ -105,4 +105,54 @@ If none passes: no tracked file changes but the lab report (`.claude/docs/review
 
 ## Result
 
-(Written at the end of the group.)
+Built Nov 12, 2026 in one cloud session, on `claude/stoic-keller-lfb14w` (pushed; `main` and the live site untouched).
+Commits: `c8a3d60` the plan, `5839c16` WP1, `e3b8d7c` WP3's report, `776da9f` WP2, `8a42a0d` the first triage,
+`2e893a5` WP2b, `28b398d` WP4, `71b7e5f` the second triage, `3c52b00` WP5.
+
+**Acceptance.**
+
+1. Met. The page, every sheet and the docs say SI (D67). `tests/ui/bans.ts` bans the old word in any case on the
+   whole page and on every sheet, with the cited titles and company names allowed; 9 tests failed before the text
+   changed.
+2. Met, and changed by two review rounds. The unit teaches managing an SI (D68), scoped to what the game can show:
+   the GM is one kind of SI, built to chase a number and given only a bonus plan. The teacher guide has the
+   objectives and "Why this is an SI lesson"; period 6 asks "Would a human GM have run this week? What would have
+   stopped a person that did not stop the SI?"; the Round 3 brief and the memo ask for the audit; the concept check
+   defines an SI under its instructions and has five SI questions (1, 2, 5, 6, 7) and three about people, one of them
+   an audit item (Q6, a bakery's report) and one asking what the owners should add to the plan and whether a person
+   would have needed it written down (Q7). A tenth sheet, `docs/lesson/teacher-key.md`, gives the teacher the twelve
+   hidden rules (pinned to the page's reveal), what each family of plan does on seed 1 (pinned to the engine), the
+   check line, and how to judge "Which rule did your GM find?".
+3. No candidate passed WP3's gate, so no rule changed (D69; `.claude/docs/reviews/g11-balance-lab.md`). Six
+   candidates were measured with `node Tools/balance/probe.ts`. Gate A (Round 1's exact week on seed 1) cannot be met
+   by any rule that touches reputation: the class held on 20 of 20 seeds under five of six candidates, the exact week
+   on 0 to 6 of 20. The walk week (Profit with Reputation change: two staffers, 15 walks, profit $4,678, reputation
+   50 → 84, 2 incidents, 7 dogs found sick) is now the unit's Round 3 exhibit, in the teacher's key.
+4. Met, on the tree of `3c52b00`: `npm test` 38 files, 668 tests (603 before the group); `npm run lint` clean;
+   `npm run build` built. `npx playwright test --trace off` 11 of 11 (1.2 min) and
+   `npm run pilot -- --seeds 20 --budget 60000` 20 of 20 target met, both run on the same tree less one sentence of
+   `teacher-key.md` trimmed afterwards. The e2e ran with `PLAYWRIGHT_BROWSERS_PATH` pointing at symlinks, because this
+   container has Chromium headless shell 1243 and Playwright asks for 1248; no tracked file changed for it.
+
+**The reviews.** Astra was not available (no `codex` in the container). Two fresh Opus reviewers stood in, neither
+shown the plan's reasoning: round 1 on `776da9f` (0 blocking, 3 high, 7 medium, 6 low), round 2 on `28b398d` (0, 4,
+10, 7). Every finding is in `.claude/docs/reviews/g11-review-triage.md`; all were taken but two left with reasons
+(Q1's stem states its premise; the safe ratio's number stays hidden, D44). Round 2's fixes (WP5) were checked by their
+tests and the main thread's read of the teacher's key, not by a third reviewer.
+
+**What the main thread got wrong and the reviews caught.** The frame as first planned stated what is true of this GM
+as true of SIs in general. It is now conditional everywhere, and a test fails on the unscoped forms.
+
+**Not done, and the owner's.**
+
+- The official expansion of SI: the repo has none and `orise.orau.gov` is outside this session's network. The sheets
+  describe an SI ("a computer system that makes the decisions itself") and never expand it.
+- Whether any class has sat a concept check. The form of Oct 28 prints with the command in `docs/evidence/README.md`;
+  the score sheet has a `form` column; never report one gain across two forms. Today's two intermediate versions were
+  never printed.
+- Round 1 as one smartboard run with each team's picks on paper (the second review's H1) is a call made here; a run
+  per team is the alternative.
+- Print the ten sheets and check the page counts by eye (the tests hold word limits, not pages): the teacher guide is
+  1,248 of 1,250 words, the teacher's key about 1,000 of 1,000.
+- The Chromebook: nothing in the page's code changed but the word in the tagline and the teacher's curve caption.
+- The merge to `main`, which deploys.

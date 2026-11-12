@@ -2729,6 +2729,18 @@ function drawnOf(s: Stage, look: Look): Drawn {
 }
 
 /**
+ * The contact ellipse's radii under a sprite of w × h px (G6, row 16): the sprite's width sets it, but under a figure
+ * much taller than wide (the crew) it widens with the height, so a person stands in a soft pool rather than on a
+ * sliver; its depth keeps the ellipse's proportions. The dogs' are as they were.
+ */
+export function contactEllipse(w: number, h: number): { rx: number; ry: number } {
+  // 0.26 of the height: a quarter and a little more each side under a person; below 0.42 / 1.6, so no dog (at most about
+  // 1.5 times as tall as wide) is touched.
+  const widen = Math.max(1, (h * 0.26) / (w * 0.42));
+  return { rx: w * 0.42 * widen, ry: Math.max(1, w * 0.11 * widen) };
+}
+
+/**
  * The contact shadow (gate 3, one spec for every figure, set.json's): the sprite's silhouette thrown along the key
  * light (a point h px up lands h × throw[0] to the right and h × throw[1] down), blurred and tinted as the set's own
  * shadows, under a soft contact ellipse at the feet. `f` is device px per image px. Without canvas filters the two
@@ -2740,8 +2752,7 @@ function castShadow(sprite: HTMLCanvasElement, ax: number, ay: number, f: number
   const [A, B] = spec.throw;
   const blur = spec.contactBlur * f;
   const pad = Math.ceil(blur * 2.5 + 2);
-  const erx = w * 0.42;
-  const ery = Math.max(1, w * 0.11);
+  const { rx: erx, ry: ery } = contactEllipse(w, h);
   const ecx = (w / 2 - ax) * 0.5; // from the anchor
   // Where the anchor sits in the shadow canvas, with room for the throw and the ellipse.
   const sx = Math.ceil(pad + Math.max(ax - A * (ay - h), erx - ecx, 0));

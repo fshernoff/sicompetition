@@ -72,7 +72,7 @@
   --r-3: 10px;
 
   /* The frame */
-  --bar-h: 52px;
+  --bar-h: 40px; /* one height in every phase (G6, row 7) */
   /* The window in the page's own pixels: the viewport units divided by the projector's zoom (1 elsewhere). */
   --zoom: 1;
   --vw: calc(1vw / var(--zoom));
@@ -197,7 +197,7 @@ img { max-width: 100%; }
 
 /* ---------- The bar: the wordmark, the business, the round, the teacher's key ---------- */
 /* The bar stays at the window's top on every screen (round 3, row 9: a capture of any state carries the product's name
-   and the round), slim on the run and the week's end. */
+   and the round), one slim height in every phase (G6, row 7: it no longer changes when the run starts). */
 .topbar {
   position: sticky;
   top: 0;
@@ -229,7 +229,7 @@ img { max-width: 100%; }
   align-items: center;
   gap: 8px;
   margin: 0 0 0 auto;
-  padding: 5px 12px 5px 10px;
+  padding: 4px 12px 4px 10px;
   font: 600 15px/1 var(--font-ui);
   color: #f6b545; /* 8.9:1 on navy */
   white-space: nowrap;
@@ -238,14 +238,11 @@ img { max-width: 100%; }
   border-radius: 999px;
 }
 .round-badge::before { content: ''; flex: none; width: 7px; height: 7px; background: var(--amber); border-radius: 50%; }
-html[data-phase='run'], html[data-phase='done'] { --bar-h: 40px; }
-html[data-phase='run'] .teacher-key, html[data-phase='done'] .teacher-key { height: 30px; }
-html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padding-top: 4px; padding-bottom: 4px; }
 .teacher-key {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 36px;
+  height: 30px;
   padding: 0 12px;
   font: 600 15px/1 var(--font-ui);
   color: #dce3ea;
@@ -584,6 +581,21 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
   border-radius: 50%;
   box-shadow: 0 1px 2px rgba(19, 33, 47, 0.3);
 }
+/* The zero stands 4 px taller than the track on every row (G6, row 5): 2 px above and below it, in --ink-2, drawn on the
+   slider's own box behind the input (the track's own tick covers its middle), so Chrome and Firefox draw it alike. */
+.kpi-scale { position: relative; isolation: isolate; }
+.plan:not(.plan-locked) .kpi-scale::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(50% - 1px);
+  z-index: -1;
+  width: 2px;
+  height: 12px;
+  margin-top: -6px;
+  background: var(--ink-2);
+  pointer-events: none;
+}
 .kpi-weight::-moz-range-thumb { width: 13px; height: 13px; background: #fff; border: 2.5px solid var(--navy); border-radius: 50%; }
 .kpi-weight:disabled { cursor: default; }
 .kpi-weight:disabled::-webkit-slider-thumb { border-color: #9aa5b0; box-shadow: none; }
@@ -875,6 +887,10 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
   color: var(--navy);
 }
 .stat-sub { margin-top: 3px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink-2); }
+/* The rail's scoped labels (G6, row 17): each over its number, wrapping only between its phrases ("so far" and "this
+   week" stay with the words they scope). */
+.stat-sub-label { display: block; }
+.rail-live .phrase { white-space: nowrap; }
 .stat.hurt .stat-val { color: var(--red-ink); }
 .stat-cash .stat-val { color: var(--green-ink); }
 .stat-cash.loss .stat-val { color: var(--red-ink); }
@@ -904,6 +920,10 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
 .live-meters .meter:has(.meter-mark) { margin-top: 14px; } /* room for "70%" above the track */
 .meter-num { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .meter-num.high { color: var(--red-ink); }
+/* A meter at the bad end of its own scale (D70: energy or cleanliness at 0%, fatigue at 100%): the number in the warning
+   ink and the track outlined, so an empty bar never reads as neutral. The ends are public; no hidden threshold shows. */
+.meter-num.at-end { color: var(--red-ink); }
+.live-meters .meter.at-end { outline: 1.5px solid var(--line-strong); }
 .rail-live > .live-meters { padding-bottom: 5px; border-bottom: 0; }
 /* The facts under the meters, in the same block: they share a line where it has room (Tomorrow and the sick dogs at
    1366), each fact whole. */
@@ -973,24 +993,21 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
 #watch:not([data-phase='run']) .stage-foot > .stage-picks, #watch:not([data-phase='run']) .stage-foot > .stage-why { display: none; }
 .stage-foot > .readout-box { display: none; padding: 12px 16px 14px; }
 #watch[data-phase='done'] .stage-foot > .readout-box { display: block; }
-/* On load, what happens next, under the yard (round 3, row 17): three short steps, business words only. */
+/* On load, what happens next, under the yard (round 3, row 17): three short steps, business words only, with plain dots
+   (G6, row 13: the console's steps 1 to 3 are the screen's one numbered sequence). While the GM gets ready it stays
+   there, under the yard, in the column the week has not filled yet (G6, row 15b). */
 .next-card { display: none; padding: 12px 16px 14px; }
-#watch[data-phase='load'] .next-card { display: block; }
-.next-steps { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
-.next-steps li { position: relative; padding-left: 32px; font-size: var(--text-md); line-height: 1.35; color: var(--ink); counter-increment: step; }
+#watch[data-phase='load'] .next-card, #watch[data-gm='preparing'] .next-card { display: block; }
+.next-steps { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.next-steps li { position: relative; padding-left: 20px; font-size: var(--text-md); line-height: 1.35; color: var(--ink); }
 .next-steps li::before {
-  content: counter(step);
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  font: 800 14px/1 var(--font-ui);
-  color: var(--navy);
-  background: var(--amber-wash);
-  border: 1.5px solid var(--amber);
+  top: calc(0.675em - 3.5px);
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  background: var(--amber-ink);
   border-radius: 50%;
 }
 .stage-foot .stage-picks-list { grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 6px 0; }
@@ -1158,6 +1175,53 @@ html.teacher-open #app { padding-bottom: 16px; } /* the page's end, above the tr
   .plan:not(.plan-locked) .plan-head, .plan:not(.plan-locked) .kpi-row { grid-template-columns: 22px minmax(0, 1fr) 44px; }
   .plan:not(.plan-locked) .kpi-amount { grid-column: 2 / -1; justify-content: flex-start; }
   .plan:not(.plan-locked) .plan-head-amount { display: none; }
+}
+
+/* ---------- A short window: the Chromebook's browser, 640 px high (D72) ----------
+   With the tabs and the shelf a Chromebook's browser leaves about 640 px of the 768: the picks, Put the GM to work and
+   its hint, the status and the three meters while the week plays, and the scorecard's count and its rerun stay in the
+   window without scrolling. Spacing and a few boxes (the chips, the orb, the three ways on a little shorter), never type
+   below the page's sizes; 768 px and taller keep their layout. */
+@media (max-height: 700px) {
+  /* The load screen: the console's rhythm tightened, the Why a short box that scrolls inside (the page keeps the whole). */
+  .premise { padding-top: 5px; padding-bottom: 5px; }
+  .round-note { margin-top: 1px; line-height: 1.3; }
+  .plan, .predict { padding-top: 8px; }
+  .step-title { margin-bottom: 4px; }
+  .week-line { margin-bottom: 4px; }
+  .picks { gap: 3px; }
+  .pick-label { margin-bottom: 1px; }
+  .pick-chip { height: 28px; }
+  .why { margin-top: 6px; }
+  .why-label { margin-bottom: 4px; }
+  #watch[data-phase='load'] #prediction { height: 3.4em; min-height: 0; }
+  .actions { margin-top: 6px; }
+  .picks-hint { margin-top: 4px; }
+  /* The status line's head on the run and the week's end: the orb a little smaller, the words the same size. */
+  .rail-head { min-height: 48px; padding-top: 2px; padding-bottom: 2px; }
+  .orb-head { width: 44px; height: 44px; }
+  #status { min-height: 44px; }
+  /* While the week plays: the rail's blocks closer, so the three meters stay in the window at every block. */
+  .rail-live > * { padding-top: 4px; padding-bottom: 4px; }
+  .rail-live > .this-block { padding-top: 4px; padding-bottom: 4px; line-height: 1.2; }
+  .when { line-height: 1; }
+  .timeline { margin-top: 4px; }
+  .tl-day { gap: 2px; }
+  .gauge { margin: 5px 0 22px; }
+  .gauge-limit { top: calc(100% + 6px); }
+  .stat-val { margin-top: 2px; }
+  .live-stats .stat:nth-child(n + 3) { margin-top: 3px; padding-top: 3px; }
+  .live-meters > * { padding-top: 3px; }
+  .choices { line-height: 1.25; }
+  .stat-sub { margin-top: 2px; }
+  /* With the scorecard up: the two columns' rhythm closer, and the three ways on a little shorter, so "Put the GM to
+     work again" stays in the window. */
+  .result-col { padding-top: 8px; padding-bottom: 10px; }
+  .col-title { margin-bottom: 6px; }
+  .business-line, .called-line { margin-bottom: 6px; }
+  .biz-table th, .biz-table td, .score-table td, .score-table tbody th { padding-top: 3px; padding-bottom: 3px; }
+  #watch[data-phase='done'] .actions { gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  #watch[data-phase='done'] .actions .btn { height: 44px; }
 }
 
 /* ---------- The projector: the same screen, larger (round 1, row 10) ----------

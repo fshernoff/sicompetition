@@ -1,15 +1,18 @@
 // The yard's rail (G5d, D59; Astra's plan review, finding 12 and the sick counts' scopes): a pure function of one
 // ReplayFrame, in business words, with every count's scope said ("this week", "this block").
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, recklessCoveredPolicy, recklessPolicy } from '../../src/sim/policies.ts';
-import { railModel } from '../../src/ui/rail.ts';
+import { mountRail, railModel } from '../../src/ui/rail.ts';
 import { formatBonus, formatDollars } from '../../src/ui/report.ts';
 import { planWords, replayFrame } from '../../src/ui/replay.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { EpisodeTrace } from '../../src/world/types.ts';
 import { config, round1 } from '../helpers.ts';
 import { STUDENT_BANS } from './bans.ts';
+import { fakeElement } from './fakeDom.ts';
+import type { FakeElement } from './fakeDom.ts';
 
 const covered = runEpisode(config, round1, recklessCoveredPolicy, episodeSeeds(1, 0));
 const literal = runEpisode(config, round1, recklessPolicy, episodeSeeds(1, 0)); // closes on Thursday
@@ -117,5 +120,88 @@ describe('railModel: the yard in words', () => {
         for (const word of STUDENT_BANS) expect(text, `${String(word)} at t=${t}`).not.toMatch(word);
       }
     }
+  });
+});
+
+// The meters as the page renders them (G6, row 1; D70, amending D65): a meter at the bad end of its own scale shows it,
+// its number in the warning ink and its track outlined; the ends of a scale are public, so nothing shows at a threshold
+// the rules hide (H3, H6), and crew fatigue keeps its warning past the plan's 70%. On the rendered meter (the fake DOM),
+// one rail reused block after block, as the page reuses it.
+describe('the rail as rendered: a meter at the end of its scale (D70)', () => {
+  const base = rail(covered, 9);
+  const mount = (): { root: FakeElement; view: (energy: number, cleanliness: number, fatigue: number) => void } => {
+    const { el, as } = fakeElement<HTMLElement>('div');
+    const view = mountRail(as, config.requests.max, () => '');
+    return { root: el, view: (energy, cleanliness, fatigue) => view({ ...base, energy, cleanliness, fatigue }) };
+  };
+  /** Each meter, in order (energy, cleanliness, fatigue): whether its number and its track show the end of the scale. */
+  const ends = (root: FakeElement): { num: boolean; track: boolean }[] => {
+    const tracks = root.find('span', 'meter');
+    const nums = root.find('b', 'meter-num');
+    expect(tracks).toHaveLength(3);
+    expect(nums).toHaveLength(3);
+    return nums.map((num, i) => ({ num: num.classList.contains('at-end'), track: (tracks[i] as FakeElement).classList.contains('at-end') }));
+  };
+  const none = [
+    { num: false, track: false },
+    { num: false, track: false },
+    { num: false, track: false },
+  ];
+  const all = [
+    { num: true, track: true },
+    { num: true, track: true },
+    { num: true, track: true },
+  ];
+
+  it("enters the end of each scale (dogs' energy 0%, cleanliness 0%, crew fatigue 100%) and leaves it on the same meter", () => {
+    const { root, view } = mount();
+    view(40, 55, 30);
+    expect(ends(root)).toEqual(none);
+    view(0, 0, 100);
+    expect(ends(root)).toEqual(all);
+    expect(root.find('b', 'meter-num').map((n) => n.textContent)).toEqual(['0%', '0%', '100%']);
+    view(1, 1, 99);
+    expect(ends(root)).toEqual(none);
+    view(0, 63, 50); // one meter at its end, the others plain
+    expect(ends(root)).toEqual([{ num: true, track: true }, ...none.slice(1)]);
+  });
+
+  it('shows nothing at a threshold the rules hide: energy and cleanliness are plain at every value off the end', () => {
+    const { root, view } = mount();
+    for (let v = 1; v <= 100; v++) {
+      view(v, v, 50);
+      const [energy, clean] = ends(root);
+      expect([energy, clean], `at ${v}%`).toEqual(none.slice(0, 2));
+      const [eNum, cNum] = root.find('b', 'meter-num');
+      expect(eNum?.className, `energy's number at ${v}%`).toBe('meter-num');
+      expect(cNum?.className, `cleanliness's number at ${v}%`).toBe('meter-num');
+    }
+  });
+
+  it("keeps crew fatigue's warning past the plan's 70%, and at 100% shows the end of the scale as well", () => {
+    const { root, view } = mount();
+    const fatigue = (): { high: boolean; end: boolean } => {
+      const num = root.find('b', 'meter-num')[2] as FakeElement;
+      return { high: num.classList.contains('high'), end: num.classList.contains('at-end') };
+    };
+    view(50, 50, 70);
+    expect(fatigue()).toEqual({ high: false, end: false });
+    view(50, 50, 71);
+    expect(fatigue()).toEqual({ high: true, end: false });
+    view(50, 50, 100);
+    expect(fatigue()).toEqual({ high: true, end: true });
+    view(50, 50, 85);
+    expect(fatigue()).toEqual({ high: true, end: false });
+  });
+
+  it('draws the end of a scale in the stylesheet: the number in --red-ink, the track outlined in --line-strong', () => {
+    const css = readFileSync('src/style.css', 'utf8');
+    const rule = (selector: string): string => {
+      const at = css.indexOf(`${selector} {`);
+      expect(at, `a rule for ${selector}`).toBeGreaterThanOrEqual(0);
+      return css.slice(at, css.indexOf('}', at));
+    };
+    expect(rule('.meter-num.at-end')).toMatch(/color:\s*var\(--red-ink\)/);
+    expect(rule('.live-meters .meter.at-end')).toMatch(/outline:[^;]*var\(--line-strong\)/);
   });
 });

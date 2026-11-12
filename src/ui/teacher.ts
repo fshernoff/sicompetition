@@ -94,6 +94,21 @@ function clearEdge(page: Page): void {
   }
 }
 
+/**
+ * Where the page was when the tray opened, and where the tray's own moves (keepClear, clearEdge) left it (G6, row 21):
+ * if the page is still where the tray left it when the tray closes, the reader did not scroll, and closing puts the
+ * page back where it was before the tray moved it; a scroll the reader made while it was open (the report, the revealed
+ * rules) is kept. Null while the tray is closed.
+ */
+let trayScroll: { before: number; landed: number } | null = null;
+
+/** Runs one of the tray's own moves of the page, and keeps `landed` with it while the reader has not scrolled. */
+function trayMoves(move: () => void): void {
+  const untouched = trayScroll !== null && Math.abs(document.body.scrollTop - trayScroll.landed) <= 1;
+  move();
+  if (trayScroll !== null && untouched) trayScroll.landed = document.body.scrollTop;
+}
+
 export function openTray(page: Page): void {
   const wasOpen = document.documentElement.classList.contains('teacher-open');
   const top = pageScroller().scrollTop;
@@ -101,17 +116,23 @@ export function openTray(page: Page): void {
   page.teacherOpen.setAttribute('aria-expanded', 'true');
   document.documentElement.classList.add('teacher-open');
   measureTray(page);
-  if (!wasOpen) document.body.scrollTop = top; // the page stays where it was, now scrolling above the tray
-  keepClear(page);
+  if (!wasOpen) {
+    document.body.scrollTop = top; // the page stays where it was, now scrolling above the tray
+    trayScroll = { before: top, landed: document.body.scrollTop };
+  }
+  trayMoves(() => keepClear(page));
 }
 
 export function closeTray(page: Page): void {
   const wasOpen = document.documentElement.classList.contains('teacher-open');
   const top = pageScroller().scrollTop;
+  const restore = wasOpen && trayScroll !== null && Math.abs(top - trayScroll.landed) <= 1 ? trayScroll.before : top;
+  trayScroll = null;
   page.teacher.hidden = true;
   page.teacherOpen.setAttribute('aria-expanded', 'false');
   document.documentElement.classList.remove('teacher-open');
-  if (wasOpen) window.scrollTo({ top, behavior: 'auto' }); // the window scrolls again, from where the body was
+  // The window scrolls again: back where it was before the tray moved it, or from where the reader left the body.
+  if (wasOpen) window.scrollTo({ top: restore, behavior: 'auto' });
 }
 
 /** A seed that is not a whole number 0..4294967295: the message goes to the tray, never to the student's status. */
@@ -134,7 +155,7 @@ function showDetails(page: Page, open: boolean): void {
   foot.hidden = !open;
   button.setAttribute('aria-expanded', String(open));
   measureTray(page);
-  keepClear(page); // a taller tray may now cover a button
+  trayMoves(() => keepClear(page)); // a taller tray may now cover a button
 }
 
 /** The hidden rules, written into the list once: the config's, so no run or clear ever touches them. */

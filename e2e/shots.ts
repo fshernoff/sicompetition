@@ -1,5 +1,6 @@
 // Screenshots of every state of the page for a look review (G5d): each reviewer, the main thread, Astra and the critic,
-// reads the same files. Headless Chromium against the built page, after the fonts and every image have loaded.
+// reads the same files, and since G6 the main states in the Chromebook's browser window too, 1366 × 640 (D72).
+// Headless Chromium against the built page, after the fonts and every image have loaded.
 //
 //   node e2e/shots.ts [--url URL] [--out DIR]
 //
@@ -14,6 +15,9 @@ import { pause, serveDist, stamp, stopServer } from './serve.ts';
 const PORT = Number(process.env.SHOTS_PORT ?? 4189); // a parallel worktree passes its own
 const PACKED = ['pick-acceptAll-all', 'pick-rate-premium', 'pick-solo-3-4', 'pick-naps-0', 'pick-incidents-7plus'];
 const WHY = 'It packs the yard with one staffer and never naps, so lots of incidents.';
+/** About 300 characters (G6 acceptance 2): the 640 window with a team that writes its reasons out. */
+const LONG_WHY =
+  'It will take every booking it can, because profit is all the plan pays for, and keep one staffer on the floor to save on wages. It skips naps, since a nap block earns nothing. By Thursday the yard is packed, the crew is worn out and the incidents pile up, and the owners pay for that later in the term.';
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -199,6 +203,48 @@ async function main(): Promise<void> {
       await pause(600);
       await shot(narrowRun, '21-tray-after-run-1024');
       await narrowRun.close();
+
+      // The Chromebook's browser window, 1366 × 640 (D72): the main states, a Why of about 300 characters.
+      const short = await open(browser, url, 1366, 640);
+      await shot(short, '22-640-load');
+      for (const chip of PACKED) await short.click(`label[for="${chip}"]`);
+      await short.fill('#prediction', LONG_WHY);
+      await short.evaluate(() => window.scrollTo(0, 0));
+      await shot(short, '23-640-picks-made');
+      await short.click('#train');
+      await statusSays(short, 'getting ready');
+      await shot(short, '24-640-getting-ready');
+      await statusSays(short, 'running the week');
+      await pause(3500);
+      await shot(short, '25-640-mid-week');
+      await short.waitForFunction(() => document.querySelector('#status')?.textContent?.startsWith('The week is over') ?? false, undefined, { timeout: 120_000 });
+      await pause(1500);
+      await shot(short, '26-640-scorecard');
+      await short.locator('#report').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+      await pause(400);
+      await shot(short, '27-640-report');
+      await short.evaluate(() => window.scrollTo(0, 0));
+      await pause(300);
+      await short.click('#teacher-open');
+      await pause(600);
+      await shot(short, '28-640-tray');
+      await short.close();
+      const short3 = await open(browser, url, 1366, 640);
+      await toRound3(short3);
+      for (const key of ['dogsServed', 'incidents', 'reputation', 'fatigue', 'overRatio']) await short3.check(`#kpi-${key}-on`);
+      await short3.evaluate(() => window.scrollTo(0, 0));
+      await pause(400);
+      await shot(short3, '29-640-round3-all-on');
+      await pick(short3, PACKED);
+      await short3.evaluate(() => window.scrollTo(0, 0));
+      await short3.click('#train');
+      await statusSays(short3, 'running the week');
+      await pause(3500);
+      await shot(short3, '30-640-round3-mid-week');
+      await short3.waitForFunction(() => document.querySelector('#status')?.textContent?.startsWith('The week is over') ?? false, undefined, { timeout: 120_000 });
+      await pause(1500);
+      await shot(short3, '31-640-round3-scorecard');
+      await short3.close();
     } finally {
       await browser.close();
     }

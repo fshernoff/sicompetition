@@ -48,6 +48,15 @@ plan changed. Put the GM to work to see what it does with this one." The replay'
 the engine never settles on is, for the student, simply the week the GM ran; the teacher's check line says it did
 not settle.
 
+The windows the page is built for (D42, D72): 1366 × 768 (the Chromebook's screen), 1366 × 640 and 1280 × 640 (its
+browser with the tabs and the shelf), 1024 × 768 and the projector at 1920 × 1080. The bar at the top (the wordmark,
+"Good Dog Daycare", the round, the "Teacher" button) is 40 px high in every phase. At 640 px of height, with no
+scrolling: on the load screen the five picks and the whole of Put the GM to work; while the week plays, the status line
+and the three meters at every block (the facts under them may sit below); with the scorecard up, "You called N of 5."
+and the whole of "Put the GM to work again". The room comes from spacing under 700 px of height, never from type
+below the page's sizes. Under the yard on the load screen, "What happens next" lists its three steps with plain dots,
+not numerals: the console's steps 1 to 3 are the screen's one numbered sequence.
+
 ### 1.1 The prediction and the scorecard (G5c, D56)
 
 The team predicts with five picks, chips in buckets, and a free-text "Why?" (the export's `prediction`):
@@ -466,9 +475,12 @@ during a clean; a "Closed" sign); the dogs-per-staffer gauge from 0 to 30 with o
 tinted (10 is H1's number and stays hidden; 15 is public through the measure's name, D43); the incident counter with
 its icon, pulsing in a block with an incident; the reputation meter 0 to 100; the cash counter; small meters for
 the dogs' energy, the yard's cleanliness and crew fatigue, each named for whose it is ("Dogs' energy", "Cleanliness",
-"Crew fatigue"); energy and cleanliness are plain bars with no tint, mark or warning colour, because where they start
-to cost is a hidden rule (H3, H6; D43, D65); crew fatigue carries its public 70% mark (the measure's own number) and
-turns the warning colour past it; "Tomorrow: 19 asking" and "Days in a row with one staffer, before today: 3" ("None" at 0); "Found sick at pickup (not incidents): 3
+"Crew fatigue"); energy and cleanliness are plain bars with no tint or mark, because where they start to cost is a
+hidden rule (H3, H6; D43, D65); crew fatigue carries its public 70% mark (the measure's own number) and turns the
+warning colour past it; a meter at the bad end of its own scale (dogs' energy 0%, cleanliness 0%, crew fatigue 100%)
+shows its number in the warning colour and its track outlined, because the ends of a scale are public (D70; nothing
+shows at a threshold the rules hide, and the report's row stays plain); the rail's "Today's profit so far, after the
+GM's pay" and "The GM's bonus this week so far" each sit over their number, a label never broken mid-phrase; "Tomorrow: 19 asking" and "Days in a row with one staffer, before today: 3" ("None" at 0); "Found sick at pickup (not incidents): 3
 this week" when above 0 (section 3: the state is
 visible, the rules are not); a small counter for inspector visits when above 0. Captions
 under the yard name the block's events as events, never as rules (D44): "Incident", "Vet bill $150", "Inspector:
@@ -486,7 +498,8 @@ window, opened by a small "Teacher" button at the right of the top bar (G5d; the
 the student's screen, D46) and closed by its Close button; closed, it adds no height to the page, so the fold of D42
 holds; open, it sits at the bottom of the window and the page scrolls in the space above it (G5d round 4: the page's
 box ends at the tray's top, so no line of the page is ever under the tray), and the report and the rules can always
-scroll clear of it. In it:
+scroll clear of it. Where opening it moved the page to keep a class's button above it, closing it puts the page back
+where it was; a scroll the reader made while it was open (the report, the revealed rules) stays where they left it. In it:
 
 - **The round presets** as three radio buttons, Round 1, 2 and 3 (the selector of D34). Choosing one loads the
   preset into the editor, rewrites the round line above the plan ("Round 1: profit only" and its note) and clears

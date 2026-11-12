@@ -1,10 +1,11 @@
 // The week replay's frames and clock: pure functions from the 20 StepRecords of one greedy week (G4 plan, "What a
 // frame shows for step t"; BRIEF section 10.2) and from the elapsed time. The drawing itself is reviewed by eye and
 // covered by the e2e.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, recklessCoveredPolicy, recklessPolicy, stationaryPolicy } from '../../src/sim/policies.ts';
-import { HOLD_MS, STEP_MS, planWords, replayClock, replayFrame } from '../../src/ui/replay.ts';
+import { HOLD_MS, STEP_MS, contactEllipse, planWords, replayClock, replayFrame } from '../../src/ui/replay.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { EpisodeTrace } from '../../src/world/types.ts';
 import { config, round1, withConfig } from '../helpers.ts';
@@ -207,5 +208,39 @@ describe('replayFrame: the floor during block t', () => {
         for (const caption of f.captions) expect(caption).not.toMatch(/needs|too many|\+3|reputation|instead/i);
       }
     }
+  });
+});
+
+// The figures' contact shadow (G6, row 16: the people's was a sliver under a tall figure). Drawn at runtime from the
+// sprite's box, so no image changes; the cast's own sizes.
+describe('contactEllipse: the soft shadow at a figure\'s feet', () => {
+  type Sprite = { id: string; size: [number, number] };
+  const sprites: Sprite[] = [];
+  const walk = (o: unknown): void => {
+    if (o === null || typeof o !== 'object') return;
+    const s = o as Partial<Sprite>;
+    if (typeof s.id === 'string' && Array.isArray(s.size)) sprites.push(s as Sprite);
+    else for (const v of Object.values(o)) walk(v);
+  };
+  walk(JSON.parse(readFileSync('src/assets/art/cast.json', 'utf8')));
+  const people = sprites.filter((s) => s.id.startsWith('crew'));
+  const dogs = sprites.filter((s) => !s.id.startsWith('crew'));
+
+  it('widens under a tall figure (the crew): at least a quarter of its height each side, its depth in the same proportion', () => {
+    expect(people.length).toBeGreaterThanOrEqual(10);
+    for (const { id, size: [w, h] } of people) {
+      const e = contactEllipse(w, h);
+      expect(e.rx, id).toBeGreaterThanOrEqual(h * 0.25);
+      expect(e.rx, id).toBeGreaterThanOrEqual(w * 0.42);
+      expect(e.ry / e.rx, id).toBeCloseTo(0.11 / 0.42, 5);
+    }
+    // The tallest, narrowest figure gets a wider pool than its width alone gave it.
+    const tired = people.find((p) => p.id === 'crew-tired') as Sprite;
+    expect(contactEllipse(tired.size[0], tired.size[1]).rx).toBeGreaterThan(tired.size[0] * 0.42 * 1.5);
+  });
+
+  it("keeps the dogs' shadows as they were: their width sets it", () => {
+    expect(dogs.length).toBeGreaterThan(20);
+    for (const { id, size: [w, h] } of dogs) expect(contactEllipse(w, h), id).toEqual({ rx: w * 0.42, ry: Math.max(1, w * 0.11) });
   });
 });

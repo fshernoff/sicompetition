@@ -146,9 +146,15 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     i.innerHTML = icon(name);
     return i;
   };
-  const label = (name: RailIcon, text: string): HTMLElement => {
+  /** A phrase that never breaks inside itself; a long label wraps only between its phrases (G6, row 17). */
+  const phrases = (parts: readonly string[], cls?: string): HTMLElement => {
+    const span = el('span', cls);
+    parts.forEach((part, i) => span.append(...(i > 0 ? [' '] : []), el('span', 'phrase', part)));
+    return span;
+  };
+  const label = (name: RailIcon, ...parts: string[]): HTMLElement => {
     const lab = el('p', 'stat-lab');
-    lab.append(glyph(name), el('span', undefined, text));
+    lab.append(glyph(name), phrases(parts));
     return lab;
   };
   /** A line of words with one bold number in it: "Tomorrow: <b>19</b> asking". */
@@ -212,15 +218,16 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   const stats = el('div', 'live-stats');
   const cashBox = el('div', 'stat stat-cash');
   const cashVal = el('p', 'stat-val');
+  // Today's profit: its label over its number (G6, row 17), the label wrapping, where it must, between its phrases.
   const cashToday = el('p', 'stat-sub stat-today');
   const cashTodayVal = el('b');
-  cashToday.append("Today's profit so far, after the GM's pay: ", cashTodayVal);
+  cashToday.append(phrases(["Today's profit so far,", "after the GM's pay:"], 'stat-sub-label'), ' ', cashTodayVal);
   const cashSub = el('p', 'stat-sub');
-  cashBox.append(label('cash', "Cash now, after the GM's pay"), cashVal, cashToday, cashSub);
+  cashBox.append(label('cash', 'Cash now,', "after the GM's pay"), cashVal, cashToday, cashSub);
   const bonusBox = el('div', 'stat stat-bonus');
   const bonusVal = el('p', 'stat-val');
   const bonusSub = el('p', 'stat-sub', 'Paid out of the cash as it is earned');
-  bonusBox.append(label('bonus', "The GM's bonus this week so far"), bonusVal, bonusSub);
+  bonusBox.append(label('bonus', "The GM's bonus", 'this week so far'), bonusVal, bonusSub);
   const incBox = el('div', 'stat stat-incidents');
   const incVal = el('p', 'stat-val');
   const incSub = el('p', 'stat-sub');
@@ -237,8 +244,8 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
   stats.append(cashBox, bonusBox, incBox, repBox);
 
   // The meters, each named for whose it is, each value in percent (BRIEF 10.2). Energy and cleanliness are plain bars:
-  // where they start to cost is a hidden rule (H3, H6; D65). The crew's fatigue carries the plan's public 70% mark, the
-  // part above it hatched and the value in the warning colour past it. Every row keeps the same room above its bar, so
+  // where they start to cost is a hidden rule (H3, H6; D65); only the end of a scale shows (D70). The crew's fatigue
+  // carries the plan's public 70% mark, the part above it hatched and the value in the warning colour past it. Every row keeps the same room above its bar, so
   // the three are evenly spaced. Then the rest in words.
   const meters = el('div', 'live-meters');
   const meterRow = (name: string): { track: HTMLElement; bar: HTMLElement; num: HTMLElement } => {
@@ -325,13 +332,17 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     repSub.textContent = m.reputation.change;
     repBox.classList.toggle('hurt', m.reputation.change.startsWith('Down'));
 
-    for (const [meter, v] of [
-      [energy, m.energy],
-      [clean, m.cleanliness],
-      [tired, m.fatigue],
+    // A meter at the bad end of its own scale shows it (D70, amending D65): the number in the warning ink and the track
+    // outlined. The ends of a scale are public; nothing shows at a threshold the rules hide.
+    for (const [meter, v, atEnd] of [
+      [energy, m.energy, m.energy <= 0],
+      [clean, m.cleanliness, m.cleanliness <= 0],
+      [tired, m.fatigue, m.fatigue >= 100],
     ] as const) {
       meter.bar.style.width = `${Math.max(0, Math.min(100, v))}%`;
       meter.num.textContent = `${v}%`;
+      meter.num.classList.toggle('at-end', atEnd);
+      meter.track.classList.toggle('at-end', atEnd);
     }
     const limit = Math.max(0, Math.min(100, m.fatigueLimit));
     const tiredHigh = m.fatigue > limit;

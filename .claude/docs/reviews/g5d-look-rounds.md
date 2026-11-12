@@ -251,30 +251,31 @@ incidents)") and the report's row. Checks: `npx vitest run` 603 passed; `npm run
 
 ## G6 (Nov 12): round 4's mediums and lows, each with its decision
 
-From the plan `.claude/docs/plans/g6-fixes.md` (its decisions table, rows 1 to 21). WP1 fixed the words and the report;
-WP2 (after it) owns the layout and the 640 window, so its rows read "WP2" until its result is recorded.
+From the plan `.claude/docs/plans/g6-fixes.md` (its decisions table, rows 1 to 23). WP1 fixed the words and the report;
+WP2 (after it) fixed the layout and the 640 window.
 
 | Round 4 finding | Severity | G6 |
 |---|---|---|
-| M1: getting ready, the lower half of both columns empty | Medium | (b) WP2 (row 15b: "What happens next" in the empty column if placement and CSS do it, else declined with the reason) |
+| M1: getting ready, the lower half of both columns empty | Medium | Fixed in G6 (row 15b): "What happens next" stays under the yard while the GM gets ready, in the column the week has not filled (CSS alone); the rail's column keeps its compact summary |
 | M1, the scorecards' dead space | Medium | Open: declined for now (row 15a; at 1024 the done layout stacks, long reasons add height, and moving the scroll landing days before a class is a risk) |
-| M2: two lines wrap in the rail | Low | WP2 (row 17: by layout, the words kept) |
+| M2: two lines wrap in the rail | Low | Fixed in G6 (row 17): "Today's profit so far, after the GM's pay" and "The GM's bonus this week so far" each over their number, wrapping only between phrases |
 | M3: the reasons card cut while the week plays | Low | Open: declined for now (row 18; a height rule cannot know a team's text fits, and the reasons sit in the rail on purpose while the GM gets ready) |
-| A5, C8: cleanliness at 0% looks neutral | Medium | WP2 (row 1, D70) |
+| A5, C8: cleanliness at 0% looks neutral | Medium | Fixed in G6 (row 1, D70): a meter at the bad end of its scale shows its number in --red-ink and its track outlined |
 | A7, C17: the Why helper contradicts itself | Medium | Fixed in G6 (row 2): "Optional: your team's reasons, for the debrief." |
 | A10, C12: "Put the GM to work again" against "Watch the week again" | Medium | Fixed in G6 (row 3, D71): "Replay the week", its note "Shows this same week on the yard again. The GM does nothing new." |
 | A9, C11: the headline wraps | Medium | Fixed in G6 (row 4): a small label "Profit after the GM's bonus" over the amount alone |
-| A6: the sliders' zero | Medium | WP2 (row 5) |
+| A6: the sliders' zero | Medium | Fixed in G6 (row 5): the zero tick 4 px taller than the track on every row, in --ink-2 (Chrome checked; Firefox not checked) |
 | A8: the P&L shows the GM's pay before the owners' result | Medium | Fixed in G6 (row 6, D73): on screen Money, The owners' bottom line, The GM's pay under the plan, Operations; the data and the export unchanged |
-| C: the bar's height changes when the run starts | Medium | WP2 (row 7) |
+| C: the bar's height changes when the run starts | Medium | Fixed in G6 (row 7): 40 px in every phase |
 | C: the bonus "+" in the rail, "−" elsewhere | Medium | Declined (row 8): under D62 the rail's box is the GM's own pay, where the plus stays |
 | C: the day's choices in small grey text | Medium | Fixed in G6 (row 9): the page's ink at 15 px; the add-on "+ $10 a dog per play block" kept on one line |
 | C: the report ends with no next step | Medium | Fixed in G6 (row 10): "Back to your scorecard ↑" after the table, only with a scorecard, cleared with the run, focus to the called line |
 | C: costs have no subtotal | Medium | Fixed in G6 (row 11): "Costs before the GM's bonus", bold, revenue less it is the profit before the bonus |
 | C: "(walk asked)" unexplained | Medium | Fixed in G6 (row 12): "Words in brackets show what the GM asked for; the activity before them is what ran." |
-| C: two numbered sequences on the first screen | Medium | WP2 (row 13) |
+| C: two numbered sequences on the first screen | Medium | Fixed in G6 (row 13): "What happens next" with plain dots |
 | C: Round 3's notice skips setting the plan | Medium | Fixed in G6 (row 14): "All six measures are yours: turn on the ones you want and set their dollar amounts. Write your prediction, then put the GM to work." (the Round 3 brief with it) |
-| C: the people's ground shadow a sliver | Medium | WP2 (row 16) |
+| C: the people's ground shadow a sliver | Medium | Fixed in G6 (row 16): the contact ellipse at least 0.26 of a tall figure's height each side, drawn at runtime; the dogs' unchanged |
 | A4: the fallback yard is two sentences in a large panel | Medium | Declined (row 19): under D64 the fallback is a broken device's only |
-| C4: the 640 px Chromebook window | High | WP2 (row 20, D72) |
-| 640 only: the tray's open and close leaves the page 90 px under the bar | (new, G6 recon) | WP2 (row 21) |
+| C4: the 640 px Chromebook window | High | Fixed in G6 (rows 20 and 23, D72): at 1366 × 640 and 1280 × 640 the picks, the button, the meters and the rerun in the window, held by Playwright |
+| 640 only: the tray's open and close leaves the page 90 px under the bar | (new, G6 recon) | Fixed in G6 (row 21): closing puts the page back where the tray found it; a reader's own scroll is kept |
+| 1024 only: the report's profit tile clips "$4,853.70" | (new, G6 WP1) | Fixed in G6 (row 22): from 901 to 1100 px the tiles share the row by what each amount needs |

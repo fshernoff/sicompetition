@@ -1,4 +1,5 @@
-// A small stand-in for the DOM, enough for the report's renderer (createElement, text, classes, attributes, children),
+// A small stand-in for the DOM, enough for the report's renderer and the rail's (createElement, text, classes, inline
+// styles, hidden, attributes, children),
 // so what the page puts on screen, in its order, is tested under node with no browser and no DOM library (G6, row 6:
 // a model test alone could pass with nothing changed on screen).
 
@@ -7,6 +8,9 @@ export class FakeElement {
   readonly ownerDocument: FakeDocument;
   childNodes: (FakeElement | string)[] = [];
   className = '';
+  hidden = false;
+  /** The inline style properties a renderer writes (the rail's bar widths and marks). */
+  readonly style: Record<string, string> = {};
   readonly attributes = new Map<string, string>();
 
   constructor(tag: string, doc: FakeDocument) {
@@ -14,11 +18,29 @@ export class FakeElement {
     this.ownerDocument = doc;
   }
 
-  get classList(): { add: (...names: string[]) => void; contains: (name: string) => boolean } {
+  get classList(): {
+    add: (...names: string[]) => void;
+    remove: (...names: string[]) => void;
+    toggle: (name: string, force?: boolean) => boolean;
+    contains: (name: string) => boolean;
+  } {
     const names = (): string[] => this.className.split(/\s+/).filter((x) => x !== '');
+    const add = (...add: string[]): void => {
+      this.className = [...new Set([...names(), ...add])].join(' ');
+    };
+    const remove = (...gone: string[]): void => {
+      this.className = names()
+        .filter((n) => !gone.includes(n))
+        .join(' ');
+    };
     return {
-      add: (...add: string[]) => {
-        this.className = [...new Set([...names(), ...add])].join(' ');
+      add,
+      remove,
+      toggle: (name: string, force?: boolean) => {
+        const on = force ?? !names().includes(name);
+        if (on) add(name);
+        else remove(name);
+        return on;
       },
       contains: (name: string) => names().includes(name),
     };

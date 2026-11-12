@@ -1027,3 +1027,314 @@ test('without its pictures the yard draws no figures and says so, keeping its ch
   const hits = STUDENT_BANS.flatMap((word) => (text.match(new RegExp(`.{0,40}${word.source}.{0,40}`, word.flags.includes('i') ? 'gi' : 'g')) ?? []));
   expect(hits).toEqual([]);
 });
+
+// ---------- G6: the Chromebook's browser window and the layout's round 4 rows ----------
+
+/** A Why of about 300 characters (G6 acceptance 2: a team that writes its reasons out). */
+const WHY_300 =
+  'It will take every booking it can, because profit is all the plan pays for, and keep one staffer on the floor to save on wages. It skips naps, since a nap block earns nothing. By Thursday the yard is packed, the crew is worn out and the incidents pile up, and the owners pay for that later in the term.';
+const SIX = ['dogsServed', 'incidents', 'reputation', 'fatigue', 'overRatio'] as const;
+
+type Box = { top: number; bottom: number; left: number; right: number };
+type WindowBoxes = { scrollY: number; innerHeight: number; innerWidth: number; boxes: Record<string, Box | null> };
+
+/** Each selector's box (the union of its rendered matches) against the window, and the window's scroll. */
+async function windowBoxes(page: Page, selectors: readonly string[]): Promise<WindowBoxes> {
+  return page.evaluate((sels) => {
+    const boxes: Record<string, { top: number; bottom: number; left: number; right: number } | null> = {};
+    for (const s of sels) {
+      const rects = Array.from(document.querySelectorAll(s))
+        .filter((e) => e.getClientRects().length > 0)
+        .map((e) => e.getBoundingClientRect());
+      const r = (n: number): number => Math.round(n * 10) / 10;
+      boxes[s] = rects.length === 0 ? null : { top: r(Math.min(...rects.map((x) => x.top))), bottom: r(Math.max(...rects.map((x) => x.bottom))), left: r(Math.min(...rects.map((x) => x.left))), right: r(Math.max(...rects.map((x) => x.right))) };
+    }
+    return { scrollY: window.scrollY, innerHeight: window.innerHeight, innerWidth: window.innerWidth, boxes };
+  }, selectors);
+}
+
+/** The selectors whose whole box is not inside the window (missing, or cut at an edge), with where they are. */
+function notInWindow(m: WindowBoxes): string[] {
+  return Object.entries(m.boxes)
+    .filter(([, b]) => b === null || b.top < 0 || b.left < 0 || b.bottom > m.innerHeight || b.right > m.innerWidth)
+    .map(([s, b]) => (b === null ? `${s}: not shown` : `${s}: ${b.top} to ${b.bottom} px (window ${m.innerHeight})`));
+}
+
+/** The fonts and the pictures in, as a class sees the page once it has loaded. */
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all(Array.from(document.images, (img) => (img.complete ? null : img.decode().catch(() => null))));
+  });
+}
+
+/** Round 3's six measures on, by the switches' own clicks in the page (a click that scrolls nothing). */
+async function allSixOn(page: Page): Promise<void> {
+  for (const key of SIX) await page.locator(`#kpi-${key}-on`).evaluate((el) => (el as HTMLInputElement).click());
+  await expect(page.locator('#limit')).toHaveText('6 of 6 measures on.');
+}
+
+/** The Why typed in as it stands (the value and its input event; no focus, so no scroll). */
+async function writeWhy(page: Page, why: string): Promise<void> {
+  await page.locator('#prediction').evaluate((el, text) => {
+    (el as HTMLTextAreaElement).value = text;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }, why);
+}
+
+/**
+ * The five picks made by a mouse click where each chip is on screen: unlike Playwright's own click, it never scrolls
+ * the page to reach a chip, so a chip below the window is simply not picked (G6 acceptance 2).
+ */
+async function pickInPlace(page: Page, picks: Record<string, string> = PACKED): Promise<void> {
+  for (const [field, value] of Object.entries(picks)) {
+    const box = await page.locator(`label[for="pick-${field}-${value}"]`).boundingBox();
+    expect(box, `the chip ${field} ${value}`).not.toBeNull();
+    await page.mouse.click((box?.x ?? 0) + (box?.width ?? 0) / 2, (box?.y ?? 0) + (box?.height ?? 0) / 2);
+    await expect(page.locator(`#pick-${field}-${value}`)).toBeChecked();
+  }
+}
+
+/** Puts the GM to work by a mouse click on the button where it is (no scroll to reach it). */
+async function trainInPlace(page: Page): Promise<void> {
+  const box = await page.locator('#train').boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click((box?.x ?? 0) + (box?.width ?? 0) / 2, (box?.y ?? 0) + (box?.height ?? 0) / 2);
+}
+
+for (const [width, height] of [
+  [1366, 640],
+  [1280, 640],
+] as const) {
+  test(`at ${width} × ${height}, the five picks and the whole of Put the GM to work are on screen without scrolling, on load and with the picks made, Round 1 and Round 3 with all six on (D72)`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    for (const address of ['/', '/?round=3']) {
+      await page.goto(address);
+      await settle(page);
+      if (address !== '/') await allSixOn(page);
+      await writeWhy(page, WHY_300);
+      const onLoad = await windowBoxes(page, ['#picks', '#train', '#picks-hint']);
+      console.log(`[e2e] ${width} × ${height} ${address} on load: ${JSON.stringify(onLoad.boxes)}`);
+      expect(onLoad.scrollY, `${address}: the page is not scrolled`).toBe(0);
+      expect(notInWindow(onLoad), `${address} on load`).toEqual([]);
+      await pickInPlace(page);
+      await expect(page.locator('#train')).toBeEnabled();
+      const picked = await windowBoxes(page, ['#picks', '#train']);
+      console.log(`[e2e] ${width} × ${height} ${address} with the picks made: ${JSON.stringify(picked.boxes)}`);
+      expect(picked.scrollY, `${address}: the picks scrolled nothing`).toBe(0);
+      expect(notInWindow(picked), `${address} with the picks made`).toEqual([]);
+      // The bar: one height in every phase (G6, row 7).
+      expect(Math.round((await page.locator('.topbar').boundingBox())?.height ?? 0)).toBe(40);
+    }
+  });
+
+  test(`at ${width} × ${height}, the status line and the three meters are on screen at every block of the week, then "You called N of 5" and the whole of "Put the GM to work again", Round 1 and Round 3 with all six on (D72)`, async ({ page }) => {
+    test.setTimeout(300_000);
+    await page.setViewportSize({ width, height });
+    for (const address of ['/', '/?round=3']) {
+      await page.goto(address);
+      await settle(page);
+      if (address !== '/') await allSixOn(page);
+      await writeWhy(page, WHY_300);
+      await pickInPlace(page);
+      // Every frame while the week plays: the block on the rail, the window's scroll and the boxes, in the page itself,
+      // so no block is missed between round trips.
+      await page.evaluate((playing) => {
+        type Sample = { when: string; scrollY: number; status: number[]; meters: number[]; bar: number };
+        const samples: Sample[] = [];
+        (window as unknown as { __blocks: Sample[] }).__blocks = samples;
+        const union = (sel: string): number[] => {
+          const rects = Array.from(document.querySelectorAll(sel))
+            .filter((e) => e.getClientRects().length > 0)
+            .map((e) => e.getBoundingClientRect());
+          return rects.length === 0 ? [] : [Math.min(...rects.map((r) => r.top)), Math.max(...rects.map((r) => r.bottom))];
+        };
+        const tick = (): void => {
+          const status = document.querySelector('#status')?.textContent ?? '';
+          if (status === playing) {
+            samples.push({
+              when: document.querySelector('#rail-live .when')?.textContent ?? '',
+              scrollY: window.scrollY,
+              status: union('#status'),
+              meters: union('#rail-live .live-meters > *'),
+              bar: document.querySelector('.topbar')?.getBoundingClientRect().height ?? 0,
+            });
+          }
+          if (!status.startsWith('The week is over')) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }, PLAYING);
+      await trainInPlace(page);
+      await weekOver(page);
+      const samples = await page.evaluate(() => (window as unknown as { __blocks: { when: string; scrollY: number; status: number[]; meters: number[]; bar: number }[] }).__blocks);
+      const blocks = new Set(samples.map((s) => s.when));
+      expect(blocks.size, `${address}: every block of the week sampled`).toBe(20);
+      const inside = (span: number[]): boolean => span.length === 2 && (span[0] as number) >= 0 && (span[1] as number) <= height;
+      const worst = samples.reduce((w, s) => Math.max(w, s.meters[1] ?? 9999), 0);
+      console.log(`[e2e] ${width} × ${height} ${address} while the week plays: the meters' lowest edge ${Math.round(worst)} px, status ${JSON.stringify(samples[0]?.status.map(Math.round))}`);
+      const off = samples.filter((s) => s.scrollY !== 0 || !inside(s.status) || !inside(s.meters) || Math.round(s.bar) !== 40).map((s) => `${s.when}: scroll ${s.scrollY}, status ${s.status.map(Math.round).join('-')}, meters ${s.meters.map(Math.round).join('-')}, bar ${s.bar}`);
+      expect([...new Set(off)], `${address}: blocks with the status or a meter off screen`).toEqual([]);
+      // The scorecard: the count of the call and the whole of the rerun's button, the page not scrolled.
+      await twoFrames(page);
+      await expect(page.locator('#called-line')).toHaveText(/^You called \d of 5\.$/);
+      const done = await windowBoxes(page, ['#called-line', '#train', '.topbar']);
+      console.log(`[e2e] ${width} × ${height} ${address} with the scorecard up: ${JSON.stringify(done.boxes)}`);
+      expect(done.scrollY, `${address}: the scorecard not scrolled`).toBe(0);
+      expect(notInWindow(done), `${address} with the scorecard up`).toEqual([]);
+      expect(Math.round((done.boxes['.topbar']?.bottom ?? 0) - (done.boxes['.topbar']?.top ?? 0))).toBe(40);
+    }
+  });
+}
+
+test('closing the tray puts the page back where opening it moved it, and keeps a scroll the reader made while it was open, at 640 and 768 high (G6, row 21)', async ({ page }) => {
+  test.setTimeout(180_000);
+  for (const height of [640, 768]) {
+    await page.setViewportSize({ width: 1366, height });
+    await page.goto('/');
+    await settle(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // The reader does not scroll: the tray may move the page to keep the button above it; closing puts it back.
+    await page.click('#teacher-open');
+    await expect(page.locator('#teacher')).toBeVisible();
+    console.log(`[e2e] 1366 × ${height}: opening the tray on the load screen moved the page ${await page.evaluate(() => document.body.scrollTop)} px`);
+    await page.click('#teacher-close');
+    await expect(page.locator('#teacher')).toBeHidden();
+    expect(await page.evaluate(() => window.scrollY), `${height}: back where it was after open and close`).toBe(0);
+    // The same through a round change in the tray (Round 3's console).
+    await page.click('#teacher-open');
+    await page.locator('#round-round3').check();
+    await page.click('#teacher-close');
+    await expect(page.locator('#round-label')).toContainText('Round 3');
+    expect(await page.evaluate(() => window.scrollY), `${height}: back where it was after a round change in the tray`).toBe(0);
+    // Round 1 again (a round change clears nothing the next part needs).
+    await page.click('#teacher-open');
+    await page.locator('#round-round1').check();
+    await page.click('#teacher-close');
+    // Round 3 with all six on (its button lowest): the tray and its training details open over the button and move the
+    // page up to keep it clear; the reader does not scroll; closing puts the page back where it was.
+    await page.goto('/?round=3');
+    await settle(page);
+    await allSixOn(page);
+    await pickInPlace(page);
+    await page.click('#teacher-open');
+    await expect(page.locator('#teacher')).toBeVisible();
+    await page.click('#training-details');
+    await expect(page.locator('#teacher-foot')).toBeVisible();
+    const moved = await page.evaluate(() => document.body.scrollTop);
+    console.log(`[e2e] 1366 × ${height}: the tray and its details moved the page ${moved} px`);
+    expect(moved, `${height}: the tray moved the page to keep the button above it`).toBeGreaterThan(0);
+    await page.click('#training-details'); // the details closed again: the page stays where the tray left it
+    await page.click('#teacher-close');
+    await expect(page.locator('#teacher')).toBeHidden();
+    expect(await page.evaluate(() => window.scrollY), `${height}: back where it was before the tray moved it`).toBe(0);
+    await page.click('#train');
+    await weekOver(page);
+    // The reader scrolls while the tray is open, to the report: closing keeps that place.
+    await page.click('#teacher-open');
+    await expect(page.locator('#teacher')).toBeVisible();
+    const reading = await page.evaluate(() => {
+      const report = document.querySelector('#report') as HTMLElement;
+      document.body.scrollTo(0, report.offsetTop - 40);
+      return { body: document.body.scrollTop, title: Math.round(document.querySelector('#report-title')?.getBoundingClientRect().top ?? -1) };
+    });
+    await page.click('#teacher-close');
+    await expect(page.locator('#teacher')).toBeHidden();
+    const after = await page.evaluate(() => ({ scrollY: window.scrollY, title: Math.round(document.querySelector('#report-title')?.getBoundingClientRect().top ?? -1) }));
+    console.log(`[e2e] 1366 × ${height}: reading the report with the tray open at ${JSON.stringify(reading)}, after the close ${JSON.stringify(after)}`);
+    expect(reading.body).toBeGreaterThan(200);
+    expect(Math.abs(after.scrollY - reading.body), `${height}: the reader's place kept`).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.title - reading.title)).toBeLessThanOrEqual(1);
+  }
+});
+
+test("at 1024 and 1366 wide: what happens next while the GM gets ready, the rail's two scoped labels over their numbers, and the report's headline amounts whole in their tiles (G6, rows 15b, 17, 22)", async ({ page }) => {
+  test.setTimeout(180_000);
+  for (const width of [1024, 1366]) {
+    await page.setViewportSize({ width, height: 768 });
+    await page.goto('/');
+    await settle(page);
+    await makePicks(page);
+    await page.evaluate(
+      ([preparing, playing]) => {
+        type Seen = { ready: { shown: boolean; top: number; bottom: number; yardBottom: number }[]; labels: { lines: Record<string, number>; below: Record<string, boolean> }[] };
+        const seen: Seen = { ready: [], labels: [] };
+        (window as unknown as { __seen6: Seen }).__seen6 = seen;
+        /** The rendered lines a phrase takes inside an element (0 when the phrase is not there). */
+        const lines = (el: Element | null, phrase: string): number => {
+          if (el === null) return 0;
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          const nodes: Text[] = [];
+          for (let n = walker.nextNode(); n !== null; n = walker.nextNode()) nodes.push(n as Text);
+          const all = nodes.map((n) => n.textContent ?? '').join('');
+          const at = all.indexOf(phrase);
+          if (at < 0) return 0;
+          // The phrase's range across the text nodes it spans.
+          const range = document.createRange();
+          let pos = 0;
+          for (const n of nodes) {
+            const len = (n.textContent ?? '').length;
+            if (pos <= at && at < pos + len) range.setStart(n, at - pos);
+            if (pos < at + phrase.length && at + phrase.length <= pos + len) range.setEnd(n, at + phrase.length - pos);
+            pos += len;
+          }
+          return new Set(Array.from(range.getClientRects()).filter((r) => r.width > 1).map((r) => Math.round(r.top))).size;
+        };
+        const tick = (): void => {
+          const status = document.querySelector('#status')?.textContent ?? '';
+          if (status === preparing) {
+            const card = document.querySelector('.next-card');
+            const r = card?.getBoundingClientRect();
+            seen.ready.push({ shown: card !== null && card.getClientRects().length > 0, top: r?.top ?? -1, bottom: r?.bottom ?? -1, yardBottom: document.querySelector('.yard-frame')?.getBoundingClientRect().bottom ?? -1 });
+          }
+          if (status === playing && seen.labels.length < 40) {
+            const today = document.querySelector('#rail-live .stat-today');
+            const bonusLab = document.querySelector('#rail-live .stat-bonus .stat-lab');
+            const todayNum = today?.querySelector('b')?.getBoundingClientRect();
+            const bonusNum = document.querySelector('#rail-live .stat-bonus .stat-val')?.getBoundingClientRect();
+            const todayLabel = today?.querySelector('.stat-sub-label') ?? null;
+            seen.labels.push({
+              lines: {
+                "Today's profit so far,": lines(today, "Today's profit so far,"),
+                "after the GM's pay": lines(today, "after the GM's pay"),
+                "The GM's bonus": lines(bonusLab, "The GM's bonus"),
+                'this week so far': lines(bonusLab, 'this week so far'),
+              },
+              below: {
+                today: todayNum !== undefined && todayLabel !== null && todayNum.top >= todayLabel.getBoundingClientRect().bottom - 1,
+                bonus: bonusNum !== undefined && bonusLab !== null && bonusNum.top >= bonusLab.getBoundingClientRect().bottom - 1,
+              },
+            });
+          }
+          if (!status.startsWith('The week is over')) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      },
+      [PREPARING, PLAYING],
+    );
+    await page.click('#train');
+    await weekOver(page);
+    type Seen = { ready: { shown: boolean; top: number; bottom: number; yardBottom: number }[]; labels: { lines: Record<string, number>; below: Record<string, boolean> }[] };
+    const seen = await page.evaluate(() => (window as unknown as { __seen6: Seen }).__seen6);
+    // Row 15b: while the GM gets ready, "What happens next" under the yard, in the window.
+    expect(seen.ready.length, `${width}: frames sampled while the GM got ready`).toBeGreaterThan(0);
+    console.log(`[e2e] ${width} × 768 getting ready, what happens next: ${JSON.stringify(seen.ready[0])}`);
+    for (const r of seen.ready) {
+      expect(r.shown, `${width}: what happens next shown while the GM gets ready`).toBe(true);
+      expect(r.top).toBeGreaterThanOrEqual(r.yardBottom);
+      expect(r.bottom).toBeLessThanOrEqual(768);
+    }
+    // Row 17: each label whole phrase by phrase, over its number.
+    expect(seen.labels.length).toBeGreaterThan(0);
+    console.log(`[e2e] ${width} × 768 the rail's scoped labels: ${JSON.stringify(seen.labels[0])}`);
+    for (const l of seen.labels) {
+      expect(l.lines, `${width}: each phrase on one line`).toEqual({ "Today's profit so far,": 1, "after the GM's pay": 1, "The GM's bonus": 1, 'this week so far': 1 });
+      expect(l.below, `${width}: each label over its number`).toEqual({ today: true, bonus: true });
+    }
+    // Row 22: the headline's amounts whole in their tiles.
+    await page.locator('#report').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await expect(page.locator('#report-tiles .tile')).toHaveCount(5);
+    const tiles = await page.locator('#report-tiles .tile-value').evaluateAll((els) => els.map((el) => ({ text: el.textContent ?? '', scroll: el.scrollWidth, client: el.clientWidth })));
+    console.log(`[e2e] ${width} × 768 the headline's amounts: ${JSON.stringify(tiles)}`);
+    for (const t of tiles) expect(t.scroll, `${width}: "${t.text}" whole in its tile`).toBeLessThanOrEqual(t.client);
+  }
+});

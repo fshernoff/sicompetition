@@ -21,7 +21,8 @@
     "shots": "node e2e/shots.ts",
     "perf": "node e2e/perf.ts",
     "calibrate": "node src/sim/calibrate.ts",
-    "pilot": "node src/learn/pilot.ts"
+    "pilot": "node src/learn/pilot.ts",
+    "sheets": "node Tools/print/sheets.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

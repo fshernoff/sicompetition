@@ -320,13 +320,15 @@ the others are talking points the probe re-measures (D69 replaced rows written b
 among them).
 
 Plans that pay for Profit and Reputation change converge (D69, measured as above on the lab's panel,
-`.claude/docs/reviews/g11-balance-lab.md`). Once Reputation change is on beside Profit, at +$2 to +$10, with or
-without other measures, the GM schedules two staffers every day, accepts every booking at the premium rate and walks
-dogs in every floor block (15 of 15), because a walk's photo lifts reputation (H8); nothing in any plan pays for a
-clean floor, so dogs are found sick at pickup (H6). Eight plans of the panel give the identical week on each of seeds 1 to
-3; on seed 1 it is profit $4,678, reputation 50 → 84, 2 incidents, no block over 15 dogs per staffer, 7 dogs found
-sick. No plan with Profit on naps or cleans, alone or beside any other measure: a second staffer is the cheaper way to
-cut incidents, and naps and cleans appear only in plans without Profit. So in Rounds 2 and 3 which measures are on
+`.claude/docs/reviews/g11-balance-lab.md`). Once Reputation change is on beside Profit, with Profit at +$5 to +$10 and
+Reputation change at +$2 to +$10, with or without fines on the other measures, the GM schedules two staffers every
+day, accepts every booking at the premium rate and walks dogs in every floor block (15 of 15), because a walk's photo
+lifts reputation (H8); nothing in any plan pays for a clean floor, so dogs are found sick at pickup (H6). With Profit
+small beside reputation (+$2 against +$10) the GM hires a third staffer. Eight plans of the panel give the identical
+week on each of seeds 1 to 3; on seed 1 it is profit $4,678, reputation 50 → 84, 2 incidents, no block over 15 dogs per
+staffer, 7 dogs found sick. No plan tried with Profit at +$1 or more naps or cleans: a second staffer is the cheaper way
+to cut incidents, and naps and cleans appear only in plans with Profit off or at $0 or below (Profit −$1 alone cleans
+every block). So in Rounds 2 and 3 which measures are on
 matters more than their weights. The rules keep this on purpose: it is the unit's Round 3 exhibit (section 14).
 
 ## 8. Rounds
@@ -547,11 +549,30 @@ with the numbers that met this.
 ## 14. The lesson materials (G7)
 
 Ten sheets in `docs/lesson/`, Markdown that prints, for an eight-period unit in teams of four (the Challenge
-plan's unit, framed as below: D53's GM, with D68's lesson). The teacher's: `teacher-guide.md` (two pages),
-`concept-check-key.md` and `teacher-key.md` (the key to the game, two pages at most, read before period 1). The
-student's: `brief-round1.md`, `brief-round2.md`, `brief-round3.md` (one page each), `role-cards.md` (CFO, COO, CMO,
-Compliance officer, one page cut in four), `concept-check.md` (eight questions, the same sheet before and after the
-unit), `board-memo.md` and `debrief-readings.md` (two pages, with its sources).
+plan's unit, framed as below: D53's GM, with D68's lesson). The teacher's: `teacher-guide.md`,
+`concept-check-key.md` and `teacher-key.md` (the key to the game, read before period 1). The student's:
+`brief-round1.md`, `brief-round2.md`, `brief-round3.md`, `role-cards.md` (CFO, COO, CMO, Compliance officer, one page
+cut in four), `concept-check.md` (eight questions, the same sheet before and after the unit), `board-memo.md` and
+`debrief-readings.md` (with its sources).
+
+The sheets print one way (D74): `npm run sheets` renders each to US Letter PDF in `Temp/sheets/` with one print
+stylesheet (`Tools/print/sheets.css`: 11 pt Arial or Helvetica, 1 in margins, tables and write-on lines styled for
+a pen), counts the pages and exits non-zero, naming the sheet, when one is over its count below. The readings' mapping
+table prints on its own last page, its rows tall enough to write in by hand. A test holds the script's counts to this
+table.
+
+| Sheet | Pages |
+|---|---|
+| `teacher-guide.md` | 4 (two sheets, both sides) |
+| `teacher-key.md` | 2 |
+| `concept-check-key.md` | 2 |
+| `brief-round1.md` | 1 |
+| `brief-round2.md` | 1 |
+| `brief-round3.md` | 1 |
+| `role-cards.md` | 1 |
+| `concept-check.md` | 2 (one sheet, both sides) |
+| `board-memo.md` | 1 |
+| `debrief-readings.md` | 3 (the mapping table alone on the last) |
 
 Their rules, held by `tests/lesson/materials.test.ts` (D54): they quote the page (each round's label and note, the
 measures' names, the tagline, the plan in words, the tray's labels, Round 1's sentence on seed 1 as the engine writes
@@ -610,7 +631,7 @@ and the check line's words; still "SI", never "AI", and the GM is "it". It holds
 hidden rules, one line each, the page's own title and sentences of the page's own words from the reveal (section 11),
 each with a number, so the sheet cannot drift from the config; what the GM tends to do on seed 1 by family of plan
 (Round 1; Profit with Reputation change, the Round 3 exhibit below; Profit with Incidents or Blocks over 15 dogs per
-staffer but not reputation; plans with no profit in them; that no plan with Profit on naps or cleans; that different
+staffer but not reputation; plans with no profit in them; that no plan paying Profit +$1 or more naps or cleans; that different
 amounts often give the same week), its numbers quoted from the engine and measured with `node Tools/balance/probe.ts`;
 the check line read as the code works (the engine stops when stable, at the week cap, or when the 60 s budget from the
 click runs out: "not stable" alone needs nothing and the week counts, the same on any computer; "over budget" with

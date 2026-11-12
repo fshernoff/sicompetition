@@ -36,7 +36,7 @@ const ALL_FILES = [...TEACHER_FILES, ...STUDENT_FILES];
 /** The student's sheets a team hands in: each asks for a team code, never a name. The role cards are kept, not handed in. */
 const HANDED_IN = STUDENT_FILES.filter((f) => f !== 'role-cards.md');
 
-/** At most this many words, markdown syntax stripped: two printed pages for the guide, the readings and the teacher's key, one for the rest. */
+/** At most this many words, markdown syntax stripped: an editorial cap. The printed pages are `npm run sheets`'s to check (D74, BRIEF 14). */
 const WORD_LIMITS: Readonly<Record<(typeof ALL_FILES)[number], number>> = {
   'teacher-guide.md': 1250,
   'concept-check-key.md': 900,
@@ -62,7 +62,10 @@ function read(file: string): string {
 function body(file: string): string {
   const text = read(file);
   const sources = text.search(/^##\s+Sources\b/m);
-  return sources < 0 ? text : text.slice(0, sources);
+  if (sources < 0) return text;
+  // Only the Sources section is set aside: the readings' mapping table follows it, to print on its own last page (D74).
+  const after = text.slice(sources + 1).search(/^##\s/m);
+  return text.slice(0, sources) + (after < 0 ? '' : text.slice(sources + 1 + after));
 }
 
 /** Words as a reader counts them: markdown syntax (headings, emphasis, table pipes and rules, list marks, write-on lines) stripped. */

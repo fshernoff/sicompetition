@@ -1,0 +1,49 @@
+/* The lesson sheets' one print sheet (D74, BRIEF section 14): US Letter, 1 in margins, 11 pt Arial or Helvetica (system
+   fonts only: nothing is fetched), black on white, lines and tables drawn for a pen. Tools/print/sheets.ts inlines it. */
+@page { size: 8.5in 11in; margin: 1in; }
+html { font-size: 11pt; }
+body { margin: 0; background: #fff; color: #000; font-family: Arial, Helvetica, 'Liberation Sans', sans-serif;
+  font-size: 11pt; line-height: 1.2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+main { width: 6.5in; }
+
+h1, h2, h3, h4 { line-height: 1.15; break-after: avoid; page-break-after: avoid; }
+h1 { font-size: 18pt; font-weight: 700; margin: 0 0 6pt; }
+h2 { font-size: 13.5pt; font-weight: 700; margin: 9pt 0 3pt; padding-bottom: 2pt; border-bottom: 1px solid #000; }
+h3 { font-size: 12pt; font-weight: 700; margin: 7pt 0 2pt; }
+p { margin: 0 0 4pt; orphans: 2; widows: 2; }
+ul, ol { margin: 0 0 4pt; padding-left: 18pt; }
+li { margin: 0 0 1pt; break-inside: avoid; }
+li > ul, li > ol { margin: 2pt 0 0; }
+/* A line that introduces a list stays with it. */
+p:has(+ ul), p:has(+ ol) { break-after: avoid; page-break-after: avoid; }
+strong { font-weight: 700; }
+code { font-family: inherit; font-size: inherit; }
+a { color: #000; text-decoration: none; overflow-wrap: anywhere; }
+blockquote { margin: 0 0 4pt 0; padding-left: 8pt; border-left: 2px solid #000; }
+blockquote p:last-child { margin-bottom: 0; }
+
+/* A question, a case, a card: kept together on the page where it fits. */
+section.block { break-inside: avoid; page-break-inside: avoid; }
+
+/* A write-on line: a rule at the baseline, its length from the underscores typed, room above it for a pen. */
+.write { display: inline-block; width: calc(var(--n) * 0.55em); min-width: 5em; max-width: 100%; height: 1.45em; border-bottom: 1px solid #000;
+  vertical-align: baseline; }
+
+/* Tables: ruled, a pen's room in each cell. */
+table { width: 100%; border-collapse: collapse; margin: 3pt 0 6pt; }
+th, td { border: 1px solid #000; padding: 2pt 5pt; text-align: left; vertical-align: top; }
+th { font-weight: 700; }
+tr { break-inside: avoid; }
+
+/* The readings' mapping table: its own last page, each row tall enough to write in by hand. */
+#mapping-table { break-before: page; page-break-before: always; margin-top: 0; }
+#mapping-table ~ table td { height: 0.9in; }
+#mapping-table ~ table td:first-child { width: 1.2in; }
+
+/* The readings run long: a case may continue on the next page (three lines at least on each side) rather than leave a gap. */
+.sheet-debrief-readings section.block { break-inside: auto; page-break-inside: auto; }
+.sheet-debrief-readings p { orphans: 3; widows: 3; }
+
+/* An answer line (an arrow and a line, nothing else) runs across the page. */
+.answer .write { width: calc(100% - 1.5em); }
+.answer { margin-bottom: 2pt; }

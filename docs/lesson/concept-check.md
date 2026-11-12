@@ -80,7 +80,7 @@ A gym puts an SI in charge of selling memberships. The owners pay it on new memb
 
 ### Question 8
 
-A hardware chain pays its store staff a bonus for each customer survey rated "excellent". Answer these three questions about the chain:
+A hardware chain pays its store staff a bonus for each customer survey rated "excellent".
 
 What did the owners actually want? → ______________________________
 

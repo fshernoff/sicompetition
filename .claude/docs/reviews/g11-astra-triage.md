@@ -47,7 +47,14 @@ Each finding was reproduced here before it was taken (the commands are in the ta
 | P2 | The readings' mapping table prints one line high per cell: no room to write. | Not changed (it would lengthen an over-long sheet): the owner's call, with P1. |
 | P3 | The key said Incidents −$5 alone "takes the longest"; Dogs served +$5 alone also runs all 150,000 weeks on seed 1. | Taken by the key's trim: the phrase is gone. |
 
-## Needs the main thread
+## Needs the main thread (approved by the main thread, Nov 12; made in the follow-up commit)
+
+The bible changes below were approved as worded and are made. On P1 and P2 the main thread decided a print command
+(D74): `npm run sheets` (`Tools/print/sheets.ts`, `Tools/print/markdown.ts`, `Tools/print/sheets.css`) renders each
+sheet to Letter PDF at 11 pt with 1 in margins, offline, and fails on a sheet over BRIEF 14's new counts (a brief, the
+role cards and the memo 1; the teacher's key, the concept check and its key 2; the readings 3, the mapping table alone
+on the last with rows about 0.9 in; the teacher guide 4); `tests/print/sheets.test.ts` holds the counts to BRIEF 14.
+The readings' Sources now come before the mapping table. The briefs' tighter layout is kept.
 
 - BRIEF 7 (lines 322 to 330): "at +$2 to +$10, with or without other measures" becomes "with Profit at +$5 to +$10 and Reputation
   change at +$2 to +$10, with or without fines on the other measures"; add "with Profit small beside reputation (+$2 against

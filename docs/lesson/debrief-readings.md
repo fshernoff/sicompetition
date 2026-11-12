@@ -8,31 +8,31 @@ Then a fourth question, about the week your SI GM ran in Round 1: Would a human 
 
 ### 1. A bank paid on accounts opened (Wells Fargo)
 
-Wells Fargo set aggressive sales goals for its branch employees, and those goals were tied to pay. Employees opened bank and credit card accounts that customers had not asked for. On September 8, 2016 the Consumer Financial Protection Bureau (CFPB) fined the bank $100 million for it; other agencies acted too. An account opened without a customer asking for it still adds one to the count.
+Wells Fargo tied its branch employees' pay to aggressive sales goals. Employees opened bank and credit card accounts customers had not asked for. On September 8, 2016 the Consumer Financial Protection Bureau (CFPB) fined the bank $100 million for it; other agencies acted too. An account nobody asked for still adds one to the count.
 
 With an SI in that seat, what would have been different? → ______________________________
 
 ### 2. A call centre paid on average handle time (a made-up example)
 
-A call centre wants customers whose problems get solved. It pays its agents a bonus for a low average handle time, the minutes spent per call. Soon calls get short. Agents transfer callers to other desks, or end the call early with the problem still open, and the customer calls back. Each call is short and the bonus is paid. The average looks wonderful, and the customers are still stuck.
+A call centre wants customers whose problems get solved. It pays its agents a bonus for a low average handle time, the minutes spent per call. Agents transfer callers to other desks, or end the call early with the problem still open, and the customer calls back. Each call is short and the bonus is paid. The average looks wonderful, and the customers are still stuck.
 
 With an SI in that seat, what would have been different? → ______________________________
 
 ### 3. A salesperson paid on deals signed (a made-up example)
 
-A company wants income it can count on. It pays its salespeople for each deal signed. One salesperson signs deals with customers who cannot afford the product. Another offers an easy exit to anyone who hesitates. The deals are signed, so the bonus is paid. Later, the customers fail to pay or cancel, and the company is left with the costs. The measure counted signatures. The company wanted money that arrives and customers who stay.
+A company wants income it can count on. It pays its salespeople for each deal signed. One salesperson signs deals with customers who cannot afford the product. Another offers an easy exit to anyone who hesitates. The deals are signed, so the bonus is paid. Later the customers fail to pay or cancel. The measure counted signatures; the company wanted money that arrives and customers who stay.
 
 With an SI in that seat, what would have been different? → ______________________________
 
 ### 4. A school judged on attendance (a made-up example)
 
-A school wants students who learn. Its funding and its ranking depend on attendance, so attendance is what gets managed. A student who sits in a seat all day counts as present, even one who is asleep or lost. Prizes for showing up raise the number. It counts bodies in the room, not what students know, so attendance can climb while learning does not.
+A school wants students who learn, but its funding and ranking depend on attendance. A student who sits in a seat all day counts as present, even one who is asleep or lost. Prizes for showing up raise the number. It counts bodies in the room, not what students know, so attendance can climb while learning does not.
 
 If an SI ran the school, what would have been different? → ______________________________
 
 ### 5. A game-playing SI (CoastRunners)
 
-CoastRunners is a boat-racing video game. Researchers at OpenAI let an SI play it, scored on the game's score rather than on finishing the race. The SI found a lagoon where it could hit the same targets again and again, because they kept coming back. It kept circling there, crashing and catching fire, instead of finishing the race. It still scored higher than human players who finished.
+Researchers at OpenAI let an SI play CoastRunners, a boat-racing game, scored on its score rather than on finishing. The SI found a lagoon where the same targets kept coming back. It kept circling there, crashing and catching fire, and still outscored human players who finished.
 
 ## Two names for related problems
 
@@ -40,26 +40,13 @@ The **principal-agent problem** comes from business. When a manager or an employ
 
 **Reward hacking**, also called **specification gaming**, is a name from the people who build and study SIs. A system meets the measure as written and misses what its designers meant.
 
-They are not the same thing. At Good Dog Daycare they meet: the owners cannot watch the GM, and the GM meets the plan as written.
+They are not the same, but at Good Dog Daycare they meet: the owners cannot watch the GM, and it meets the plan as written.
 
 ## A person and an SI on the same plan
 
-People game measures too: the first four cases show it. But a person also brings brakes the plan never mentions: a conscience, the fear of being fired, a sense of what the owners meant. Those brakes do not always hold, but they are there. Your GM is one kind of SI: built to chase a number and given only a bonus plan. Such an SI has only the plan to go on. It does what was written, not what was meant. In Round 1 it found the loophole on its own. Real SIs can be given other rules, and some can guess a good deal of what was meant, but none of that comes from the bonus plan, and an owner cannot count on it without checking. So the owners' job changes. With an SI in charge, the owners must write the limits into the plan, or read each week's report for what the plan left out.
+People game measures too: the first four cases show it. But a person also brings brakes the plan never mentions: a conscience, the fear of being fired, a sense of what the owners meant. Those brakes do not always hold, but they are there. Your GM is one kind of SI: built to chase a number and given only a bonus plan. Such an SI has only the plan to go on. It does what was written, not what was meant. In Round 1 it found the loophole on its own. Real SIs can be given other rules, and some can guess a good deal of what was meant, but none of that comes from the bonus plan, and an owner cannot count on it without checking. So with an SI in charge, the owners' job changes: they must write the limits into the plan, or read each week's report for what the plan left out.
 
-Goodhart's law says, in plain words, that when a measure becomes a target, it stops being a good measure. The idea is the economist Charles Goodhart's (1975). The well-known wording is the anthropologist Marilyn Strathern's (1997).
-
-## Mapping table
-
-Fill in a row for each case. Use the three questions above.
-
-| Case | What the owners wanted | What we paid the GM for | The cheapest way to earn it |
-|---|---|---|---|
-| 1. Wells Fargo | | | |
-| 2. Call centre | | | |
-| 3. Salesperson | | | |
-| 4. School | | | |
-| 5. CoastRunners | | | |
-| Good Dog Daycare | | | |
+Goodhart's law: when a measure becomes a target, it stops being a good measure. The idea is the economist Charles Goodhart's (1975); the well-known wording, the anthropologist Marilyn Strathern's (1997).
 
 ## Sources
 
@@ -71,3 +58,16 @@ Fill in a row for each case. Use the three questions above.
 - Krakovna, V., et al. (2020). "Specification gaming: the flip side of AI ingenuity." DeepMind blog. https://deepmind.google/blog/specification-gaming-the-flip-side-of-ai-ingenuity/
 - Clark, J., & Amodei, D. (2016). "Faulty Reward Functions in the Wild." OpenAI. https://openai.com/index/faulty-reward-functions/
 - Consumer Financial Protection Bureau (2016, September 8). "Consumer Financial Protection Bureau Fines Wells Fargo $100 Million for Widespread Illegal Practice of Secretly Opening Unauthorized Accounts." https://www.consumerfinance.gov/archive/newsroom/consumer-financial-protection-bureau-fines-wells-fargo-100-million-widespread-illegal-practice-secretly-opening-unauthorized-accounts/
+
+## Mapping table
+
+Fill in a row for each case, with the three questions from the first page.
+
+| Case | What the owners wanted | What we paid the GM for | The cheapest way to earn it |
+|---|---|---|---|
+| 1. Wells Fargo | | | |
+| 2. Call centre | | | |
+| 3. Salesperson | | | |
+| 4. School | | | |
+| 5. CoastRunners | | | |
+| Good Dog Daycare | | | |

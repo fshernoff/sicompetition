@@ -38,7 +38,7 @@ Ask two yes-or-no questions. (a) Does it name a specific loss: wrong or broken o
 
 ### Question 6
 
-Ask two yes-or-no questions. (a) Does it name profit for the week ($1,800 to $300)? The other numbers were paid for, held or got better. (b) Does the reason name the plan: it paid for loaves, not profit, so a loss cost the SI nothing?
+Ask two yes-or-no questions. (a) Does it name profit for the week ($1,800 to $300)? The other numbers were paid for, held or got better. (b) Does the reason name the plan: it paid for loaves, not profit, so lower profit cost the SI nothing?
 
 - Score 2: both yes. Example: "Profit. The plan paid per loaf, not for profit, so the SI sold more loaves while profit fell."
 - Score 1: one yes. Example: "Profit. It cut prices to sell more loaves." (No plan.)

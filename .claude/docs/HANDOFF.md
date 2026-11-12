@@ -22,8 +22,10 @@ reviewed, Opus built. Plan and result: `.claude/docs/plans/g6-fixes.md`. Read it
   sat a concept check (the form changed Nov 12; never report one gain across two forms); Round 1 as one smartboard
   run stands unless he flips it; then the submission (`docs/submission-checklist.md`).
 - **Gotchas:** an Agent `isolation: worktree` starts from `main` (reset it to the working branch); `npm run perf`
-  fails on a loaded machine (a long task under load average 8 to 12 is the machine's); twelve agent worktrees under
-  `.claude/worktrees/` and their branches are left in place (deleting is the owner's).
+  fails on a loaded machine (a long task under load average 8 to 12 is the machine's); eight agent worktrees under
+  `.claude/worktrees/` (six from G5d and the Oct 30 drafts, two from this session), `Temp/fallback` and their branches
+  are left in place (deleting is the owner's); the first push of Nov 12 failed in CI on a 5 s test timeout (the
+  suite's is now 30 s) and the second deployed (Pages run 43291646462, the live script byte-identical to the build).
 
 ## Session 8 (2026-11-12, a cloud session): G11, the SI frame (on `claude/stoic-keller-lfb14w`, pushed, not merged)
 

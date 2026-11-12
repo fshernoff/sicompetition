@@ -104,4 +104,58 @@ end of its scale; and the button on screen in a Chromebook window without scroll
 
 ## Result
 
-(to be written)
+Built Nov 12, 2026 on `g6-fixes`. Commits: `47f7d25` WP1 (the words and the report), `1ff6d34` and `935ce8c` WP2
+(the layout and the 640 window), `fedfeef` WP2 round 2 (the reviews' fixes); the sheets package merged at `3dd6b55`
+(`b1bd496`, `9e762d4`).
+
+**Acceptance.**
+
+1. Met. Rows 1 to 7, 9 to 14, 15(b), 16, 17 and 20 to 23 are fixed; 8, 15(a), 18 and 19 are declined with their
+   reasons. The ledger (`.claude/docs/reviews/g5d-look-rounds.md`, "G6 (Nov 12)") has a line for every round 4
+   medium and low. Row 16's factor is 0.26 of the sprite's height, not the plan's example 0.16, which changed
+   nothing a reader could see; every dog's shadow is unchanged.
+2. Met at 1366 × 640, pinned by the e2e (Round 1 and Round 3 with six measures, a 300-character Why, `scrollY` 0):
+   the picks and the whole of "Put the GM to work" (the button at 535 to 583 px in Round 1, 554 to 602 in Round 3),
+   the hint (ends 608 and 627), "You called N of 5" and "Put the GM to work again", and the three meters at every
+   block (lowest edge 615, the walk week's two-line block included). At 1280 × 640 the button and the meters (634)
+   hold; the picks' hint falls below the window in Round 3 (allowed after the review: the Why box became three
+   whole lines). The room came from spacing and from a few box heights under a `max-height: 700px` rule (the picks'
+   chips 28 px, the orb 44 px, the scorecard's three buttons 44 px): BRIEF 1 and D72 say so.
+3. Met as far as tests and two readers go: the fold e2e (the button's bottom at 768 is now 652) and the tray e2e
+   hold; the main thread read the 640 shots; a fresh Opus reader read all 32 shots, found nothing blocking and
+   reconciled every number on every screen (`.claude/docs/reviews/g6-astra-triage.md`). Its mediums are fixed.
+4. Met: each package changed BRIEF and DECISIONS (D70 to D73) first and reported the failure each test showed
+   before the code.
+5. Met: no image changed (`tests/art/qa.test.ts` green); no engine or rule change; the pilot 20 of 20.
+6. Met, the main thread's run on `fedfeef`: `npm test` 41 files, 713 tests; `npm run lint` 0; `npm run build`;
+   `E2E_PORT=4401 npm run e2e` 18 passed (2.7 min); `PERF_PORT=4403 npm run perf` exit 0: ready 1,690 / 1,508 /
+   1,462 ms, p95 16.7 to 16.8 ms, 0 long tasks, 5.1 MB (load average 5 to 7; "ready" now runs to the week's first
+   drawn frame, about 200 ms later than G5d's measure, so the two are not comparable);
+   `npm run pilot -- --seeds 20 --budget 60000` 20 of 20 target met; `npm run sheets` exit 0, ten sheets within
+   their counts.
+7. Met: Astra read the group's diff (0 blocking, 0 high, 2 medium, 3 low; four taken, one declined).
+
+**Added by the reviews, beyond the plan.** In a walk block the rail names both groups ("on the floor: 1 staffer, 13
+dogs · out walking: 1 staffer, 6 dogs"): the bare "1 staffer" contradicted the scorecard's "Days with 1 staffer on
+the floor" on a day with two scheduled, and D69 makes the walk week Round 3's common case. The tray keeps a line
+whole at its edge at 640 too. `npm run perf` now fails past its thresholds and counts a long task only if it ends
+after the week's first drawn frame (proved with an injected task).
+
+**The sheets package (G11's Astra review).** 0 blocking, 3 high, 9 medium, 1 low; twelve taken, one declined
+(`.claude/docs/reviews/g11-astra-triage.md`). The bible's claims about the walk week and about naps and cleaning
+are scoped to what was measured (BRIEF 7, 14, D69). `npm run sheets` (D74) prints the ten sheets one way and checks
+their page counts; BRIEF 14's counts changed to what prints (the teacher guide 4, the readings 3 with the mapping
+table alone on the last page).
+
+**Known and left.**
+
+- With the tray open at 1366 × 640 after a run, keeping the edge line whole scrolls the page about 25 px, so "The
+  week is over." sits under the bar until the tray closes. Opening the tray now nudges the page wherever a line was
+  cut at its edge (1920 × 1080 Round 3's load screen among them).
+- While a team types a long Why at 640 the box scrolls with the caret and a line can be cut at its top; it returns
+  to its first line when they leave the box.
+- Open lows in the ledger: 15(a) the scorecards' empty lower half, 18 the reasons card's edge while the week
+  plays, the "70%" mark nearer the Cleanliness bar, "pay", "paid" and "bonus" for one sum.
+- Not checked: Firefox (not installed here); a real Chromebook; paper. Only seed 1, Rounds 1 and 3, are in the 640
+  tests: at 1280 × 640 the meters have 6 px to spare.
+- The pilot has not run; its fixes are a later group.

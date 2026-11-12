@@ -2,6 +2,29 @@
 
 Status only. Updated at the end of every thread; read first by the next one.
 
+## Session 9 (2026-11-12): G6 and the merge; the page the class opens is live
+
+The owner (Nov 12): "finish EVERYTHING including merging and preparing the live site"; the main thread planned and
+reviewed, Opus built. Plan and result: `.claude/docs/plans/g6-fixes.md`. Read its Result first.
+
+- **Done on `main` (pushed; GitHub Pages deploys on the push):** G11 (session 8, below), Astra's review of it with
+  its fixes and `npm run sheets` (D74), and G6: G5d round 4's deferred findings and the 1366 × 640 Chromebook window
+  (D70 to D73). Triages: `g6-plan-astra-triage.md`, `g6-astra-triage.md`, `g11-astra-triage.md`.
+- **Green on the merged tree (this session's runs, commands in the plan's Result):** 713 tests, lint, build, e2e 18
+  of 18, perf 0 long tasks and 5.1 MB, the pilot 20 of 20, the ten sheets within their page counts.
+- **`submission` (local, not pushed, on top of `main`):** the narrative, the script and the title card brought to
+  SI and D68 and to the page as it is; `npm run submission:pdf` 10 of 11 pages, 48 placeholders (FRED 33, EVIDENCE
+  12, DRAFT LAST 2, VIDEO URL 1). The drafts stay off `main` because they carry the owner's placeholders.
+- **The pilot has not run** (`Evidence/pilot/pilot-notes.md` is the blank template). The roadmap's "fixes from the
+  pilot" is a later group, written from the owner's notes after his test with students.
+- **Waiting on the owner:** the test with students on the live page (a real Chromebook window, `?pilot=20`, Round
+  3); read the ten sheets and print them with `npm run sheets` (PDFs in `Temp/sheets/`); say whether any class has
+  sat a concept check (the form changed Nov 12; never report one gain across two forms); Round 1 as one smartboard
+  run stands unless he flips it; then the submission (`docs/submission-checklist.md`).
+- **Gotchas:** an Agent `isolation: worktree` starts from `main` (reset it to the working branch); `npm run perf`
+  fails on a loaded machine (a long task under load average 8 to 12 is the machine's); twelve agent worktrees under
+  `.claude/worktrees/` and their branches are left in place (deleting is the owner's).
+
 ## Session 8 (2026-11-12, a cloud session): G11, the SI frame (on `claude/stoic-keller-lfb14w`, pushed, not merged)
 
 The owner asked for a review of the whole entry, then gave three calls: the word is always SI; lean into the story

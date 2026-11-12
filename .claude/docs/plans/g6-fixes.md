@@ -60,6 +60,8 @@ current shots `Temp/shots/recon-768/`, `Temp/shots/640-recon/`).
 | 19 | The fallback yard is two sentences in a large panel (A4) | Decline under D64: a broken device only. Recorded. |
 | 20 | The 640 window (C4) | Fix (D72: 1366 × 640 is a supported window). The measured set: the 40 px bar, the one-line Why helper, a shorter Why box under 700 px of height; then the picks' hint, the three meters mid-week (the facts line may sit below the fold at 640) and the scorecard's button. |
 | 21 | 640 only: opening then closing the tray leaves the page scrolled 90 px under the bar | Fix in `src/ui/teacher.ts` (`openTray`, `keepClear`, `closeTray`), with an e2e: closing returns the page to where it was before the tray moved it when the reader did not scroll, and keeps a deliberate scroll made while the tray was open (the report, the revealed rules). No blanket reset to the top. |
+| 22 | Found by WP1 at 1024 × 768, on the old build too: the report's navy profit tile clips "$4,853.70" to "$4,853.7" | Fix (WP2): the headline tiles' amounts fit their tiles at 1024, 1366 and 1920; an e2e holds each tile's `scrollWidth` within its `clientWidth` at 1024. |
+| 23 | After WP1, Round 3's longer notice wraps to two lines at 1366 (about 20 px) | WP2 counts it in row 20's 640 budget; the words stay. |
 
 ## Packages
 
@@ -72,7 +74,7 @@ the failing tests, then the code, and reports the failures it saw.
   `src/ui/rail.ts`, `src/ui/report.ts`, `src/ui/roundNotes.ts`, `src/report.css`, `src/style.css`, `tests/ui/`,
   `e2e/` (the scripts that wait on the renamed button), `docs/lesson/brief-round3.md` line 3,
   `docs/lesson/teacher-guide.md` line 45.
-- **WP2, the layout and the 640 window (Opus):** rows 1, 5, 7, 13, 15(b), 16, 17, 20, 21. Files: `docs/BRIEF.md`,
+- **WP2, the layout and the 640 window (Opus):** rows 1, 5, 7, 13, 15(b), 16, 17, 20, 21, 22, 23. Files: `docs/BRIEF.md`,
   `docs/DECISIONS.md` (D70, D72), `src/style.css`, `src/ui/app.ts`, `src/ui/rail.ts`, `src/ui/teacher.ts`,
   `src/ui/replay.ts` (`castShadow` only), `src/ui/editor.ts`, `index.html`, `tests/ui/`, `e2e/smoke.spec.ts` (the
   640 tests), `e2e/shots.ts` (a 1366 × 640 set), `e2e/perf.ts` (the thresholds). Row 1's test is on the rendered

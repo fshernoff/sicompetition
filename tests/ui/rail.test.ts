@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
-import { carefulPolicy, recklessCoveredPolicy, recklessPolicy } from '../../src/sim/policies.ts';
+import { carefulPolicy, recklessCoveredPolicy, recklessPolicy, stationaryPolicy } from '../../src/sim/policies.ts';
 import { mountRail, railModel } from '../../src/ui/rail.ts';
 import { formatBonus, formatDollars } from '../../src/ui/report.ts';
 import { planWords, replayFrame } from '../../src/ui/replay.ts';
@@ -17,6 +17,7 @@ import type { FakeElement } from './fakeDom.ts';
 const covered = runEpisode(config, round1, recklessCoveredPolicy, episodeSeeds(1, 0));
 const literal = runEpisode(config, round1, recklessPolicy, episodeSeeds(1, 0)); // closes on Thursday
 const careful = runEpisode(config, round1, carefulPolicy, episodeSeeds(1, 0));
+const walkers = runEpisode(config, round1, stationaryPolicy({ bookings: 'all', rate: 'premium', staff: 2 }, ['walk', 'walk', 'walk']), episodeSeeds(1, 0));
 const TRACES: readonly [string, EpisodeTrace][] = [['covered', covered], ['literal', literal], ['careful', careful]];
 
 const frame = (trace: EpisodeTrace, t: number) => replayFrame(trace.steps, t, config);
@@ -203,5 +204,42 @@ describe('the rail as rendered: a meter at the end of its scale (D70)', () => {
     };
     expect(rule('.meter-num.at-end')).toMatch(/color:\s*var\(--red-ink\)/);
     expect(rule('.live-meters .meter.at-end')).toMatch(/outline:[^;]*var\(--line-strong\)/);
+  });
+});
+
+// A walk block names both groups (G6, R2; BRIEF 10.2): one staffer with 13 dogs on the floor would otherwise read as a
+// day with one staffer on the floor, and the scorecard's "No days" as wrong.
+describe('the block line in a walk', () => {
+  const walks = Array.from({ length: 20 }, (_, t) => t).filter((t) => frame(walkers, t).walkingStaff > 0);
+
+  it('names the floor and the walking group, each with its crew and its dogs, from the block\'s state', () => {
+    expect(walks.length).toBeGreaterThan(0);
+    for (const t of walks) {
+      const f = frame(walkers, t);
+      const staff = (n: number): string => `${n} ${n === 1 ? 'staffer' : 'staffers'}`;
+      const dogs = (n: number): string => `${n} ${n === 1 ? 'dog' : 'dogs'}`;
+      expect(rail(walkers, t).thisBlock, `t=${t}`).toBe(`This block: walk · on the floor: ${staff(f.floorStaff)}, ${dogs(f.floorDogs)} · out walking: ${staff(f.walkingStaff)}, ${dogs(f.walkingDogs)}`);
+    }
+  });
+
+  it('keeps every other block\'s line', () => {
+    for (const [, trace] of [...TRACES, ['walkers', walkers] as const]) {
+      for (let t = 0; t < 20; t++) {
+        const f = frame(trace, t);
+        if (f.walkingStaff > 0) continue;
+        expect(rail(trace, t).thisBlock).not.toMatch(/on the floor|out walking/);
+      }
+    }
+  });
+
+  it('renders each part between the dots unbroken, so the line breaks only at a "·"', () => {
+    const { el, as } = fakeElement<HTMLElement>('div');
+    const view = mountRail(as, config.requests.max, () => '');
+    const t = walks[0] as number;
+    view(rail(walkers, t));
+    const line = el.find('p', 'this-block')[0] as FakeElement;
+    const parts = line.find('span', 'phrase').map((p) => p.textContent);
+    expect(parts).toEqual(rail(walkers, t).thisBlock.split(' · '));
+    expect(line.textContent).toBe(rail(walkers, t).thisBlock);
   });
 });

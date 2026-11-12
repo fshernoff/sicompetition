@@ -54,7 +54,8 @@ browser with the tabs and the shelf), 1024 × 768 and the projector at 1920 × 1
 scrolling: on the load screen the five picks and the whole of Put the GM to work; while the week plays, the status line
 and the three meters at every block (the facts under them may sit below); with the scorecard up, "You called N of 5."
 and the whole of "Put the GM to work again". The room comes from spacing and a few box heights (the picks' chips,
-the orb, the three ways on) under 700 px of height, never from type below the page's sizes. Under the yard on the load screen, "What happens next" lists its three steps with plain dots,
+the orb, the three ways on) under 700 px of height, never from type below the page's sizes; there the Why's box shows
+three whole lines, at rest from its first (no line sliced at its edges once the team stops typing), and at 1280 × 640 the picks' hint may sit below the button. Under the yard on the load screen, "What happens next" lists its three steps with plain dots,
 not numerals: the console's steps 1 to 3 are the screen's one numbered sequence.
 
 ### 1.1 The prediction and the scorecard (G5c, D56)
@@ -470,7 +471,11 @@ prices are section 5's and public; the cap in words, at the legal ratio or at a 
 turned dogs away; never the number behind it, D44; the line in the page's ink at its smallest size, 15 px, never
 grey, and the add-on, "+ $10 a dog per play block", never split across two lines); a bold line for the block, "This block: free play · 1 staffer ·
 18 dogs", "This block: nap · 2 staffers · 18 dogs" (the activity as resolved, the floor after any walking group has
-left; a count of crew is "staffer" or "staffers" everywhere on the page); the yard with the dogs and the crew drawn for the activity (dogs crated
+left; a count of crew is "staffer" or "staffers" everywhere on the page); in a block where a walk takes a staffer off
+the floor the line names both groups, "This block: walk · on the floor: 1 staffer, 13 dogs · out walking: 1 staffer,
+6 dogs" (G6: a student who watched one staffer with 13 dogs otherwise reads the scorecard's "No days" with one staffer
+on the floor as wrong; the report's footnote already says a walk takes dogs and a staffer off the floor), breaking
+only at a "·"; the yard with the dogs and the crew drawn for the activity (dogs crated
 during a clean; a "Closed" sign); the dogs-per-staffer gauge from 0 to 30 with one mark at 15 and the band above it
 tinted (10 is H1's number and stays hidden; 15 is public through the measure's name, D43); the incident counter with
 its icon, pulsing in a block with an incident; the reputation meter 0 to 100; the cash counter; small meters for
@@ -498,8 +503,9 @@ window, opened by a small "Teacher" button at the right of the top bar (G5d; the
 the student's screen, D46) and closed by its Close button; closed, it adds no height to the page, so the fold of D42
 holds; open, it sits at the bottom of the window and the page scrolls in the space above it (G5d round 4: the page's
 box ends at the tray's top, so no line of the page is ever under the tray), and the report and the rules can always
-scroll clear of it. Where opening it moved the page to keep a class's button above it, closing it puts the page back
-where it was; a scroll the reader made while it was open (the report, the revealed rules) stays where they left it. In it:
+scroll clear of it; opening it moves the page only to keep a class's button above it or a line of text whole at its
+edge. Closing it puts the page back where it was, through a resize; a scroll the reader made while it was open, even
+one that came back to the same place, and a scroll the page made (the revealed rules, a run) stay where they are. In it:
 
 - **The round presets** as three radio buttons, Round 1, 2 and 3 (the selector of D34). Choosing one loads the
   preset into the editor, rewrites the round line above the plan ("Round 1: profit only" and its note) and clears

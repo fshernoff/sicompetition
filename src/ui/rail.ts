@@ -67,10 +67,18 @@ function signedDollars(dollars: number): string {
 const staffWords = (n: number): string => `${n} ${n === 1 ? 'staffer' : 'staffers'}`;
 const dogWords = (n: number): string => `${n} ${n === 1 ? 'dog' : 'dogs'}`;
 
-/** "This block: free play · 1 staffer · 18 dogs" (the activity as it ran, the floor after a walking group left). */
+/**
+ * "This block: free play · 1 staffer · 18 dogs" (the activity as it ran, the floor after a walking group left). In a
+ * block where a walk takes a staffer off the floor it names both groups (G6, R2; BRIEF 10.2): "This block: walk · on the
+ * floor: 1 staffer, 13 dogs · out walking: 1 staffer, 6 dogs".
+ */
 export function thisBlockWords(frame: ReplayFrame): string {
   if (frame.closed || frame.activity === null) return 'This block: closed';
-  return `This block: ${activityName(frame.activity)} · ${staffWords(frame.floorStaff)} · ${dogWords(frame.floorDogs)}`;
+  const activity = `This block: ${activityName(frame.activity)}`;
+  if (frame.walkingStaff > 0) {
+    return `${activity} · on the floor: ${staffWords(frame.floorStaff)}, ${dogWords(frame.floorDogs)} · out walking: ${staffWords(frame.walkingStaff)}, ${dogWords(frame.walkingDogs)}`;
+  }
+  return `${activity} · ${staffWords(frame.floorStaff)} · ${dogWords(frame.floorDogs)}`;
 }
 
 /**
@@ -297,11 +305,17 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     });
     dayNames.forEach((name, d) => name.classList.toggle('now', d === m.day));
 
-    // "This block: free play (walk asked) · 1 staffer · 18 dogs": the model's line, a fallback's ask set in muted ink.
+    // "This block: free play (walk asked) · 1 staffer · 18 dogs": the model's line, a fallback's ask set in muted ink,
+    // each part between the dots unbroken, so a long line (a walk's two groups) breaks only at a "·" (G6, R2).
     const asked = m.activity.indexOf(' (');
-    const cut = m.thisBlock.indexOf(' · ');
-    if (asked < 0 || cut < 0) blockLine.textContent = m.thisBlock;
-    else blockLine.replaceChildren(m.thisBlock.slice(0, cut), el('span', 'asked', m.activity.slice(asked)), m.thisBlock.slice(cut));
+    const parts = m.thisBlock.split(' · ');
+    blockLine.replaceChildren(
+      ...parts.flatMap((part, i) => {
+        const phrase = el('span', 'phrase', part);
+        if (i === 0 && asked >= 0 && parts.length > 1) phrase.append(el('span', 'asked', m.activity.slice(asked)));
+        return i === 0 ? [phrase] : [' · ', phrase];
+      }),
+    );
 
     const p = m.perStaffer;
     big.textContent = String(p.now);

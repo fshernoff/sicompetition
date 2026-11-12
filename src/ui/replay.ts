@@ -851,7 +851,7 @@ function bands(n: number): Int16Array {
 }
 
 /** The shadow spec in the board image's pixels: the throw per px of height, blurs, alphas and the tint. */
-interface ShadowSpec {
+export interface ShadowSpec {
   throw: readonly [number, number];
   blur: number;
   alpha: number;
@@ -2746,7 +2746,7 @@ export function contactEllipse(w: number, h: number): { rx: number; ry: number }
  * shadows, under a soft contact ellipse at the feet. `f` is device px per image px. Without canvas filters the two
  * are drawn unblurred.
  */
-function castShadow(sprite: HTMLCanvasElement, ax: number, ay: number, f: number, spec: ShadowSpec): { canvas: HTMLCanvasElement | null; ax: number; ay: number } {
+export function castShadow(sprite: HTMLCanvasElement, ax: number, ay: number, f: number, spec: ShadowSpec): { canvas: HTMLCanvasElement | null; ax: number; ay: number } {
   const w = sprite.width;
   const h = sprite.height;
   const [A, B] = spec.throw;

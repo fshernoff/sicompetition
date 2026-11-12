@@ -1,8 +1,8 @@
 // The performance probe (G5d acceptance 7): Round 1 on the built page in headless Chromium with the CPU throttled
 // (4x by default, a stand-in for a classroom Chromebook), three runs in a row. Prints one JSON line:
-//   readyMs     from the click to the week's first frame, per run (the GM getting ready, then the first block drawn)
+//   readyMs     from the click to the week's first frame as drawn, per run (the GM getting ready, then the first block)
 //   frameP95Ms  the 95th percentile of the gaps between animation frames while the week plays, per run
-//   longTasks   tasks over 50 ms while the week plays (ending after its first frame), per run
+//   longTasks   tasks over 50 ms while the week plays (ending after its first frame as drawn), per run
 //   heapMB      the JS heap after the third run and a garbage collection
 //
 //   node e2e/perf.ts [--url URL] [--cpu 4]
@@ -32,27 +32,45 @@ function p95(xs: number[]): number {
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? 0;
 }
 
-/** One run from the click: the time to the week's first frame, then the frame gaps and long tasks until it ends. */
+type Probe = { gaps: number[]; playing: number; first: number; stop: boolean; tasks: { start: number; end: number }[]; installed?: boolean };
+
+/**
+ * One run from the click: the time to the week's first frame, then the frame gaps and long tasks until it ends.
+ *
+ * The long tasks (G6; Astra, A1): every entry the observer reports is kept with its start and end, and classified after
+ * the run against the week's first frame as the page draws it: the moment the rail is first written while the status
+ * says the GM is running the week (the rail is written in the frame that draws the yard's first block). A task counts
+ * when it ends after that moment, so the first frame's own task and any task after it count, and the getting ready's
+ * last task (the engine's last slice, which writes the status and ends before that frame) does not, though the
+ * observer may report it later.
+ */
 async function run(page: Page, button: string): Promise<{ readyMs: number; frameP95Ms: number; longTasks: number }> {
   await page.evaluate(() => {
-    const w = window as unknown as { __gaps: number[]; __long: number; __playing: number; __stop: boolean };
-    w.__stop = false;
-    w.__gaps = [];
-    w.__long = 0;
-    w.__playing = 0;
-    // A task counts when it ends after the week's first frame: the observer reports a task after it ends, so the getting
-    // ready's last task (the engine's last slice, which writes the "running the week" status) can arrive once the week
-    // has started; it ended before the first frame and is the getting ready's, not the week's (G6).
-    new PerformanceObserver((list) => {
-      for (const e of list.getEntries()) if (w.__playing && e.startTime + e.duration > w.__playing) w.__long += 1;
-    }).observe({ type: 'longtask' });
+    const w = window as unknown as { __perf: Probe };
+    const fresh = { gaps: [], playing: 0, first: 0, stop: false, tasks: [] };
+    if (w.__perf?.installed) {
+      Object.assign(w.__perf, fresh);
+    } else {
+      // Installed once for the page: an observer per run would report each task to every earlier run's observer too.
+      w.__perf = { ...fresh, installed: true };
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) w.__perf.tasks.push({ start: e.startTime, end: e.startTime + e.duration });
+      }).observe({ type: 'longtask' });
+      const rail = document.querySelector('#rail-live');
+      if (rail !== null) {
+        new MutationObserver(() => {
+          const running = document.querySelector('#status')?.textContent?.includes('running the week') ?? false;
+          if (running && w.__perf.first === 0) w.__perf.first = performance.now();
+        }).observe(rail, { childList: true, characterData: true, subtree: true });
+      }
+    }
     let last = 0;
     const tick = (t: number): void => {
       const playing = document.querySelector('#status')?.textContent?.includes('running the week') ?? false;
-      if (playing && !w.__playing) w.__playing = performance.now();
-      if (playing && last) w.__gaps.push(t - last);
+      if (playing && !w.__perf.playing) w.__perf.playing = performance.now();
+      if (playing && last) w.__perf.gaps.push(t - last);
       last = playing ? t : 0;
-      if (!w.__stop) requestAnimationFrame(tick);
+      if (!w.__perf.stop) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
@@ -64,11 +82,13 @@ async function run(page: Page, button: string): Promise<{ readyMs: number; frame
   await page.waitForFunction(() => document.querySelector('#status')?.textContent?.startsWith('The week is over') ?? false, undefined, { timeout: 300_000 });
   await pause(500);
   const m = await page.evaluate(() => {
-    const w = window as unknown as { __gaps: number[]; __long: number; __playing: number; __stop: boolean };
-    w.__stop = true;
-    return { gaps: w.__gaps, long: w.__long, playing: w.__playing };
+    const w = window as unknown as { __perf: Probe };
+    w.__perf.stop = true;
+    return { gaps: w.__perf.gaps, playing: w.__perf.playing, first: w.__perf.first, tasks: w.__perf.tasks };
   });
-  return { readyMs: Math.round(m.playing - clicked), frameP95Ms: Math.round(p95(m.gaps) * 10) / 10, longTasks: m.long };
+  if (m.first === 0) throw new Error('perf: the week\'s first frame was not seen (the rail was never written)');
+  const longTasks = m.tasks.filter((t) => t.end > m.first).length;
+  return { readyMs: Math.round(m.first - clicked), frameP95Ms: Math.round(p95(m.gaps) * 10) / 10, longTasks };
 }
 
 async function main(): Promise<void> {
@@ -91,12 +111,13 @@ async function main(): Promise<void> {
       for (let i = 0; i < 3; i++) runs.push(await run(page, '#train'));
       await cdp.send('HeapProfiler.collectGarbage');
       const heap = (await cdp.send('Runtime.getHeapUsage')) as { usedSize: number };
-      const heapMB = Math.round((heap.usedSize / 1048576) * 10) / 10;
+      const heapRaw = heap.usedSize / 1048576; // compared unrounded (A3); rounded only where it is printed
+      const heapMB = Math.round(heapRaw * 10) / 10;
       console.log(JSON.stringify({ cpu, runs, heapMB }));
       const over: string[] = [];
       const longest = Math.max(...runs.map((r) => r.longTasks));
       if (longest > MAX_LONG_TASKS) over.push(`${longest} long tasks in a run (at most ${MAX_LONG_TASKS})`);
-      if (heapMB > MAX_HEAP_MB) over.push(`heap ${heapMB} MB (at most ${MAX_HEAP_MB} MB)`);
+      if (heapRaw > MAX_HEAP_MB) over.push(`heap ${heapRaw.toFixed(3)} MB (at most ${MAX_HEAP_MB} MB)`);
       if (over.length > 0) {
         console.error(`perf: past the thresholds: ${over.join('; ')}`);
         process.exitCode = 1;

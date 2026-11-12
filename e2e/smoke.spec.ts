@@ -205,6 +205,20 @@ async function linesCutAtTrayEdge(page: Page): Promise<string[]> {
         if (r.height >= 2 && r.width >= 2 && r.top < edge - 1 && r.bottom > edge + 1) hits.push(`"${text.slice(0, 40)}" ${Math.round(r.top)} to ${Math.round(r.bottom)} px (edge ${Math.round(edge)})`);
       }
     }
+    // A text box's lines too (the Why quoted after the week): its value is not a text node (G6, R4).
+    for (const box of Array.from(document.querySelectorAll('textarea'))) {
+      if (tray.contains(box) || box.getClientRects().length === 0 || box.value.trim() === '') continue;
+      const cs = getComputedStyle(box);
+      const line = parseFloat(cs.lineHeight);
+      const r = box.getBoundingClientRect();
+      const top = r.top + parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop) - box.scrollTop;
+      const count = Math.round((box.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / line);
+      for (let i = 0; i < count; i++) {
+        const a = Math.max(top + i * line, r.top);
+        const b = Math.min(top + (i + 1) * line, r.bottom);
+        if (b - a >= 2 && a < edge - 1 && b > edge + 1) hits.push(`the Why's line ${i + 1} ${Math.round(a)} to ${Math.round(b)} px (edge ${Math.round(edge)})`);
+      }
+    }
     return hits;
   });
 }
@@ -604,26 +618,31 @@ test('the fold holds on Round 1 and on Round 3 with all six measures on, after t
   }
 });
 
-test('the open tray never has a line of the page under it, after a run at 1024 and at 1366 wide, wherever the page is scrolled (G5d round 4)', async ({ page }) => {
-  test.setTimeout(150_000);
-  for (const width of [1024, 1366]) {
-    await page.setViewportSize({ width, height: 768 });
+test('the open tray never has a line of the page under it, after a run at 1024 × 768, 1366 × 768 and 1366 × 640, wherever the page is scrolled (G5d round 4; G6, R4)', async ({ page }) => {
+  test.setTimeout(200_000);
+  for (const [width, height] of [
+    [1024, 768],
+    [1366, 768],
+    [1366, 640],
+  ] as const) {
+    await page.setViewportSize({ width, height });
     await page.goto('/');
     await makePicks(page);
+    await writeWhy(page, WHY_300); // the Why quoted after the week: its lines count too (G6, R4)
     await page.click('#train');
     await weekOver(page);
     await openTray(page);
     // Where the tray opening moved the page (the class's buttons kept above it), no line is cut by its edge either.
-    expect(await linesCutAtTrayEdge(page), `${width} wide, the page where the tray left it`).toEqual([]);
+    expect(await linesCutAtTrayEdge(page), `${width} × ${height}, the page where the tray left it`).toEqual([]);
     const where: string[] = [];
     for (const at of [0, 0.5, 1]) {
       // The page's scroller while the tray is open is the body, whose box ends at the tray's top; nothing scrolls under it.
       if (at > 0) await page.evaluate((f) => document.body.scrollTo(0, (document.body.scrollHeight - document.body.clientHeight) * f), at);
       const under = await textUnderTray(page);
       where.push(`${at}: ${under.length}`);
-      expect(under, `${width} wide, scrolled to ${at} of the page`).toEqual([]);
+      expect(under, `${width} × ${height}, scrolled to ${at} of the page`).toEqual([]);
     }
-    console.log(`[e2e] ${width} × 768, the tray open after a run: lines under it by scroll position ${where.join(', ')}`);
+    console.log(`[e2e] ${width} × ${height}, the tray open after a run: lines under it by scroll position ${where.join(', ')}`);
   }
 });
 
@@ -1113,7 +1132,20 @@ for (const [width, height] of [
       await settle(page);
       if (address !== '/') await allSixOn(page);
       await writeWhy(page, WHY_300);
-      const onLoad = await windowBoxes(page, ['#picks', '#train', '#picks-hint']);
+      // The hint under the button: in the window at 1366 × 640; at 1280 × 640 it may sit below (G6, R1).
+      const onLoad = await windowBoxes(page, width === 1366 ? ['#picks', '#train', '#picks-hint'] : ['#picks', '#train']);
+      // The Why's box shows whole lines: its text box a whole number of lines (three), and its padding no deeper than a
+      // line's leading, so a box scrolled to its end shows no glyph of a cut line (G6, R1).
+      const why = await page.locator('#prediction').evaluate((el) => {
+        const cs = getComputedStyle(el);
+        const line = parseFloat(cs.lineHeight);
+        const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+        const border = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+        return { lines: (el.getBoundingClientRect().height - border - pad) / line, padTop: parseFloat(cs.paddingTop), leading: (line - parseFloat(cs.fontSize)) / 2 };
+      });
+      console.log(`[e2e] ${width} × ${height} ${address} the Why's box: ${JSON.stringify(why)}`);
+      expect(Math.abs(why.lines - 3), `${address}: the Why's box is three whole lines`).toBeLessThan(0.05);
+      expect(why.padTop).toBeLessThanOrEqual(why.leading + 0.5);
       console.log(`[e2e] ${width} × ${height} ${address} on load: ${JSON.stringify(onLoad.boxes)}`);
       expect(onLoad.scrollY, `${address}: the page is not scrolled`).toBe(0);
       expect(notInWindow(onLoad), `${address} on load`).toEqual([]);
@@ -1125,6 +1157,16 @@ for (const [width, height] of [
       expect(notInWindow(picked), `${address} with the picks made`).toEqual([]);
       // The bar: one height in every phase (G6, row 7).
       expect(Math.round((await page.locator('.topbar').boundingBox())?.height ?? 0)).toBe(40);
+      // Typed in, the Why's box scrolls with the caret, a whole number of lines; left, it rests on its first line (no
+      // line sliced at its top). Last, as the caret's own scrolling may move the window.
+      await page.locator('#prediction').focus();
+      await page.keyboard.press('Control+End');
+      const typing = await page.evaluate(() => (document.querySelector('#prediction') as HTMLTextAreaElement).scrollTop);
+      await page.locator('#prediction').blur();
+      const rest = await page.evaluate(() => (document.querySelector('#prediction') as HTMLTextAreaElement).scrollTop);
+      console.log(`[e2e] ${width} × ${height} ${address} the Why scrolled ${typing} px while typed in, ${rest} px at rest`);
+      expect(typing, `${address}: a 300-character Why scrolls inside its box`).toBeGreaterThan(0);
+      expect(rest, `${address}: the Why at rest from its first line`).toBe(0);
     }
   });
 
@@ -1140,7 +1182,7 @@ for (const [width, height] of [
       // Every frame while the week plays: the block on the rail, the window's scroll and the boxes, in the page itself,
       // so no block is missed between round trips.
       await page.evaluate((playing) => {
-        type Sample = { when: string; scrollY: number; status: number[]; meters: number[]; bar: number };
+        type Sample = { when: string; scrollY: number; status: number[]; meters: number[]; bar: number; walkParts: number[] };
         const samples: Sample[] = [];
         (window as unknown as { __blocks: Sample[] }).__blocks = samples;
         const union = (sel: string): number[] => {
@@ -1157,6 +1199,10 @@ for (const [width, height] of [
               scrollY: window.scrollY,
               status: union('#status'),
               meters: union('#rail-live .live-meters > *'),
+              // A walk's block line: the lines each part between the dots takes (1 each: it breaks only at a "·").
+              walkParts: (document.querySelector('#rail-live .this-block')?.textContent ?? '').includes('out walking')
+                ? Array.from(document.querySelectorAll('#rail-live .this-block > .phrase')).map((p) => new Set(Array.from(p.getClientRects()).map((r) => Math.round(r.top))).size)
+                : [],
               bar: document.querySelector('.topbar')?.getBoundingClientRect().height ?? 0,
             });
           }
@@ -1166,7 +1212,7 @@ for (const [width, height] of [
       }, PLAYING);
       await trainInPlace(page);
       await weekOver(page);
-      const samples = await page.evaluate(() => (window as unknown as { __blocks: { when: string; scrollY: number; status: number[]; meters: number[]; bar: number }[] }).__blocks);
+      const samples = await page.evaluate(() => (window as unknown as { __blocks: { when: string; scrollY: number; status: number[]; meters: number[]; bar: number; walkParts: number[] }[] }).__blocks);
       const blocks = new Set(samples.map((s) => s.when));
       expect(blocks.size, `${address}: every block of the week sampled`).toBe(20);
       const inside = (span: number[]): boolean => span.length === 2 && (span[0] as number) >= 0 && (span[1] as number) <= height;
@@ -1174,6 +1220,10 @@ for (const [width, height] of [
       console.log(`[e2e] ${width} × ${height} ${address} while the week plays: the meters' lowest edge ${Math.round(worst)} px, status ${JSON.stringify(samples[0]?.status.map(Math.round))}`);
       const off = samples.filter((s) => s.scrollY !== 0 || !inside(s.status) || !inside(s.meters) || Math.round(s.bar) !== 40).map((s) => `${s.when}: scroll ${s.scrollY}, status ${s.status.map(Math.round).join('-')}, meters ${s.meters.map(Math.round).join('-')}, bar ${s.bar}`);
       expect([...new Set(off)], `${address}: blocks with the status or a meter off screen`).toEqual([]);
+      // A walk's block line names both groups and breaks only at a "·" (G6, R2): Round 3's week walks (D69).
+      const walks = samples.filter((s) => s.walkParts.length > 0);
+      if (address !== '/') expect(walks.length, 'Round 3: frames with a walk block').toBeGreaterThan(0);
+      for (const w of walks) expect(w.walkParts, `${w.when}: each part on one line`).toEqual([1, 1, 1]);
       // The scorecard: the count of the call and the whole of the rerun's button, the page not scrolled.
       await twoFrames(page);
       await expect(page.locator('#called-line')).toHaveText(/^You called \d of 5\.$/);
@@ -1223,20 +1273,77 @@ test('closing the tray puts the page back where opening it moved it, and keeps a
     const moved = await page.evaluate(() => document.body.scrollTop);
     console.log(`[e2e] 1366 × ${height}: the tray and its details moved the page ${moved} px`);
     expect(moved, `${height}: the tray moved the page to keep the button above it`).toBeGreaterThan(0);
-    await page.click('#training-details'); // the details closed again: the page stays where the tray left it
     await page.click('#teacher-close');
     await expect(page.locator('#teacher')).toBeHidden();
     expect(await page.evaluate(() => window.scrollY), `${height}: back where it was before the tray moved it`).toBe(0);
+    // The details stay open from here: a taller tray that moves the page each time it opens.
+    const bodyTop = (): Promise<number> => page.evaluate(() => document.body.scrollTop);
+    const settled = async (): Promise<number> => {
+      let last = -1;
+      for (let i = 0; i < 40; i++) {
+        const now = await bodyTop();
+        if (now === last) return now;
+        last = now;
+        await page.waitForTimeout(60);
+      }
+      return last;
+    };
+    // Open, close, open, close: back each time (Astra, A2).
+    for (let i = 0; i < 2; i++) {
+      await page.click('#teacher-open');
+      expect(await bodyTop(), `${height}: open ${i + 1} moved the page`).toBeGreaterThan(0);
+      await page.click('#teacher-close');
+      expect(await page.evaluate(() => window.scrollY), `${height}: back after close ${i + 1}`).toBe(0);
+    }
+    // The reader scrolls away and comes back to the very place the tray left the page: that is still the reader's
+    // scroll, so closing keeps it (A2: equal positions do not prove the reader never scrolled).
+    await page.click('#teacher-open');
+    const trayPlace = await bodyTop();
+    await page.mouse.move(300, 200);
+    await page.mouse.wheel(0, 60);
+    const away = await settled();
+    await page.mouse.wheel(0, -60);
+    const back = await settled();
+    console.log(`[e2e] 1366 × ${height}: the tray left the page at ${trayPlace} px; the reader scrolled to ${away} and back to ${back}`);
+    expect(away).toBeGreaterThan(trayPlace);
+    expect(Math.abs(back - trayPlace)).toBeLessThanOrEqual(1);
+    await page.click('#teacher-close');
+    // Kept: where the reader left it, as far as the window, taller now the tray is gone, can scroll.
+    const kept = await page.evaluate((at) => ({ y: window.scrollY, want: Math.min(at, document.documentElement.scrollHeight - window.innerHeight) }), back);
+    expect(kept.want, `${height}: the window can scroll to the reader's place, or near it`).toBeGreaterThan(0);
+    expect(Math.abs(kept.y - kept.want), `${height}: the reader's place kept`).toBeLessThanOrEqual(1);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    // A resize while the tray is open: closing still puts the page back where it was.
+    await page.click('#teacher-open');
+    expect(await bodyTop()).toBeGreaterThan(0);
+    await page.setViewportSize({ width: 1280, height });
+    await page.click('#teacher-close');
+    expect(await page.evaluate(() => window.scrollY), `${height}: back after a resize while open`).toBe(0);
+    await page.setViewportSize({ width: 1366, height });
+    // The revealed rules: the page scrolls to them, and closing keeps them in view.
+    await page.click('#teacher-open');
+    await page.click('#reveal');
+    await expect(page.locator('#rules')).toBeVisible();
+    await settled();
+    await page.click('#teacher-close');
+    const rules = await page.evaluate(() => ({ scrollY: window.scrollY, top: document.querySelector('#rules-title')?.getBoundingClientRect().top ?? -1, inner: window.innerHeight }));
+    console.log(`[e2e] 1366 × ${height}: the revealed rules after the close ${JSON.stringify(rules)}`);
+    expect(rules.scrollY, `${height}: the rules' place kept`).toBeGreaterThan(0);
+    expect(rules.top).toBeGreaterThanOrEqual(0);
+    expect(rules.top).toBeLessThan(rules.inner);
+    await page.click('#teacher-open');
+    await page.click('#reveal'); // hidden again
+    await page.click('#teacher-close');
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.click('#train');
     await weekOver(page);
-    // The reader scrolls while the tray is open, to the report: closing keeps that place.
+    // The reader scrolls while the tray is open, with the wheel, to the report: closing keeps that place.
     await page.click('#teacher-open');
     await expect(page.locator('#teacher')).toBeVisible();
-    const reading = await page.evaluate(() => {
-      const report = document.querySelector('#report') as HTMLElement;
-      document.body.scrollTo(0, report.offsetTop - 40);
-      return { body: document.body.scrollTop, title: Math.round(document.querySelector('#report-title')?.getBoundingClientRect().top ?? -1) };
-    });
+    await page.mouse.move(600, 200);
+    for (let i = 0; i < 20 && (await page.evaluate(() => document.querySelector('#report-title')?.getBoundingClientRect().top ?? 0)) > 150; i++) await page.mouse.wheel(0, 300);
+    await settled();
+    const reading = await page.evaluate(() => ({ body: document.body.scrollTop, title: Math.round(document.querySelector('#report-title')?.getBoundingClientRect().top ?? -1) }));
     await page.click('#teacher-close');
     await expect(page.locator('#teacher')).toBeHidden();
     const after = await page.evaluate(() => ({ scrollY: window.scrollY, title: Math.round(document.querySelector('#report-title')?.getBoundingClientRect().top ?? -1) }));
@@ -1336,5 +1443,36 @@ test("at 1024 and 1366 wide: what happens next while the GM gets ready, the rail
     const tiles = await page.locator('#report-tiles .tile-value').evaluateAll((els) => els.map((el) => ({ text: el.textContent ?? '', scroll: el.scrollWidth, client: el.clientWidth })));
     console.log(`[e2e] ${width} × 768 the headline's amounts: ${JSON.stringify(tiles)}`);
     for (const t of tiles) expect(t.scroll, `${width}: "${t.text}" whole in its tile`).toBeLessThanOrEqual(t.client);
+  }
+});
+
+test("the sliders' zero, as drawn: a tick 4 px taller than the track, centred on the track's zero, on every editable row (G6, row 5)", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto('/?round=3');
+  await settle(page);
+  const ticks = await page.locator('.plan .kpi-scale').evaluateAll((scales) =>
+    scales.map((scale) => {
+      const tick = getComputedStyle(scale, '::before');
+      const slider = scale.querySelector('input') as HTMLInputElement;
+      const box = scale.getBoundingClientRect();
+      const s = slider.getBoundingClientRect();
+      return {
+        content: tick.content,
+        display: tick.display,
+        height: tick.height,
+        width: tick.width,
+        color: tick.backgroundColor,
+        // The tick's centre against the slider's centre, both ways (left: 50% − 1 px of a 2 px tick; top: 50% − 6 px).
+        dx: Math.abs(box.left + parseFloat(tick.left) + parseFloat(tick.width) / 2 - (s.left + s.width / 2)),
+        dy: Math.abs(box.top + parseFloat(tick.top) + parseFloat(tick.marginTop) + parseFloat(tick.height) / 2 - (s.top + s.height / 2)),
+      };
+    }),
+  );
+  console.log(`[e2e] the zero ticks: ${JSON.stringify(ticks[0])}`);
+  expect(ticks).toHaveLength(6);
+  for (const t of ticks) {
+    expect({ content: t.content, display: t.display, height: t.height, width: t.width, color: t.color }).toEqual({ content: '""', display: 'block', height: '12px', width: '2px', color: 'rgb(63, 76, 89)' });
+    expect(t.dx).toBeLessThanOrEqual(0.5);
+    expect(t.dy).toBeLessThanOrEqual(0.5);
   }
 });

@@ -279,3 +279,11 @@ WP2 (after it) fixed the layout and the 640 window.
 | C4: the 640 px Chromebook window | High | Fixed in G6 (rows 20 and 23, D72): at 1366 × 640 and 1280 × 640 the picks, the button, the meters and the rerun in the window, held by Playwright |
 | 640 only: the tray's open and close leaves the page 90 px under the bar | (new, G6 recon) | Fixed in G6 (row 21): closing puts the page back where the tray found it; a reader's own scroll is kept |
 | 1024 only: the report's profit tile clips "$4,853.70" | (new, G6 WP1) | Fixed in G6 (row 22): from 901 to 1100 px the tiles share the row by what each amount needs |
+| Fresh reader (G6): at 640 the Why box slices a line, the placeholder loses its last words | Medium | Fixed in G6 (R1): three whole lines at 640, padding no deeper than the leading |
+| Fresh reader (G6): a walk block says "1 staffer · 13 dogs" while the scorecard says no day with one staffer on the floor | Medium | Fixed in G6 (R2, BRIEF 10.2): the line names the floor and the walking group |
+| Fresh reader (G6): at 640 with the tray open after a run, a line cut at the tray's edge | Medium-low | Fixed in G6 (R4): keepClear keeps a line whole at the edge whether or not a button moved the page |
+| Fresh reader (G6): "Put the GM to work again" grey in some shots, white in others | Low | Not a style difference: the shots script leaves the pointer over the button (hover) |
+| Fresh reader (G6): the "70%" mark sits nearer the Cleanliness bar than the Crew fatigue bar it belongs to | Low | Open: declined for now |
+| Fresh reader (G6): the scorecard has no fatigue row | Low | Open: declined under D56 (the five picks) |
+| Fresh reader (G6): "pay", "paid" and "bonus" for one sum | Low | Open: declined under D62 |
+| Fresh reader (G6): content below the fold at 640 where no control is lost | Low | Open: declined under D72 (the controls and the status stay in the window) |

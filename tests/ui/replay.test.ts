@@ -2,10 +2,10 @@
 // frame shows for step t"; BRIEF section 10.2) and from the elapsed time. The drawing itself is reviewed by eye and
 // covered by the e2e.
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, recklessCoveredPolicy, recklessPolicy, stationaryPolicy } from '../../src/sim/policies.ts';
-import { HOLD_MS, STEP_MS, contactEllipse, planWords, replayClock, replayFrame } from '../../src/ui/replay.ts';
+import { HOLD_MS, STEP_MS, castShadow, contactEllipse, planWords, replayClock, replayFrame } from '../../src/ui/replay.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { EpisodeTrace } from '../../src/world/types.ts';
 import { config, round1, withConfig } from '../helpers.ts';
@@ -242,5 +242,40 @@ describe('contactEllipse: the soft shadow at a figure\'s feet', () => {
   it("keeps the dogs' shadows as they were: their width sets it", () => {
     expect(dogs.length).toBeGreaterThan(20);
     for (const { id, size: [w, h] } of dogs) expect(contactEllipse(w, h), id).toEqual({ rx: w * 0.42, ry: Math.max(1, w * 0.11) });
+  });
+});
+
+// castShadow itself, on a recording canvas (Astra, A5: the ellipse it draws, not only the helper's numbers).
+describe('castShadow: the contact ellipse it draws', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const SPEC = { throw: [0.72, -0.184] as const, blur: 3.2, alpha: 0.3, contactBlur: 5.2, contactAlpha: 0.42, tint: '12, 30, 18' };
+  /** Draws a sprite's shadow on recording canvases and returns the radii of the ellipse it drew. */
+  const drawn = (w: number, h: number): { rx: number; ry: number } => {
+    const ellipses: number[][] = [];
+    const ctx = new Proxy(
+      { filter: 'none', globalAlpha: 1, globalCompositeOperation: 'source-over', fillStyle: '' } as Record<string, unknown>,
+      {
+        get: (target, key) => (key in target ? target[key as string] : key === 'ellipse' ? (...a: number[]) => ellipses.push(a) : () => undefined),
+        set: (target, key, value) => {
+          target[key as string] = value;
+          return true;
+        },
+      },
+    );
+    vi.stubGlobal('document', { createElement: () => ({ width: 0, height: 0, getContext: () => ctx }) });
+    castShadow({ width: w, height: h } as HTMLCanvasElement, w / 2, h * 0.9, 1, SPEC);
+    expect(ellipses).toHaveLength(1);
+    const [, , rx, ry] = ellipses[0] as number[];
+    return { rx: rx as number, ry: ry as number };
+  };
+
+  it('draws a pool at least a quarter of a person\'s height each side (crew-tired, 89 × 265)', () => {
+    const e = drawn(89, 265);
+    expect(e.rx).toBeGreaterThanOrEqual(265 * 0.25);
+    expect(e.ry / e.rx).toBeCloseTo(0.11 / 0.42, 5);
+  });
+
+  it("draws a dog's as its width sets it (lab-black-moving, 206 × 150)", () => {
+    expect(drawn(206, 150)).toEqual({ rx: 206 * 0.42, ry: 206 * 0.11 });
   });
 });

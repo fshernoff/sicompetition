@@ -9,7 +9,7 @@
 // curve. It never runs the GM's week again.
 import { hiddenRules } from '../world/hiddenRules.ts';
 import { describeBonusPlan } from '../world/bonusPlan.ts';
-import { pageScroller, redraw, scrollBehavior } from './app.ts';
+import { notePageScroll, pageScrollCount, pageScroller, redraw, scrollBehavior } from './app.ts';
 import type { Page } from './app.ts';
 import { buildExport, downloadJson, exportFilename } from './export.ts';
 import type { RunExportInput } from './export.ts';
@@ -42,18 +42,16 @@ function keepClear(page: Page): void {
     if (box.bottom <= 0 || box.top >= window.innerHeight) continue; // off screen: not covered by the tray
     if (box.bottom > trayTop) overlap = Math.max(overlap, box.bottom - trayTop + 12);
   }
-  if (overlap > 0) {
-    pageScroller().scrollBy({ top: overlap, behavior: 'auto' });
-    clearEdge(page); // the page moved: it lands with no line cut by the tray's edge
-  }
+  if (overlap > 0) pageScroller().scrollBy({ top: overlap, behavior: 'auto' });
+  clearEdge(page); // no line cut by the tray's edge, whether or not a button moved the page (G6, R4)
 }
 
 /**
- * No line of the page cut by the tray's top edge where the tray has moved the page (G5d round 4): if the page's
- * scroller (the body, whose box ends at the tray's top) shows a line of text only in part at that edge, it scrolls a
- * few pixels more so the line is whole, shown (preferred) or below the edge, keeping the class's buttons above it.
- * Text in a sticky box does not move with the scroll and is left out. A page the tray did not move stays where it is
- * (D46: the tray never moves the lesson).
+ * No line of the page cut by the tray's top edge (G5d round 4; G6, R4: also where no button moved the page, as at
+ * 1366 × 640 after a run): if the page's scroller (the body, whose box ends at the tray's top) shows a line of text only
+ * in part at that edge, it scrolls a few pixels more so the line is whole, shown (preferred) or below the edge, keeping
+ * the class's buttons above it. Text in a sticky box does not move with the scroll and is left out. Closing the tray
+ * puts these moves back (closeTray).
  */
 function clearEdge(page: Page): void {
   if (page.teacher.hidden) return;
@@ -73,6 +71,7 @@ function clearEdge(page: Page): void {
     range.selectNodeContents(node);
     for (const r of Array.from(range.getClientRects())) if (r.height >= 2 && r.width >= 2) lines.push([r.top, r.bottom]);
   }
+  lines.push(...textareaLines(page));
   const buttons = KEEP_CLEAR.map((s) => document.querySelector<HTMLElement>(s))
     .filter((el): el is HTMLElement => el !== null && el.getClientRects().length > 0)
     .map((el) => el.getBoundingClientRect().bottom)
@@ -95,18 +94,80 @@ function clearEdge(page: Page): void {
 }
 
 /**
- * Where the page was when the tray opened, and where the tray's own moves (keepClear, clearEdge) left it (G6, row 21):
- * if the page is still where the tray left it when the tray closes, the reader did not scroll, and closing puts the
- * page back where it was before the tray moved it; a scroll the reader made while it was open (the report, the revealed
- * rules) is kept. Null while the tray is closed.
+ * The lines a text box shows (the Why, quoted after the week): its value is no text node for the walk above, so its
+ * lines are its line height apart from its content's top, less its own scroll, as far as its text runs.
  */
-let trayScroll: { before: number; landed: number } | null = null;
+function textareaLines(page: Page): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  for (const box of Array.from(document.querySelectorAll('textarea'))) {
+    if (page.teacher.contains(box) || box.getClientRects().length === 0 || box.value.trim() === '') continue;
+    const cs = getComputedStyle(box);
+    const line = parseFloat(cs.lineHeight);
+    if (!(line > 0)) continue;
+    const r = box.getBoundingClientRect();
+    const top = r.top + parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop) - box.scrollTop;
+    const count = Math.round((box.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / line);
+    for (let i = 0; i < count; i++) {
+      const a = Math.max(top + i * line, r.top);
+      const b = Math.min(top + (i + 1) * line, r.bottom);
+      if (b - a >= 2) out.push([a, b]);
+    }
+  }
+  return out;
+}
 
-/** Runs one of the tray's own moves of the page, and keeps `landed` with it while the reader has not scrolled. */
-function trayMoves(move: () => void): void {
-  const untouched = trayScroll !== null && Math.abs(document.body.scrollTop - trayScroll.landed) <= 1;
-  move();
-  if (trayScroll !== null && untouched) trayScroll.landed = document.body.scrollTop;
+/**
+ * The page's place while the tray is open (G6, row 21 and Astra's A2): where it was when the tray opened, whether the
+ * reader has scrolled since (a wheel, a key, a touch or the scroll bar, then a scroll; tracked apart from the page's
+ * position, so a reader who scrolls away and back to the same place still counts), and the page's own scroll count then
+ * (a run, the revealed rules). Closing puts the page back where it was only if neither scrolled; the tray's own moves
+ * (keepClear, clearEdge) and a resize are undone. Null while the tray is closed.
+ */
+let trayScroll: { before: number; reader: boolean; pageScrolls: number } | null = null;
+
+/** Until when a scroll counts as the reader's: half a second after their input, or while they hold the scroll bar. */
+let readerUntil = 0;
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Tab']);
+
+/** The reader's ways to scroll, and the scroll that follows them (installed once, by mountTeacher). */
+function watchReader(): void {
+  const arm = (): void => {
+    readerUntil = Math.max(readerUntil, performance.now() + 500);
+  };
+  const opts = { capture: true, passive: true } as const;
+  window.addEventListener('wheel', arm, opts);
+  window.addEventListener('touchmove', arm, opts);
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      const t = e.target as HTMLElement | null;
+      const typing = t !== null && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && (t as HTMLInputElement).type !== 'radio' && (t as HTMLInputElement).type !== 'checkbox'));
+      if (SCROLL_KEYS.has(e.key) && !(typing && e.key !== 'Tab')) arm();
+    },
+    opts,
+  );
+  // The scroll bar: a press on the scroller itself, held until it is let go.
+  window.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (e.target === document.body || e.target === document.documentElement) readerUntil = Number.POSITIVE_INFINITY;
+    },
+    opts,
+  );
+  window.addEventListener(
+    'pointerup',
+    () => {
+      if (readerUntil === Number.POSITIVE_INFINITY) readerUntil = performance.now() + 500; // the scroll bar let go
+    },
+    opts,
+  );
+  document.body.addEventListener(
+    'scroll',
+    () => {
+      if (trayScroll !== null && performance.now() <= readerUntil) trayScroll.reader = true;
+    },
+    { passive: true },
+  );
 }
 
 export function openTray(page: Page): void {
@@ -118,20 +179,22 @@ export function openTray(page: Page): void {
   measureTray(page);
   if (!wasOpen) {
     document.body.scrollTop = top; // the page stays where it was, now scrolling above the tray
-    trayScroll = { before: top, landed: document.body.scrollTop };
+    trayScroll = { before: top, reader: false, pageScrolls: pageScrollCount() };
+    readerUntil = 0; // what the reader did before the tray opened is not a scroll while it was open
   }
-  trayMoves(() => keepClear(page));
+  keepClear(page);
 }
 
 export function closeTray(page: Page): void {
   const wasOpen = document.documentElement.classList.contains('teacher-open');
   const top = pageScroller().scrollTop;
-  const restore = wasOpen && trayScroll !== null && Math.abs(top - trayScroll.landed) <= 1 ? trayScroll.before : top;
+  const kept = trayScroll === null || trayScroll.reader || trayScroll.pageScrolls !== pageScrollCount();
+  const restore = wasOpen && trayScroll !== null && !kept ? trayScroll.before : top;
   trayScroll = null;
   page.teacher.hidden = true;
   page.teacherOpen.setAttribute('aria-expanded', 'false');
   document.documentElement.classList.remove('teacher-open');
-  // The window scrolls again: back where it was before the tray moved it, or from where the reader left the body.
+  // The window scrolls again: back where it was before the tray moved it, or from where the reader or the page left it.
   if (wasOpen) window.scrollTo({ top: restore, behavior: 'auto' });
 }
 
@@ -155,7 +218,7 @@ function showDetails(page: Page, open: boolean): void {
   foot.hidden = !open;
   button.setAttribute('aria-expanded', String(open));
   measureTray(page);
-  trayMoves(() => keepClear(page)); // a taller tray may now cover a button
+  keepClear(page); // a taller tray may now cover a button
 }
 
 /** The hidden rules, written into the list once: the config's, so no run or clear ever touches them. */
@@ -179,6 +242,7 @@ function toggleRules(page: Page): void {
   renderRules(page);
   page.rules.hidden = false;
   page.reveal.textContent = HIDE;
+  notePageScroll();
   page.rules.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
 }
 
@@ -195,6 +259,7 @@ function toggleCurve(page: Page): void {
   page.learning.hidden = false;
   page.showCurve.textContent = HIDE_CURVE;
   redraw(page);
+  notePageScroll();
   page.learning.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
 }
 
@@ -231,6 +296,7 @@ export function mountTeacher(page: Page): void {
   for (const el of [page.teacherOpen, page.teacher.querySelector('.teacher-title')]) {
     if (el) el.insertAdjacentHTML('afterbegin', uiIconSvg('key', 18, 2));
   }
+  watchReader();
   page.teacherOpen.addEventListener('click', () => {
     if (page.teacher.hidden) openTray(page);
     else closeTray(page);

@@ -209,6 +209,7 @@ async function main(): Promise<void> {
       await shot(short, '22-640-load');
       for (const chip of PACKED) await short.click(`label[for="${chip}"]`);
       await short.fill('#prediction', LONG_WHY);
+      await short.locator('#prediction').blur(); // the Why at rest, as the class leaves it for the button
       await short.evaluate(() => window.scrollTo(0, 0));
       await shot(short, '23-640-picks-made');
       await short.click('#train');

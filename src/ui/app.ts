@@ -256,6 +256,19 @@ export function pageScroller(): Element {
   return document.documentElement.classList.contains('teacher-open') ? document.body : (document.scrollingElement ?? document.documentElement);
 }
 
+/**
+ * The page's own scrolls (a run's start and end, the scorecard, the report, a new prediction, the teacher's sections),
+ * counted so the tray can tell them from its own moves: a page that scrolled while the tray was open stays where it
+ * scrolled to when the tray closes (G6, Astra's A2).
+ */
+let pageScrolls = 0;
+export function notePageScroll(): void {
+  pageScrolls += 1;
+}
+export function pageScrollCount(): number {
+  return pageScrolls;
+}
+
 export function scrollBehavior(): ScrollBehavior {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 }
@@ -1100,6 +1113,12 @@ export function mountApp(): Page {
   };
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(stageResized).observe(replay);
 
+  // The Why at rest shows its first lines, whole (G6, R1): typing scrolls the box with the caret, and leaving it brings
+  // the team's reasons back to their start, so no line sits sliced at the box's edge.
+  page.prediction.addEventListener('blur', () => {
+    page.prediction.scrollTop = 0;
+  });
+
   // A pick is part of the prediction, not the plan: it never clears a run; it only lets the button on (D56).
   for (const radio of pickRadios) radio.addEventListener('change', () => syncPicks(page));
 
@@ -1109,6 +1128,7 @@ export function mountApp(): Page {
     page.status.textContent = studentStatus('idle');
     const first = pickRadios.find((r) => r.checked) ?? pickRadios[0];
     first?.focus({ preventScroll: true });
+    notePageScroll();
     pageScroller().scrollTo({ top: 0, behavior: scrollBehavior() }); // the console again, as on the load screen
   });
 
@@ -1154,6 +1174,7 @@ export function mountApp(): Page {
     // The class watches the yard without touching anything (D42).
     // At once, not smoothly: the run's layout replaces the console in the same moment, so a smooth scroll would glide
     // over a page that is changing under it (round 2, row 30).
+    notePageScroll();
     page.watch.scrollIntoView({ behavior: 'auto', block: 'start' });
     let owner = -1;
     // The whole locked lifecycle is one guarded operation; only the run's owner writes an error or unlocks (Astra,
@@ -1182,7 +1203,10 @@ export function mountApp(): Page {
         // scorecard's layout is that frame's, not forced inside this task (round 3: one task, under 50 ms).
         requestAnimationFrame(() => {
           redraw(page);
-          if (page.token === owner) page.compare.scrollIntoView({ behavior: 'auto', block: 'start' });
+          if (page.token === owner) {
+            notePageScroll();
+            page.compare.scrollIntoView({ behavior: 'auto', block: 'start' });
+          }
         });
         settleYard(page);
       } catch (err) {
@@ -1208,6 +1232,7 @@ export function mountApp(): Page {
 
   // After the week, the primary way on: the weekly P&L (round 3, row 11).
   page.readReport.addEventListener('click', () => {
+    notePageScroll();
     page.report.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     const title = document.getElementById('report-title');
     if (title !== null) {
@@ -1218,6 +1243,7 @@ export function mountApp(): Page {
 
   // From the report's end back to the scorecard (G6, row 10): the result first again, for a keyboard and a screen reader.
   page.backToScorecard.addEventListener('click', () => {
+    notePageScroll();
     page.compare.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     page.calledLine.focus({ preventScroll: true });
   });

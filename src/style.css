@@ -1183,7 +1183,8 @@ html.teacher-open #app { padding-bottom: 16px; } /* the page's end, above the tr
    window without scrolling. Spacing and a few boxes (the chips, the orb, the three ways on a little shorter), never type
    below the page's sizes; 768 px and taller keep their layout. */
 @media (max-height: 700px) {
-  /* The load screen: the console's rhythm tightened, the Why a short box that scrolls inside (the page keeps the whole). */
+  /* The load screen: the console's rhythm tightened, the Why a three-line box that scrolls inside (the page keeps the
+     whole). */
   .premise { padding-top: 5px; padding-bottom: 5px; }
   .round-note { margin-top: 1px; line-height: 1.3; }
   .plan, .predict { padding-top: 8px; }
@@ -1194,7 +1195,10 @@ html.teacher-open #app { padding-bottom: 16px; } /* the page's end, above the tr
   .pick-chip { height: 28px; }
   .why { margin-top: 6px; }
   .why-label { margin-bottom: 4px; }
-  #watch[data-phase='load'] #prediction { height: 3.4em; min-height: 0; }
+  /* Three whole lines (G6, R1): no line sliced at the box's edges at rest, and padding no deeper than a line's leading,
+     so a box scrolled to its end shows no glyph of the line above; its top and bottom borders 1 px, the width a screen
+     draws 1.5 px at, so the three lines are exact at any pixel ratio. */
+  #watch[data-phase='load'] #prediction { height: calc(3 * 1.35em + 6px); min-height: 0; padding-top: 2px; padding-bottom: 2px; border-top-width: 1px; border-bottom-width: 1px; }
   .actions { margin-top: 6px; }
   .picks-hint { margin-top: 4px; }
   /* The status line's head on the run and the week's end: the orb a little smaller, the words the same size. */

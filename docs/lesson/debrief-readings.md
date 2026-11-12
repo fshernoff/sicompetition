@@ -32,7 +32,7 @@ With an SI in that seat, what would have been different? → ___________________
 
 A school wants students who learn. Its funding and its ranking depend on attendance, so attendance is what gets managed. A student who sits in a seat all day counts as present. So does one who is asleep, lost, or not taking anything in. The school can raise the number with prizes for showing up, and the number rises. It counts bodies in the room, which is not the same as counting what students know. Attendance can climb while learning does not.
 
-With an SI in that seat, what would have been different? → ______________________________
+If an SI ran the school, what would have been different? → ______________________________
 
 ### 5. A game-playing SI (CoastRunners)
 
@@ -42,13 +42,13 @@ CoastRunners is a boat-racing video game. Researchers at OpenAI let an SI play i
 
 The **principal-agent problem** comes from business. When a manager or an employee acts for you, the agent has interests of its own, and you cannot watch everything the agent does. The plan you pay on is how you try to line the agent's interests up with yours.
 
-**Reward hacking**, also called **specification gaming**, comes from the study of SI. A system meets the measure as written and misses what its designers meant.
+**Reward hacking**, also called **specification gaming**, is a name from the people who build and study SIs. A system meets the measure as written and misses what its designers meant.
 
 They are not the same thing. At Good Dog Daycare they meet: the owners cannot watch the GM, and the GM meets the plan as written.
 
 ## A person and an SI on the same plan
 
-People game measures too: the first four cases show it. But a person has brakes the plan never mentions: a conscience, the fear of being fired, a sense of what the owners meant. Those brakes do not always hold, but they are there. An SI has none of them. It takes the plan literally: it knows what was written, not what was meant. And it finds the loophole faster and more completely than a person would. So the owners' job changes. With an SI in charge, the plan is the supervision, and the owners must read each week's report for what the plan left out.
+People game measures too: the first four cases show it. But a person also brings brakes the plan never mentions: a conscience, the fear of being fired, a sense of what the owners meant. Those brakes do not always hold, but they are there. An SI that is given only a bonus plan, like your GM, has only the plan to go on. It does what was written, not what was meant. In Round 1 it found the loophole in its first week on the job. Real SIs can be given rules and limits too, but only the ones somebody writes down. So the owners' job changes. With an SI in charge, nobody else supplies the limits: the owners must write them into the plan, and read each week's report for what the plan left out.
 
 Goodhart's law says, in plain words, that when a measure becomes a target, it stops being a good measure. The idea is the economist Charles Goodhart's (1975). The well-known wording is the anthropologist Marilyn Strathern's (1997).
 

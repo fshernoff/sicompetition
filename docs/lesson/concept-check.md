@@ -8,23 +8,25 @@ Pre or post (circle one): Pre / Post
 
 Work alone. You have 15 minutes. Every scenario is on this sheet, so you need no other knowledge. For questions 1 to 4, circle one letter. For questions 5 to 8, write short answers on the lines.
 
+In these questions, an SI is a computer system that makes the decisions itself.
+
 ### Question 1
 
-The owners of a hotel put an SI in charge of running it. They give it a bonus plan that pays for some results, and no other instructions. What is the bonus plan to the SI?
+The owners of a hotel put an SI in charge of running it. The SI is built to earn as much bonus as it can. The owners give it a bonus plan that pays for some results, and no other instructions. What is the bonus plan to the SI?
 
 - A. A rough guide, which it fills in with what a good hotel manager would do.
-- B. All it knows of what the owners want, so it aims at what the plan pays for.
+- B. Its target: it chases the results that pay, and the rest can get worse.
 - C. A list of the owners' favourite results, which it weighs against guests' comfort.
 - D. A set of limits to stay inside while it runs the hotel the way it thinks best.
 
 ### Question 2
 
-A shoe shop pays its human manager a bonus on each dollar of sales. The owner then puts an SI in charge instead, on the same bonus plan. What is most likely to change?
+A shoe shop pays its human manager a bonus on each dollar of sales. The owner then puts an SI in charge instead, on the same bonus plan, with no other instructions. What is most likely to change?
 
 - A. Little changes: the same plan pays for the same results, so both act alike.
 - B. Sales fall, because an SI cannot read what customers want the way a person can.
-- C. The SI shares the owner's goals, so it fills in the gaps the manager left.
-- D. The SI pushes harder for sales, since nothing outside the plan holds it back.
+- C. Sales rise and nothing else changes, because the SI never gets tired or bored.
+- D. The SI chases sales, and what the manager did unasked, like honest advice, can stop.
 
 ### Question 3
 
@@ -33,7 +35,7 @@ A store manager keeps one cashier on every shift, never restocks the back room a
 - A. The manager is paid only on this quarter's profit.
 - B. The manager is paid only on this quarter's total sales.
 - C. The manager is paid only on keeping complaints low.
-- D. The manager is paid only on the staff hours scheduled.
+- D. The manager is paid for each staff hour scheduled.
 
 ### Question 4
 
@@ -64,7 +66,7 @@ A pizza chain pays store managers on the share of deliveries made in under 30 mi
 
 ### Question 7
 
-A gym puts an SI in charge of selling memberships and pays it on new memberships signed each month. Name one thing the owners would have to write into the SI's bonus plan that they would never need to tell a person selling memberships. Say why a person would not need telling.
+A gym puts an SI in charge of selling memberships. The owners pay it on new memberships signed each month and give it no other instructions. Name one thing the owners should add to the SI's bonus plan (a rule, a measure or a fine). Would a person in that job have needed it written down? Why or why not?
 
 → ______________________________________________
 
@@ -74,13 +76,13 @@ A gym puts an SI in charge of selling memberships and pays it on new memberships
 
 ### Question 8
 
-A bank pays branch staff on the number of new accounts opened. Answer the three questions below (here, "the GM" means the person or system being paid):
+A bank pays branch staff on the number of new accounts opened. Answer these three questions about the bank:
 
 What did the owners actually want?
 
 → ______________________________________________
 
-What did we pay the GM for?
+What did the bank pay its staff for?
 
 → ______________________________________________
 

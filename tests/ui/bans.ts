@@ -1,11 +1,16 @@
 /**
  * The technology's word is SI, the Challenge's, never "AI" (D67): on the whole page (the teacher's parts too) and on
- * every lesson sheet. Whole words and case-sensitive, so "OpenAI", "said" and "Thai" pass; "AI's" and "AIs" do not.
+ * every lesson sheet. Whole words in any case, so "OpenAI", "said" and "Thai" pass; "AI's", "AIs", "ai" and "Ai" do not.
  */
-export const AI_WORDS: readonly RegExp[] = [/\bAIs?\b/, /\bA\.I\b/, /\bartificial intelligence\b/i];
+export const AI_WORDS: readonly RegExp[] = [/\bAIs?\b/i, /\bA\.I\b/i, /\bartificial intelligence\b/i];
 
-/** What may keep the word: titles of cited works and company or product names, as published (D67). Nothing else. */
-export const AI_ALLOWED: readonly RegExp[] = [/Concrete Problems in AI Safety/g, /the flip side of AI ingenuity/gi, /\bOpenAI\b/g];
+/** What may keep the word: titles of cited works (and the address that carries one) and company or product names, as published (D67). Nothing else. */
+export const AI_ALLOWED: readonly RegExp[] = [
+  /Concrete Problems in AI Safety/g,
+  /the flip side of AI ingenuity/gi,
+  /specification-gaming-the-flip-side-of-ai-ingenuity/g,
+  /\bOpenAI\b/g,
+];
 
 /** The banned words a text uses, as the matches found, with the allowed titles and names taken out first. */
 export function aiWords(text: string): string[] {

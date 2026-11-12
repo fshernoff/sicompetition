@@ -42,7 +42,7 @@ What does the plan leave out, and who could be hurt?
 
 ## 4. What the owners should check every week
 
-Nobody supervises the SI, and it does only what the plan pays for. What does the plan not pay for that the owners must check in each week's report?
+Nobody watches the SI day to day, and it does only what the plan pays for. What does the plan not pay for that the owners must check in each week's report?
 
 → ______________________________
 

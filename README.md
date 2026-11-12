@@ -46,8 +46,9 @@ student brief per round, four role cards, the pre/post concept check and its key
 debrief readings. The sheets quote the page, and `npm test` fails if a quoted word drifts from it.
 
 The unit teaches managing an SI the owners have put in charge. A human manager brings conscience and common sense
-that no plan has to state; the SI does what the plan pays for and nothing more. So the class learns what an owner must
-write down, and what it must check in each week's report, that a human manager would never need to be told.
+that no plan has to state, though people game measures too. An SI given only a bonus plan, like the GM, has only the
+plan to go on: real SIs can be given rules and limits, but only the ones somebody writes down. So the class learns what
+an owner must write into the plan, and what to check in each week's report.
 
 `npm run capture` after `npm run build` records a 30-second Round 1 run to `Temp/capture/`; `docs/capture.md` is the shot list for your own recording.
 

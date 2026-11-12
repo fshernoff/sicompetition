@@ -147,6 +147,9 @@ describe('aiWords (D67)', () => {
     expect(aiWords('The GM is an AI. AIs and A.I. and an AI\'s plan; Artificial Intelligence.')).toEqual(['AI', 'AIs', 'AI', 'A.I', 'Artificial Intelligence']);
     expect(aiWords('Concrete Problems in AI Safety; OpenAI let an SI play; Thai, said, again, MAIL.')).toEqual([]);
     expect(aiWords('Specification gaming: the flip side of AI ingenuity. Then an AI.')).toEqual(['AI']);
+    // Lowercase and mixed case are the word too; the cited title's web address keeps it, as published.
+    expect(aiWords('an ai runs it; Ai GMs; the ai\'s plan; a.i. too')).toEqual(['ai', 'Ai', 'ai', 'a.i']);
+    expect(aiWords('https://deepmind.google/blog/specification-gaming-the-flip-side-of-ai-ingenuity/ said Thai')).toEqual([]);
   });
 });
 

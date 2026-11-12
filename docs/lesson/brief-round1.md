@@ -6,7 +6,7 @@ Team code: ______
 
 ## The story
 
-The old GM quit. You, the owners, put an SI in its chair: a computer system that makes the decisions itself.
+The old GM quit. You, the owners, put an SI in the GM's chair: a computer system that makes the decisions itself.
 
 > Good Dog Daycare. You own it. The GM is an SI: it runs the week, and you write its bonus plan.
 

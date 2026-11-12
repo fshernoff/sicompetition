@@ -268,7 +268,14 @@ describe('the concept check and its key', () => {
     for (const n of [5, 6, 7, 8]) expect(options(question(text, n)), `question ${n}`).toEqual([]);
     expect(text).toMatch(/Pre or post/i);
     expect(text, 'a seat number pairs the pre and post sheets without a name').toMatch(/Seat number/);
-    for (const q of QUESTIONS) expect(question(text, 8), 'question 8 prints the three questions').toContain(q);
+  });
+
+  it("question 8 asks the debrief's three questions without calling the bank's staff the GM", () => {
+    const q8 = question(sheet(), 8);
+    expect(q8).toContain(QUESTIONS[0]);
+    expect(q8, 'the second question, about what the staff were paid for').toMatch(/^What did (we|the bank) pay\b[^?\n]*\bfor\?/m);
+    expect(q8).toContain(QUESTIONS[2]);
+    expect(q8, 'bank staff are not the GM').not.toMatch(/\bGM\b/);
   });
 
   it('keys 1 to 4 with one of their letters and scores 5 to 8 with a rubric of 2, 1 and 0', () => {
@@ -301,6 +308,17 @@ describe('the teacher guide', () => {
     expect(text).toContain(HOW);
     expect(text, 'the exports are filed by team code').toMatch(/team code/i);
     expect(text).toContain('Never type a name in the prediction box.');
+  });
+
+  it('keeps its differentiation: a struggling team turns on two measures, early finishers try a second seed', () => {
+    const text = guide();
+    const start = text.search(/^##\s+Differentiation\s*$/m);
+    expect(start, '## Differentiation').toBeGreaterThanOrEqual(0);
+    const rest = text.slice(text.indexOf('\n', start) + 1);
+    const diff = rest.slice(0, Math.max(0, rest.search(/^##\s/m)) || rest.length);
+    expect(diff).toMatch(/\btwo measures\b/i);
+    expect(diff).toMatch(/\bsecond seed\b[^.]*\bTeacher\b|\bTeacher\b[^.]*\bsecond seed\b/i);
+    expect(diff).toMatch(/\bsame (thing|week)\b/i);
   });
 
   it("carries Round 1's week on seed 1 as the engine writes it", () => {
@@ -390,15 +408,18 @@ describe('the debrief readings and the board memo', () => {
 
 /**
  * The unit teaches managing an SI the owners put in charge, and the human cases are the comparison (D68, BRIEF
- * section 14). The class should leave able to say why: a person has brakes the plan never mentions and the SI has
- * none; it takes the plan literally; it finds the loophole faster and more completely; so with an SI the plan is the
- * supervision and the owner reads the week for what the plan left out. No engine words: the sheets' bans hold here too.
+ * section 14). Every claim is scoped to an SI given only a bonus plan, like the GM: a person brings brakes the plan
+ * never mentions; an SI given only the plan has only the plan to go on; the GM found the loophole in its first week;
+ * so its limits are the ones somebody wrote down, and the owner writes them or reads the week for what the plan left
+ * out. Each rule is pinned by its key words, so the teacher's ordinary rewording passes and removing the rule fails.
  */
 describe('the SI frame (D68)', () => {
-  const HUMAN_GM = ['Would a human GM have run this week?', 'What would have stopped a person that did not stop the SI?'];
-  const SI_SEAT = 'With an SI in that seat, what would have been different?';
-  const AUDIT = 'Find one number in the report that got worse, or stayed bad, that your plan did not pay for.';
-  const TELL = /write into the SI's (bonus )?plan[^.?]*never need to tell a person/i;
+  /** Whether a text asks if a human GM (or a person) would have run this week, and what would have stopped a person. */
+  const asksHumanGM = (text: string): boolean =>
+    /\bWould a (human GM|person)\b[^?]*\bthis week\?/i.test(text) && /\bWhat would have stopped a person\b[^?]*\?/i.test(text);
+  /** A question about an SI's plan that asks whether a person in that job would have needed it written down or told. */
+  const asksPerson = (text: string): boolean =>
+    /\bSI's (bonus )?plan\b/i.test(text) && /\ba person\b[^?]*\b(needed|need)\b[^?]*\b(written down|told|telling)\b[^?]*\?/i.test(text);
 
   /** A `## Heading` section's text, up to the next heading of level two or one. */
   function section(text: string, heading: RegExp): string {
@@ -419,9 +440,20 @@ describe('the SI frame (D68)', () => {
     return Array.from(q.matchAll(/^\s*(?:[-*]\s+)?\(?([A-F])[.)]\s+(.+)$/gm), (m) => [m[1] ?? '', m[2] ?? '']);
   }
 
-  it('the teacher guide says why this is an SI lesson: no brakes, taken literally, the loophole, the plan is the supervision', () => {
+  it("the teacher guide says why this is an SI lesson, scoped to an SI given only a bonus plan: a person's brakes, only the plan, the loophole, the limits somebody wrote down", () => {
     const why = section(read('teacher-guide.md'), /^##\s+Why this is an SI lesson\s*$/m);
-    for (const word of [/brakes/i, /literally/i, /loophole/i, /supervision/i]) expect(why, String(word)).toMatch(word);
+    for (const word of [/brakes/i, /only (a|the|its) bonus plan/i, /loophole/i, /\b(wrote|written|writes?) (it |them )?down\b/i, /game measures too/i]) {
+      expect(why, String(word)).toMatch(word);
+    }
+  });
+
+  it("no sheet states the frame as a fact about every SI: none says an SI has none of a person's brakes, or finds the loophole faster than a person", () => {
+    for (const file of ALL_FILES) {
+      const text = body(file);
+      expect(text, `${file}: an SI with none of the brakes`).not.toMatch(/\b(SI|it)\b[^.]*\bha(s|ve) none\b/i);
+      expect(text, `${file}: faster than a person`).not.toMatch(/\bfaster\b[^.]*\bthan a (person|human)\b/i);
+      expect(text, `${file}: a person never needs telling`).not.toMatch(/\bnever need(s)? (to )?(tell|be told|telling)\b/i);
+    }
   });
 
   it("the teacher guide's objectives have the SI as their subject", () => {
@@ -433,31 +465,47 @@ describe('the SI frame (D68)', () => {
   });
 
   it('the period 6 debrief asks whether a human GM would have run this week', () => {
-    for (const q of HUMAN_GM) expect(period(6)).toContain(q);
+    expect(asksHumanGM(period(6))).toBe(true);
   });
 
-  it("the exit ticket asks for one thing to write into an SI's plan that a person never needs to be told", () => {
-    expect(period(8)).toMatch(TELL);
+  it("the exit ticket asks for one thing to write into an SI's plan, and whether a person in that job would have needed it", () => {
+    expect(asksPerson(period(8))).toBe(true);
   });
 
   it('the debrief readings ask the human-versus-SI question after the three questions', () => {
     const text = read('debrief-readings.md');
     const third = text.indexOf(QUESTIONS[2] ?? '');
-    for (const q of HUMAN_GM) {
-      expect(text).toContain(q);
-      expect(text.indexOf(q), `"${q}" after the three questions`).toBeGreaterThan(third);
-    }
+    expect(third).toBeGreaterThanOrEqual(0);
+    expect(asksHumanGM(text.slice(third + 1)), 'after the three questions').toBe(true);
   });
 
-  it('the debrief readings ask of each real case what would have been different with an SI in that seat', () => {
+  it('the debrief readings ask of each real case what would have been different with an SI there', () => {
     const text = read('debrief-readings.md');
     for (const n of [1, 2, 3, 4]) {
       const start = text.search(new RegExp(`^###\\s+${n}\\.`, 'm'));
       expect(start, `### ${n}.`).toBeGreaterThanOrEqual(0);
       const rest = text.slice(text.indexOf('\n', start) + 1);
       const next = rest.search(/^#{2,3}\s/m);
-      expect(next < 0 ? rest : rest.slice(0, next), `case ${n}`).toContain(SI_SEAT);
+      const lines = (next < 0 ? rest : rest.slice(0, next)).split('\n');
+      const asks = lines.some((l) => /\bSI\b/.test(l) && /\bdifferent\b/i.test(l) && l.includes('?'));
+      expect(asks, `case ${n}: a question line with an SI and what would have been different`).toBe(true);
     }
+  });
+
+  it('the concept check says what an SI is under its instructions, in the Round 1 brief\'s words, because the pre-check comes first', () => {
+    const DESCRIPTION = /\bSI\b[^.\n]*\ba computer system that makes the decisions itself\b/;
+    const text = read('concept-check.md');
+    const head = text.slice(0, text.search(/^###\s+Question 1\b/m));
+    expect(head, 'under the instructions').toMatch(/Work alone/);
+    expect(head.slice(head.search(/Work alone/))).toMatch(DESCRIPTION);
+    expect(read('brief-round1.md')).toMatch(DESCRIPTION);
+  });
+
+  it('each multiple-choice question about an SI in charge says it has the plan and no other instructions', () => {
+    const text = read('concept-check.md');
+    const si = [1, 2, 3, 4].filter((n) => /\bSI\b/.test(question(text, n)));
+    expect(si.length).toBeGreaterThanOrEqual(2);
+    for (const n of si) expect(question(text, n), `question ${n}`).toMatch(/\bno other instructions\b/i);
   });
 
   it('at least four of the eight concept-check questions are about an SI in charge, and at least two about people', () => {
@@ -477,18 +525,21 @@ describe('the SI frame (D68)', () => {
     expect(contrast.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("a short answer asks for something an owner must write into an SI's plan that a person never needs to be told, and the key scores it", () => {
+  it("a short answer asks what the owners should add to an SI's plan and whether a person would have needed it, and the key credits both answers", () => {
     const text = read('concept-check.md');
-    const item = [5, 6, 7, 8].find((n) => TELL.test(question(text, n)));
+    const item = [5, 6, 7, 8].find((n) => asksPerson(question(text, n)));
     expect(item, 'a question 5 to 8 asking it').toBeDefined();
-    expect(question(read('concept-check-key.md'), item ?? 0), 'the key credits the why').toMatch(/a person/i);
+    expect(question(text, item ?? 0), 'asks why or why not, so it does not assume the answer').toMatch(/\bwhy or why not\b/i);
+    const rubric = question(read('concept-check-key.md'), item ?? 0);
+    expect(rubric, 'the key credits the contrast with a person').toMatch(/a person/i);
+    expect(rubric, 'the key credits a reasoned "a person might need it too"').toMatch(/\bneed(ed)? it too\b/i);
   });
 
   it('the concept check sets no scenario in the daycare, so the post-check does not reward remembering the game', () => {
     expect(read('concept-check.md')).not.toMatch(/daycare|Good Dog|\bdogs?\b|\bcrew\b|\bnaps?\b/i);
   });
 
-  it('the multiple-choice options give no clue by length: close in length, and the keyed one never the longest', () => {
+  it('the multiple-choice options give no clue by length: close in length, and the keyed one never the longest nor the shortest', () => {
     const text = read('concept-check.md');
     const key = read('concept-check-key.md');
     const letters = new Set<string>();
@@ -500,15 +551,18 @@ describe('the SI frame (D68)', () => {
       expect(Math.max(...lengths) / Math.min(...lengths), `question ${n}: ${lengths.join(', ')} words`).toBeLessThanOrEqual(1.4);
       const keyed = opts.find(([l]) => l === answer)?.[1] ?? 0;
       expect(opts.some(([l, w]) => l !== answer && w >= keyed), `question ${n}: ${answer} is the longest`).toBe(true);
+      expect(opts.some(([l, w]) => l !== answer && w <= keyed), `question ${n}: ${answer} is the shortest`).toBe(true);
     }
     expect(letters.size, 'the keyed letters vary').toBeGreaterThanOrEqual(3);
   });
 
   it('the Round 3 brief and the board memo ask the team to read the report for something the plan did not pay for', () => {
-    expect(section(read('brief-round3.md'), /^##\s+After the week\s*$/m)).toContain(AUDIT);
+    const after = section(read('brief-round3.md'), /^##\s+After the week\s*$/m);
+    for (const word of [/\bnumber\b/i, /\breport\b/i, /\b(got worse|stayed bad)\b/i, /\bnot pay for\b/i]) expect(after, String(word)).toMatch(word);
     const memo = read('board-memo.md');
-    expect(memo).toMatch(/nobody supervises the SI/i);
-    expect(memo).toMatch(/(each|every) week/i);
-    expect(memo).toMatch(/not pay for/i);
+    for (const word of [/\bSI\b/, /\bcheck\b/i, /\b(each|every) week/i, /\bnot pay for\b/i]) expect(memo, String(word)).toMatch(word);
+    // The owners check each week, so the memo never says nobody supervises the SI: nobody watches it day to day.
+    expect(memo).not.toMatch(/\bnobody supervises\b/i);
+    expect(memo).toMatch(/\bday to day\b/i);
   });
 });

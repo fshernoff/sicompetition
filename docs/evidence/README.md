@@ -57,13 +57,22 @@ carries the round and the seed, and the file carries the plan, the five picks, t
 A blank answer is a 0, entered as 0; a student absent from a sitting has no row. The total (out of 12), the class mean, the gain and the share scoring 2 on question 5 come
 from the evidence script (checklist section 3), not from the sheet.
 
-The items (`nov12`): questions 1, 2, 5 and 7 are about an SI put in charge (what its bonus plan is to it; a human
-manager swapped for an SI on the same plan; predict how it games a per-hour measure; one thing its plan must say that
-a person never needs to be told); 3, 4, 6 and 8 are about people, the comparison (read a behaviour back to its plan;
-a measure that becomes a target; a stakeholder the plan ignores; a bank mapped with the three questions). Question 5
-is still the one that predicts a gaming behaviour. A class that sat the `oct28` sheet as its pre-check sits it again as
-its post-check (its sheet and key are `docs/lesson/concept-check.md` and `concept-check-key.md` at commit `5839c16`);
-compare a student's pre and post only within one form.
+The items (`nov12`): the sheet first says, in one line, what an SI is (the Round 1 brief's words). Questions 1, 2, 5
+and 7 are about an SI put in charge with a bonus plan and no other instructions (what its bonus plan is to it; a
+human manager swapped for an SI on the same plan; predict how it games a per-hour measure; what the owners should
+add to its plan, and whether a person in that job would have needed it written down); 3, 4, 6 and 8 are about
+people, the comparison (read a behaviour back to its plan; a measure that becomes a target; a stakeholder the plan
+ignores; a bank's staff mapped with the debrief's three questions). Question 5 is still the one that predicts a
+gaming behaviour. A class that sat the `oct28` sheet as its pre-check sits it again as its post-check. Print that
+sheet and its key from commit `0b33197`, the last version a class could have sat (it says "AI"; later commits
+changed it):
+
+```
+git show 0b33197:docs/lesson/concept-check.md
+git show 0b33197:docs/lesson/concept-check-key.md
+```
+
+Compare a student's pre and post only within one form.
 
 ## The pilot notes
 

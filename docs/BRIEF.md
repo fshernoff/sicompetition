@@ -308,11 +308,26 @@ on every open day (walks are free either way: with one staffer they fall back to
 | Only KPI on | Outcome class on the readout |
 |---|---|
 | profit | accepts every booking, premium rate, one staffer on four of five days (one day of help avoids the Thursday closure), no nap, no clean, incidents ignored |
-| dogsServed | low rate, accepts every booking, incidents ignored; indifferent to staffing |
-| incidents (negative) | the safe cap, few dogs, incidents near zero, profit far below Round 1 |
-| reputation (positive) | walks in most blocks with two or three staffers, fewer incidents, profit far below Round 1 |
-| fatigue (negative) | no block over 70: two or three staffers or few dogs, profit below Round 1 |
-| overRatio (negative) | no block over 15 per staffer: legal or safe bookings or enough staff; otherwise indifferent |
+| dogsServed | accepts every booking, mostly the low rate, mixed staffing with some naps and cleans, incidents vary, profit far below Round 1; on seed 1 it does not settle within the budget |
+| incidents (negative) | two or three staffers on most days, naps and cleans in many blocks, every booking on three to five days, mixed rates, incidents near zero, profit near zero or a loss; it does not settle within the budget |
+| reputation (positive) | three staffers every day, a walk in every block, accepts every booking, no nap, no clean, incidents near zero, dogs found sick at pickup, profit about half of Round 1's |
+| fatigue (negative) | no block over 70: three staffers on most days and one solo day, naps and cleans, every booking on four of five days, incidents near zero, profit far below Round 1 or a loss |
+| overRatio (negative) | no block over 15 per staffer: two or three staffers on most days, naps and cleans, mixed rates, few incidents, profit far below Round 1 |
+
+The rows are the engine's weeks on seeds 1 to 3 at the suggested weight (`node Tools/balance/probe.ts --seeds 1,2,3
+--plans P10,D5,I-5,R5,F-5,O-5`, Nov 12, 2026). Only the profit row is a test target (the Round 1 class, in `tests/rules/round1-optimum.test.ts` and the learner's tests);
+the others are talking points the probe re-measures (D69 replaced rows written before the engine existed, D20's
+among them).
+
+Plans that pay for Profit and Reputation change converge (D69, measured as above on the lab's panel,
+`.claude/docs/reviews/g11-balance-lab.md`). Once Reputation change is on beside Profit, at +$2 to +$10, with or
+without other measures, the GM schedules two staffers every day, accepts every booking at the premium rate and walks
+dogs in every floor block (15 of 15), because a walk's photo lifts reputation (H8); nothing in any plan pays for a
+clean floor, so dogs are found sick at pickup (H6). Eight plans of the panel give the identical week on each of seeds 1 to
+3; on seed 1 it is profit $4,678, reputation 50 → 84, 2 incidents, no block over 15 dogs per staffer, 7 dogs found
+sick. No plan with Profit on naps or cleans, alone or beside any other measure: a second staffer is the cheaper way to
+cut incidents, and naps and cleans appear only in plans without Profit. So in Rounds 2 and 3 which measures are on
+matters more than their weights. The rules keep this on purpose: it is the unit's Round 3 exhibit (section 14).
 
 ## 8. Rounds
 
@@ -566,3 +581,11 @@ words), the keyed option is never the longest, and the keyed letters vary; the R
 number in the report the plan did not pay for that got worse or stayed bad, and the board memo asks what the owners
 must check each week because nobody supervises the SI; the exit ticket asks for one thing they would write into an
 SI's plan that they would never need to tell a person.
+
+The Round 3 exhibit (D69): the teacher guide carries, for the teacher only, the week most plans paying for Profit and
+Reputation change give on seed 1 (section 7), quoted from the engine and held by the same test: two staffers every
+day, a walk in every block, the profit, the reputation, the incidents and the dogs found sick at pickup; the question
+to ask ("Reputation went up. Who paid for it? Look at Dogs found sick at pickup."); the point (nothing in any plan pays
+for a clean yard; a person would have cleaned it; the SI did what the plan paid for); and that teams with different
+amounts often get the same week, a finding for the gallery walk. No student sheet before the reveal (the briefs, the
+role cards, the concept check, the board memo) mentions the walk photos or the dogs found sick.

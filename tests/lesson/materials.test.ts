@@ -312,6 +312,45 @@ describe('the teacher guide', () => {
     expect(text).toContain(formatMoney(week.totals.profit));
     expect(text).toContain(`${week.totals.reputationStart} → ${week.totals.reputationEnd}`);
   });
+
+  // D69: the rules stand, and the week most Profit-and-Reputation plans give on seed 1 is the Round 3 exhibit.
+  it("the teacher guide's Round 3 exhibit quotes the engine: Profit today ($) +$10 and Reputation change +$5 on seed 1", () => {
+    const round1 = loadPreset('round1').spec;
+    const spec = { ...round1, kpis: { ...round1.kpis, reputation: { on: true, weight: 5 } } };
+    const trainer = new Trainer(config, spec, 1);
+    trainer.runEpisodes(trainer.config.maxEpisodes);
+    const t = trainer.evaluate().totals;
+    const text = guide();
+    const start = text.search(/^##\s+What Rounds 2 and 3 tend to do\s*$/m);
+    expect(start, '## What Rounds 2 and 3 tend to do').toBeGreaterThanOrEqual(0);
+    const rest = text.slice(text.indexOf('\n', start) + 1);
+    const next = rest.search(/^##\s/m);
+    const exhibit = next < 0 ? rest : rest.slice(0, next);
+    expect(exhibit).toContain(`Profit for the week: ${formatMoney(t.profit)}`);
+    expect(exhibit).toContain(`Reputation: ${t.reputationStart} → ${t.reputationEnd}`);
+    expect(exhibit).toContain(`Incidents: ${t.incidents}`);
+    expect(exhibit).toContain(`Dogs found sick at pickup: ${t.illnessCases}`);
+    expect(exhibit).toContain(`${t.walkBlocks} walks`);
+    expect(exhibit).toContain('Look at Dogs found sick at pickup.');
+  });
+});
+
+/** What the Round 3 exhibit would give away on a student's sheet before the reveal (D69): the walk photos, the dogs found sick. */
+function exhibitWords(text: string): string[] {
+  return [/\bphotos?\b/i, /\bsick\b/i].flatMap((re) => text.match(re)?.[0] ?? []);
+}
+
+describe('the Round 3 exhibit stays with the teacher until the reveal (D69)', () => {
+  it('catches the walk photos and the dogs found sick, and lets the rest through', () => {
+    expect(exhibitWords('Each walk earns a photo. Dogs found sick at pickup: 7.')).toEqual(['photo', 'sick']);
+    expect(exhibitWords('Free play, structured play, nap, walk or clean.')).toEqual([]);
+  });
+
+  for (const file of ['brief-round1.md', 'brief-round2.md', 'brief-round3.md', 'role-cards.md', 'concept-check.md', 'board-memo.md']) {
+    it(`${file} never mentions the walk photos or the dogs found sick`, () => {
+      expect(exhibitWords(read(file))).toEqual([]);
+    });
+  }
 });
 
 describe('the debrief readings and the board memo', () => {

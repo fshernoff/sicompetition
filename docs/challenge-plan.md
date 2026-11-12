@@ -110,6 +110,8 @@ Eight class periods over three weeks, Nov 16 to Dec 4, in teams of four, with on
 
 **Learning objectives.** By the end, a student can (1) explain what an incentive plan is to an optimizer, human or SI, and how an RL agent uses its reward, (2) predict at least one way a single-KPI plan will be gamed, (3) negotiate and justify a multi-KPI plan in terms of stakeholders, and (4) connect the principal-agent problem to a real company that paid for the wrong metric.
 
+*Note, Nov 12, 2026: the objectives above are the Oct 25 brief's. The current objectives frame the unit as managing an SI the owners put in charge (D68); see `docs/lesson/teacher-guide.md`.*
+
 | Period | Date | What happens | Student artifact |
 | --- | --- | --- | --- |
 | 1 | Nov 16 | Pre-check (10 min). Hook: the class watches the Round 1 GM go from random to a packed yard with one staffer in 60 seconds on the smartboard. Mini-lesson: what the GM sees, what it can do, what its bonus plan is | Pre-check answers |
@@ -139,6 +141,8 @@ Collect four kinds of evidence during the unit so the Learning Achievements sect
 | Board memos and exit tickets | Periods 7, 8 | Transfer to real systems in students' own words; quotable in the PDF and video | Educational Impact, Video |
 
 **Concept check design.** Four multiple-choice items (what a reward is, what an agent optimizes, which signal a given behavior points to, what Goodhart's law says) and four short-answer items (predict the behavior of a given reward, name a stakeholder a reward ignores, fix a bad reward, map one real system). Score short answers with a two-point rubric. Report the class mean and the share of students who can correctly predict a gaming behavior before and after.
+
+*Note, Nov 12, 2026: the items above are the Oct 25 brief's. The current concept check is revised under D68 (four of eight items about an SI in charge); see `docs/lesson/concept-check.md` and its key.*
 
 **Pilot evidence** (Nov 9 to 13, one class, two periods): time to train, whether students read the readout correctly without help, and the three most common confusions. Report what changed as a result; that is the Process and Learning section.
 

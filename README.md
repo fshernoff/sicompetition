@@ -45,6 +45,10 @@ The Teacher button at the right of the top bar opens a tray with the round prese
 student brief per round, four role cards, the pre/post concept check and its key, the board memo template and the
 debrief readings. The sheets quote the page, and `npm test` fails if a quoted word drifts from it.
 
+The unit teaches managing an SI the owners have put in charge. A human manager brings conscience and common sense
+that no plan has to state; the SI does what the plan pays for and nothing more. So the class learns what an owner must
+write down, and what it must check in each week's report, that a human manager would never need to be told.
+
 `npm run capture` after `npm run build` records a 30-second Round 1 run to `Temp/capture/`; `docs/capture.md` is the shot list for your own recording.
 
 ## Deploy

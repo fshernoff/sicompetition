@@ -185,6 +185,13 @@ multiple-choice options no longer give the answer away by length). A class that 
 pre-check keeps that form for its post-check; the score sheet's `form` column records which, and Learning
 Achievements reports the two forms apart, never one gain across both.
 
+**The Nov 12 review, for the Process and Learning paragraph** (beside what the pilot changed, in Learning
+Achievements): a review of the whole entry on Nov 12 led to three changes. The word is SI everywhere (D67). The unit
+was reframed as managing an SI the owners put in charge (D68). A balance lab tested six candidate rule changes against
+a written gate and kept the rules (D69, `.claude/docs/reviews/g11-balance-lab.md`): no change passed, and the week
+the lab found (plans that pay for reputation all walk dogs for photos while dogs go home sick) became the Round 3
+teaching point.
+
 - [ ] Draft, then Fred's edit; every number traced to section 3's output. (Claude, Fred)
 - [ ] 12-point or larger, 10 pages plus the title page, under 30 MB, sections in the required order, the school on the
   title page. (Claude checks the file; Fred approves)

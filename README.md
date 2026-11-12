@@ -41,10 +41,12 @@ The Teacher button at the right of the top bar opens a tray with the round prese
 
 ## Lesson materials
 
-`docs/lesson/` holds the unit on paper, Markdown that prints: a two-page teacher guide (start there), the teacher's
-key to the game (the hidden rules, what each kind of plan tends to do, the check line; read it before period 1), a
-one-page student brief per round, four role cards, the pre/post concept check and its key, the board memo template
-and the debrief readings. The sheets quote the page, and `npm test` fails if a quoted word drifts from it.
+`docs/lesson/` holds the unit on paper: a teacher guide (start there), the teacher's key to the game (the hidden
+rules, what each kind of plan tends to do, the check line; read it before period 1), a one-page student brief per
+round, four role cards, the pre/post concept check and its key, the board memo template and the debrief readings.
+The sheets quote the page, and `npm test` fails if a quoted word drifts from it. To print them, run `npm run sheets`:
+it writes each sheet as a Letter PDF to `Temp/sheets/` (11 pt, 1 in margins) and fails, naming the sheet, if one runs
+past its page count.
 
 The unit teaches managing an SI the owners have put in charge. A human manager brings conscience and common sense
 that no plan has to state, though people game measures too. The GM is one kind of SI, built to chase a number and

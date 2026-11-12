@@ -2,7 +2,7 @@
 
 **Giving it.** Hand out the same sheet before and after the unit. Students work alone for 15 minutes, in the same conditions both times, with no game open and no notes. Team code and seat number pair the two sheets, with no name. Questions 1 to 4 score 1 or 0; questions 5 to 8 score 0, 1 or 2 by the rubrics below; the total is out of 12. Report, before and after, the class mean and the share scoring 2 on question 5 (they predict a gaming behaviour).
 
-**What it checks.** Questions 1, 2, 5, 6 and 7 are about an SI in charge; 3, 4 and 8 are about people, the comparison. Question 6 checks reading a week for what the plan left out. No question uses the daycare or a case the unit teaches. A class that sat an earlier form as its pre-check sits that form again as its post-check: print it with the commands in docs/evidence/README.md.
+**What it checks.** Questions 1, 2, 5, 6 and 7 are about an SI in charge; 3, 4 and 8 are about people, the comparison. Question 6 checks reading a week for what the plan left out. No question uses the daycare or a case the unit teaches; Question 7 is near transfer from the readings' salesperson case, so read its gain as such. A class that sat an earlier form as its pre-check sits that form again as its post-check: print it with the commands in docs/evidence/README.md.
 
 ### Question 1
 
@@ -38,9 +38,9 @@ Ask two yes-or-no questions. (a) Does it name a specific loss: wrong or broken o
 
 ### Question 6
 
-Ask two yes-or-no questions. (a) Does it name profit for the week ($1,800 to $300)? The other numbers were paid for, held or got better. (b) Does the reason name the plan: it paid for loaves, not profit, so a loss cost the SI nothing?
+Ask two yes-or-no questions. (a) Does it name profit for the week ($1,800 to $300)? The other numbers were paid for, held or got better. (b) Does the reason name the plan: it paid for loaves, not profit, so lower profit cost the SI nothing?
 
-- Score 2: both yes. Example: "Profit. The plan paid per loaf, not for profit, so the SI sold more loaves even at a loss."
+- Score 2: both yes. Example: "Profit. The plan paid per loaf, not for profit, so the SI sold more loaves while profit fell."
 - Score 1: one yes. Example: "Profit. It cut prices to sell more loaves." (No plan.)
 - Score 0: neither. Example: "Loaves thrown away."
 

@@ -1,14 +1,8 @@
 # Concept check
 
-Team code: ______________
+Team code: __________ · Seat number (1 to 4): ____ · Pre or post (circle one): Pre / Post
 
-Seat number (1 to 4): ______
-
-Pre or post (circle one): Pre / Post
-
-Work alone. You have 15 minutes. Every scenario is on this sheet, so you need no other knowledge. For questions 1 to 4, circle one letter. For questions 5 to 8, write short answers on the lines.
-
-In these questions, an SI is a computer system that makes the decisions itself.
+Work alone. You have 15 minutes. Every scenario is on this sheet, so you need no other knowledge. Circle one letter for questions 1 to 4; write short answers for 5 to 8. In these questions, an SI is a computer system that makes the decisions itself.
 
 ### Question 1
 
@@ -86,16 +80,10 @@ A gym puts an SI in charge of selling memberships. The owners pay it on new memb
 
 ### Question 8
 
-A hardware chain pays its store staff a bonus for each customer survey rated "excellent". Answer these three questions about the chain:
+A hardware chain pays its store staff a bonus for each customer survey rated "excellent".
 
-What did the owners actually want?
+What did the owners actually want? → ______________________________
 
-→ ______________________________________________
+What did the chain pay its staff for? → ______________________________
 
-What did the chain pay its staff for?
-
-→ ______________________________________________
-
-What was the cheapest way to earn it?
-
-→ ______________________________________________
+What was the cheapest way to earn it? → ______________________________

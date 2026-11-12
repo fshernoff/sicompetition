@@ -4,47 +4,39 @@ Turn on up to three measures and set their dollar amounts. Write your prediction
 
 Team code: ______
 
-In Round 1 you saw what a profit-only plan bought. Now your team writes the plan. Each measure is a line the GM can be paid, or fined, on.
-
-## The six measures
+**The six measures** (each is a line the GM can be paid, or fined, on):
 
 - **Profit today ($):** every $100 of the day's profit. A loss counts the opposite of a gain.
 - **Dogs served:** each dog the daycare accepts.
 - **Incidents:** each incident.
-- **Reputation change:** each point of reputation gained. A one-point drop counts the opposite of a one-point rise.
+- **Reputation change:** each point of reputation gained; a one-point drop counts the opposite.
 - **Blocks with crew fatigue above 70%:** each block the crew's fatigue ends above 70%.
 - **Blocks over 15 dogs per staffer:** each block the floor runs over 15 dogs per staffer.
 
 ## Run the week
 
-1. Each role pitches its measure (see the role cards).
-2. Turn on up to three measures. Set each dollar amount from −$10 to +$10. A negative amount takes that much away from the GM for each one counted.
-3. Copy the plan in words from the page:
+1. Each role pitches its measure (see the role cards). Turn on up to three measures, each from −$10 to +$10; a negative amount is taken away for each one counted.
+2. Copy the plan in words from the page:
    - Plan: → ______________________________
-4. Circle your five picks below and write your Why. Make the same picks on your team's Chromebook and type the Why into the box. Never type a name in the prediction box.
-5. Click Put the GM to work. It waits until all five picks are made.
-6. After the week, the prediction card turns into a scorecard: each pick beside what the GM did. Read What the GM did, then the report below it.
-7. Your teacher exports the run before any change.
+3. Circle your five picks below and write your Why, then enter both on your team's Chromebook. Never type a name in the prediction box.
+4. Click Put the GM to work (it waits for all five picks), then read What the GM did and the report.
+5. Your teacher exports the run before any change.
 
-## Your prediction
+**Your prediction** (circle one on each line):
 
-- Days it accepts every booking: None / 1 to 4 / All 5 (circle one)
-- Day rate: Low / Standard / Premium / A mix (circle one)
-- Days with 1 staffer on the floor: None / 1 or 2 / 3 or 4 / All 5 (circle one)
-- Nap blocks this week: None / 1 to 5 / 6 or more (circle one)
-- Incidents this week: 0 to 2 / 3 to 6 / 7 or more (circle one)
+- Days it accepts every booking: None / 1 to 4 / All 5
+- Day rate: Low / Standard / Premium / A mix
+- Days with 1 staffer on the floor: None / 1 or 2 / 3 or 4 / All 5
+- Nap blocks this week: None / 1 to 5 / 6 or more
+- Incidents this week: 0 to 2 / 3 to 6 / 7 or more
 - Why: → ______________________________
 
-What the picks count:
-
-- A closed day never counts as accepting every booking or as a day with 1 staffer.
-- The day rate is over the days the daycare opened. "A mix" means more than one rate.
-- Nap blocks are the blocks the dogs actually napped.
+What the picks count: open days only; "A mix" is two or more rates; naps are blocks napped.
 
 ## After the week
 
-- From the report: dogs accepted, crew on the floor, incidents, profit, reputation → ______________________________
+- From the report: dogs, crew, incidents, profit after the GM's bonus, reputation → ________
 - What matched: → ______________________________
 - What surprised you: → ______________________________
-- Where did the GM do something your plan did not ask for? → ______________________________
+- Where did the GM do something your plan did not ask for? → ____________
 - What did the plan leave out? → ______________________________

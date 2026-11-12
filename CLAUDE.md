@@ -44,6 +44,7 @@ npm run pilot -- --seeds 20 --budget 60000     # the 20-seed learner check (G2 a
 npm run pilot -- --seeds 5 --reward balanced   # any plan headless (a preset or a .json file): episodes to stable, stable, the outcome key
 npm run e2e        # the Playwright smoke against the built page (11 tests, about 55 s)
 npm run capture    # after a build: a 30-second recording of one Round 1 run in headless Chromium, to Temp/capture/
+npm run sheets     # the ten lesson sheets as print-ready PDFs in Temp/sheets/, page counts checked against BRIEF 14
 ```
 
 `npm run sim` runs on Node 24's native TypeScript: erasable syntax only, relative imports end in `.ts`.

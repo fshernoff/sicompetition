@@ -15,7 +15,7 @@ Each can be set from −$10 to +$10. A negative amount takes that much away from
 1. Negotiate. Each role argues for its measures. Decide which measures to turn on and the dollar amount for each.
 2. Copy the plan in words from the page:
    - Plan: → ______________________________
-3. Circle your five picks below and write your Why. Make the same picks on the page and type the Why into the box. Never type a name in the prediction box.
+3. Circle your five picks below and write your Why. Make the same picks on your team's Chromebook and type the Why into the box. Never type a name in the prediction box.
 4. Click Put the GM to work. It waits until all five picks are made.
 5. After the week, the prediction card turns into a scorecard: each pick beside what the GM did. Read What the GM did, then the report below it.
 6. Your teacher exports the run before any change.

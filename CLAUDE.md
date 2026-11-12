@@ -28,7 +28,7 @@ Every other repo under `/Users/fred/Programming` is read-only to a thread here. 
 | `docs/art-provenance/` | Where every shipped image came from (D55): tool, model, date, prompts, originals, steps. |
 | `docs/evidence/` | The evidence kit's templates: team codes, the folder layout, the concept-check score sheet, the pilot notes. The class's copies go in `Evidence/` (git-ignored). |
 | `docs/submission-checklist.md` | The Challenge submission, step by step: who does what by when, ticked with proof. |
-| `docs/lesson/` | The nine printed sheets of the unit (BRIEF section 14): the teacher guide, the round briefs, the role cards, the concept check and its key, the memo, the readings. |
+| `docs/lesson/` | The ten printed sheets of the unit (BRIEF section 14): the teacher guide and the teacher's key, the round briefs, the role cards, the concept check and its key, the memo, the readings. |
 | `Tools/Agent/CODEX.md` | How to call Astra and what it is for. |
 
 ## Commands

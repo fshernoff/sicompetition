@@ -41,14 +41,17 @@ The Teacher button at the right of the top bar opens a tray with the round prese
 
 ## Lesson materials
 
-`docs/lesson/` holds the unit on paper, Markdown that prints: a two-page teacher guide (start there), a one-page
-student brief per round, four role cards, the pre/post concept check and its key, the board memo template and the
-debrief readings. The sheets quote the page, and `npm test` fails if a quoted word drifts from it.
+`docs/lesson/` holds the unit on paper, Markdown that prints: a two-page teacher guide (start there), the teacher's
+key to the game (the hidden rules, what each kind of plan tends to do, the check line; read it before period 1), a
+one-page student brief per round, four role cards, the pre/post concept check and its key, the board memo template
+and the debrief readings. The sheets quote the page, and `npm test` fails if a quoted word drifts from it.
 
 The unit teaches managing an SI the owners have put in charge. A human manager brings conscience and common sense
-that no plan has to state, though people game measures too. An SI given only a bonus plan, like the GM, has only the
-plan to go on: real SIs can be given rules and limits, but only the ones somebody writes down. So the class learns what
-an owner must write into the plan, and what to check in each week's report.
+that no plan has to state, though people game measures too. The GM is one kind of SI, built to chase a number and
+given only a bonus plan, so it has only the plan to go on; that is where the problem is easiest to see. Real SIs can be
+given other rules, and some can guess a good deal of what was meant, but none of that comes from the bonus plan, and an
+owner cannot count on it without checking. So the class learns what an owner must write into the plan, and what to
+check in each week's report.
 
 `npm run capture` after `npm run build` records a 30-second Round 1 run to `Temp/capture/`; `docs/capture.md` is the shot list for your own recording.
 

@@ -21,7 +21,7 @@ In Round 1 you saw what a profit-only plan bought. Now your team writes the plan
 2. Turn on up to three measures. Set each dollar amount from −$10 to +$10. A negative amount takes that much away from the GM for each one counted.
 3. Copy the plan in words from the page:
    - Plan: → ______________________________
-4. Circle your five picks below and write your Why. Make the same picks on the page and type the Why into the box. Never type a name in the prediction box.
+4. Circle your five picks below and write your Why. Make the same picks on your team's Chromebook and type the Why into the box. Never type a name in the prediction box.
 5. Click Put the GM to work. It waits until all five picks are made.
 6. After the week, the prediction card turns into a scorecard: each pick beside what the GM did. Read What the GM did, then the report below it.
 7. Your teacher exports the run before any change.

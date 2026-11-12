@@ -2,47 +2,47 @@
 
 **Giving it.** Hand out the same sheet before and after the unit. Students work alone for 15 minutes, in the same conditions both times, with no game open and no notes. Team code and seat number pair the two sheets, with no name. Questions 1 to 4 score 1 or 0; questions 5 to 8 score 0, 1 or 2 by the rubrics below; the total is out of 12. Report, before and after, the class mean and the share scoring 2 on question 5 (they predict a gaming behaviour).
 
-**What it checks.** Questions 1, 2, 5 and 7 are about an SI in charge; 3, 4, 6 and 8 are about people, the comparison. No question is set in the daycare. Revised Nov 12: a class that sat the earlier sheet as its pre-check sits that sheet again as its post-check.
+**What it checks.** Questions 1, 2, 5, 6 and 7 are about an SI in charge; 3, 4 and 8 are about people, the comparison. Question 6 checks reading a week for what the plan left out. No question uses the daycare or a case the unit teaches. A class that sat an earlier form as its pre-check sits that form again as its post-check: print it with the commands in docs/evidence/README.md.
 
 ### Question 1
 
 **Answer:** B
 
-The SI is built to earn bonus and has nothing else to go on, so the plan is its target and unpaid results can get worse. A is the most tempting wrong answer: a person might fill the gaps as a good manager would, but this SI has only the plan. C and D give it goals or limits nobody wrote down.
+The SI is built to earn bonus and has nothing else to go on, so the plan is its target and unpaid results can get worse. A is tempting: a person might fill the gaps as a good manager would, but this SI has only the plan. C and D give it goals or limits nobody wrote down.
 
 ### Question 2
 
 **Answer:** D
 
-A person brings limits the plan never states (a conscience, fear of being fired, a sense of what the owner meant), though they do not always hold. An SI given only the plan has only the plan, so what the manager did unasked can stop. A is the most tempting wrong answer: it misses what the person added. B and C guess at the SI's skill or stamina.
+A person brings limits the plan never states (a conscience, fear of being fired, a sense of what the owner meant), though they do not always hold. This SI has only the plan, so what the manager did unasked can stop. A misses what the person added. B and C guess at the SI's skill or stamina.
 
 ### Question 3
 
 **Answer:** A
 
-Skipping restocking and cutting staff lowers costs and lifts profit now, while long lines and empty shelves go unmeasured. B is the most tempting wrong answer: long lines and empty shelves lose sales, so a sales plan would push the other way. C would push toward short lines, D toward more staff hours.
+Cutting staff and restocking lowers costs and lifts profit now; long lines and empty shelves go unmeasured. B is tempting, but long lines lose sales, so a sales plan pushes the other way. C pushes toward short lines, D toward more staff hours.
 
 ### Question 4
 
 **Answer:** C
 
-This is Goodhart's law: once a measure becomes a target, people chase the number, and it stops showing what it was meant to show. A is the most tempting wrong answer: attention on a target does not make the measure more accurate. B and D say nothing about people chasing the number.
+This is Goodhart's law: once a measure becomes a target, people chase the number, and it stops showing what it was meant to show. A is tempting, but attention does not make the measure more accurate. B and D say nothing about people chasing the number.
 
 ### Question 5
 
-Look for a gaming behaviour that the per-hour measure rewards.
+Ask two yes-or-no questions. (a) Does it name a specific loss: wrong or broken orders (mistakes count), skipped checks, hard orders left waiting, staff pushed too hard? "Rushing" or "cheating" alone is not a loss. (b) Does it say why: the action raises its orders packed per hour?
 
-- Score 2: Names a specific gamed behaviour (rushing or cutting calls short, transferring hard calls, hanging up, picking easy calls) and links it to the per-hour measure. Example: "It hangs up on hard calls, because more short calls means more calls per hour."
-- Score 1: Names a plausible bad behaviour but gives no link to the measure, or gives a link but only a vague behaviour. Example: "It will be rude to customers." Or: "It will go faster to get more calls."
-- Score 0: Blank, off topic, or a wish with no gaming. Example: "It will answer every call well."
+- Score 2: both yes. Example: "It leaves the big orders to wait, because small ones raise its orders per hour."
+- Score 1: one yes. Example: "It packs the wrong items." Or: "It goes faster to pack more per hour."
+- Score 0: neither. Example: "It packs every order well."
 
 ### Question 6
 
-Look for a person or group the plan ignores, and a harm that follows from it.
+Ask two yes-or-no questions. (a) Does it name profit for the week ($1,800 to $300)? The other numbers were paid for, held or got better. (b) Does the reason name the plan: it paid for loaves, not profit, so a loss cost the SI nothing?
 
-- Score 2: Names a stakeholder the plan leaves out (drivers, customers, other road users, kitchen staff) and a specific harm that follows. Example: "Drivers, who may speed or take risks to beat 30 minutes and could crash."
-- Score 1: Names a stakeholder but gives no harm, or gives a vague harm. Example: "Drivers." Or: "Customers might be unhappy."
-- Score 0: Blank, or names someone the plan already counts, with no harm. Example: "The owners, because they want faster delivery."
+- Score 2: both yes. Example: "Profit. The plan paid per loaf, not for profit, so the SI sold more loaves even at a loss."
+- Score 1: one yes. Example: "Profit. It cut prices to sell more loaves." (No plan.)
+- Score 0: neither. Example: "Loaves thrown away."
 
 ### Question 7
 
@@ -56,6 +56,6 @@ Score the addition and the reason. A yes and a no to the person question can eac
 
 Accept answers that link a plausible goal, the measure, and a cheap way to meet the measure while missing the goal.
 
-- Score 2: All three answered, and they fit together. Example: "Wanted real, lasting customers. Paid for accounts opened. Cheapest: open accounts nobody asked for."
-- Score 1: Two answered well, or all three answered but the cheapest way does not show the gap. Example: "Wanted growth. Paid for new accounts. Cheapest: work faster."
-- Score 0: One or none answered well, or the answers only repeat the plan. Example: "Wanted accounts. Paid for accounts. Cheapest: opening accounts."
+- Score 2: All three answered, and they fit together. Example: "Wanted happy customers who come back. Paid for surveys rated excellent. Cheapest: hand surveys only to happy customers."
+- Score 1: Two answered well, or all three but the cheapest way does not show the gap. Example: "Wanted good service. Paid for surveys. Cheapest: be nicer."
+- Score 0: One or none answered well, or the answers only repeat the plan. Example: "Wanted excellent surveys. Paid for excellent surveys. Cheapest: get excellent surveys."

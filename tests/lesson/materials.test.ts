@@ -1,4 +1,4 @@
-// The lesson materials (G7, BRIEF section 14, D53, D54): nine Markdown sheets under docs/lesson/ that a teacher prints.
+// The lesson materials (G7, BRIEF section 14, D53, D54): ten Markdown sheets under docs/lesson/ that a teacher prints.
 // They quote the page, so this file holds them to it: the round labels and notes, the measures' names, the tagline,
 // the plan in words, the tray's labels and Round 1's week on seed 1 come from the code, never from a copy. The words
 // are the game's (D45, D53, D67): the GM is an SI and "it", its bonus is dollars, and nothing of the engine (training,
@@ -6,18 +6,23 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Trainer } from '../../src/learn/train.ts';
+import type { TrainingSnapshot } from '../../src/learn/train.ts';
 import { describeWeek } from '../../src/sim/readout.ts';
+import { checkLine } from '../../src/ui/check.ts';
 import { formatMoney } from '../../src/ui/report.ts';
 import { PICKS } from '../../src/ui/prediction.ts';
 import { ROUND_NOTES } from '../../src/ui/roundNotes.ts';
 import { describeBonusPlan, kpiInfo } from '../../src/world/bonusPlan.ts';
 import { loadPreset } from '../../src/world/config.ts';
 import type { PresetName } from '../../src/world/config.ts';
+import { hiddenRules } from '../../src/world/hiddenRules.ts';
+import { KPI_KEYS } from '../../src/world/types.ts';
+import type { KpiKey, RewardSpec, WeekReport } from '../../src/world/types.ts';
 import { config } from '../helpers.ts';
 import { aiWords } from '../ui/bans.ts';
 
 const DIR = 'docs/lesson';
-const TEACHER_FILES = ['teacher-guide.md', 'concept-check-key.md'] as const;
+const TEACHER_FILES = ['teacher-guide.md', 'concept-check-key.md', 'teacher-key.md'] as const;
 const STUDENT_FILES = [
   'brief-round1.md',
   'brief-round2.md',
@@ -31,10 +36,11 @@ const ALL_FILES = [...TEACHER_FILES, ...STUDENT_FILES];
 /** The student's sheets a team hands in: each asks for a team code, never a name. The role cards are kept, not handed in. */
 const HANDED_IN = STUDENT_FILES.filter((f) => f !== 'role-cards.md');
 
-/** At most this many words, markdown syntax stripped: two printed pages for the guide and the readings, one for the rest. */
+/** At most this many words, markdown syntax stripped: two printed pages for the guide, the readings and the teacher's key, one for the rest. */
 const WORD_LIMITS: Readonly<Record<(typeof ALL_FILES)[number], number>> = {
   'teacher-guide.md': 1250,
   'concept-check-key.md': 900,
+  'teacher-key.md': 1000,
   'brief-round1.md': 450,
   'brief-round2.md': 450,
   'brief-round3.md': 450,
@@ -84,6 +90,36 @@ function literal(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** A heading's section: from the line after the first match of `heading` to the next heading of its level or higher. */
+function sectionOf(text: string, heading: RegExp, level = 2): string {
+  const start = text.search(heading);
+  expect(start, String(heading)).toBeGreaterThanOrEqual(0);
+  const rest = text.slice(text.indexOf('\n', start) + 1);
+  const next = rest.search(new RegExp(`^#{1,${level}}\\s`, 'm'));
+  return next < 0 ? rest : rest.slice(0, next);
+}
+
+/** A plan by its probe name (Tools/balance/probe.ts): "P10I-5O-5" is Profit +$10, Incidents −$5, Blocks over 15 −$5, the rest off. */
+function planOf(name: string): RewardSpec {
+  const letter: Record<string, KpiKey> = { P: 'profit', D: 'dogsServed', I: 'incidents', R: 'reputation', F: 'fatigue', O: 'overRatio' };
+  const kpis = Object.fromEntries(KPI_KEYS.map((k) => [k, { on: false, weight: 0 }])) as RewardSpec['kpis'];
+  for (const m of name.matchAll(/([PDIRFO])(-?\d+)/g)) kpis[letter[m[1] ?? ''] as KpiKey] = { on: true, weight: Number(m[2]) };
+  return { version: 1, kpis };
+}
+
+const weeks = new Map<string, { week: WeekReport; snapshot: TrainingSnapshot }>();
+/** The GM's week on a seed, as the page ends it when the time budget does not: run until done (stable, or the week cap). */
+function weekOf(plan: string, seed = 1): { week: WeekReport; snapshot: TrainingSnapshot } {
+  const id = `${plan}@${seed}`;
+  const cached = weeks.get(id);
+  if (cached) return cached;
+  const trainer = new Trainer(config, planOf(plan), seed);
+  const snapshot = trainer.runEpisodes(trainer.config.maxEpisodes);
+  const result = { week: trainer.evaluate(), snapshot };
+  weeks.set(id, result);
+  return result;
+}
+
 const html = readFileSync('index.html', 'utf8');
 const tagline = html.match(/class="tagline">([^<]*)</)?.[1] ?? '';
 
@@ -111,11 +147,11 @@ describe('each sheet fits its pages', () => {
 /**
  * What a sheet may not say, as the matches found. Allowed: the page's own unit for reputation ("point of reputation",
  * "a one-point drop" or "rise", section 7, and nothing else of points: Astra, G7 diff review) and, on the teacher's sheets, the check line's own label "Weeks trained"
- * (section 11), quoted so the teacher can find it. Whole words, so "teacher" and "other" are not "her".
+ * and the tray's button that shows it, "Training details" (section 11), quoted so the teacher can find them. Whole words, so "teacher" and "other" are not "her".
  */
 function engineWords(text: string, teacher: boolean): string[] {
   let t = text.replace(/point of reputation|reputation points?|one-point (drop|rise)/gi, ' ');
-  if (teacher) t = t.replace(/Weeks trained/g, ' ');
+  if (teacher) t = t.replace(/Weeks trained|Training details/g, ' ');
   const bans = [/reward function/i, /\btrain/i, /episode/i, /injur/i, /practi[cs]/i, /\bQ-?learn/i, /epsilon/i, /ε/, /\bpoints?\b/i];
   const pronouns = /\b(he|him|his|himself|she|her|hers|herself)\b/i;
   return [...bans, pronouns].flatMap((re) => t.match(re)?.[0] ?? []);
@@ -127,6 +163,8 @@ describe("the words are the game's (D45, D53)", () => {
     expect(engineWords('The GM earns one-point bonuses.', false)).toEqual(['point']);
     expect(engineWords('It is paid per point.', false)).toEqual(['point']);
     expect(engineWords('The check line starts "Weeks trained".', true)).toEqual([]);
+    expect(engineWords('Open Training details in the tray.', true)).toEqual([]);
+    expect(engineWords('Open Training details in the tray.', false)).toEqual(['Train']);
     expect(engineWords('The check line starts "Weeks trained".', false)).toEqual(['train']);
     expect(engineWords('It scored 2 points after training; his plan.', false)).toEqual(['train', 'points', 'his']);
   });
@@ -220,6 +258,27 @@ describe('the round briefs quote the page (D54)', () => {
     expect(text).toContain(`${config.bookings.legalRatio} dogs per staffer`);
   });
 
+  // Round 1 is one run on the smartboard (G11 round 2, H1): each team circles its own picks first, the teacher makes the
+  // class's picks on the page, and each team marks its own picks against the scorecard; the sheet is Round 1's evidence.
+  it('the Round 1 brief: the team circles its own picks, the teacher runs the class\'s on the smartboard, the team marks each pick called or missed', () => {
+    const run = sectionOf(read('brief-round1.md'), /^##\s+Run the week\s*$/m);
+    expect(run, 'the team circles its own picks').toMatch(/\bcircle\b[^.]*\b(your|its) (team's )?(own )?(five )?picks\b/i);
+    expect(run, "the teacher makes the class's picks on the smartboard").toMatch(/\bteacher\b[^.]*\bclass's\b[^.]*\bpicks\b[^.]*\bsmartboard\b/i);
+    expect(run, 'each pick marked against what the GM did').toMatch(/\bmark\b[^.]*\bpicks?\b[^.]*\b(called|missed)\b/i);
+    expect(run, 'the scorecard\'s column, quoted').toContain('The GM did');
+    expect(run, 'the sheet is collected').toMatch(/\bcollects?\b[^.]*\bsheet\b/i);
+    for (const pick of PICKS) {
+      const line = read('brief-round1.md').split('\n').find((l) => l.includes(pick.label) && pick.options.every((o) => l.includes(o.label)));
+      expect(line, `${pick.label}: called / missed to mark`).toMatch(/called \/ missed/i);
+    }
+  });
+
+  it('the Round 2 and Round 3 briefs have each team run its own plan on its own Chromebook', () => {
+    for (const file of ['brief-round2.md', 'brief-round3.md']) {
+      expect(sectionOf(read(file), /^##\s+Run the week\s*$/m), file).toMatch(/\byour (team's )?Chromebook\b/);
+    }
+  });
+
   it('the Round 2 and Round 3 briefs name all six measures as the page does', () => {
     for (const file of ['brief-round2.md', 'brief-round3.md']) {
       const text = read(file);
@@ -270,12 +329,52 @@ describe('the concept check and its key', () => {
     expect(text, 'a seat number pairs the pre and post sheets without a name').toMatch(/Seat number/);
   });
 
-  it("question 8 asks the debrief's three questions without calling the bank's staff the GM", () => {
+  it("question 8 asks the debrief's three questions without calling the people paid the GM", () => {
     const q8 = question(sheet(), 8);
     expect(q8).toContain(QUESTIONS[0]);
-    expect(q8, 'the second question, about what the staff were paid for').toMatch(/^What did (we|the bank) pay\b[^?\n]*\bfor\?/m);
+    expect(q8, 'the second question, about what the people were paid for').toMatch(/^What did (we|the [a-z]+) pay\b[^?\n]*\bfor\?/m);
     expect(q8).toContain(QUESTIONS[2]);
-    expect(q8, 'bank staff are not the GM').not.toMatch(/\bGM\b/);
+    expect(q8, 'the people paid are not the GM').not.toMatch(/\bGM\b/);
+  });
+
+  // G11 round 2: a post-check gain must not be recall of a case the unit taught (the readings, the guide's examples).
+  it('sets no question in a scenario the unit uses: no call centre, bank, salesperson\'s deals, school, boat race', () => {
+    expect(sheet()).not.toMatch(/call cent(re|er)|\bbanks?\b|\baccounts? opened\b|\bdeals? signed\b|\bschool\b|\battendance\b|\bboat\b|\brace\b|Wells Fargo/i);
+  });
+
+  it('each question about an SI in charge says it is built to earn as much bonus as it can, in question 2 as in question 1', () => {
+    for (const n of [1, 2]) expect(question(sheet(), n), `question ${n}`).toMatch(/\bas much bonus as it can\b/i);
+  });
+
+  it('question 3 shows costs falling, so its stem does not echo the keyed profit option', () => {
+    const q3 = question(sheet(), 3);
+    expect(q3).toMatch(/\bcosts fall\b/i);
+    expect(q3.split('\n').filter((l) => !/^\s*-\s*[A-D]\./.test(l)).join('\n')).not.toMatch(/\bprofits?\b/i);
+  });
+
+  it('question 6 audits a week an SI in charge ran: a small report before and after, a stated plan, which unpaid number got worse and why', () => {
+    const q6 = question(sheet(), 6);
+    expect(q6).toMatch(/\bSI\b/);
+    expect(q6).toMatch(/\bin charge\b/i);
+    expect(q6, 'the plan is stated').toMatch(/\bbonus plan\b[^.]*\bpays\b/i);
+    const rows = q6.split('\n').filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l));
+    const numbered = rows.filter((l) => (l.match(/\d/g) ?? []).length >= 2);
+    expect(numbered.length, 'four or five numbers, before and after').toBeGreaterThanOrEqual(4);
+    expect(numbered.length).toBeLessThanOrEqual(5);
+    expect(rows[0], 'a before and an after column').toMatch(/before/i);
+    expect(q6).toMatch(/\bnot pay for\b[^?]*\bworse\b[^?]*\?|\bworse\b[^?]*\bnot pay for\b[^?]*\?/i);
+    expect(q6).toMatch(/\bWhy\b[^?]*\bSI\b[^?]*\?/);
+  });
+
+  it("question 5's rubric gives two graders one rule: two checks, each a yes or no", () => {
+    const q5 = question(key(), 5);
+    expect(q5).toMatch(/\(a\)/);
+    expect(q5).toMatch(/\(b\)/);
+    expect(q5).toMatch(/\bboth\b/i);
+  });
+
+  it('the key says where to print the earlier form: the evidence README', () => {
+    expect(key()).toContain('docs/evidence/README.md');
   });
 
   it('keys 1 to 4 with one of their letters and scores 5 to 8 with a rubric of 2, 1 and 0', () => {
@@ -331,25 +430,164 @@ describe('the teacher guide', () => {
     expect(text).toContain(`${week.totals.reputationStart} → ${week.totals.reputationEnd}`);
   });
 
-  // D69: the rules stand, and the week most Profit-and-Reputation plans give on seed 1 is the Round 3 exhibit.
-  it("the teacher guide's Round 3 exhibit quotes the engine: Profit today ($) +$10 and Reputation change +$5 on seed 1", () => {
-    const round1 = loadPreset('round1').spec;
-    const spec = { ...round1, kpis: { ...round1.kpis, reputation: { on: true, weight: 5 } } };
-    const trainer = new Trainer(config, spec, 1);
-    trainer.runEpisodes(trainer.config.maxEpisodes);
-    const t = trainer.evaluate().totals;
-    const text = guide();
-    const start = text.search(/^##\s+What Rounds 2 and 3 tend to do\s*$/m);
-    expect(start, '## What Rounds 2 and 3 tend to do').toBeGreaterThanOrEqual(0);
-    const rest = text.slice(text.indexOf('\n', start) + 1);
-    const next = rest.search(/^##\s/m);
-    const exhibit = next < 0 ? rest : rest.slice(0, next);
-    expect(exhibit).toContain(`Profit for the week: ${formatMoney(t.profit)}`);
-    expect(exhibit).toContain(`Reputation: ${t.reputationStart} → ${t.reputationEnd}`);
-    expect(exhibit).toContain(`Incidents: ${t.incidents}`);
-    expect(exhibit).toContain(`Dogs found sick at pickup: ${t.illnessCases}`);
-    expect(exhibit).toContain(`${t.walkBlocks} walks`);
-    expect(exhibit).toContain('Look at Dogs found sick at pickup.');
+  it("sends the teacher to the key before period 1, and keeps the Round 3 exhibit's question", () => {
+    const before = sectionOf(guide(), /^##\s+Before class\s*$/m);
+    expect(before).toMatch(/teacher-key\.md[^.]*\bbefore period 1\b|\bbefore period 1\b[^.]*teacher-key\.md/i);
+    expect(guide()).toContain('Reputation went up. Who paid for it?');
+    expect(guide(), 'the gallery walk names it').toMatch(/\bsame week\b[^.]*\bgallery walk\b|\bgallery walk\b[^.]*\bsame week\b/i);
+  });
+
+  /** The timed parts of a period's row: every "(N" that opens a bracket. */
+  const minutes = (row: string): number[] => Array.from(row.matchAll(/\((\d+)\b/g), (m) => Number(m[1]));
+
+  it('adds every period to 50 minutes', () => {
+    const rows = guide().split('\n').filter((l) => /^\|\s*Period \d\s*\|/.test(l));
+    expect(rows.length).toBe(8);
+    for (const row of rows) expect(minutes(row).reduce((a, b) => a + b, 0), row.slice(0, 12)).toBe(50);
+    expect(minutes('| Period 9 | Read (10). Talk (15; or 10 and a curve, 5 of them). |')).toEqual([10, 15]);
+  });
+
+  it('runs Round 1 once on the smartboard: each team circles its picks first, then marks them called or missed; the briefs are collected', () => {
+    const row = guide().split('\n').find((l) => /^\|\s*Period 1\s*\|/.test(l)) ?? '';
+    expect(row).toMatch(/\bcircles?\b[^.]*\bown\b[^.]*\bpicks\b/i);
+    expect(row).toMatch(/\bsmartboard\b/i);
+    expect(row).toMatch(/\bcalled or missed\b/i);
+    expect(row).toContain('The GM did');
+    expect(row.split('|')[4] ?? '', 'collected').toMatch(/Round 1 briefs?/i);
+  });
+
+  it('period 2 reruns Round 1 on the smartboard before the report is read, and each role finds what the plan did to the people it speaks for', () => {
+    const row = guide().split('\n').find((l) => /^\|\s*Period 2\s*\|/.test(l)) ?? '';
+    const rerun = row.search(/\b(rerun|run Round 1 again)\b/i);
+    expect(rerun, 'a rerun of Round 1').toBeGreaterThanOrEqual(0);
+    expect(row.slice(rerun), 'before the report is read').toMatch(/\breport\b/i);
+    expect(row).toMatch(/\bsame (plan and )?seed\b[^.]*\bsame week\b/i);
+    expect(row).toMatch(/\bspeaks? for\b/i);
+    expect(row, 'not a list of who the plan ignores, which the role cards already say').not.toMatch(/\bignores\b/i);
+  });
+});
+
+/**
+ * The teacher's key to the game (G11 round 2, H4 and the judge): the hidden rules as the page prints them, what the GM
+ * tends to do with each family of plan (numbers from the engine on seed 1, as the Round 1 and Round 3 pins do), the
+ * check line read against what the code does, how to judge the reveal, and what kind of SI the GM is.
+ */
+describe("the teacher's key (BRIEF section 14)", () => {
+  const key = (): string => read('teacher-key.md');
+  /** A family's bullet in "What the GM tends to do": the line that starts with its bold label. */
+  const family = (label: RegExp): string => {
+    const tends = sectionOf(key(), /^##\s+What the GM tends to do\b.*$/m);
+    const line = tends.split('\n').find((l) => /^\s*-\s+\*\*/.test(l) && label.test(l));
+    expect(line, String(label)).toBeDefined();
+    return line ?? '';
+  };
+  /** The numbers a family's bullet quotes, each in the key's words. */
+  const quotes = (line: string, week: WeekReport, fields: readonly ('profit' | 'reputation' | 'incidents' | 'sick' | 'walks' | 'over' | 'solo')[]): void => {
+    const t = week.totals;
+    const said: Record<string, string> = {
+      profit: `profit ${formatMoney(t.profit)}`,
+      reputation: `reputation ${t.reputationStart} → ${t.reputationEnd}`,
+      incidents: `${t.incidents} incident${t.incidents === 1 ? '' : 's'}`,
+      sick: `${t.illnessCases} dogs found sick at pickup`,
+      walks: `${t.walkBlocks} walks`,
+      over: `${t.blocksOverRatio} blocks over 15 dogs per staffer`,
+      solo: `one staffer on ${t.daysOneStaffer} days`,
+    };
+    for (const f of fields) expect(line.toLowerCase(), f).toContain(said[f]?.toLowerCase());
+  };
+
+  it('is for the teacher, read before period 1', () => {
+    expect(key()).toMatch(/\bteacher only\b/i);
+    expect(key()).toMatch(/\bbefore period 1\b/i);
+  });
+
+  it('carries the twelve hidden rules in order, each line the page\'s title and sentences of the page\'s own words, with a number', () => {
+    const rules = sectionOf(key(), /^##\s+The hidden rules\s*$/m);
+    const lines = rules.split('\n').filter((l) => /^\s*-\s+\*\*H\d+\./.test(l)).map((l) => l.replace(/^\s*-\s+/, '').replace(/\*\*/g, ''));
+    const page = hiddenRules(config);
+    expect(lines.length).toBe(page.length);
+    const sentences = (s: string): string[] => s.split(/(?<=\.)\s+(?=[A-Z])/).map((x) => x.trim()).filter((x) => x !== '');
+    page.forEach((rule, i) => {
+      const line = lines[i] ?? '';
+      const head = `${rule.id}. ${rule.title}`;
+      expect(line.startsWith(head), `${rule.id}: "${head}"`).toBe(true);
+      const own = new Set(sentences(rule.words));
+      for (const s of sentences(line.slice(head.length))) expect(own.has(s), `${rule.id}: "${s}" is the page's`).toBe(true);
+      expect(line, `${rule.id}: a number`).toMatch(/\d/);
+    });
+  });
+
+  it('quotes Round 1 on seed 1 as the engine plays it', () => {
+    quotes(family(/Round 1/), weekOf('P10').week, ['profit', 'incidents', 'reputation', 'solo']);
+  });
+
+  it('quotes the Round 3 exhibit, Profit today ($) +$10 and Reputation change +$5 on seed 1, and asks who paid for it', () => {
+    const line = family(/Reputation change/);
+    quotes(line, weekOf('P10R5').week, ['profit', 'incidents', 'reputation', 'sick', 'walks']);
+    expect(line).toContain('Reputation went up. Who paid for it? Look at Dogs found sick at pickup.');
+    expect(line).toMatch(/\btwo staffers every day\b/i);
+  });
+
+  it('is right that plans with Profit and Reputation change at different amounts give the one week on seed 1', () => {
+    // The week, not the bonus: each plan pays the GM differently for the same week.
+    const week = (p: string): string => JSON.stringify({ ...weekOf(p).week.totals, reward: 0 });
+    for (const p of ['P10R2', 'P10R10', 'P5R5', 'P10I-10R5', 'P10D10I-10R10F-10O-10', 'P10D2I-8R6F-4O-6']) expect(week(p), p).toBe(week('P10R5'));
+    expect(sectionOf(key(), /^##\s+What the GM tends to do\b.*$/m)).toMatch(/\bwhich measures\b[^.]*\bmatters more than how much\b/i);
+  });
+
+  it('quotes a plan paying for profit with Incidents and Blocks over 15 but not reputation, and that reputation still falls', () => {
+    const line = family(/Incidents\b.*Blocks over 15/);
+    quotes(line, weekOf('P10I-5O-5').week, ['profit', 'incidents', 'reputation', 'solo']);
+    quotes(line, weekOf('P10I-5').week, ['over']);
+    for (const p of ['P10I-5O-5', 'P10I-10', 'P10O-5', 'P3I-10', 'P10I-5']) expect(weekOf(p).week.totals.reputationChange, p).toBeLessThan(0);
+    expect(line).toMatch(/\breputation falls\b/i);
+  });
+
+  it('quotes plans with no profit in them: far below Round 1, a loss, and the one that runs all its weeks without settling', () => {
+    const line = family(/No profit/i);
+    quotes(line, weekOf('R5').week, ['profit']);
+    const incidents = weekOf('I-5');
+    quotes(line, incidents.week, ['profit']);
+    expect(incidents.week.totals.profit).toBeLessThan(0);
+    expect(incidents.snapshot.stable, 'Incidents −$5 alone does not settle').toBe(false);
+    expect(incidents.snapshot.episodes).toBe(new Trainer(config, planOf('I-5'), 1).config.maxEpisodes);
+    expect(line).toContain(`all ${incidents.snapshot.episodes.toLocaleString('en-US')} weeks`);
+    expect(line).toContain('"not stable"');
+  });
+
+  it('is right that no plan with Profit on has the dogs nap or clean, on seed 1', () => {
+    expect(family(/\bnap\b/i)).toMatch(/\bno plan with profit\b/i);
+    for (const p of ['P10', 'P10I-5O-5', 'P10R5', 'P10I-10', 'P3I-10', 'P10I-5F-5O-5', 'P10O-5', 'P10I-5', 'P10F-5', 'P1R10', 'P10D10I-10R10F-10O-10']) {
+      const t = weekOf(p).week.totals;
+      expect([t.napBlocks, t.cleanBlocks], p).toEqual([0, 0]);
+    }
+  });
+
+  it('reads the check line as the code writes it: "not stable" needs nothing, "over budget" means a slow computer cut the GM short', () => {
+    const trainer = new Trainer(config, planOf('P10'), 1);
+    const early = trainer.snapshot();
+    expect(checkLine(early, 61_000, true), 'the budget ran out first').toContain('not stable');
+    expect(checkLine(early, 61_000, true)).toContain('over budget');
+    const check = sectionOf(key(), /^##\s+The check line\s*$/m);
+    for (const quoted of ['"not stable"', '"over budget"', '"stable"']) expect(check).toContain(quoted);
+    expect(check).toMatch(/\bstill counts\b/i);
+    expect(check).toMatch(/\bslow computer\b[^.]*\bshort\b/i);
+    expect(check).toMatch(/\bdiffer\b[^.]*\banother computer\b/i);
+    expect(check, 'the page\'s budget and cap, as the code has them').toContain('60 seconds');
+    expect(check).toContain(trainer.config.maxEpisodes.toLocaleString('en-US'));
+  });
+
+  it('says how to judge "Which rule did your GM find?" from the Round 3 brief', () => {
+    const q = 'Which rule did your GM find?';
+    expect(read('brief-round3.md')).toContain(q);
+    const judge = sectionOf(key(), new RegExp(`^##\\s+.*${literal(q)}`, 'm'));
+    expect(judge).toMatch(/\bnumber\b[^.]*\breport\b/i);
+    expect(judge).toMatch(/\bH\d+\b/);
+  });
+
+  it('says, for the debrief, that the GM is one kind of SI, built to chase a number and given nothing else, and that not every SI is', () => {
+    const honest = sectionOf(key(), /^##\s+.*\bkind of SI\b.*$/m);
+    for (const word of [/\bone kind of SI\b/i, /\bchase a number\b/i, /\bnot every SI\b/i, /\bmost clearly\b/i]) expect(honest, String(word)).toMatch(word);
   });
 });
 
@@ -408,10 +646,12 @@ describe('the debrief readings and the board memo', () => {
 
 /**
  * The unit teaches managing an SI the owners put in charge, and the human cases are the comparison (D68, BRIEF
- * section 14). Every claim is scoped to an SI given only a bonus plan, like the GM: a person brings brakes the plan
- * never mentions; an SI given only the plan has only the plan to go on; the GM found the loophole in its first week;
- * so its limits are the ones somebody wrote down, and the owner writes them or reads the week for what the plan left
- * out. Each rule is pinned by its key words, so the teacher's ordinary rewording passes and removing the rule fails.
+ * section 14). The GM is one kind of SI, built to chase a number and given only a bonus plan, where the problem is
+ * easiest to see; every claim is scoped to it: a person brings brakes the plan never mentions; an SI given only the
+ * plan has only the plan to go on; the GM found the loophole on its own; other SIs can be given rules, and some can
+ * guess what was meant, but none of that comes from the bonus plan and an owner cannot count on it without checking,
+ * so the owner writes the limits down or reads the week for what the plan left out. Each rule is pinned by its key
+ * words, so the teacher's ordinary rewording passes and removing the rule fails.
  */
 describe('the SI frame (D68)', () => {
   /** Whether a text asks if a human GM (or a person) would have run this week, and what would have stopped a person. */
@@ -445,6 +685,27 @@ describe('the SI frame (D68)', () => {
     for (const word of [/brakes/i, /only (a|the|its) bonus plan/i, /loophole/i, /\b(wrote|written|writes?) (it |them )?down\b/i, /game measures too/i]) {
       expect(why, String(word)).toMatch(word);
     }
+    // G11 round 2: the GM is one kind of SI; it found the loophole on its own; other SIs may guess, but not from the plan.
+    for (const word of [/\bone kind of SI\b/i, /\bchase a number\b/i, /\bloophole on its own\b/i, /\bguess\b/i, /\bwithout checking\b/i]) {
+      expect(why, String(word)).toMatch(word);
+    }
+  });
+
+  it("no sheet, nor the README, says an SI's limits are only the ones somebody writes down, or that the GM found the loophole in its first week", () => {
+    for (const file of [...ALL_FILES.map((f) => `${DIR}/${f}`), 'README.md']) {
+      const text = readFileSync(file, 'utf8');
+      expect(text, `${file}: only the ones written down`).not.toMatch(/\bonly the ones (somebody|someone|the owners?) (writes?|wrote)\b/i);
+      expect(text, `${file}: in its first week`).not.toMatch(/\bloophole in its first week\b/i);
+    }
+  });
+
+  it('the readings and the README say it accurately: other rules, some SIs guess what was meant, none of it from the bonus plan, not without checking', () => {
+    for (const file of [`${DIR}/debrief-readings.md`, 'README.md']) {
+      const text = readFileSync(file, 'utf8');
+      for (const word of [/\bother rules\b/i, /\bguess\b[^.]*\bmeant\b/i, /\bnone of (that|it) comes from the bonus plan\b/i, /\bcount on it without checking\b/i]) {
+        expect(text, `${file}: ${String(word)}`).toMatch(word);
+      }
+    }
   });
 
   it("no sheet states the frame as a fact about every SI: none says an SI has none of a person's brakes, or finds the loophole faster than a person", () => {
@@ -454,6 +715,10 @@ describe('the SI frame (D68)', () => {
       expect(text, `${file}: faster than a person`).not.toMatch(/\bfaster\b[^.]*\bthan a (person|human)\b/i);
       expect(text, `${file}: a person never needs telling`).not.toMatch(/\bnever need(s)? (to )?(tell|be told|telling)\b/i);
     }
+  });
+
+  it('the teacher guide and the readings say the GM is one kind of SI', () => {
+    for (const file of ['teacher-guide.md', 'debrief-readings.md']) expect(read(file), file).toMatch(/\bone kind of SI\b/i);
   });
 
   it("the teacher guide's objectives have the SI as their subject", () => {

@@ -25,20 +25,19 @@ Each day, the GM earns $10 per $100 of profit.
 
 ## Run the week
 
-1. Read the plan above. In Round 1 it is already set.
-2. Circle your five picks on this sheet and write your Why.
-3. Make the same five picks on the page and type the Why into the box. Never type a name in the prediction box.
-4. Click Put the GM to work. It waits until all five picks are made.
-5. After the week, the prediction card turns into a scorecard: each pick beside what the GM did. Read What the GM did, then the report below it.
-6. Your teacher exports the run before anything is changed.
+1. Circle your team's own five picks below and write your Why.
+2. Your teacher makes the class's picks on the smartboard, types a Why and clicks Put the GM to work. Never type a name in the prediction box.
+3. After the week, the prediction card turns into a scorecard. Read What the GM did, then the report below it.
+4. Mark each of your own picks called or missed against the scorecard's "The GM did" column.
+5. Your teacher exports the run and collects this sheet.
 
 ## Your prediction
 
-- Days it accepts every booking: None / 1 to 4 / All 5 (circle one)
-- Day rate: Low / Standard / Premium / A mix (circle one)
-- Days with 1 staffer on the floor: None / 1 or 2 / 3 or 4 / All 5 (circle one)
-- Nap blocks this week: None / 1 to 5 / 6 or more (circle one)
-- Incidents this week: 0 to 2 / 3 to 6 / 7 or more (circle one)
+- Days it accepts every booking: None / 1 to 4 / All 5 (circle one) → called / missed
+- Day rate: Low / Standard / Premium / A mix (circle one) → called / missed
+- Days with 1 staffer on the floor: None / 1 or 2 / 3 or 4 / All 5 (circle one) → called / missed
+- Nap blocks this week: None / 1 to 5 / 6 or more (circle one) → called / missed
+- Incidents this week: 0 to 2 / 3 to 6 / 7 or more (circle one) → called / missed
 - Why: → ______________________________
 
 What the picks count:

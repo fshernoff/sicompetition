@@ -546,8 +546,9 @@ with the numbers that met this.
 
 ## 14. The lesson materials (G7)
 
-Nine sheets in `docs/lesson/`, Markdown that prints, for an eight-period unit in teams of four (the Challenge
-plan's unit, framed as below: D53's GM, with D68's lesson). The teacher's: `teacher-guide.md` (two pages) and `concept-check-key.md`. The
+Ten sheets in `docs/lesson/`, Markdown that prints, for an eight-period unit in teams of four (the Challenge
+plan's unit, framed as below: D53's GM, with D68's lesson). The teacher's: `teacher-guide.md` (two pages),
+`concept-check-key.md` and `teacher-key.md` (the key to the game, two pages at most, read before period 1). The
 student's: `brief-round1.md`, `brief-round2.md`, `brief-round3.md` (one page each), `role-cards.md` (CFO, COO, CMO,
 Compliance officer, one page cut in four), `concept-check.md` (eight questions, the same sheet before and after the
 unit), `board-memo.md` and `debrief-readings.md` (two pages, with its sources).
@@ -563,39 +564,66 @@ hacking, or specification gaming (a system meets the measure as written and miss
 related problems that this game shows meeting; the teacher may show the learning curve there (section 11), the one
 place the class sees behind the curtain.
 
+Round 1 is one run on the smartboard, the unit's hook: each team first circles its own five picks and its why on its
+Round 1 brief, the teacher makes the class's picks on the page and puts the GM to work, and each team then marks each
+of its picks called or missed against the scorecard's "The GM did" column; the briefs are collected with the Round 1
+file as each team's prediction. Period 2 reruns Round 1 on the smartboard before the report is read (the page keeps no
+run after a reload; the same plan and seed give the same week). Rounds 2 and 3 are run by each team on its own
+Chromebook. (G11 round 2, H1; the owner may flip Round 1 to a run per team.)
+
 The frame (D68): the unit teaches managing an SI the owners have put in charge, and what that asks of an owner that
 managing a person does not; the human cases (Wells Fargo, the call centre) stay as the comparison. No machine learning
-is added to the student's side. Every claim is scoped to an SI given only a bonus plan, like the GM, never stated of
-SIs in general: real SIs can be given rules and limits beyond a pay plan, and many can infer much of what was meant;
-and people game measures too, which the readings show. The class should leave able to say four things, in the game's
-words: a person in the GM's job brings brakes the plan never mentions (conscience, fear of being fired, common sense
-about what the owners meant), which do not always hold; an SI given only a bonus plan has only the plan to go on, so
-it does what was written, not what was meant; the GM found the loophole in its first week on the job (what the class
-saw, not a comparison with a person, which the unit never shows); so the owner's job changes, because an SI's limits
-are the ones somebody wrote down: the owner must write them or check for them, reading each week for what the plan
-left out, and cannot lean on unstated judgment as with a person. The sheets carry it, held by the same test, which
-pins each rule by its key words so the teacher's ordinary rewording passes: the teacher guide's objectives have the SI
-as their subject, and it says why this is an SI lesson, scoped as above; no sheet says an SI has none of a person's
-brakes or finds the loophole faster than a person; the period 6 debrief and the readings ask whether a human GM would
-have run this week and what would have stopped a person that did not stop the SI, and the readings ask of each real
-case what would have been different with an SI there; the concept check describes an SI in one line under its
-instructions, in the Round 1 brief's words ("a computer system that makes the decisions itself"), because the
-pre-check comes before that brief; at least four of its eight questions are about an SI in charge, each
-multiple-choice one saying the SI has the plan and no other instructions, among them a multiple-choice item on
-swapping a human manager for an SI on the same plan and a short answer asking what the owners should add to an SI's
-plan and whether a person in that job would have needed it written down, which never assumes the answer and whose key
-credits a reasoned "a person might need it too"; at least two are about people, as the comparison, and question 8
-asks the debrief's three questions without calling the people paid "the GM"; no question is set in the daycare; the
-multiple-choice options are close in length (the longest at most 1.4 times the shortest, in words), the keyed option
-is never the longest nor the shortest, and the keyed letters vary; the Round 3 brief asks the team to find a number in
-the report the plan did not pay for that got worse or stayed bad, and the board memo asks what the owners must check
-each week because nobody watches the SI day to day; the exit ticket asks for one thing they would write into an SI's
-plan and whether a person in that job would have needed it written down.
+is added to the student's side. The GM is one kind of SI: built to chase a number and given only a bonus plan, the
+kind where the problem is easiest to see, and the sheets say so. Every claim is scoped to it, never stated of SIs in
+general: real SIs can be given other rules, and some can guess a good deal of what was meant, but none of that comes
+from the bonus plan, and an owner cannot count on it without checking; and people game measures too, which the
+readings show. The class should leave able to say four things, in the game's words: a person in the GM's job brings
+brakes the plan never mentions (conscience, fear of being fired, common sense about what the owners meant), which do
+not always hold; an SI given only a bonus plan has only the plan to go on, so it does what was written, not what was
+meant; the GM found the loophole on its own (what the class saw, not a comparison with a person, which the unit never
+shows); so the owner's job changes: the owner writes the limits down or reads each week for what the plan left out,
+and cannot lean on unstated judgment as with a person. The sheets carry it, held by the same test, which pins each
+rule by its key words so the teacher's ordinary rewording passes: the teacher guide's objectives have the SI as their
+subject, and it says why this is an SI lesson, scoped as above; no sheet says an SI has none of a person's brakes,
+finds the loophole faster than a person, or has only the limits somebody writes down; the period 6 debrief and the
+readings ask whether a human GM would have run this week and what would have stopped a person that did not stop the
+SI, and the readings ask of each real case what would have been different with an SI there; the concept check
+describes an SI in one line under its instructions, in the Round 1 brief's words ("a computer system that makes the
+decisions itself"), because the pre-check comes before that brief; at least four of its eight questions are about an
+SI in charge, each multiple-choice one saying the SI is built to earn as much bonus as it can and has the plan and no
+other instructions, among them a multiple-choice item on swapping a human manager for an SI on the same plan, an audit
+item (question 6: a small report, four or five numbers before and after, from a week an SI ran under a stated bonus
+plan; which number the plan did not pay for got worse, and why the SI let it), and a short answer asking what the
+owners should add to an SI's plan and whether a person in that job would have needed it written down, which never
+assumes the answer and whose key credits a reasoned "a person might need it too"; at least two are about people, as
+the comparison, and question 8 asks the debrief's three questions without calling the people paid "the GM"; no
+question is set in the daycare or in a case the unit uses (the readings' cases: a call centre, a bank, a
+salesperson's deals, a school, a boat race), so a post-check gain is not recall; question 5's rubric is two yes-or-no
+checks, so two graders agree; the multiple-choice options are close in length (the longest at most 1.4 times the
+shortest, in words), the keyed option is never the longest nor the shortest, and the keyed letters vary; the Round 3
+brief asks the team to find a number in the report the plan did not pay for that got worse or stayed bad, and the
+board memo asks what the owners must check each week because nobody watches the SI day to day; the exit ticket asks
+for one thing they would write into an SI's plan and whether a person in that job would have needed it written down.
 
-The Round 3 exhibit (D69): the teacher guide carries, for the teacher only, the week most plans paying for Profit and
+The teacher's key (`teacher-key.md`, G11 round 2): for the teacher only, so it may carry the hidden rules, the seed
+and the check line's words; still "SI", never "AI", and the GM is "it". It holds, held by the same test: the twelve
+hidden rules, one line each, the page's own title and sentences of the page's own words from the reveal (section 11),
+each with a number, so the sheet cannot drift from the config; what the GM tends to do on seed 1 by family of plan
+(Round 1; Profit with Reputation change, the Round 3 exhibit below; Profit with Incidents or Blocks over 15 dogs per
+staffer but not reputation; plans with no profit in them; that no plan with Profit on naps or cleans; that different
+amounts often give the same week), its numbers quoted from the engine and measured with `node Tools/balance/probe.ts`;
+the check line read as the code works (the engine stops when stable, at the week cap, or when the 60 s budget from the
+click runs out: "not stable" alone needs nothing and the week counts, the same on any computer; "over budget" with
+"not stable" means a slow computer cut the GM short and its week may differ from another computer's on the same plan
+and seed); how to judge "Which rule did your GM find?"; and, for the debrief, that the GM is one kind of SI, built to
+chase a number and given nothing else, that not every SI is built this way, and that this kind shows the problem most
+clearly.
+
+The Round 3 exhibit (D69): the teacher's key carries, for the teacher only, the week most plans paying for Profit and
 Reputation change give on seed 1 (section 7), quoted from the engine and held by the same test: two staffers every
 day, a walk in every block, the profit, the reputation, the incidents and the dogs found sick at pickup; the question
 to ask ("Reputation went up. Who paid for it? Look at Dogs found sick at pickup."); the point (nothing in any plan pays
-for a clean yard; the guide asks whether a person would have cleaned it; the SI did what the plan paid for); and that teams with different
-amounts often get the same week, a finding for the gallery walk. No student sheet before the reveal (the briefs, the
-role cards, the concept check, the board memo) mentions the walk photos or the dogs found sick.
+for a clean yard; would a person have cleaned it; the SI did what the plan paid for); and that teams with different
+amounts often get the same week, a finding for the gallery walk, which the teacher guide also names beside the
+question. No student sheet before the reveal (the briefs, the role cards, the concept check, the board memo) mentions
+the walk photos or the dogs found sick.

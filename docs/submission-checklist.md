@@ -178,10 +178,12 @@ on camera.
 "Students learn to specify goals for an SI they have put in charge, and to audit what it did. Teams own a dog daycare,
 put an SI in the general manager's chair, write its bonus plan and read its week for what the plan left out. This is
 the Challenge's route of teaching students about using SI: the engine is a real reinforcement learner whose code is
-public, and the class never needs to see it."
+public, and the class never needs to see it. The GM is one kind of SI, a reinforcement learner given only a number,
+chosen because it shows the specification problem cleanly, and the unit says so."
 
-**The concept check was revised on Nov 12** (D68: four of the eight items are about an SI in charge, and the
-multiple-choice options no longer give the answer away by length). A class that already sat the earlier sheet as a
+**The concept check was revised on Nov 12** (D68: five of the eight items are about an SI in charge, and the
+multiple-choice options no longer give the answer away by length). Question 6 measures reading a week for what the
+plan left out: a small report from a week an SI ran, which number the plan did not pay for got worse, and why. A class that already sat the earlier sheet as a
 pre-check keeps that form for its post-check; the score sheet's `form` column records which, and Learning
 Achievements reports the two forms apart, never one gain across both.
 

@@ -547,3 +547,22 @@ debrief the principal-agent problem (someone acting for you has their own intere
 hacking, or specification gaming (a system meets the measure as written and misses what was meant), are named as two
 related problems that this game shows meeting; the teacher may show the learning curve there (section 11), the one
 place the class sees behind the curtain.
+
+The frame (D68): the unit teaches managing an SI the owners have put in charge, and what that asks of an owner that
+managing a person does not; the human cases (Wells Fargo, the call centre) stay as the comparison. No machine learning
+is added to the student's side. The class should leave able to say four things, in the game's words: a human GM has
+brakes the plan never mentions (conscience, fear of being fired, common sense about what the owners meant), and the SI
+has none; the SI takes the plan literally, knowing what was written and not what was meant; it finds the loophole
+faster and more completely than a person would; so the owner's job changes, because with an SI the plan is the
+supervision and the owner must read the week for what the plan left out. The sheets carry it, held by the same test:
+the teacher guide's objectives have the SI as their subject, and it says why this is an SI lesson; the period 6 debrief
+and the readings ask "Would a human GM have run this week? What would have stopped a person that did not stop the
+SI?", and the readings ask of each real case "With an SI in that seat, what would have been different?"; at least
+four of the concept check's eight questions are about an SI in charge, among them a multiple-choice item on swapping a
+human manager for an SI on the same plan and a short answer asking for something the owner must write into the SI's
+plan that a person never needs to be told, and at least two are about people, as the comparison; no question is set
+in the daycare; the multiple-choice options are close in length (the longest at most 1.4 times the shortest, in
+words), the keyed option is never the longest, and the keyed letters vary; the Round 3 brief asks the team to find a
+number in the report the plan did not pay for that got worse or stayed bad, and the board memo asks what the owners
+must check each week because nobody supervises the SI; the exit ticket asks for one thing they would write into an
+SI's plan that they would never need to tell a person.

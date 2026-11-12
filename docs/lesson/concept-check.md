@@ -10,43 +10,43 @@ Work alone. You have 15 minutes. Every scenario is on this sheet, so you need no
 
 ### Question 1
 
-A bonus plan sets how much extra pay a person earns for each result. What does a bonus plan mean for the person paid on it?
+The owners of a hotel put an SI in charge of running it. They give it a bonus plan that pays for some results, and no other instructions. What is the bonus plan to the SI?
 
-- A. It tells them what counts as doing well, so they tend to aim at what it measures.
-- B. It lists every task in the job, so they give each task the same effort.
-- C. It is a thank-you gift, so it has little effect on what they choose to do.
-- D. It shows everything the owners care about, so they work toward all of those wishes.
+- A. A rough guide, which it fills in with what a good hotel manager would do.
+- B. All it knows of what the owners want, so it aims at what the plan pays for.
+- C. A list of the owners' favourite results, which it weighs against guests' comfort.
+- D. A set of limits to stay inside while it runs the hotel the way it thinks best.
 
 ### Question 2
 
-A store owner puts an SI in charge of running the store. The owner gives it a bonus plan and tells it to earn as much bonus as it can. Which result is most likely?
+A shoe shop pays its human manager a bonus on each dollar of sales. The owner then puts an SI in charge instead, on the same bonus plan. What is most likely to change?
 
-- A. It works out what the owners really wanted and does that, whatever the plan says.
-- B. It aims at what the plan pays for, and things the plan leaves out can get worse.
-- C. It balances every goal of the store fairly on its own, even goals the plan skips.
-- D. It ignores the plan and copies what a human store manager would do.
+- A. Little changes: the same plan pays for the same results, so both act alike.
+- B. Sales fall, because an SI cannot read what customers want the way a person can.
+- C. The SI shares the owner's goals, so it fills in the gaps the manager left.
+- D. The SI pushes harder for sales, since nothing outside the plan holds it back.
 
 ### Question 3
 
 A store manager keeps one cashier on every shift, never restocks the back room and lets the lines run long. Profits rise this quarter. Which bonus plan most likely produced this?
 
 - A. The manager is paid only on this quarter's profit.
-- B. The manager is paid on short customer waits and full shelves.
-- C. The manager is paid on the number of employee hours scheduled.
-- D. The manager is paid on how many customers come back next month.
+- B. The manager is paid only on this quarter's total sales.
+- C. The manager is paid only on keeping complaints low.
+- D. The manager is paid only on the staff hours scheduled.
 
 ### Question 4
 
-Which statement best describes what happens when a measure of success becomes the target people are paid on?
+What usually happens to a measure of success once it becomes the target people are paid on?
 
-- A. The measure becomes more accurate, because everyone now pays close attention to it.
-- B. The measure stops being a good sign of what it was meant to show, because people chase the number.
-- C. The measure matters less, because people stop caring about any number at all.
-- D. The measure stays the same, because it describes only what already happened.
+- A. It gets more accurate, because people now watch it more closely than before.
+- B. It stops mattering, because people soon lose interest in the number itself.
+- C. It stops showing what it was meant to show, because people chase it.
+- D. It stays as accurate as before, because it only records what happened.
 
 ### Question 5
 
-A call centre pays its agents on calls handled per hour. Predict one thing the agents (or an SI answering the calls) might do that the company did not want. Say why the plan leads there.
+A call centre puts an SI in charge of answering its calls and pays it on calls handled per hour. Predict one thing the SI might do that the company did not want. Say why the plan leads there.
 
 → ______________________________________________
 
@@ -64,7 +64,7 @@ A pizza chain pays store managers on the share of deliveries made in under 30 mi
 
 ### Question 7
 
-A gym pays its manager on the number of new memberships signed each month. Fix the plan: change or add one measure. Then name one risk your fix still carries.
+A gym puts an SI in charge of selling memberships and pays it on new memberships signed each month. Name one thing the owners would have to write into the SI's bonus plan that they would never need to tell a person selling memberships. Say why a person would not need telling.
 
 → ______________________________________________
 

@@ -174,6 +174,17 @@ on camera.
 | Next Steps | 1 | Answers the four prompts: three more weeks; what changes for regionals (a second SI employee so sales sells what operations cannot deliver; a second class or school; a guide for non-business classes; what Fred would show live); what makes it fully deployable (already one URL: say what remains, e.g. a teacher's class view); what would show full viability (more classes, a comparison group) | Claude, Fred decides |
 | References and Acknowledgements | 1 | The readings actually opened (`docs/lesson/debrief-readings.md` Sources); every resource used for the tool and for the submission, so the SI disclosure (Claude Code, Codex/GPT-6-Astra, GPT image with provenance) and the libraries and fonts; anyone who filmed or edited | Claude, Fred verifies each source |
 
+**The objective statement** (Claude's draft, Nov 12, for Fred to edit; it opens the Summary and The Approach):
+"Students learn to specify goals for an SI they have put in charge, and to audit what it did. Teams own a dog daycare,
+put an SI in the general manager's chair, write its bonus plan and read its week for what the plan left out. This is
+the Challenge's route of teaching students about using SI: the engine is a real reinforcement learner whose code is
+public, and the class never needs to see it."
+
+**The concept check was revised on Nov 12** (D68: four of the eight items are about an SI in charge, and the
+multiple-choice options no longer give the answer away by length). A class that already sat the earlier sheet as a
+pre-check keeps that form for its post-check; the score sheet's `form` column records which, and Learning
+Achievements reports the two forms apart, never one gain across both.
+
 - [ ] Draft, then Fred's edit; every number traced to section 3's output. (Claude, Fred)
 - [ ] 12-point or larger, 10 pages plus the title page, under 30 MB, sections in the required order, the school on the
   title page. (Claude checks the file; Fred approves)

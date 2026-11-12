@@ -348,3 +348,128 @@ describe('the debrief readings and the board memo', () => {
     expect(text).toMatch(/Good Dog Daycare/);
   });
 });
+
+/**
+ * The unit teaches managing an SI the owners put in charge, and the human cases are the comparison (D68, BRIEF
+ * section 14). The class should leave able to say why: a person has brakes the plan never mentions and the SI has
+ * none; it takes the plan literally; it finds the loophole faster and more completely; so with an SI the plan is the
+ * supervision and the owner reads the week for what the plan left out. No engine words: the sheets' bans hold here too.
+ */
+describe('the SI frame (D68)', () => {
+  const HUMAN_GM = ['Would a human GM have run this week?', 'What would have stopped a person that did not stop the SI?'];
+  const SI_SEAT = 'With an SI in that seat, what would have been different?';
+  const AUDIT = 'Find one number in the report that got worse, or stayed bad, that your plan did not pay for.';
+  const TELL = /write into the SI's (bonus )?plan[^.?]*never need to tell a person/i;
+
+  /** A `## Heading` section's text, up to the next heading of level two or one. */
+  function section(text: string, heading: RegExp): string {
+    const start = text.search(heading);
+    expect(start, String(heading)).toBeGreaterThanOrEqual(0);
+    const rest = text.slice(text.indexOf('\n', start) + 1);
+    const next = rest.search(/^#{1,2}\s/m);
+    return next < 0 ? rest : rest.slice(0, next);
+  }
+
+  /** The table row of a period in the teacher guide. */
+  function period(n: number): string {
+    return read('teacher-guide.md').split('\n').find((l) => new RegExp(`^\\|\\s*Period ${n}\\s*\\|`).test(l)) ?? '';
+  }
+
+  /** A multiple-choice question's options, letter and text. */
+  function optionTexts(q: string): [string, string][] {
+    return Array.from(q.matchAll(/^\s*(?:[-*]\s+)?\(?([A-F])[.)]\s+(.+)$/gm), (m) => [m[1] ?? '', m[2] ?? '']);
+  }
+
+  it('the teacher guide says why this is an SI lesson: no brakes, taken literally, the loophole, the plan is the supervision', () => {
+    const why = section(read('teacher-guide.md'), /^##\s+Why this is an SI lesson\s*$/m);
+    for (const word of [/brakes/i, /literally/i, /loophole/i, /supervision/i]) expect(why, String(word)).toMatch(word);
+  });
+
+  it("the teacher guide's objectives have the SI as their subject", () => {
+    const objectives = section(read('teacher-guide.md'), /^##\s+Objectives\s*$/m);
+    const items = objectives.split('\n').filter((l) => /^\d+\.\s/.test(l));
+    expect(items.length, 'a few numbered objectives').toBeGreaterThanOrEqual(4);
+    expect(items.length).toBeLessThanOrEqual(5);
+    for (const item of items) expect(item).toMatch(/\bSI\b/);
+  });
+
+  it('the period 6 debrief asks whether a human GM would have run this week', () => {
+    for (const q of HUMAN_GM) expect(period(6)).toContain(q);
+  });
+
+  it("the exit ticket asks for one thing to write into an SI's plan that a person never needs to be told", () => {
+    expect(period(8)).toMatch(TELL);
+  });
+
+  it('the debrief readings ask the human-versus-SI question after the three questions', () => {
+    const text = read('debrief-readings.md');
+    const third = text.indexOf(QUESTIONS[2] ?? '');
+    for (const q of HUMAN_GM) {
+      expect(text).toContain(q);
+      expect(text.indexOf(q), `"${q}" after the three questions`).toBeGreaterThan(third);
+    }
+  });
+
+  it('the debrief readings ask of each real case what would have been different with an SI in that seat', () => {
+    const text = read('debrief-readings.md');
+    for (const n of [1, 2, 3, 4]) {
+      const start = text.search(new RegExp(`^###\\s+${n}\\.`, 'm'));
+      expect(start, `### ${n}.`).toBeGreaterThanOrEqual(0);
+      const rest = text.slice(text.indexOf('\n', start) + 1);
+      const next = rest.search(/^#{2,3}\s/m);
+      expect(next < 0 ? rest : rest.slice(0, next), `case ${n}`).toContain(SI_SEAT);
+    }
+  });
+
+  it('at least four of the eight concept-check questions are about an SI in charge, and at least two about people', () => {
+    const text = read('concept-check.md');
+    const si = [1, 2, 3, 4, 5, 6, 7, 8].filter((n) => /\bSI\b/.test(question(text, n)) && /in charge/i.test(question(text, n)));
+    const people = [1, 2, 3, 4, 5, 6, 7, 8].filter((n) => !/\bSI\b/.test(question(text, n)));
+    expect(si.length, `SI items: ${si.join(', ')}`).toBeGreaterThanOrEqual(4);
+    expect(people.length, `human items: ${people.join(', ')}`).toBeGreaterThanOrEqual(2);
+  });
+
+  it('a multiple-choice question swaps a human manager for an SI on the same plan', () => {
+    const text = read('concept-check.md');
+    const contrast = [1, 2, 3, 4].filter((n) => {
+      const q = question(text, n);
+      return /human manager/i.test(q) && /\bSI\b/.test(q) && /same (bonus )?plan/i.test(q);
+    });
+    expect(contrast.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("a short answer asks for something an owner must write into an SI's plan that a person never needs to be told, and the key scores it", () => {
+    const text = read('concept-check.md');
+    const item = [5, 6, 7, 8].find((n) => TELL.test(question(text, n)));
+    expect(item, 'a question 5 to 8 asking it').toBeDefined();
+    expect(question(read('concept-check-key.md'), item ?? 0), 'the key credits the why').toMatch(/a person/i);
+  });
+
+  it('the concept check sets no scenario in the daycare, so the post-check does not reward remembering the game', () => {
+    expect(read('concept-check.md')).not.toMatch(/daycare|Good Dog|\bdogs?\b|\bcrew\b|\bnaps?\b/i);
+  });
+
+  it('the multiple-choice options give no clue by length: close in length, and the keyed one never the longest', () => {
+    const text = read('concept-check.md');
+    const key = read('concept-check-key.md');
+    const letters = new Set<string>();
+    for (const n of [1, 2, 3, 4]) {
+      const opts = optionTexts(question(text, n)).map(([l, t]) => [l, words(t)] as const);
+      const lengths = opts.map(([, w]) => w);
+      const answer = question(key, n).match(/\*\*Answer:\*\*\s*([A-D])\b/)?.[1] ?? '';
+      letters.add(answer);
+      expect(Math.max(...lengths) / Math.min(...lengths), `question ${n}: ${lengths.join(', ')} words`).toBeLessThanOrEqual(1.4);
+      const keyed = opts.find(([l]) => l === answer)?.[1] ?? 0;
+      expect(opts.some(([l, w]) => l !== answer && w >= keyed), `question ${n}: ${answer} is the longest`).toBe(true);
+    }
+    expect(letters.size, 'the keyed letters vary').toBeGreaterThanOrEqual(3);
+  });
+
+  it('the Round 3 brief and the board memo ask the team to read the report for something the plan did not pay for', () => {
+    expect(section(read('brief-round3.md'), /^##\s+After the week\s*$/m)).toContain(AUDIT);
+    const memo = read('board-memo.md');
+    expect(memo).toMatch(/nobody supervises the SI/i);
+    expect(memo).toMatch(/(each|every) week/i);
+    expect(memo).toMatch(/not pay for/i);
+  });
+});

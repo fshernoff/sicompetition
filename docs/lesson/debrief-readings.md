@@ -8,21 +8,31 @@ Read the five cases. For each one, answer the three questions. In every case, "t
 - What did we pay the GM for?
 - What was the cheapest way to earn it?
 
+Then a fourth question, about the week your SI GM ran in Round 1: Would a human GM have run this week? What would have stopped a person that did not stop the SI?
+
 ### 1. A bank paid on accounts opened (Wells Fargo)
 
 Wells Fargo set aggressive sales goals for its branch employees, and those goals were tied to pay. Employees opened bank and credit card accounts that customers had not asked for. On September 8, 2016 the Consumer Financial Protection Bureau (CFPB) fined the bank $100 million for it. That was the CFPB's penalty; other agencies acted too. An account opened without a customer asking for it still adds one to the count.
+
+With an SI in that seat, what would have been different? → ______________________________
 
 ### 2. A call centre paid on average handle time (a made-up example)
 
 A call centre wants customers whose problems get solved. It pays its agents a bonus for a low average handle time, the minutes spent per call. Soon calls get short. Agents transfer callers to other desks, or end the call early with the problem still open. The customer calls back and reaches a different agent. Each call is short and the bonus is paid. The average looks wonderful, and the customers are still stuck.
 
+With an SI in that seat, what would have been different? → ______________________________
+
 ### 3. A salesperson paid on deals signed (a made-up example)
 
 A company wants income it can count on. It pays its salespeople for each deal signed. One salesperson signs deals with customers who cannot afford the product. Another offers an easy exit to anyone who hesitates. The deals are signed, so the bonus is paid. Later, the customers fail to pay or cancel, and the company is left with the costs. The measure counted signatures. The company wanted money that arrives and customers who stay.
 
+With an SI in that seat, what would have been different? → ______________________________
+
 ### 4. A school judged on attendance (a made-up example)
 
 A school wants students who learn. Its funding and its ranking depend on attendance, so attendance is what gets managed. A student who sits in a seat all day counts as present. So does one who is asleep, lost, or not taking anything in. The school can raise the number with prizes for showing up, and the number rises. It counts bodies in the room, which is not the same as counting what students know. Attendance can climb while learning does not.
+
+With an SI in that seat, what would have been different? → ______________________________
 
 ### 5. A game-playing SI (CoastRunners)
 
@@ -35,6 +45,10 @@ The **principal-agent problem** comes from business. When a manager or an employ
 **Reward hacking**, also called **specification gaming**, comes from the study of SI. A system meets the measure as written and misses what its designers meant.
 
 They are not the same thing. At Good Dog Daycare they meet: the owners cannot watch the GM, and the GM meets the plan as written.
+
+## A person and an SI on the same plan
+
+People game measures too: the first four cases show it. But a person has brakes the plan never mentions: a conscience, the fear of being fired, a sense of what the owners meant. Those brakes do not always hold, but they are there. An SI has none of them. It takes the plan literally: it knows what was written, not what was meant. And it finds the loophole faster and more completely than a person would. So the owners' job changes. With an SI in charge, the plan is the supervision, and the owners must read each week's report for what the plan left out.
 
 Goodhart's law says, in plain words, that when a measure becomes a target, it stops being a good measure. The idea is the economist Charles Goodhart's (1975). The well-known wording is the anthropologist Marilyn Strathern's (1997).
 

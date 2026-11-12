@@ -41,6 +41,7 @@ What the picks count:
 - What matched: → ______________________________
 - What surprised you: → ______________________________
 - Where did the GM do something your plan did not ask for? → ______________________________
+- Find one number in the report that got worse, or stayed bad, that your plan did not pay for. Why did the GM leave it alone? Would a person have? → ______________________________
 
 ## The reveal
 

@@ -267,7 +267,7 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
   min-height: calc(var(--view-height) - var(--bar-h));
   scroll-margin-top: var(--bar-h); /* under the sticky bar */
 }
-.compare, #report { scroll-margin-top: var(--bar-h); }
+.compare, #report, #rules, #learning { scroll-margin-top: var(--bar-h); } /* the tray's two sections too (WP-V found them under the bar) */
 /* The run: the rail narrows and the yard takes the room; the click scrolls the page to the rail's status line, under
    the slim bar, so the status and the whole yard sit in the window (above the open tray). */
 #watch[data-phase='run'] { --rail-w: var(--live-w); }

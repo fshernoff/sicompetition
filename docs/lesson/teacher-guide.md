@@ -42,7 +42,7 @@ The Teacher button is at the top bar's right.
 
 The status line says where the GM is:
 
-- "Write your prediction, then put the GM to work." The button waits for five picks and a Why.
+- "Write your prediction, then put the GM to work." The button waits for five picks; the Why is optional.
 - "The GM is getting ready for Monday." Seconds, up to a minute on a slow Chromebook.
 - "The GM is running the week." About 8 seconds on the yard.
 - "The week is over." The prediction card becomes a scorecard ("You called N of 5"), with the weekly P&L and operations report below.

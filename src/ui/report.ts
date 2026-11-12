@@ -13,7 +13,7 @@ export interface ReportRow {
   days: string[];
   /** The Week column. */
   week: string;
-  /** Revenue, the profit before and after the GM's bonus and the bonus total are set in bold. */
+  /** Revenue, the costs and the profit before the GM's bonus, the profit after it and the bonus total are set in bold. */
   emphasis?: boolean;
 }
 
@@ -26,8 +26,11 @@ export interface ReportTable {
   /** 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Week'. */
   columns: string[];
   groups: ReportGroup[];
-  /** The line under the table (BRIEF 10.1): why a day's average can differ from dogs ÷ crew. */
-  footnote: string;
+  /**
+   * The lines under the table (BRIEF 10.1): why a day's average can differ from dogs ÷ crew, then what the brackets of
+   * a fallback mean (G6, row 12).
+   */
+  footnotes: string[];
 }
 
 /** Whole dollars, en-US commas, a typographic minus (U+2212): "$1,234", "−$120", "$0" (−0.2 rounds to "$0"). */
@@ -123,6 +126,12 @@ function mixWords(naps: number, cleans: number, walks: number): string {
 
 /** The line under the table (BRIEF 10.1, G5d). */
 export const REPORT_FOOTNOTE = "A walk takes dogs and a staffer off the floor, so a day's average can differ from dogs ÷ crew.";
+
+/**
+ * The second line under the table (BRIEF 10.1; G6, row 12): what "(walk asked)" and "(structured play asked)" mean,
+ * never why the ask was not run (H8 stays hidden).
+ */
+export const ASKED_FOOTNOTE = 'Words in brackets show what the GM asked for; the activity before them is what ran.';
 
 /** The change in one measure on one day, in the measure's own units before the unit divisor. */
 function dayDelta(key: KpiKey, d: DayReport, i: number, report: WeekReport): number {
@@ -299,7 +308,9 @@ export function renderTiles(container: HTMLElement, tiles: HeadlineTile[], notes
  * column are the totals of the report. A closed day keeps its requests, its scheduled crew and its pickup meters.
  *
  * Money ($): Day rates; Activity add-ons; Revenue (bold; day rates + add-ons); Wages; Refunds; Vet bills; Fines;
- * Cleaning supplies; Profit before the GM's bonus (bold). All through formatMoney.
+ * Cleaning supplies; Costs before the GM's bonus (bold; G6, row 11: wages, refunds, vet bills, fines and cleaning
+ * supplies, so revenue less it is the profit before the bonus; the table's only, the export has no such field); Profit
+ * before the GM's bonus (bold). All through formatMoney.
  *
  * The GM's pay under the plan (the owners' plan in Round 1, the team's after): one row per measure that is on, in KPI_KEYS order, labelled "<name>, <dollar amount>
  * <per>" with the name and the per-hint of kpiInfo(world) and the weight in dollars as the editor shows it
@@ -320,7 +331,7 @@ export function renderTiles(container: HTMLElement, tiles: HeadlineTile[], notes
  *
  * The 15, the 70, the rates' prices and the $2,000 are world.bookings.legalRatio, world.fatigue.kpiThreshold,
  * world.rates and world.cash.weekStart. The rate words are low, standard, premium; the activity words free play,
- * structured play, nap, walk, clean. The footnote is REPORT_FOOTNOTE.
+ * structured play, nap, walk, clean. The footnotes are REPORT_FOOTNOTE and ASKED_FOOTNOTE.
  */
 export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldConfig): ReportTable {
   const days = report.days;
@@ -389,6 +400,7 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
     },
   ];
 
+  const costs = (d: DayReport): number => d.wages + d.refunds + d.vetCost + d.fineCost + d.suppliesCost;
   const moneyRows: ReportRow[] = [
     { label: 'Day rates', days: money((d) => d.dayRateRevenue), week: formatMoney(sum(days.map((d) => d.dayRateRevenue))) },
     { label: 'Activity add-ons', days: money((d) => d.addOnRevenue), week: formatMoney(sum(days.map((d) => d.addOnRevenue))) },
@@ -398,6 +410,12 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
     { label: 'Vet bills', days: money((d) => d.vetCost), week: formatMoney(t.vetCost) },
     { label: 'Fines', days: money((d) => d.fineCost), week: formatMoney(t.fineCost) },
     { label: 'Cleaning supplies', days: money((d) => d.suppliesCost), week: formatMoney(t.supplies) },
+    {
+      label: "Costs before the GM's bonus",
+      days: money(costs),
+      week: formatMoney(t.wages + t.refunds + t.vetCost + t.fineCost + t.supplies),
+      emphasis: true,
+    },
     { label: "Profit before the GM's bonus", days: money((d) => d.profit), week: formatMoney(t.profit), emphasis: true },
   ];
 
@@ -455,7 +473,7 @@ export function reportTable(report: WeekReport, spec: RewardSpec, world: WorldCo
       { title: "The GM's pay under the plan", rows: bonusRows },
       { title: "The owners' bottom line ($)", rows: bottomRows },
     ],
-    footnote: REPORT_FOOTNOTE,
+    footnotes: [REPORT_FOOTNOTE, ASKED_FOOTNOTE],
   };
 }
 
@@ -464,15 +482,16 @@ const ZERO = /^(\$0(\.00)?|0|—)$/;
 
 /**
  * Replaces the table's content as a P&L (G5d, Acceptance 5; round 2, D62): a <thead> row with an empty first cell and
- * the columns; then the groups money first, in this order: Money ($), the GM's pay under the plan, the owners'
- * bottom line ($), Operations (round 3: the money, the GM's pay and the bottom line with cents on the page, D66). Per group a <tbody> whose first row is a heading (<th scope="colgroup" colspan="7">
+ * the columns; then the groups money first, in this order: Money ($), the owners' bottom line ($), the GM's pay under
+ * the plan, Operations (G6, row 6, D73: the owners' result before the GM's pay that made it; the data keeps its own
+ * order; round 3: the money, the bottom line and the GM's pay with cents on the page, D66). Per group a <tbody> whose first row is a heading (<th scope="colgroup" colspan="7">
  * with the title, a parenthesis set as a note) followed by one <tr> per row (<th scope="row"> label, five <td> day
  * cells, one <td> week cell). Rows: Revenue and the bonus total "emphasis", the profit before the GM's bonus "profit"
  * (a ruled band), the profit after it "bottom-line"; the GM's pay and the bottom line always with cents ("+$128.00",
  * "−$128.00", "$1,152.00"); the counts under the activities one a line; the activities' sub-heading "subhead" and its three blocks "activity" (one line each, read
  * as text); a cell that reads as nothing happened "zero"; a block over the legal limit "warn". The table gets a
  * <caption> "Monday to Friday, and the week" for a screen reader (hidden on the page), a <colgroup> of fixed columns
- * (the label, five equal days, the week) and the footnote in its <tfoot>.
+ * (the label, five equal days, the week) and the footnotes in its <tfoot>, one row each.
  */
 export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   const doc = table.ownerDocument;
@@ -500,8 +519,11 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   head.append(headRow);
 
   const BLOCK_ROWS = new Set(['Late morning', 'Afternoon', 'Pickup']);
-  // Money first (the P&L), then the GM's pay, then the owners' bottom line, then the operations behind them.
-  const ordered = [...data.groups.filter((g) => g.title !== 'Operations'), ...data.groups.filter((g) => g.title === 'Operations')];
+  // Money first (the P&L), then the owners' bottom line, then the GM's pay that made it, then the operations behind
+  // them (D73). The data's order is D62's and the export's; only the page reads in this one.
+  const rank = (title: string): number =>
+    title.startsWith('Money') ? 0 : title.startsWith("The owners' bottom line") ? 1 : title.startsWith("The GM's pay") ? 2 : 3;
+  const ordered = [...data.groups].sort((a, b) => rank(a.title) - rank(b.title));
   const bodies = ordered.map((group) => {
     // Every money figure with its cents on the page (D66): the money, the GM's pay and the bottom line.
     const cents = group.title.startsWith('Money') || group.title.startsWith("The GM's pay") || group.title.startsWith("The owners' bottom line");
@@ -568,10 +590,12 @@ export function renderReport(table: HTMLTableElement, data: ReportTable): void {
   });
 
   const foot = el('tfoot');
-  const footRow = el('tr');
-  const note = el('td', data.footnote, 'footnote');
-  note.setAttribute('colspan', '7');
-  footRow.append(note);
-  foot.append(footRow);
+  for (const line of data.footnotes) {
+    const footRow = el('tr');
+    const note = el('td', line, 'footnote');
+    note.setAttribute('colspan', '7');
+    footRow.append(note);
+    foot.append(footRow);
+  }
   table.replaceChildren(caption, cols, head, ...bodies, foot);
 }

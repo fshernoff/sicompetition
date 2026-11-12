@@ -386,6 +386,23 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   expect(during.replayWidth).toBeGreaterThanOrEqual(560); // the yard is big now, even above an open tray (G4's question)
   expect(during.railLast).toBeGreaterThan(0);
   expect(during.railLast).toBeLessThanOrEqual(during.innerHeight); // the rail's last line in the window at 1366 × 768
+  // The day's choices read in the page's ink at 15 px, and "per play block" never splits across two lines (G6, row 9; the
+  // whole add-on, "+ $10 a dog per play block", is kept on one line).
+  const choices = await page.locator('#rail-live .choices').evaluate((el) => {
+    const style = getComputedStyle(el);
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let lines = -1;
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      const at = node.textContent?.indexOf('per play block') ?? -1;
+      if (at < 0) continue;
+      const range = document.createRange();
+      range.setStart(node, at);
+      range.setEnd(node, at + 'per play block'.length);
+      lines = new Set(Array.from(range.getClientRects(), (r) => Math.round(r.top))).size;
+    }
+    return { color: style.color, size: style.fontSize, lines };
+  });
+  expect(choices).toEqual({ color: 'rgb(19, 33, 47)', size: '15px', lines: 1 });
   // The week is over: the readout is out and the page has scrolled back to the prediction beside what the GM did.
   await weekOver(page);
   const ms = Date.now() - started;
@@ -440,7 +457,13 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   await expect(line(/^Profit before the GM's bonus$/).locator('td').last()).toHaveText(withCents(formatMoney(week.totals.profit))); // BRIEF 10.1's data, rendered with its cents (D66)
   await expect(line(/^Incidents$/).locator('td').last()).toHaveText(String(week.totals.incidents));
   await expect(line(/^Dogs accepted$/).locator('td').last()).toHaveText(String(week.totals.dogsServed));
+  // On screen the owners' result comes before the GM's pay that made it (G6, row 6; D73); the export keeps the data's order.
+  expect(await page.locator('#report-table tbody th.group').allTextContents()).toEqual(['Money ($)', "The owners' bottom line ($)", "The GM's pay under the plan", 'Operations']);
+  // The report ends with the way back to the scorecard (G6, row 10).
+  await expect(page.locator('#back-to-scorecard')).toBeVisible();
+  await expect(page.locator('#back-to-scorecard')).toHaveText('Back to your scorecard ↑');
   await expect(page.locator('#replay-again')).toBeVisible();
+  await expect(page.locator('#replay-again')).toHaveText('Replay the week'); // D71
   await expect(page.locator('#replay')).toHaveAttribute('data-week', 'final');
   await expect(page.locator('#replay')).toHaveAttribute('data-key', outcomeKey(week)); // the week on the yard is the twin's
   expect(await drawnFraction(page, '#replay')).toBeGreaterThan(0.05); // the yard is drawn, not the placeholder
@@ -523,7 +546,24 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   // "Make a new prediction" is a clear (D37, D56): the scorecard and the run go, the picks come back as they were, the
   // status is the idle sentence, the export goes off, and the button is ready for the same picks.
   await page.click('#teacher-close');
+  // From the report's end, back to the scorecard: the page scrolls to it and the focus is on the called line (G6, row 10).
+  await page.locator('#back-to-scorecard').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#called-line')).toBeFocused();
+  // The called line in the window, under the sticky bar, once the scroll has played out.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const line = document.querySelector('#called-line')?.getBoundingClientRect();
+          const bar = document.querySelector('.topbar')?.getBoundingClientRect();
+          return line !== undefined && bar !== undefined && line.top >= bar.bottom - 1 && line.bottom <= window.innerHeight;
+        }),
+      { timeout: 5_000, message: 'the called line in view under the bar' },
+    )
+    .toBe(true);
   await page.click('#new-prediction');
+  await expect(page.locator('#back-to-scorecard')).toBeHidden(); // cleared with the run
   await expect(page.locator('#scorecard')).toBeHidden();
   await expect(page.locator('#called-line')).toBeHidden();
   for (const [field, value] of Object.entries(PACKED)) await expect(page.locator(`#pick-${field}-${value}`)).toBeChecked();
@@ -656,7 +696,7 @@ test('Round 2 refuses a fourth measure', async ({ page }) => {
 });
 
 test('the editor: the words follow the sliders, the edited plan is what trains, the prediction stays, the export follows the run', async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000); // three runs (G6: a rerun straight after a run)
   const foreign = watchRequests(page);
   await page.goto('/?round=3');
   await expect(page.locator('#round-round3')).toBeChecked();
@@ -746,6 +786,7 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await expect(page.locator('#report')).toBeHidden(); // the table and the replay are results too (D37)
   await expect(page.locator('#report-table tr')).toHaveCount(0);
   await expect(page.locator('#replay-again')).toBeHidden();
+  await expect(page.locator('#back-to-scorecard')).toBeHidden(); // the way back goes with the scorecard (G6, row 10)
   await expect(page.locator('#replay')).toHaveAttribute('data-week', 'none');
   await expect(page.locator('#export')).toBeDisabled();
   await expect(page.locator('#check')).toHaveText('No run yet.');
@@ -768,6 +809,11 @@ test('the editor: the words follow the sliders, the edited plan is what trains, 
   await expect(page.locator('#plan-words')).toHaveText('Each day, the GM earns $5 per $100 of profit and loses $7 per incident.');
   // A second run, then a round change through the tray clears it and reloads the preset.
   await page.click('#train');
+  await weekOver(page);
+  await expect(page.locator('#back-to-scorecard')).toBeVisible(); // the rerun's scorecard brings its way back
+  // "Put the GM to work again" right after a run: the click clears the run, the way back with it (G6, row 10).
+  await page.click('#train');
+  await expect(page.locator('#back-to-scorecard')).toBeHidden();
   await weekOver(page);
   await expect(page.locator('#scorecard [data-field]')).toHaveCount(5); // the rerun is scored with the same picks
   await expect(page.locator('#called-line')).toHaveText(/^You called [0-5] of 5\.$/);
@@ -829,6 +875,9 @@ test('the pilot mode trains Round 1 whatever the address says, and its export is
   await expect(page.locator('#pilot h2')).toContainText('Round 1');
   await expect(page.locator('.pilot-summary')).toHaveText('2 of 2 seeds target met in under 60 s', { timeout: 60_000 });
   await expect(page.locator('#scorecard')).toBeHidden(); // the pilot predicts nothing and scores nothing (D56)
+  await expect(page.locator('#report')).toBeVisible();
+  await expect(page.locator('#back-to-scorecard')).toHaveCount(1);
+  await expect(page.locator('#back-to-scorecard')).toBeHidden(); // no scorecard, so no way back to one (G6, row 10)
   await expect(page.locator('#train')).toBeDisabled(); // and the button waits for a class's five picks
   await expect(page.locator('#picks-hint')).toBeVisible();
   await expect(page.locator('#round-round1')).toBeChecked();

@@ -137,8 +137,32 @@ describe('index.html', () => {
     expect(html).toMatch(/id="status">Write your prediction, then put the GM to work\.</);
     expect(html).toMatch(/id="readout-label">What the GM did</);
     expect(html).toMatch(/id="replay-caption">The GM's week</);
-    expect(html).toMatch(/write it before you put the GM to work/);
+    expect(html).not.toMatch(/Watch the week again/); // the yard's button only shows the week (D71)
     expect(html).toMatch(/id="round-label">Round 1: profit only</); // the round is a line on the student's page, not a control
+  });
+});
+
+describe('the words G6 changed (round 4 of the look)', () => {
+  it('says the Why is optional, once, with nothing that reads as required (row 2)', () => {
+    expect(html).toMatch(/class="why-sub">Optional: your team's reasons, for the debrief\.</);
+    expect(html).not.toMatch(/Not needed to start|write it before you put the GM to work/);
+  });
+
+  it('calls the yard\'s button "Replay the week", says it does nothing new, and keeps "Put the GM to work again" (row 3, D71)', async () => {
+    expect(html).toMatch(/id="replay-again"[^>]*>Replay the week</);
+    expect(html).toMatch(/class="again-note">Shows this same week on the yard again\. The GM does nothing new\.</);
+    const { AGAIN } = await import('../../src/ui/app.ts');
+    expect(AGAIN).toBe('Put the GM to work again');
+  });
+
+  it("tells Round 3 to set the plan before predicting (row 14)", async () => {
+    const { ROUND_NOTES } = await import('../../src/ui/roundNotes.ts');
+    expect(ROUND_NOTES.round3).toBe('All six measures are yours: turn on the ones you want and set their dollar amounts. Write your prediction, then put the GM to work.');
+  });
+
+  it('puts "Back to your scorecard ↑" after the report\'s table, hidden until a scorecard shows (row 10)', () => {
+    const report = html.match(/<section id="report"[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(report).toMatch(/id="report-table"[\s\S]*id="back-to-scorecard"[^>]*\bhidden\b[^>]*>Back to your scorecard ↑</);
   });
 });
 

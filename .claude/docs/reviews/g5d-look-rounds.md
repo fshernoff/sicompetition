@@ -248,3 +248,33 @@ block's chip, no figures and no lone label. (4) 04, 07: "found sick at pickup" i
 incidents)") and the report's row. Checks: `npx vitest run` 603 passed; `npm run lint` 0; `npm run build`;
 `E2E_PORT=4351 npm run e2e` 11 passed (1.2 min); `PERF_PORT=4352 npm run perf` three probes: first runs 1,295 to
 1,302 ms, reruns 1,116 to 1,152 ms, p95 16.7 to 16.8 ms, 0 long tasks, 5.1 MB.
+
+## G6 (Nov 12): round 4's mediums and lows, each with its decision
+
+From the plan `.claude/docs/plans/g6-fixes.md` (its decisions table, rows 1 to 21). WP1 fixed the words and the report;
+WP2 (after it) owns the layout and the 640 window, so its rows read "WP2" until its result is recorded.
+
+| Round 4 finding | Severity | G6 |
+|---|---|---|
+| M1: getting ready, the lower half of both columns empty | Medium | (b) WP2 (row 15b: "What happens next" in the empty column if placement and CSS do it, else declined with the reason) |
+| M1, the scorecards' dead space | Medium | Open: declined for now (row 15a; at 1024 the done layout stacks, long reasons add height, and moving the scroll landing days before a class is a risk) |
+| M2: two lines wrap in the rail | Low | WP2 (row 17: by layout, the words kept) |
+| M3: the reasons card cut while the week plays | Low | Open: declined for now (row 18; a height rule cannot know a team's text fits, and the reasons sit in the rail on purpose while the GM gets ready) |
+| A5, C8: cleanliness at 0% looks neutral | Medium | WP2 (row 1, D70) |
+| A7, C17: the Why helper contradicts itself | Medium | Fixed in G6 (row 2): "Optional: your team's reasons, for the debrief." |
+| A10, C12: "Put the GM to work again" against "Watch the week again" | Medium | Fixed in G6 (row 3, D71): "Replay the week", its note "Shows this same week on the yard again. The GM does nothing new." |
+| A9, C11: the headline wraps | Medium | Fixed in G6 (row 4): a small label "Profit after the GM's bonus" over the amount alone |
+| A6: the sliders' zero | Medium | WP2 (row 5) |
+| A8: the P&L shows the GM's pay before the owners' result | Medium | Fixed in G6 (row 6, D73): on screen Money, The owners' bottom line, The GM's pay under the plan, Operations; the data and the export unchanged |
+| C: the bar's height changes when the run starts | Medium | WP2 (row 7) |
+| C: the bonus "+" in the rail, "−" elsewhere | Medium | Declined (row 8): under D62 the rail's box is the GM's own pay, where the plus stays |
+| C: the day's choices in small grey text | Medium | Fixed in G6 (row 9): the page's ink at 15 px; the add-on "+ $10 a dog per play block" kept on one line |
+| C: the report ends with no next step | Medium | Fixed in G6 (row 10): "Back to your scorecard ↑" after the table, only with a scorecard, cleared with the run, focus to the called line |
+| C: costs have no subtotal | Medium | Fixed in G6 (row 11): "Costs before the GM's bonus", bold, revenue less it is the profit before the bonus |
+| C: "(walk asked)" unexplained | Medium | Fixed in G6 (row 12): "Words in brackets show what the GM asked for; the activity before them is what ran." |
+| C: two numbered sequences on the first screen | Medium | WP2 (row 13) |
+| C: Round 3's notice skips setting the plan | Medium | Fixed in G6 (row 14): "All six measures are yours: turn on the ones you want and set their dollar amounts. Write your prediction, then put the GM to work." (the Round 3 brief with it) |
+| C: the people's ground shadow a sliver | Medium | WP2 (row 16) |
+| A4: the fallback yard is two sentences in a large panel | Medium | Declined (row 19): under D64 the fallback is a broken device's only |
+| C4: the 640 px Chromebook window | High | WP2 (row 20, D72) |
+| 640 only: the tray's open and close leaves the page 90 px under the bar | (new, G6 recon) | WP2 (row 21) |

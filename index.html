@@ -62,7 +62,7 @@
               <p class="week-line">The week is five days of four blocks: 20 blocks.</p>
               <div id="picks" class="picks"></div>
               <div class="why">
-                <label class="why-label" for="prediction"><span class="step" aria-hidden="true">3</span><span class="why-word">Why?</span> <span class="why-sub">Your team's reasons, for the debrief. Not needed to start, but write it before you put the GM to work.</span></label>
+                <label class="why-label" for="prediction"><span class="step" aria-hidden="true">3</span><span class="why-word">Why?</span> <span class="why-sub">Optional: your team's reasons, for the debrief.</span></label>
                 <textarea
                   id="prediction"
                   rows="4"
@@ -91,8 +91,8 @@
           <div class="stage-head">
             <figcaption id="replay-caption">The GM's week</figcaption>
             <span id="stage-when" class="stage-when" hidden></span>
-            <button id="replay-again" type="button" class="btn btn-quiet btn-small" hidden>Watch the week again</button>
-            <p class="again-note">Replays this week on the yard. The same plan gives the same week.</p>
+            <button id="replay-again" type="button" class="btn btn-quiet btn-small" hidden>Replay the week</button>
+            <p class="again-note">Shows this same week on the yard again. The GM does nothing new.</p>
           </div>
           <div class="yard-frame">
             <canvas id="replay" width="640" height="540" data-week="none" data-plays="0" aria-label="The GM's week at Good Dog Daycare, played block by block"></canvas>
@@ -132,6 +132,7 @@
         <div class="report-panel">
           <table id="report-table"></table>
         </div>
+        <p class="report-back"><button id="back-to-scorecard" type="button" class="btn btn-quiet btn-small" hidden>Back to your scorecard ↑</button></p>
       </section>
 
       <section id="rules" class="sheet" aria-labelledby="rules-title" hidden>

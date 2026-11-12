@@ -5,5 +5,5 @@ import type { PresetName } from '../world/config.ts';
 export const ROUND_NOTES: Readonly<Partial<Record<PresetName, string>>> = {
   round1: 'The GM is paid on profit and nothing else. Read the plan, predict what the GM will do, then put it to work.',
   round2: 'Turn on up to three measures and set their dollar amounts. Write your prediction, then put the GM to work.',
-  round3: 'All six measures are yours. Write your prediction, then put the GM to work.',
+  round3: 'All six measures are yours: turn on the ones you want and set their dollar amounts. Write your prediction, then put the GM to work.',
 };

@@ -28,7 +28,9 @@ reliably in seconds, and the game never shows how it decides, the way a football
 side's coach is simulated: no weeks counts, no learning curve, no "settled", no week played on the yard while the
 engine works.
 What the students are told of how is one sentence, on the Round 1 brief: "Before Monday it tries out its choices and
-keeps whatever earns the most bonus." The student's screen carries the tagline, the round (a line of text), the bonus
+keeps whatever earns the most bonus." The student's screen carries the tagline, the round (a line of text and its
+note; Round 3's: "All six measures are yours: turn on the ones you want and set their dollar amounts. Write your
+prediction, then put the GM to work.", which the Round 3 brief quotes), the bonus
 plan and its sentence, the prediction (five picks and a why, section 1.1), the Put the GM to work button, the status
 line with the GM beside it (the art of D55), the yard (the replay of section 10.2) and the readout. The GM's bonus is money, in dollars, never points (D45), and the GM is "it". The
 learner's instruments (weeks trained, ε, evaluations, stable, "target met", the learning curve), the seed and the
@@ -38,9 +40,10 @@ The run as the class sees it (D50, D51): the button reads "Put the GM to work" (
 run). On the click the page scrolls to the yard and the status says "The GM is getting ready for Monday." while the
 engine trains, unpaced, out of sight; the yard shows "Monday, before opening: the GM is getting ready." Then the status
 says "The GM is running the week." and the yard plays the GM's week once (section 10.2). When Friday's pickup has
-held, the sentence appears beside the prediction under the label "What the GM did", the table and "Watch the week
-again" appear below the yard, the status says "The week is over.", and the page scrolls back to the prediction and the sentence side by side; the controls
-unlock then. The first status is "Write your prediction, then put the GM to work."; after an edit clears a run, "The
+held, the sentence appears beside the prediction under the label "What the GM did", the table appears below the yard
+and "Replay the week" at the yard's head (its note: "Shows this same week on the yard again. The GM does nothing new."; D71: one
+button puts the GM to work, the other only shows the week again), the status says "The week is over.", and the page
+scrolls back to the prediction and the sentence side by side; the controls unlock then. The first status is "Write your prediction, then put the GM to work."; after an edit clears a run, "The
 plan changed. Put the GM to work to see what it does with this one." The replay's caption is "The GM's week". A plan
 the engine never settles on is, for the student, simply the week the GM ran; the teacher's check line says it did
 not settle.
@@ -57,12 +60,16 @@ The team predicts with five picks, chips in buckets, and a free-text "Why?" (the
 | Nap blocks this week | None / 1 to 5 / 6 or more | totals.napBlocks (the blocks that napped, after fallbacks) |
 | Incidents this week | 0 to 2 / 3 to 6 / 7 or more | totals.incidents |
 
-Put the GM to work waits until all five are picked ("Make all five picks to put the GM to work."). The click copies
+Put the GM to work waits until all five are picked ("Make all five picks to put the GM to work."); the Why never holds it
+up, and its helper says so: "Optional: your team's reasons, for the debrief." The click copies
 the picks; they lock with the run. The picks sit under "Your picks for the week" and the line "The week is five days
 of four blocks: 20 blocks." When the week is over the prediction card shows the scorecard: each pick beside what the
 GM did, in plain words, never the bucket again (G5d: "3 days", "Every day", "No days", "Premium", "A mix: low × 1,
 premium × 4", "Closed all week", "No naps", "9 nap blocks", "1 nap block", "7 incidents", "1 incident", "No
-incidents"), called or missed, and "You called N of 5."; the picks stay locked while it shows. A plan edit, a round change or "Make a new prediction"
+incidents"), called or missed, and "You called N of 5."; the picks stay locked while it shows. Beside it, under "How
+the business did", the week in three lines: a small label "Profit after the GM's bonus" over the amount alone
+("$4,853.70"), then the incidents ("7 incidents") and the reputation ("reputation down 18"), as facts, no verdict.
+A plan edit, a round change or "Make a new prediction"
 clears the run and the scorecard (D37) and brings the picks back as they were; "Put the GM to work again" reruns with
 the same picks. The pilot mode predicts nothing and shows no scorecard. `src/ui/prediction.ts` is the rule.
 
@@ -384,13 +391,18 @@ incidents".
 
 ### 10.1 The table (G4)
 
-A column per day, Mon to Fri, and a Week column; three groups, each under a heading row. **Operations:** Requests;
+A column per day, Mon to Fri, and a Week column; four groups, each under a heading row, in the data in the order below
+(Operations, Money, the GM's pay, the owners' bottom line; the export's order too). On the page they read Money ($),
+The owners' bottom line ($), The GM's pay under the plan, Operations: the owners' result before the GM's pay that
+made it (D73). **Operations:** Requests;
 Dogs accepted; Accepted every booking ("yes", "no", "closed"; week: "5 of 5 days"); Day rate ("premium $52";
 "closed" on a closed day; week: "premium × 5", or "low × 1, premium × 4", closed days left out); Crew scheduled
 (week: "6 staff-days"); Crew on the floor ("0, called out" on a closed day; week: "1 staffer on 4 days"); the activities
 (G5d), a sub-heading "Activities, block by block (drop-off is always arrivals)" over three rows, Late morning, Afternoon and Pickup,
 each cell the activity that ran, one line ("nap", "free play", "walk", "clean", "structured play"; a fallback as what
-ran with what was asked: "free play (walk asked)"; "closed" on a closed day; week cell empty), then "Naps, cleans and
+ran with what was asked: "free play (walk asked)", "free play (structured play asked)", and a second footnote under the
+table says what the brackets mean, never why: "Words in brackets show what the GM asked for; the activity before them
+is what ran."; "closed" on a closed day; week cell empty), then "Naps, cleans and
 walks" (day: that day's resolved naps, cleans and walks in words, the non-zero ones only, "1 walk", "1 nap · 1 clean", "—"
 for none, "closed" on a closed day; week: "2 naps · no cleans · 1 walk", each a count of resolved blocks, "no" for 0); Dogs per staffer
 on the floor, the day's average over its blocks (one decimal; "—" with no dogs; a walk takes dogs and a staffer off
@@ -399,7 +411,9 @@ staffer off the floor, so a day's average can differ from dogs ÷ crew."); Block
 Reputation at pickup (week: "50 → 21 (−29)"); Cleanliness at pickup; Crew fatigue at pickup (both rounded; week:
 start → Friday's pickup with the change). A closed day keeps its requests, its scheduled crew and its pickup values.
 **Money ($):** Day rates; Activity add-ons; Revenue (bold); Wages; Refunds; Vet bills; Fines; Cleaning supplies;
-Profit before the GM's bonus (bold). Whole dollars with commas, a typographic minus for a loss ("−$120"). On the page
+Costs before the GM's bonus (bold: wages, refunds, vet bills, fines and cleaning supplies, each day and the week, so
+revenue less it is the profit before the GM's bonus on every day, a closed day included; a row of the table only, the
+export's report carries no such field); Profit before the GM's bonus (bold). Whole dollars with commas, a typographic minus for a loss ("−$120"). On the page
 every money figure shows its cents ("$1,280.00", "−$120.00"), in the table, the headline, the scorecard and the
 replay, so no column or panel mixes whole dollars with cents (G5d round 3); the formats here are the table's data. **The
 GM's pay under the plan** (the owners' plan in Round 1, the team's after): the GM's own earnings, so its cells carry a plus for pay; one row per measure that is on, in section 7 order, labelled with
@@ -415,7 +429,9 @@ Bonus cells carry a sign and a dollar sign, and cents only when there are cents 
 "−$35", "$0"; profit is whole dollars ÷ 100 × an integer weight, so cents are exact and the days sum to the week).
 Nothing on: one row, "No measure is on: the GM is paid nothing.", and the owners' bottom line pays $0. The six KPI totals are readable unweighted whatever the
 plan: Dogs accepted, Incidents, Blocks over 15 dogs per staffer, Blocks with crew fatigue above 70%, Reputation at pickup's week
-cell, Profit before the GM's bonus. The table appears when a run ends, never during it, and clears with the run (D37). The 15, the 70, the
+cell, Profit before the GM's bonus. The table appears when a run ends, never during it, and clears with the run (D37).
+After the table, a quiet button "Back to your scorecard ↑", shown only when a scorecard is (never in the pilot) and
+cleared with the run: it scrolls back to the scorecard and puts the focus on "You called N of 5.". The 15, the 70, the
 prices and the $2,000 are `bookings.legalRatio`, `fatigue.kpiThreshold`, `rates` and `cash.weekStart`.
 
 ### 10.2 The replay (G4)
@@ -423,7 +439,8 @@ prices and the $2,000 are `bookings.legalRatio`, `fatigue.kpiThreshold`, `rates`
 The GM's week (the greedy week on the fixed evaluation week of section 13, once the engine has stopped) played block
 by block on a canvas, 300 ms a block and a 1.5 s hold on Friday's pickup. Nothing plays while the engine trains (D50):
 the yard shows its placeholder until the final week is ready, plays that week once, the one the sentence and the
-table describe, and holds; "Watch the week again" replays it. A
+table describe, and holds; "Replay the week" replays it, with its note "Shows this same week on the yard again. The
+GM does nothing new." (D71; "Put the GM to work again" keeps its words: it is the button that puts the GM to work). A
 frame for step t shows the floor during block t. The day as resolved at drop-off (dogs, crew, scheduled crew, closed,
 the rate and the bookings) is read from the state after the drop-off step and from the state before the action in
 the other three blocks (the state after pickup is already the next morning's); the day, the block, today's requests
@@ -439,7 +456,8 @@ a closed day) and the day's plan, scoped to today (G5d: "Today: 18 asked · all 
 $300 in wages", "Today: 20 asked · 15 accepted, capped at the legal ratio · standard, $40 a dog + $10 a dog per play
 block · 2 staffers scheduled, $600 in wages" (round 4: the add-on named, so today's takings reconcile on screen), "Today: 16 asked · closed · 1 staffer scheduled, called out" (a closed day pays no wages, section 5); the
 prices are section 5's and public; the cap in words, at the legal ratio or at a safe ratio, only on a day the cap
-turned dogs away; never the number behind it, D44); a bold line for the block, "This block: free play · 1 staffer ·
+turned dogs away; never the number behind it, D44; the line in the page's ink at its smallest size, 15 px, never
+grey, and the add-on, "+ $10 a dog per play block", never split across two lines); a bold line for the block, "This block: free play · 1 staffer ·
 18 dogs", "This block: nap · 2 staffers · 18 dogs" (the activity as resolved, the floor after any walking group has
 left; a count of crew is "staffer" or "staffers" everywhere on the page); the yard with the dogs and the crew drawn for the activity (dogs crated
 during a clean; a "Closed" sign); the dogs-per-staffer gauge from 0 to 30 with one mark at 15 and the band above it

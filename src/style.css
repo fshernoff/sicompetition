@@ -767,6 +767,8 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
 }
 .called-line { border-radius: 4px; }
 .business-line .clause { display: block; } /* one clause a line: no line ends on a dangling dot (round 3, row 21) */
+/* The profit's label, small over the amount alone, so the headline reads in three short lines (G6, row 4). */
+.business-line .clause-label { display: block; margin-bottom: 3px; font: 700 15px/1.2 var(--font-ui); font-stretch: 85%; color: var(--ink-2); }
 .business-line .hurt { color: var(--red-ink); }
 /* The business's figures, a table beside the picks' table, the same rows and rules. */
 .biz-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
@@ -820,7 +822,8 @@ html[data-phase='run'] .round-badge, html[data-phase='done'] .round-badge { padd
    pinned to the top then, so the rail cannot scroll): the type as elsewhere, a tight rhythm between the blocks. */
 .rail-live > * { padding: 6px 22px; border-bottom: 1px solid var(--line); } /* round 4: 6 px, so the whole week fits 1024 × 768 */
 .when { font: 850 27px/1.05 var(--font-ui); font-stretch: 70%; color: var(--navy); }
-.choices { margin-top: 3px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink-2); }
+.choices { margin-top: 3px; font-size: var(--text-sm); line-height: 1.3; color: var(--ink); } /* the page's ink, not grey (G6, row 9) */
+.choices .nowrap { white-space: nowrap; } /* "per play block" never splits */
 /* This block, in one bold line: the most prominent words after the gauge's number (round 2, row 10). */
 .rail-live > .this-block { padding-top: 6px; padding-bottom: 6px; font: 800 20px/1.25 var(--font-ui); font-stretch: 86%; color: var(--navy); background: var(--panel-2); }
 .this-block .asked { font-weight: 500; color: var(--ink-2); }

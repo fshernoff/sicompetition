@@ -125,6 +125,9 @@
 #report-table tr.activity .phrase { white-space: nowrap; }
 /* The footnote under the table (BRIEF 10.1). */
 #report-table tfoot td.footnote { height: auto; padding: 10px 14px 12px; font-size: 15px; text-align: left; white-space: normal; color: var(--ink-2); }
+#report-table tfoot tr + tr td.footnote { padding-top: 0; } /* the second line (G6, row 12) under the first */
+/* After the table, the way back to the scorecard (G6, row 10): quiet, only with a scorecard. */
+.report-back { margin: 14px 0 0; }
 
 @media (max-width: 1100px) {
   #report-tiles { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }

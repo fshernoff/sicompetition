@@ -6,6 +6,9 @@ import { activityName, planWords } from './replay.ts';
 import type { ReplayFrame } from './replay.ts';
 import { formatBonus, formatDollars, formatMoney, withCents } from './report.ts';
 
+/** The end of the add-on in today's plan, "+ $10 a dog per play block", kept on one line (G6, row 9). */
+const PLAY_BLOCK = 'per play block';
+
 export interface RailModel {
   /** "Wednesday · late morning". */
   when: string;
@@ -271,9 +274,15 @@ export function mountRail(container: HTMLElement, gaugeMax: number, icon: (name:
     when.textContent = `${m.when} block`;
     // Today's plan and its crew on a line of their own, as planParts splits them, so no line ends on half a choice;
     // the dot between them stays in the text for a screen reader, and the words are the choices line's own.
+    // The add-on, "+ $10 a dog per play block", is one phrase and never splits across two lines (G6, row 9).
     const crewAt = m.choices.lastIndexOf(' · ');
-    if (crewAt < 0) choices.textContent = m.choices;
-    else choices.replaceChildren(m.choices.slice(0, crewAt), el('span', 'visually-hidden', ' · '), el('span', 'choices-crew', m.choices.slice(crewAt + 3)));
+    const first = crewAt < 0 ? m.choices : m.choices.slice(0, crewAt);
+    const phraseEnd = first.indexOf(PLAY_BLOCK) + PLAY_BLOCK.length;
+    const phraseAt = phraseEnd < PLAY_BLOCK.length ? -1 : Math.max(0, first.lastIndexOf('+ ', phraseEnd));
+    const plan: (string | HTMLElement)[] =
+      phraseAt < 0 ? [first] : [first.slice(0, phraseAt), el('span', 'nowrap', first.slice(phraseAt, phraseEnd)), first.slice(phraseEnd)].filter((x) => x !== '');
+    if (crewAt < 0) choices.replaceChildren(...plan);
+    else choices.replaceChildren(...plan, el('span', 'visually-hidden', ' · '), el('span', 'choices-crew', m.choices.slice(crewAt + 3)));
     const now = m.day * 4 + m.block;
     cells.forEach((cell, t) => {
       const cls = t < now ? 'done' : t === now ? 'now' : '';

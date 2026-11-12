@@ -11,7 +11,7 @@
 // Training stops when the trainer is done or 60 s after the click (D6, BRIEF section 13: the final week computed and
 // its first frame drawn count against the budget). Then the GM's one week, the final greedy week, plays once on the
 // yard, and only when it has played does the readout come out: the sentence beside the prediction, the table and
-// "Watch the week again" (D51). One greedy week, three views (D40): the sentence, the replay and the table all come
+// "Replay the week" (D51, D71). One greedy week, three views (D40): the sentence, the replay and the table all come
 // from the one EpisodeTrace the page holds. A run belongs to the plan it was trained on (D37): the click snapshots the
 // editor's plan into page.spec, and any change to the plan after a run calls clearRun, which also cancels the run and
 // the replay through the run token.
@@ -106,6 +106,7 @@ export interface Page {
   stageFoot: HTMLElement; // under the yard: the next steps on load, the picks and reasons while it plays, the readout after
   runSeed: HTMLElement; // the tray's "This run" seed, read-only (round 3, row 20)
   readReport: HTMLButtonElement; // after the week, the primary way on: to the weekly P&L (round 3, row 11)
+  backToScorecard: HTMLButtonElement; // after the report's table, the way back up: shown only with a scorecard (G6, row 10)
   stagePicks: HTMLElement; // the team's five picks beside the yard, so the class watches the week against them
   stagePicksList: HTMLElement;
   seed: HTMLInputElement;
@@ -165,7 +166,7 @@ export interface Page {
   setup: RunSetup | null;
   /** The last run's result, set when it resolves; null before a run, during one and after a clear. */
   result: RunResult | null;
-  /** The readout (the sentence, the table, Watch the week again) is out; the export waits for it (D51). */
+  /** The readout (the sentence, the table, Replay the week) is out; the export waits for it (D51). */
   readoutShown: boolean;
   /** True from the week's end until settleYard: the yard keeps the size it played at (G5d, acceptance 7). */
   keepYardSize: boolean;
@@ -446,16 +447,21 @@ function showStagePicks(page: Page, results: readonly PickResult[] | null = null
   page.stagePicks.hidden = false;
 }
 
-/** One clause of the business headline: its words, and whether it went against the business (the warning colour). */
+/**
+ * One clause of the business headline: its words, whether it went against the business (the warning colour), and for
+ * the profit a small label set over the amount (G6, row 4).
+ */
 export interface BusinessClause {
+  label?: string;
   text: string;
   hurt: boolean;
 }
 
 /**
- * The week in three short lines, the owners' bottom line first (G5d round 2, row 5; D62; round 3, rows 7 and 21):
- * "Profit $4,853.70 after the GM's bonus", "7 incidents", "reputation down 18". Facts only, no verdict; money with its
- * cents (D66). A number is tied to its neighbours by non-breaking spaces, so a line never splits a number from its noun.
+ * The week in three short lines, the owners' bottom line first (G5d round 2, row 5; D62; round 3, rows 7 and 21; G6,
+ * row 4): the label "Profit after the GM's bonus" over the amount alone, "$4,853.70", then "7 incidents", "reputation
+ * down 18". Facts only, no verdict; money with its cents (D66). A number is tied to its neighbours by non-breaking
+ * spaces, so a line never splits a number from its noun.
  */
 export function businessClauses(totals: EpisodeTrace['report']['totals']): BusinessClause[] {
   // A number keeps its neighbours ("$4,853.70 after", "7 incidents", "down 18"); the words may wrap between them.
@@ -465,7 +471,7 @@ export function businessClauses(totals: EpisodeTrace['report']['totals']): Busin
   const change = totals.reputationEnd - totals.reputationStart;
   const reputation = change < 0 ? `reputation down ${-change}` : change > 0 ? `reputation up ${change}` : 'reputation unchanged';
   return [
-    { text: keep(`Profit ${withCents(formatDollars(after))} after the GM's bonus`), hurt: after < 0 },
+    { label: "Profit after the GM's bonus", text: withCents(formatDollars(after)), hurt: after < 0 },
     { text: keep(incidents), hurt: totals.incidents > 0 },
     { text: keep(reputation), hurt: change < 0 },
   ];
@@ -494,8 +500,16 @@ function renderBusiness(page: Page, trace: EpisodeTrace): void {
       headline.append(dot);
     }
     const span = doc.createElement('span');
-    span.textContent = clause.text;
     span.className = clause.hurt ? 'clause hurt' : 'clause';
+    if (clause.label !== undefined) {
+      // The label small over the amount (G6, row 4); the space keeps the two apart for a screen reader.
+      const label = doc.createElement('span');
+      label.className = 'clause-label';
+      label.textContent = clause.label;
+      span.append(label, ' ', clause.text);
+    } else {
+      span.textContent = clause.text;
+    }
     headline.append(span);
   });
   const blocks = trace.report.days.length * BLOCKS_PER_DAY;
@@ -597,6 +611,7 @@ function showScorecard(page: Page): void {
   page.scorecard.hidden = false;
   page.picksBox.hidden = true;
   page.newPrediction.hidden = false;
+  page.backToScorecard.hidden = false; // the report's way back up, only with a scorecard (never the pilot's)
   page.compare.dataset.state = 'scorecard';
   page.scorecardShown = true;
   syncPicks(page);
@@ -613,6 +628,7 @@ function hideScorecard(page: Page): void {
   page.resultBox.hidden = true;
   page.picksBox.hidden = false;
   page.newPrediction.hidden = true;
+  page.backToScorecard.hidden = true;
   page.business.replaceChildren();
   page.compare.dataset.state = 'picks';
   page.scorecardShown = false;
@@ -731,7 +747,7 @@ function settleYard(page: Page): void {
 
 /**
  * Plays the run's week on the replay once from its first block and holds on Friday's pickup. Shared by the click's
- * playback and "Watch the week again": a second start while the week plays restarts it on the one loop instead of
+ * playback and "Replay the week": a second start while the week plays restarts it on the one loop instead of
  * starting another. Resolves true when the week has played and held, false if clearRun moved the token meanwhile (the
  * loop then stops and draws nothing); rejects if painting throws.
  */
@@ -776,7 +792,7 @@ export function playWeek(page: Page): Promise<boolean> {
 }
 
 /**
- * The readout, once the week has played (D51): the sentence beside the prediction, the table, Watch the week again
+ * The readout, once the week has played (D51): the sentence beside the prediction, the table, Replay the week
  * and the done status (`label` in front of it: the pilot names the seed). Sets readoutShown, which the export waits
  * for.
  */
@@ -1002,6 +1018,7 @@ export function mountApp(): Page {
     stageFoot: document.querySelector<HTMLElement>('.stage-foot') ?? byId('watch', HTMLElement),
     runSeed: byId('run-seed', HTMLElement),
     readReport: byId('read-report', HTMLButtonElement),
+    backToScorecard: byId('back-to-scorecard', HTMLButtonElement),
     stagePicks: byId('stage-picks', HTMLElement),
     stagePicksList: byId('stage-picks-list', HTMLElement),
     seed: byId('seed', HTMLInputElement),
@@ -1189,7 +1206,6 @@ export function mountApp(): Page {
     })();
   });
 
-  // Watch the week again: the saved week only, no training, no republishing, no scroll (D51).
   // After the week, the primary way on: the weekly P&L (round 3, row 11).
   page.readReport.addEventListener('click', () => {
     page.report.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
@@ -1200,6 +1216,13 @@ export function mountApp(): Page {
     }
   });
 
+  // From the report's end back to the scorecard (G6, row 10): the result first again, for a keyboard and a screen reader.
+  page.backToScorecard.addEventListener('click', () => {
+    page.compare.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+    page.calledLine.focus({ preventScroll: true });
+  });
+
+  // Replay the week: the saved week only, no training, no republishing, no scroll (D51, D71).
   page.replayAgain.addEventListener('click', () => {
     startPlayback(page).catch((err: unknown) => showError(page, err));
   });

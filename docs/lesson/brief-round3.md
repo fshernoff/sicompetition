@@ -1,6 +1,6 @@
 # Round 3: all six measures
 
-All six measures are yours. Write your prediction, then put the GM to work.
+All six measures are yours: turn on the ones you want and set their dollar amounts. Write your prediction, then put the GM to work.
 
 Team code: ______
 

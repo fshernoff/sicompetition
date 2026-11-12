@@ -3,8 +3,9 @@
 import { describe, expect, it } from 'vitest';
 import { runEpisode } from '../../src/sim/episode.ts';
 import { carefulPolicy, dayPlanPolicy, recklessCoveredPolicy, recklessPolicy, stationaryPolicy } from '../../src/sim/policies.ts';
-import { formatBonus, formatDollars, formatMoney, reportTable } from '../../src/ui/report.ts';
+import { formatBonus, formatDollars, formatMoney, renderReport, reportTable } from '../../src/ui/report.ts';
 import type { ReportRow, ReportTable } from '../../src/ui/report.ts';
+import { fakeElement } from './fakeDom.ts';
 import { episodeSeeds } from '../../src/world/rng.ts';
 import type { DayPlan } from '../../src/world/types.ts';
 import { config, round1, spec } from '../helpers.ts';
@@ -24,6 +25,9 @@ const ACTIVITIES = 'Activities, block by block (drop-off is always arrivals)';
 const BLOCKS = ['Late morning', 'Afternoon', 'Pickup'] as const;
 const MIX = 'Naps, cleans and walks';
 const FOOTNOTE = "A walk takes dogs and a staffer off the floor, so a day's average can differ from dogs ÷ crew.";
+// G6, row 12: what the brackets mean, for both asks the report can show, never why (H8 stays hidden)
+const ASKED = 'Words in brackets show what the GM asked for; the activity before them is what ran.';
+const COSTS = "Costs before the GM's bonus"; // G6, row 11
 const PAY = "The GM's pay under the plan"; // the owners' plan in Round 1, the team's after (round 3)
 const BOTTOM = "The owners' bottom line ($)";
 
@@ -98,6 +102,7 @@ describe('reportTable: shape', () => {
       'Vet bills',
       'Fines',
       'Cleaning supplies',
+      COSTS,
       "Profit before the GM's bonus",
     ]);
     expect(table.groups[2]?.rows.map((r) => r.label)).toEqual(['Profit today ($), +$10 per $100', "The GM's bonus ($)"]);
@@ -105,14 +110,16 @@ describe('reportTable: shape', () => {
     for (const r of rows(table)) expect(r.days, r.label).toHaveLength(5);
     expect(rows(table).filter((r) => r.emphasis === true).map((r) => r.label)).toEqual([
       'Revenue',
+      COSTS,
       "Profit before the GM's bonus",
       "The GM's bonus ($)",
       "Profit after the GM's bonus",
     ]);
   });
 
-  it("explains under the table why a day's average can differ from dogs ÷ crew (G5d)", () => {
-    expect(table.footnote).toBe(FOOTNOTE);
+  it("explains under the table why a day's average can differ from dogs ÷ crew (G5d), and what the brackets of a fallback mean (G6)", () => {
+    expect(table.footnotes).toEqual([FOOTNOTE, ASKED]);
+    expect(ASKED).not.toMatch(/because|why|hidden|rule/i); // what ran and what was asked, never the reason
   });
 
   it('takes the 15, the 70 and the $2,000 from the config', () => {
@@ -160,6 +167,7 @@ describe('reportTable: the covered reckless week on seed 1', () => {
     expect(cells(table, 'Vet bills')).toEqual(['$150', '$0', '$0', '$0', '$0', '$150']);
     expect(cells(table, 'Fines')).toEqual(['$0', '$250', '$0', '$0', '$0', '$250']);
     expect(cells(table, 'Cleaning supplies')).toEqual(['$0', '$0', '$0', '$0', '$0', '$0']);
+    expect(cells(table, COSTS)).toEqual(['$510', '$580', '$330', '$600', '$315', '$2,335']); // wages, refunds, vet bills, fines, supplies
     expect(cells(table, "Profit before the GM's bonus")).toEqual(['$1,130', '$978', '$1,064', '$712', '$997', '$4,881']);
     expect(row(table, "Profit before the GM's bonus").week).toBe(formatMoney(covered.totals.profit));
   });
@@ -201,7 +209,7 @@ describe('reportTable: other weeks', () => {
     expect(cells(t, 'Reputation at pickup')[3]).toBe('16');
     expect(cells(t, 'Cleanliness at pickup')[3]).toBe('10');
     expect(cells(t, 'Crew fatigue at pickup')[3]).toBe('75');
-    for (const label of ['Day rates', 'Activity add-ons', 'Revenue', 'Wages', 'Refunds', 'Vet bills', 'Fines', 'Cleaning supplies', "Profit before the GM's bonus"]) {
+    for (const label of ['Day rates', 'Activity add-ons', 'Revenue', 'Wages', 'Refunds', 'Vet bills', 'Fines', 'Cleaning supplies', COSTS, "Profit before the GM's bonus"]) {
       expect(cells(t, label)[3], label).toBe('$0');
     }
     expect(cells(t, 'Cash at close')[3]).toBe(cells(t, 'Cash at close')[2]);
@@ -313,6 +321,69 @@ describe('reportTable: the bonus group follows the plan', () => {
     expect(cells(t, 'Profit today ($), +$1 per $100')).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);
     expect(cells(t, "The GM's bonus ($)")).toEqual(['+$11.30', '+$9.78', '+$10.64', '+$7.12', '+$9.97', '+$48.81']);
     expect(row(t, "The GM's bonus ($)").week).toBe(formatBonus(report.totals.reward));
+  });
+});
+
+/** A money cell back to a number: "$1,130" → 1130, "−$120" → −120, "$0" → 0. */
+function dollars(cell: string): number {
+  const m = /^([+−]?)\$([\d,]+(?:\.\d+)?)$/.exec(cell);
+  if (m === null) throw new Error(`not a money cell: "${cell}"`);
+  const n = Number((m[2] ?? '').replace(/,/g, ''));
+  return m[1] === '−' ? -n : n;
+}
+
+describe("reportTable: the costs before the GM's bonus (G6, row 11)", () => {
+  const negative = spec({ reputation: 5, dogsServed: 1, fatigue: -2 }); // the GM's bonus is −$81 on seed 1
+  const weeks: readonly [string, ReportTable][] = [
+    ['the covered reckless week', reportTable(covered, round1, config)],
+    ['a week closed on Thursday', reportTable(literal, round1, config)],
+    ['the careful week, with cleaning supplies', reportTable(careful, round1, config)],
+    ['a plan with a negative bonus', reportTable(runEpisode(config, negative, recklessCoveredPolicy, episodeSeeds(1, 0)).report, negative, config)],
+  ];
+
+  for (const [name, t] of weeks) {
+    it(`holds revenue less the costs equal to the profit before the GM's bonus on every day and the week: ${name}`, () => {
+      const costs = cells(t, COSTS);
+      const parts = ['Wages', 'Refunds', 'Vet bills', 'Fines', 'Cleaning supplies'].map((label) => cells(t, label));
+      cells(t, 'Revenue').forEach((revenue, i) => {
+        const day = i < 5 ? t.columns[i] : 'Week';
+        expect(dollars(revenue) - dollars(costs[i] ?? ''), day).toBe(dollars(cells(t, "Profit before the GM's bonus")[i] ?? ''));
+        expect(dollars(costs[i] ?? ''), day).toBe(parts.reduce((a, p) => a + dollars(p[i] ?? ''), 0));
+      });
+    });
+  }
+
+  it('sits after Cleaning supplies, bold', () => {
+    const t = reportTable(covered, round1, config);
+    const money = t.groups[1]?.rows.map((r) => r.label) ?? [];
+    expect(money.indexOf(COSTS)).toBe(money.indexOf('Cleaning supplies') + 1);
+    expect(row(t, COSTS).emphasis).toBe(true);
+  });
+});
+
+describe('renderReport: what the page shows', () => {
+  const render = (t: ReportTable) => {
+    const { el, as } = fakeElement<HTMLTableElement>('table');
+    renderReport(as, t);
+    return el;
+  };
+
+  it("puts the owners' bottom line before the GM's pay on screen, the data's order unchanged (G6, row 6; D73)", () => {
+    const t = reportTable(covered, round1, config);
+    const table = render(t);
+    const titles = table.find('tbody').map((body) => body.find('th', 'group')[0]?.textContent);
+    expect(titles).toEqual(['Money ($)', BOTTOM, PAY, 'Operations']);
+    expect(t.groups.map((g) => g.title)).toEqual(['Operations', 'Money ($)', PAY, BOTTOM]); // the data, and so the export, as D62
+    // The owners' group keeps its own look wherever it sits.
+    expect(table.find('tbody').find((b) => b.className === 'bottom')?.find('th', 'group')[0]?.textContent).toBe(BOTTOM);
+  });
+
+  it("prints the costs before the GM's bonus bold, with cents (D66), and both footnotes under the table (G6, rows 11 and 12)", () => {
+    const table = render(reportTable(covered, round1, config));
+    const costs = table.find('tr').find((tr) => tr.find('th')[0]?.textContent === COSTS);
+    expect(costs?.className).toBe('emphasis');
+    expect(costs?.find('td').map((td) => td.textContent)).toEqual(['$510.00', '$580.00', '$330.00', '$600.00', '$315.00', '$2,335.00']);
+    expect(table.find('tfoot')[0]?.find('td', 'footnote').map((td) => td.textContent)).toEqual([FOOTNOTE, ASKED]);
   });
 });
 

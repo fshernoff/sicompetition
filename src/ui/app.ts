@@ -5,7 +5,7 @@
 // G5d (D59, Floor): one screen in three phases on #watch[data-phase] (syncPhase): the console (the premise, the plan,
 // the picks, the Why and the button) beside the yard; the run (the GM's status and the rail beside a wide yard); and
 // after the week the scorecard beside how the business did, the plan and the Why under them, the yard beside.
-// The GM is an AI the owners put in charge, and how it decides never shows (D50, D53). The click puts the GM to work:
+// The GM is an SI the owners put in charge, and how it decides never shows (D50, D53). The click puts the GM to work:
 // the learner trains unpaced in requestAnimationFrame slices, out of sight, while the yard shows the in-world wait; the
 // teacher's check line and, when the teacher shows it, the learning curve are redrawn at most 10 times a second.
 // Training stops when the trainer is done or 60 s after the click (D6, BRIEF section 13: the final week computed and

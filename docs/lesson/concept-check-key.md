@@ -12,7 +12,7 @@ A bonus plan tells the person what counts as doing well, so they aim at what it 
 
 **Answer:** B
 
-An AI told to earn as much bonus as it can aims at what the plan pays for, and whatever the plan leaves out can suffer. A is the most tempting wrong answer: the AI is given the plan, not the owners' wishes, and nothing makes it work out unstated goals. C and D describe an AI that acts without reference to the plan, which is the opposite of what it was told to do.
+An SI told to earn as much bonus as it can aims at what the plan pays for, and whatever the plan leaves out can suffer. A is the most tempting wrong answer: the SI is given the plan, not the owners' wishes, and nothing makes it work out unstated goals. C and D describe an SI that acts without reference to the plan, which is the opposite of what it was told to do.
 
 ### Question 3
 

@@ -2,9 +2,9 @@
 // page's HTML outside the teacher's parts (the tray and the learning section, both hidden by default) carries none of
 // the learner's instruments, no learning curve and no word that shows the engine (learn, settled, weeks); no
 // teacher's control is on the student's page.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { STUDENT_BANS } from './bans.ts';
+import { STUDENT_BANS, aiWords } from './bans.ts';
 import { curveWords, yTickLabel } from '../../src/ui/curve.ts';
 
 const html = readFileSync('index.html', 'utf8');
@@ -121,8 +121,15 @@ describe('index.html', () => {
     expect(split().student).not.toMatch(/weights?\b/i); // the sliders set dollar amounts, not weights (Astra, plan review)
   });
 
-  it('says on the page that the GM is an AI the owners put in charge (D53)', () => {
-    expect(html).toMatch(/class="tagline">Good Dog Daycare\. You own it\. The GM is an AI: it runs the week, and you write its bonus plan\.</);
+  it('says on the page that the GM is an SI the owners put in charge (D53, D67)', () => {
+    expect(html).toMatch(/class="tagline">Good Dog Daycare\. You own it\. The GM is an SI: it runs the week, and you write its bonus plan\.</);
+  });
+
+  it('calls the technology an SI, never AI, anywhere on the page: the teacher\'s parts, the stylesheet and the code included (D67)', () => {
+    const code = readdirSync('src', { recursive: true, encoding: 'utf8' })
+      .filter((f) => /\.(ts|json|css)$/.test(f))
+      .map((f) => [`src/${f}`, readFileSync(`src/${f}`, 'utf8')] as const);
+    for (const [file, text] of [['index.html', html] as const, ...code]) expect(aiWords(text), file).toEqual([]);
   });
 
   it("puts the GM to work and shows what the GM did in the GM's week (D50)", () => {
@@ -132,6 +139,14 @@ describe('index.html', () => {
     expect(html).toMatch(/id="replay-caption">The GM's week</);
     expect(html).toMatch(/write it before you put the GM to work/);
     expect(html).toMatch(/id="round-label">Round 1: profit only</); // the round is a line on the student's page, not a control
+  });
+});
+
+describe('aiWords (D67)', () => {
+  it('catches the word in every form and lets the cited titles and company names through', () => {
+    expect(aiWords('The GM is an AI. AIs and A.I. and an AI\'s plan; Artificial Intelligence.')).toEqual(['AI', 'AIs', 'AI', 'A.I', 'Artificial Intelligence']);
+    expect(aiWords('Concrete Problems in AI Safety; OpenAI let an SI play; Thai, said, again, MAIL.')).toEqual([]);
+    expect(aiWords('Specification gaming: the flip side of AI ingenuity. Then an AI.')).toEqual(['AI']);
   });
 });
 

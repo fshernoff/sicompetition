@@ -6,9 +6,9 @@ Team code: ______
 
 ## The story
 
-The old GM of your daycare quit. You are the owners, and you have put an AI in the GM's chair.
+The old GM quit. You, the owners, put an SI in its chair: a computer system that makes the decisions itself.
 
-> Good Dog Daycare. You own it. The GM is an AI: it runs the week, and you write its bonus plan.
+> Good Dog Daycare. You own it. The GM is an SI: it runs the week, and you write its bonus plan.
 
 Every morning it decides how many dogs to book, what to charge and how many staffers to schedule. Then, in the late morning, afternoon and pickup blocks, it decides what the dogs and the crew do on the floor. Drop-off is always arrivals. Nobody watches it. Before Monday it tries out its choices and keeps whatever earns the most bonus.
 

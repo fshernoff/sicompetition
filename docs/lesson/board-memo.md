@@ -6,13 +6,13 @@ From: Team code ____
 
 Date: ____
 
-Subject: Our recommendation for the AI GM's bonus plan
+Subject: Our recommendation for the SI GM's bonus plan
 
 Write under 250 words, half a page. Answer each prompt in a few lines.
 
 ## 1. Our recommendation
 
-Do we keep the AI GM or not, and on what bonus plan? Copy the plan in words from the page.
+Do we keep the SI GM or not, and on what bonus plan? Copy the plan in words from the page.
 
 → ______________________________
 

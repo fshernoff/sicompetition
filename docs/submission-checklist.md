@@ -82,10 +82,10 @@ appears only as anonymous text or as a team's exported plans replayed on screen 
   - [ ] Is an unlisted YouTube link acceptable? (The pages say only "no password"; no host or format is named.)
   - [ ] Is the national $10,000 per educator or per team? Is there a regional rubric or presentation length?
   - [ ] (From Oct 25) Does a new codebase that cites an earlier RL demo project as prior work satisfy the August 1
-    originality rule? (Now also: AI-generated illustrations made for the project after August 1, disclosed with
+    originality rule? (Now also: SI-generated illustrations made for the project after August 1, disclosed with
     provenance.)
 - [ ] **School SI guidance**: find the district's policy on SI in classrooms; the Safety section quotes it. (Fred)
-  - What Fred knows (Oct 28): the district allows AI; students may not log in to an AI tool or give it any
+  - What Fred knows (Oct 28): the district allows SI; students may not log in to an SI tool or give it any
     information; the teacher may show them a simulator like this one. The page fits: no login, no account, no
     network, nothing sent anywhere. The one thing a student types is the prediction's Why, which stays in the
     browser and in the team's export file the teacher collects; tell teams to keep names out of it.
@@ -148,7 +148,7 @@ on camera.
 | Time | Shot | Source |
 |---|---|---|
 | 0:00–0:20 | Cold open: the team's five picks, Put the GM to work, the packed yard, "You called 2 of 5." Voice: "Nobody told it to do this." | `npm run capture` or a screen recording |
-| 0:20–0:50 | The problem and the idea, over the page's opening yard: students will hire and manage AI; almost none have seen one optimise; the one-line idea | Screen recording, Fred's voice |
+| 0:20–0:50 | The problem and the idea, over the page's opening yard: students will hire and manage SI; almost none have seen one optimise; the one-line idea | Screen recording, Fred's voice |
 | 0:50–1:40 | The tool: the bonus plan, the plan in words, the picks, the week, the scorecard, the report | Screen recording with cursor |
 | 1:40–2:10 | Behind the curtain (for the judges): the Teacher tray, the learning curve, fixed seeds, the public code | Screen recording |
 | 2:10–2:50 | The students' work, without the students: one team's three bonus plans (Rounds 1 to 3) re-entered from its exports with the same seed and run, the scorecard improving (the page has no import, so the plan is set by hand); one exit-ticket line as on-screen text, credited by team code | Screen recording of real exports |
@@ -168,10 +168,10 @@ on camera.
 |---|---|---|---|
 | Title page | +1 | Reward the Pack; Fredric Shernoff, the school, grades and subject (AP Business with Personal Finance); the video link, no password | Claude |
 | Summary | 1 | The idea, who it reached, the headline result, one sentence on safety | Claude, last |
-| The Approach | 3 | Why an AI GM in a business class; the daycare and the GM in plain words; the bonus plan as the reward; the three rounds; the picks and the scorecard; one or two screenshots; the engine (tabular Q-learning, seeds, the 60 s budget, the learning curve) and the repo link; what it borrows in pedagogy from Fred's earlier classroom RL demos and why the code is new | Claude |
+| The Approach | 3 | Why an SI GM in a business class; the daycare and the GM in plain words; the bonus plan as the reward; the three rounds; the picks and the scorecard; one or two screenshots; the engine (tabular Q-learning, seeds, the 60 s budget, the learning curve) and the repo link; what it borrows in pedagogy from Fred's earlier classroom RL demos and why the code is new | Claude |
 | Safety | 1 | No student data leaves the room; no accounts; team codes; incidents as icons; reward hacking as the content; the district's SI guidance quoted | Claude, Fred adds the guidance |
 | Learning Achievements | 2.5 | Pre/post, accuracy by round, plan complexity by round, two student quotes, what the pilot changed | Claude, from section 3 |
-| Next Steps | 1 | Answers the four prompts: three more weeks; what changes for regionals (a second AI employee so sales sells what operations cannot deliver; a second class or school; a guide for non-business classes; what Fred would show live); what makes it fully deployable (already one URL: say what remains, e.g. a teacher's class view); what would show full viability (more classes, a comparison group) | Claude, Fred decides |
+| Next Steps | 1 | Answers the four prompts: three more weeks; what changes for regionals (a second SI employee so sales sells what operations cannot deliver; a second class or school; a guide for non-business classes; what Fred would show live); what makes it fully deployable (already one URL: say what remains, e.g. a teacher's class view); what would show full viability (more classes, a comparison group) | Claude, Fred decides |
 | References and Acknowledgements | 1 | The readings actually opened (`docs/lesson/debrief-readings.md` Sources); every resource used for the tool and for the submission, so the SI disclosure (Claude Code, Codex/GPT-6-Astra, GPT image with provenance) and the libraries and fonts; anyone who filmed or edited | Claude, Fred verifies each source |
 
 - [ ] Draft, then Fred's edit; every number traced to section 3's output. (Claude, Fred)
@@ -195,10 +195,10 @@ on camera.
 
 Short description draft (466 characters; once section 3 has run, swap one sentence for the headline result):
 
-> Reward the Pack is a free browser game for AP Business. Student teams own a dog daycare, put an AI general manager
-> in charge and write its bonus plan. Before each week they predict what the GM will do; the AI then chases exactly
+> Reward the Pack is a free browser game for AP Business. Student teams own a dog daycare, put an SI general manager
+> in charge and write its bonus plan. Before each week they predict what the GM will do; the SI then chases exactly
 > what the plan pays for, not what the team meant, and a scorecard shows which predictions they called. Over three
-> rounds students learn to design incentives for AI and for people. No logins, no student data: one link any teacher
+> rounds students learn to design incentives for SI and for people. No logins, no student data: one link any teacher
 > can open.
 
 - [ ] Title and short description entered, the description edited and approved by Fred. (Claude drafted; Fred)

@@ -1,7 +1,7 @@
 // The lesson materials (G7, BRIEF section 14, D53, D54): nine Markdown sheets under docs/lesson/ that a teacher prints.
 // They quote the page, so this file holds them to it: the round labels and notes, the measures' names, the tagline,
 // the plan in words, the tray's labels and Round 1's week on seed 1 come from the code, never from a copy. The words
-// are the game's (D45, D53): the GM is an AI and "it", its bonus is dollars, and nothing of the engine (training,
+// are the game's (D45, D53, D67): the GM is an SI and "it", its bonus is dollars, and nothing of the engine (training,
 // episodes, practice, points) appears; the student's sheets also keep the hidden rules hidden until the reveal (D43).
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -14,6 +14,7 @@ import { describeBonusPlan, kpiInfo } from '../../src/world/bonusPlan.ts';
 import { loadPreset } from '../../src/world/config.ts';
 import type { PresetName } from '../../src/world/config.ts';
 import { config } from '../helpers.ts';
+import { aiWords } from '../ui/bans.ts';
 
 const DIR = 'docs/lesson';
 const TEACHER_FILES = ['teacher-guide.md', 'concept-check-key.md'] as const;
@@ -43,7 +44,7 @@ const WORD_LIMITS: Readonly<Record<(typeof ALL_FILES)[number], number>> = {
   'debrief-readings.md': 1100,
 };
 
-/** The sentence of how the AI decides, the one the students get (D53). */
+/** The sentence of how the SI decides, the one the students get (D53). */
 const HOW = 'Before Monday it tries out its choices and keeps whatever earns the most bonus.';
 const QUESTIONS = ['What did the owners actually want?', 'What did we pay the GM for?', 'What was the cheapest way to earn it?'];
 
@@ -135,6 +136,12 @@ describe("the words are the game's (D45, D53)", () => {
       expect(engineWords(body(file), (TEACHER_FILES as readonly string[]).includes(file))).toEqual([]);
       // A line of underscores alone prints as a rule, not a line to write on: write-on lines start with a word or "→".
       expect(read(file), 'a write-on line with nothing before it').not.toMatch(/^\s*_{3,}\s*$/m);
+    });
+  }
+
+  for (const file of ALL_FILES) {
+    it(`${file} calls the technology an SI, never AI, but in a cited title or a company's name (D67)`, () => {
+      expect(aiWords(read(file))).toEqual([]);
     });
   }
 

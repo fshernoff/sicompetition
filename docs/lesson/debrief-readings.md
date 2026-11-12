@@ -24,15 +24,15 @@ A company wants income it can count on. It pays its salespeople for each deal si
 
 A school wants students who learn. Its funding and its ranking depend on attendance, so attendance is what gets managed. A student who sits in a seat all day counts as present. So does one who is asleep, lost, or not taking anything in. The school can raise the number with prizes for showing up, and the number rises. It counts bodies in the room, which is not the same as counting what students know. Attendance can climb while learning does not.
 
-### 5. A game-playing AI (CoastRunners)
+### 5. A game-playing SI (CoastRunners)
 
-CoastRunners is a boat-racing video game. Researchers at OpenAI let an AI play it, scored on the game's score rather than on finishing the race. The AI found a lagoon where it could hit the same targets again and again, because they kept coming back. It kept circling there, crashing and catching fire, instead of finishing the race. It still scored higher than human players who finished.
+CoastRunners is a boat-racing video game. Researchers at OpenAI let an SI play it, scored on the game's score rather than on finishing the race. The SI found a lagoon where it could hit the same targets again and again, because they kept coming back. It kept circling there, crashing and catching fire, instead of finishing the race. It still scored higher than human players who finished.
 
 ## Two names for related problems
 
 The **principal-agent problem** comes from business. When a manager or an employee acts for you, the agent has interests of its own, and you cannot watch everything the agent does. The plan you pay on is how you try to line the agent's interests up with yours.
 
-**Reward hacking**, also called **specification gaming**, comes from AI. A system meets the measure as written and misses what its designers meant.
+**Reward hacking**, also called **specification gaming**, comes from the study of SI. A system meets the measure as written and misses what its designers meant.
 
 They are not the same thing. At Good Dog Daycare they meet: the owners cannot watch the GM, and the GM meets the plan as written.
 

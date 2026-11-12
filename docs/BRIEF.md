@@ -15,13 +15,18 @@ Words that are fixed everywhere (page, docs, code comments): the GM; the **bonus
 run's result is the **weekly P&L and operations report** (short: the readout); an **incident** is an icon and a
 counter, never an injury; the daycare is **Good Dog Daycare**; the staff are the **crew**.
 
-The page is a business game, not a lesson in training a model (D38, D45, D50, D53). For the students the GM is an AI
-the owners have put in charge (D53): the old GM quit, and the owners put an AI in the GM's chair. It books the dogs,
-sets the day rate, schedules the crew and runs the floor; nobody supervises it; it cares about nothing but the bonus
-plan they wrote. The page's tagline says so: "Good Dog Daycare. You own it. The GM is an AI: it runs the week, and you
-write its bonus plan." Underneath, the GM is a reinforcement learner, because that finds a plan's loophole reliably
-in seconds, and the game never shows how it decides, the way a football game never shows how the other side's coach
-is simulated: no weeks counts, no learning curve, no "settled", no week played on the yard while the engine works.
+The technology is called **SI**, the Challenge's word, never "AI" (D67): "an SI", "the SI", never expanded, and
+described in plain words where a reader needs it explained ("an SI, a computer system that makes the decisions
+itself"); cited titles and company names keep their words as published.
+
+The page is a business game, not a lesson in training a model (D38, D45, D50, D53). For the students the GM is an SI
+the owners have put in charge (D53, D67): the old GM quit, and the owners put an SI in the GM's chair. It books the
+dogs, sets the day rate, schedules the crew and runs the floor; nobody supervises it; it cares about nothing but the
+bonus plan they wrote. The page's tagline says so: "Good Dog Daycare. You own it. The GM is an SI: it runs the week,
+and you write its bonus plan." Underneath, the GM is a reinforcement learner, because that finds a plan's loophole
+reliably in seconds, and the game never shows how it decides, the way a football game never shows how the other
+side's coach is simulated: no weeks counts, no learning curve, no "settled", no week played on the yard while the
+engine works.
 What the students are told of how is one sentence, on the Round 1 brief: "Before Monday it tries out its choices and
 keeps whatever earns the most bonus." The student's screen carries the tagline, the round (a line of text), the bonus
 plan and its sentence, the prediction (five picks and a why, section 1.1), the Put the GM to work button, the status
@@ -533,11 +538,12 @@ Compliance officer, one page cut in four), `concept-check.md` (eight questions, 
 unit), `board-memo.md` and `debrief-readings.md` (two pages, with its sources).
 
 Their rules, held by `tests/lesson/materials.test.ts` (D54): they quote the page (each round's label and note, the
-measures' names, the tagline, the plan in words, the tray's labels, Round 1's sentence on seed 1 as the engine
-writes it); the words are the game's (section 1: never "reward function", training in any form, "episode", points,
-"injury"; the GM is "it"); the student's sheets carry none of the teacher's words (seed, settled, learning curve),
-no reward but the debrief's "reward hacking", no hidden rule of section 6 before the reveal, and a team code where a
-name would go. In the period 6 debrief the principal-agent problem (someone acting for you has their own interests and
-cannot be watched) and reward hacking, or specification gaming (a system meets the measure as written and misses
-what was meant), are named as two related problems that this game shows meeting; the teacher may show the learning
-curve there (section 11), the one place the class sees behind the curtain.
+measures' names, the tagline, the plan in words, the tray's labels, Round 1's sentence on seed 1 as the engine writes
+it); the words are the game's (section 1: never "reward function", training in any form, "episode", points, "injury";
+the GM is "it"; the technology is an SI, never "AI", but in a cited title or a company's name, D67); the student's
+sheets carry none of the teacher's words (seed, settled, learning curve), no reward but the debrief's "reward
+hacking", no hidden rule of section 6 before the reveal, and a team code where a name would go. In the period 6
+debrief the principal-agent problem (someone acting for you has their own interests and cannot be watched) and reward
+hacking, or specification gaming (a system meets the measure as written and misses what was meant), are named as two
+related problems that this game shows meeting; the teacher may show the learning curve there (section 11), the one
+place the class sees behind the curtain.

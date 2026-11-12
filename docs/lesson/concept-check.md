@@ -19,7 +19,7 @@ A bonus plan sets how much extra pay a person earns for each result. What does a
 
 ### Question 2
 
-A store owner puts an AI system in charge of running the store. The owner gives it a bonus plan and tells it to earn as much bonus as it can. Which result is most likely?
+A store owner puts an SI in charge of running the store. The owner gives it a bonus plan and tells it to earn as much bonus as it can. Which result is most likely?
 
 - A. It works out what the owners really wanted and does that, whatever the plan says.
 - B. It aims at what the plan pays for, and things the plan leaves out can get worse.
@@ -46,7 +46,7 @@ Which statement best describes what happens when a measure of success becomes th
 
 ### Question 5
 
-A call centre pays its agents on calls handled per hour. Predict one thing the agents (or an AI answering system) might do that the company did not want. Say why the plan leads there.
+A call centre pays its agents on calls handled per hour. Predict one thing the agents (or an SI answering the calls) might do that the company did not want. Say why the plan leads there.
 
 → ______________________________________________
 

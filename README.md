@@ -1,7 +1,7 @@
 # Reward the Pack
 
 A browser lesson for AP Business. Student teams own Good Dog Daycare and never work a shift. The old GM quit, and
-the owners have put an AI in the GM's chair; the only lever they hold is its bonus plan. They write the plan, predict
+the owners have put an SI in the GM's chair; the only lever they hold is its bonus plan. They write the plan, predict
 what the GM will do, put it to work and watch it run one week, then read the weekly P&L and operations report beside
 their prediction to find out what their plan actually paid for. Underneath, the GM is a reinforcement-learning agent
 that works out, before Monday, what earns it the most bonus; the students never see how it decides.
@@ -17,7 +17,7 @@ and lesson material in this repository was created for the Challenge after Augus
 Install with `npm install` (Node 24 or newer). Then:
 
 - `npm run dev` serves the page locally; `npm run build` writes the static site to `dist/`.
-- `npm test` runs the rule tests, `npm run lint` runs ESLint and the type check, `npm run e2e` runs one browser smoke test against the built page.
+- `npm test` runs the rule tests, `npm run lint` runs ESLint and the type check, `npm run e2e` runs the browser smoke (11 Playwright tests) against the built page.
 
 The headless simulator runs on Node's native TypeScript, so it needs no extra tools:
 
@@ -37,7 +37,7 @@ It prints one JSON document: the full world config, the bonus plan it used, the 
 
 ## Teacher panel and export
 
-The Teacher tab in the bottom-right corner opens a tray with the round presets, the seed, Reveal the hidden rules, Show the learning curve (the teacher's view of how the AI behind the GM practised), Export this run, and the check line. There is no speed control: the engine always runs at full speed. Export this run writes one JSON file per run holding the plan, the prediction as it stood when the GM was put to work, the readout, the bonus curve and the seed, and nothing that names a student. `?round=2` still preloads a round and `?pilot=20` still runs the Chromebook check.
+The Teacher button at the right of the top bar opens a tray with the round presets, the seed, Reveal the hidden rules, Show the learning curve (the teacher's view of how the SI behind the GM practised), Export this run, and the check line. There is no speed control: the engine always runs at full speed. Export this run writes one JSON file per run holding the plan, the prediction as it stood when the GM was put to work, the readout, the bonus curve and the seed, and nothing that names a student. `?round=2` still preloads a round and `?pilot=20` still runs the Chromebook check.
 
 ## Lesson materials
 
@@ -58,7 +58,7 @@ and diffs. The simulator rules and the lesson design are the author's. Claude Co
 `docs/lesson/` from the author's unit design; the author reviews, edits as needed and approves every sheet before it reaches a class.
 The page's art was made for this project in two ways (D59). The dogs and the crew were generated with GPT image
 through the Codex CLI, from prompts written in this project, then cut, colour-checked and repaired by the scripts in
-`Tools/Art/cast/`. The yard's set, its mess details and the AI GM were modelled in three.js with code written by
+`Tools/Art/cast/`. The yard's set, its mess details and the SI GM were modelled in three.js with code written by
 Claude Code and rendered offline at build time (`Tools/Art/set/`); nothing from three.js ships in the page. Every
 shipped image passed three independent figure-by-figure checks on its exact bytes (D58). `docs/art-provenance/`
 records each tool, model, date, prompt and step.

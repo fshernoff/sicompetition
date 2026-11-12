@@ -29,7 +29,7 @@ A solo full-time K-12 teacher is eligible (teams are 1 to 3 educators, any subje
 | Video | One video, 4 minutes max (judges stop at 4:00), 300 MB max, horizontal, public link with no password, credits count | Someone else may shoot or edit it; the subject and content must be yours |
 | Code | Not required; "if seeing the code will strengthen your project, you can provide a link" | Link the public repo in The Approach and References |
 | SI tools | No tools prohibited; teams are "encouraged" to use generative SI; not disclosing SI use is academic dishonesty | Disclose Claude Code as a build assistant in Acknowledgements |
-| School policy | "Teachers must follow all school guidance on the use of SI technologies in their classrooms" | Students use only the tool you built; no third-party AI accounts needed |
+| School policy | "Teachers must follow all school guidance on the use of SI technologies in their classrooms" | Students use only the tool you built; no third-party SI accounts needed |
 | Consent | Signed Adult Consent and Media Release for Educators form before any training activity | Submit with registration; student releases are not stated for educator videos, so ask (see Open questions) |
 | Correspondence | School email addresses must be used | Register with your school address, not the studio address |
 | Tiers | State champion by educator category per state; regional champions present an updated project live online Mar 4 to Apr 8, 2027; nationals in Washington, DC, Jun 6 to 9, 2027 | Plan the Next Steps section as the regional update |

@@ -1,6 +1,6 @@
 // The teacher's tray (BRIEF section 11, D39, D46): the "Teacher" button in the bar opens a panel fixed to the bottom of
 // the window, one row in three labelled groups (Round; This run: the seed and the export; Behind the curtain: the
-// reveal of the hidden rules, the learning curve, D50: the teacher's view of the AI behind the GM, and the training
+// reveal of the hidden rules, the learning curve, D50: the teacher's view of the SI behind the GM, and the training
 // details, which show the learner's check line at the panel's foot; G5d). The tray overlays the bottom of the window and
 // never moves the lesson; while it is open the page scrolls in the body, whose box ends at the tray's measured top, so
 // no line of the page is ever under the tray and the last rows scroll clear of it (G5d round 4).

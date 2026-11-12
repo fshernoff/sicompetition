@@ -6,7 +6,7 @@ import { describeWeek, outcomeKey } from '../src/sim/readout.ts';
 import { formatMoney, withCents } from '../src/ui/report.ts';
 import { setWeight, toggleKpi } from '../src/world/bonusPlan.ts';
 import { loadDefaultConfig, loadPreset } from '../src/world/config.ts';
-import { STUDENT_ALLOWED, STUDENT_BANS } from '../tests/ui/bans.ts';
+import { STUDENT_ALLOWED, STUDENT_BANS, aiWords } from '../tests/ui/bans.ts';
 
 // The one Playwright smoke, in parts: the built page loads clean and makes no request beyond its own origin, the
 // teacher panel is closed by default and holds the teacher's controls (G5), and Round 1 trains to the reckless week
@@ -492,6 +492,8 @@ test('Round 1: the GM runs its week, the readout follows, and the export is the 
   await expect(page.locator('#learning')).toBeVisible();
   await expect(page.locator('#show-curve')).toHaveText('Hide the learning curve');
   await expect.poll(() => drawnFraction(page, '#curve'), { timeout: 3_000 }).toBeGreaterThan(0.02);
+  // The teacher's view says SI too, never AI (D67): the open tray, the curve's caption and its label.
+  expect(aiWords(await studentText(page))).toEqual([]);
   await page.click('#show-curve');
   await expect(page.locator('#learning')).toBeHidden();
   await expect(page.locator('#show-curve')).toHaveText('Show the learning curve');

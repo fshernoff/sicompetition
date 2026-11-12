@@ -1,12 +1,12 @@
 # Reward the Pack: teacher guide
 
-The old GM of Good Dog Daycare quit. The owners (each team of four) have put an AI in the GM's chair. It books the dogs, sets the day rate, schedules the crew and runs the floor, and nobody supervises it. The owners hold one lever: the bonus plan, which says what each result is worth to the GM in dollars. The lesson is incentive design. Whoever is paid on a measure, a person or an AI, aims at the measure, not at what its author meant. Two related problems meet in the game. The principal-agent problem: someone acting for you has interests of its own and you cannot watch it. Reward hacking, also called specification gaming: a system meets the measure as written and misses what was meant.
+The old GM of Good Dog Daycare quit. The owners (each team of four) have put an SI, a computer system that makes the decisions itself, in the GM's chair. It books the dogs, sets the day rate, schedules the crew and runs the floor, and nobody supervises it. The owners hold one lever: the bonus plan, which says what each result is worth to the GM in dollars. The lesson is incentive design. Whoever is paid on a measure, a person or an SI, aims at the measure, not at what its author meant. Two related problems meet in the game. The principal-agent problem: someone acting for you has interests of its own and you cannot watch it. Reward hacking, also called specification gaming: a system meets the measure as written and misses what was meant.
 
 ## Objectives
 
 Students can:
 
-1. Explain what a bonus plan is to whoever is paid on it, human or AI, and how an AI GM uses it.
+1. Explain what a bonus plan is to whoever is paid on it, human or SI, and how an SI GM uses it.
 2. Predict at least one way a one-measure plan will be gamed.
 3. Negotiate and justify a multi-measure plan in terms of stakeholders.
 4. Connect the pattern to a real company that paid for the wrong measure.
@@ -58,13 +58,13 @@ Each period is 50 minutes.
 | Period 5 | Round 3: plan and predict (20), run (10), read (10), export (5). At the end, Reveal the hidden rules on the smartboard (5). | brief-round3 | Brief, the Round 3 files |
 | Period 6 | Debrief with debrief-readings: the three questions "What did the owners actually want?", "What did we pay the GM for?", "What was the cheapest way to earn it?" (20), the cases (15), the mapping table (10). Optional behind the curtain: Show the learning curve (5). | debrief-readings | Mapping table |
 | Period 7 | Board memo: each team writes to the owners' board (50). | board-memo | Memos |
-| Period 8 | Concept check again (post, 15 min, same conditions). Debrief the answers (20). Exit ticket: "What would you tell someone putting an AI in charge of a business?" (15) | concept-check | Concept check, ticket |
+| Period 8 | Concept check again (post, 15 min, same conditions). Debrief the answers (20). Exit ticket: "What would you tell someone putting an SI in charge of a business?" (15) | concept-check | Concept check, ticket |
 
-## When a student asks how the AI decides
+## When a student asks how the SI decides
 
 Say it this way: "Before Monday it tries out its choices and keeps whatever earns the most bonus." It is literal, not malicious. It sees everything on the floor, but it protects nothing the plan leaves out for its own sake.
 
-The optional look in period 6: Show the learning curve shows the bonus of each week the AI tried out before running the week the class watched.
+The optional look in period 6: Show the learning curve shows the bonus of each week the SI tried out before running the week the class watched.
 
 ## Evidence
 

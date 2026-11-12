@@ -42,7 +42,7 @@ npm run sim -- --episodes 200 --seed 1 --reward round1 --policy random   # headl
 npm run calibrate -- --episodes 100 --seed 1   # the Round 1 calibration ranking and margins (G1 acceptance 3)
 npm run pilot -- --seeds 20 --budget 60000     # the 20-seed learner check (G2 acceptance 2); ?pilot=20 on the page is the Chromebook version
 npm run pilot -- --seeds 5 --reward balanced   # any plan headless (a preset or a .json file): episodes to stable, stable, the outcome key
-npm run e2e        # the Playwright smoke against the built page (10 tests, about 55 s)
+npm run e2e        # the Playwright smoke against the built page (11 tests, about 55 s)
 npm run capture    # after a build: a 30-second recording of one Round 1 run in headless Chromium, to Temp/capture/
 ```
 
@@ -53,7 +53,9 @@ npm run capture    # after a build: a 30-second recording of one Round 1 run in 
 - Tests first and seen failing; "0 tests" is not a pass. One test per hidden rule, named for the rule.
 - The numbers in code come from `src/world/config.default.json`, which matches `docs/BRIEF.md` section 6. Change
   the bible first, then the JSON, then the test.
-- The GM is an AI the owners put in charge, and "it" (D53); how it decides never shows on the student's screen.
+- The GM is an SI the owners put in charge, and "it" (D53, D67); how it decides never shows on the student's screen.
+- The technology is "SI", never "AI" (D67): "AI", "A.I.", "AIs" and "artificial intelligence" are banned on the page
+  and the sheets (`tests/ui/bans.ts`), except in cited titles and company names as published. SI is never expanded.
 - Words: GM, bonus plan, weekly P&L and operations report (readout), incident (an icon and a counter), crew, Good
   Dog Daycare. The GM's bonus is dollars, never points; the GM is put to work and is weeks into the job, never
   trained or practising; the student never sees the engine: no weeks counts, no curve, no "settled" (D45, D50). Never "injury", never "reward function" on the page.
